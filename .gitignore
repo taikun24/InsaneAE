@@ -1,0 +1,44 @@
+# Gradle
+.gradle/
+build/
+out/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Forge の開発用ランタイム (ワールド・設定・ログ・クラッシュレポート)
+run/
+runs/
+run-data/
+logs/
+*.log
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Eclipse
+bin/
+eclipse/
+.settings/
+.metadata/
+.classpath
+.project
+*.launch
+
+# VS Code
+.vscode/
+
+# Forge MDK の残骸
+forge*changelog.txt
+
+# テクスチャ生成スクリプト (tools/) の副産物
+__pycache__/
+*.py[cod]
+
+# Claude Code のローカル設定
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db

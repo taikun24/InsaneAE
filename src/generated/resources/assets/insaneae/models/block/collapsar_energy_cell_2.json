@@ -1,0 +1,106 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "cullface": "down",
+          "texture": "#all"
+        },
+        "east": {
+          "cullface": "east",
+          "texture": "#all"
+        },
+        "north": {
+          "cullface": "north",
+          "texture": "#all"
+        },
+        "south": {
+          "cullface": "south",
+          "texture": "#all"
+        },
+        "up": {
+          "cullface": "up",
+          "texture": "#all"
+        },
+        "west": {
+          "cullface": "west",
+          "texture": "#all"
+        }
+      },
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "forge_data": {
+            "block_light": 15,
+            "sky_light": 15
+          },
+          "texture": "#light"
+        },
+        "east": {
+          "forge_data": {
+            "block_light": 15,
+            "sky_light": 15
+          },
+          "texture": "#light"
+        },
+        "north": {
+          "forge_data": {
+            "block_light": 15,
+            "sky_light": 15
+          },
+          "texture": "#light"
+        },
+        "south": {
+          "forge_data": {
+            "block_light": 15,
+            "sky_light": 15
+          },
+          "texture": "#light"
+        },
+        "up": {
+          "forge_data": {
+            "block_light": 15,
+            "sky_light": 15
+          },
+          "texture": "#light"
+        },
+        "west": {
+          "forge_data": {
+            "block_light": 15,
+            "sky_light": 15
+          },
+          "texture": "#light"
+        }
+      },
+      "from": [
+        -0.01,
+        -0.01,
+        -0.01
+      ],
+      "shade": false,
+      "to": [
+        16.01,
+        16.01,
+        16.01
+      ]
+    }
+  ],
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "all": "insaneae:block/energy/collapsar_energy_cell",
+    "light": "insaneae:block/energy/collapsar_energy_cell_2_light",
+    "particle": "insaneae:block/energy/collapsar_energy_cell"
+  }
+}

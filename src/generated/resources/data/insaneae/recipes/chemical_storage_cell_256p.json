@@ -1,0 +1,28 @@
+{
+  "type": "forge:conditional",
+  "recipes": [
+    {
+      "conditions": [
+        {
+          "type": "forge:mod_loaded",
+          "modid": "appmek"
+        }
+      ],
+      "recipe": {
+        "type": "minecraft:crafting_shapeless",
+        "category": "misc",
+        "ingredients": [
+          {
+            "item": "megacells:mega_chemical_cell_housing"
+          },
+          {
+            "item": "insaneae:cell_component_256p"
+          }
+        ],
+        "result": {
+          "item": "insaneae:chemical_storage_cell_256p"
+        }
+      }
+    }
+  ]
+}

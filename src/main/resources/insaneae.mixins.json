@@ -1,0 +1,26 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "jp.main.taikun.insaneae.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "insaneae.refmap.json",
+  "_comment": "壊れると危険な注入 (容量・スレッド上限・ツールチップ) はこちら。required=true なので失敗したら起動時に落ちる。加速カードの速度倍率だけは insaneae.speed.mixins.json に分けてあり、そちらは他 Mod と衝突しても落ちない。",
+  "mixins": [
+    "BasicCellInventoryMixin",
+    "CraftingCPUClusterMixin",
+    "CraftingCpuLogicMixin",
+    "ElapsedTimeTrackerInvoker",
+    "ExecutingCraftingJobAccessor",
+    "PatternProviderLogicAccessor",
+    "SlotAccessor",
+    "TaskProgressAccessor",
+    "TooltipsMixin"
+  ],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

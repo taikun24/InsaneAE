@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "formed=false": {
+      "model": "insaneae:block/crafting/16k_accelerator"
+    },
+    "formed=true": {
+      "model": "ae2:block/crafting/insaneae/16k_accelerator_formed"
+    }
+  }
+}

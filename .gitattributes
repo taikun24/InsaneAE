@@ -1,0 +1,9 @@
+# リポジトリ内は LF に統一 (チェックアウト時は各 OS のネイティブ)
+* text=auto eol=lf
+
+*.bat text eol=crlf
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+
+*.png binary
+*.jar binary

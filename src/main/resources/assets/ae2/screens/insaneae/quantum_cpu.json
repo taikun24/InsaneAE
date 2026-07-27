@@ -1,0 +1,64 @@
+{
+  "$schema": "../schema.json",
+  "$comment": "Quantum CPU の画面。StyleManager が ae2 名前空間固定で読むので assets/ae2 に置いている。ENCODED_PATTERN の座標は QuantumCpuScreen の定数と揃えること。ページ送り (prevPage/nextPage/page) は返却インベントリ STORAGE (top=134 の 18px 1 行) に被らないよう、その真下の top=152 に置いてある (プレイヤーインベントリは bottom=82 なので top=169 から)。",
+  "includes": ["../common/common.json", "../common/player_inventory.json"],
+  "generatedBackground": {
+    "width": 176,
+    "height": 251
+  },
+  "slots": {
+    "ENCODED_PATTERN": {
+      "$comment": "9x6 の 1 ページぶんだけ表示する。実際の配置は QuantumCpuScreen が上書きする。",
+      "left": 8,
+      "top": 22,
+      "grid": "BREAK_AFTER_9COLS"
+    },
+    "STORAGE": {
+      "left": 8,
+      "top": 134,
+      "grid": "HORIZONTAL"
+    }
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "block.insaneae.quantum_cpu"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    },
+    "page": {
+      "$comment": "中身は QuantumCpuScreen が毎フレーム差し替える。ページ送りボタンと同じ行。",
+      "text": {
+        "text": "1/30"
+      },
+      "color": "MUTED_TEXT_COLOR",
+      "align": "CENTER",
+      "position": {
+        "left": 137,
+        "top": 157
+      }
+    }
+  },
+  "widgets": {
+    "openPriority": {
+      "left": 154,
+      "top": 2
+    },
+    "lockReason": {
+      "$comment": "クラフトロック中だけ出る。同じ行のタイトルは QuantumCpuScreen が隠す。",
+      "left": 5,
+      "top": 2
+    },
+    "prevPage": {
+      "left": 104,
+      "top": 152
+    },
+    "nextPage": {
+      "left": 154,
+      "top": 152
+    }
+  }
+}

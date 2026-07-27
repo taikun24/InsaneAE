@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "insaneae:block/crafting/4g_storage"
+  }
+}
