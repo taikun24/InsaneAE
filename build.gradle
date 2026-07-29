@@ -108,7 +108,11 @@ minecraft {
         // By default, the server will crash when no gametests are provided.
         // The gametest system is also enabled by default for other run configs under the /test command.
         gameTestServer {
-            property 'forge.enabledGameTestNamespaces', mod_id
+            // AE2 のテストプロット基盤に相乗りしているので ae2 名前空間も有効にする
+            // (自前のプロットも ae2.<plot id> という名前で走る)。
+            property 'forge.enabledGameTestNamespaces', "${mod_id},ae2"
+            // これが無いと AE2 はプロットを GameTest として登録しない。
+            property 'appeng.tests', 'true'
         }
 
         data {

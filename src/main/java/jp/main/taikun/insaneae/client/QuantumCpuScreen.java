@@ -26,12 +26,14 @@ import java.util.List;
 /**
  * Quantum CPU の画面。AE2 のパターンプロバイダ画面 + 加速カードのパネル + パターン枠のページ送り。
  *
- * <p>パターン枠は {@value QuantumCpuBlockEntity#PATTERN_SLOTS} 個あり、
- * メニューには<b>全部</b>スロットとして並んでいる。ページ送りはこの画面が
- * 表示するスロットを差し替えるだけの<b>クライアント処理</b>で、サーバとのやり取りは無い
- * (=ページ番号のズレや同期待ちが起きない)。ページ外のスロットは
- * {@link AppEngSlot#setActive(boolean)} で非表示にするだけなので、
- * プレイヤーインベントリからの Shift クリックは<b>ページを跨いで空き枠を埋める</b>。</p>
+ * <p>パターン枠は {@value QuantumCpuBlockEntity#PATTERN_SLOTS} 個あるが、
+ * メニューに並ぶのは<b>1 ページぶん (9x6) だけ</b>。ページ送りはサーバに伝えて
+ * 窓をずらしてもらう ({@link QuantumCpuMenu#setPage(int)})。全枠をスロットにすると
+ * 毎 tick の同期が 1620 枠ぶん走って重いため。<b>切り替えた直後の 1 往復ぶんだけ
+ * 古い中身が見えることがある</b>。</p>
+ *
+ * <p>プレイヤーインベントリからの Shift クリックは、メニュー側で
+ * <b>ページを跨いで空き枠を埋める</b>ようにしてある ({@code QuantumCpuMenu#quickMoveStack})。</p>
  *
  * <p>レイアウトは {@code assets/ae2/screens/insaneae/quantum_cpu.json}
  * ({@code StyleManager} が ae2 名前空間固定で読むのでそちらに置いてある)。
@@ -110,17 +112,29 @@ public class QuantumCpuScreen extends PatternProviderScreen<QuantumCpuMenu> {
     }
 
     private void setPage(int newPage) {
-        int clamped = Math.max(0, Math.min(PAGES - 1, newPage));
+        int clamped = Math.max(0, Math.min(pageCount() - 1, newPage));
         if (clamped != page) {
             page = clamped;
+            menu.setPage(page);
             layoutPatternSlots();
         }
     }
 
-    /** 現在のページのスロットだけを並べ、それ以外は非表示にする。 */
+    private int pageCount() {
+        return menu.isServerPaged() ? menu.getPageCount() : PAGES;
+    }
+
+    /**
+     * 現在のページのスロットを並べる。
+     *
+     * <p>サーバ側でページ分割されている場合 ({@link QuantumCpuMenu#isServerPaged()})、
+     * メニューには 1 ページぶんのスロットしか無いので素直に並べるだけ。
+     * {@code PatternProviderMenuMixin} が効かなかった場合は全枠 (1620) 並んでいるので、
+     * 表示するページぶんだけ位置を決めて残りは非表示にする<b>旧来のやり方</b>に落ちる。</p>
+     */
     private void layoutPatternSlots() {
         List<Slot> slots = menu.getSlots(SlotSemantics.ENCODED_PATTERN);
-        int first = page * PER_PAGE;
+        int first = menu.isServerPaged() ? 0 : page * PER_PAGE;
 
         for (int index = 0; index < slots.size(); index++) {
             Slot slot = slots.get(index);
@@ -165,9 +179,9 @@ public class QuantumCpuScreen extends PatternProviderScreen<QuantumCpuMenu> {
     @Override
     protected void updateBeforeRender() {
         super.updateBeforeRender();
-        setTextContent("page", Component.literal((page + 1) + "/" + PAGES));
+        setTextContent("page", Component.literal((page + 1) + "/" + pageCount()));
         prevPage.active = page > 0;
-        nextPage.active = page < PAGES - 1;
+        nextPage.active = page < pageCount() - 1;
         // ロック表示 (lockReason) はタイトルと同じ行に出るので、出ている間はタイトルを引っ込める。
         setTextHidden("dialog_title", menu.getLockCraftingMode() != LockCraftingMode.NONE);
     }

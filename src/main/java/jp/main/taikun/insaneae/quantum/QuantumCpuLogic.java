@@ -22,7 +22,9 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Quantum CPU の頭脳。パターンプロバイダのロジックをそのまま使いつつ、
@@ -39,6 +41,11 @@ import java.util.List;
  * 以降は記憶した結果を使い回して個数を足すだけ</b>にしている。
  * さらに完成品はその場でネットワークに入れず {@link QuantumCpuBlockEntity} 側に貯め、
  * <b>1 tick に 1 回だけまとめて挿入</b>する (ME への挿入が一番重いため)。</p>
+ *
+ * <p>1620 枠あるパターン周りも AE2 のままでは効かないので 2 点変えてある:
+ * 「持っているか」の判定を<b>ハッシュ集合</b>にして 1 クラフトあたりの線形探索を無くし
+ * ({@link #patternSet})、パターンの読み直しを<b>1 tick に 1 回へまとめている</b>
+ * ({@link #updatePatterns()})。</p>
  */
 public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCraftingProvider {
 
@@ -62,6 +69,18 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
     private long remainingCrafts;
     private long budgetTick = Long.MIN_VALUE;
 
+    /**
+     * 入っているパターンの集合。
+     *
+     * <p>AE2 の {@link #getAvailablePatterns()} は {@code ArrayList} をそのまま返すので、
+     * {@code contains} が<b>パターン数に比例</b>する。通常のパターンプロバイダは 36 枠なので問題無いが、
+     * こちらは 1620 枠あり、しかも 1 クラフトごとに引く。ハッシュで持って O(1) にする。</p>
+     */
+    private final Set<IPatternDetails> patternSet = new HashSet<>();
+
+    /** パターンの再読み込みが必要か。{@link #flushPatternUpdate()} でまとめて処理する。 */
+    private boolean patternsDirty = true;
+
     private boolean warnedAboutFailedAssembly;
 
     public QuantumCpuLogic(IManagedGridNode mainNode, QuantumCpuBlockEntity host) {
@@ -69,6 +88,46 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
         this.mainNode = mainNode;
         this.host = host;
         Arrays.fill(cachedGrid, ItemStack.EMPTY);
+    }
+
+    // -------------------------------------------------------------- パターン管理
+
+    /**
+     * AE2 はパターンを<b>1 枚出し入れするたび</b>にこれを呼び、
+     * 全スロットのデコードとグリッドのクラフト索引の再構築を行う。
+     * 1620 枠あるとパターン端末やインポートバスでまとめて動かしたときに刺さるので、
+     * ここでは印だけ付けて {@link #flushPatternUpdate()} に回す。
+     *
+     * <p>遅れは最大 1 tick。{@link QuantumCpuBlockEntity#serverTick()} が毎 tick 流すほか、
+     * パターンを実際に参照する経路 ({@link #getAvailablePatterns()} / {@link #hasPattern}) が
+     * 必ず先に流すので、古い一覧が見えることはない。</p>
+     */
+    @Override
+    public void updatePatterns() {
+        patternsDirty = true;
+    }
+
+    /** 溜めていたパターン更新を実行する。何度呼んでも安全。 */
+    public void flushPatternUpdate() {
+        if (!patternsDirty) {
+            return;
+        }
+        patternsDirty = false;
+        super.updatePatterns();
+        patternSet.clear();
+        patternSet.addAll(super.getAvailablePatterns());
+    }
+
+    @Override
+    public List<IPatternDetails> getAvailablePatterns() {
+        flushPatternUpdate();
+        return super.getAvailablePatterns();
+    }
+
+    /** このプロバイダがそのパターンを持っているか。{@code getAvailablePatterns().contains} の O(1) 版。 */
+    private boolean hasPattern(IPatternDetails details) {
+        flushPatternUpdate();
+        return patternSet.contains(details);
     }
 
     @Override
@@ -83,7 +142,7 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
         if (level == null || level.isClientSide()) {
             return false;
         }
-        if (!mainNode.isActive() || !getAvailablePatterns().contains(patternDetails)) {
+        if (!mainNode.isActive() || !hasPattern(patternDetails)) {
             return false;
         }
         if (getCraftingLockedReason() != LockCraftingMode.NONE) {
@@ -125,7 +184,7 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
         if (level == null || level.isClientSide()) {
             return 0;
         }
-        if (!mainNode.isActive() || !getAvailablePatterns().contains(details)) {
+        if (!mainNode.isActive() || !hasPattern(details)) {
             return 0;
         }
         if (getCraftingLockedReason() != LockCraftingMode.NONE || super.isBusy()) {

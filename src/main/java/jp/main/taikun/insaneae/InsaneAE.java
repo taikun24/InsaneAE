@@ -2,6 +2,7 @@ package jp.main.taikun.insaneae;
 
 import com.mojang.logging.LogUtils;
 import jp.main.taikun.insaneae.client.InsaneAEClient;
+import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.datagen.ModBlockLootProvider;
 import jp.main.taikun.insaneae.datagen.ModBlockStateProvider;
 import jp.main.taikun.insaneae.datagen.ModItemModelProvider;
@@ -25,7 +26,9 @@ import jp.main.taikun.insaneae.registries.ModUpgrades;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
@@ -44,6 +47,7 @@ public class InsaneAE {
 
     public InsaneAE(FMLJavaModLoadingContext context) {
         IEventBus bus = context.getModEventBus();
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, InsaneAEConfig.SPEC);
         ModBlocks.register(bus);
         ModItems.register(bus);
         // appmek 未導入の環境では AppMekCells をロードしてはいけないので、
@@ -96,6 +100,11 @@ public class InsaneAE {
                 jp.main.taikun.insaneae.cell.InsaneCreativeCellHandler.INSTANCE));
         // 加速カードを AE2 の対応機械に登録する。
         event.enqueueWork(ModUpgrades::registerUpgrades);
+        // 検証用のテストプロット。AE2 のテスト基盤が有効なときだけ載せる
+        // (`./gradlew runGameTestServer`)。通常のプレイでは何も登録されない。
+        if (Boolean.getBoolean("appeng.tests")) {
+            event.enqueueWork(jp.main.taikun.insaneae.testplots.InsaneAETestPlots::register);
+        }
         LOGGER.info("InsaneAE: {} crafting storage tiers registered.", ModBlocks.CRAFTING_STORAGE.size());
     }
 }

@@ -8,10 +8,13 @@
   "priority": 1500,
   "mixins": [
     "CraftingCpuBudgetMixin",
+    "CraftingTreeNodeMixin",
+    "CraftingTreeProcessInvoker",
     "InscriberBlockEntityMixin",
     "IOBusPartMixin",
     "IOPortBlockEntityMixin",
-    "MolecularAssemblerBlockEntityMixin"
+    "MolecularAssemblerBlockEntityMixin",
+    "PatternProviderMenuMixin"
   ],
   "client": [
     "ScreenStyleMixin"

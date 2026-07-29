@@ -89,6 +89,9 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
     private static final String NBT_UPGRADES = "upgrades";
     private static final String NBT_PENDING = "pendingOutputs";
 
+    /** 完成品が詰まっている間、何 tick おきに保存するか。 */
+    private static final int PENDING_SAVE_INTERVAL = 20;
+
     private final QuantumCpuLogic logic = new QuantumCpuLogic(getMainNode(), this);
     private final IUpgradeInventory upgrades = UpgradeInventories.forMachine(
             ModBlocks.QUANTUM_CPU.get(), MAX_ACCELERATION_CARDS, this::saveChanges);
@@ -99,6 +102,11 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
      * ME への挿入は 1 tick に 1 回だけまとめて行うので、その間ここに溜まる。
      */
     private final KeyCounter pendingOutputs = new KeyCounter();
+
+    /** 直近の保存時点で {@link #pendingOutputs} が空でなかったか。 */
+    private boolean pendingWasSaved;
+    /** 詰まっている状態を最後に保存してからの tick 数。 */
+    private int ticksSincePendingSave;
 
     public QuantumCpuBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -119,16 +127,25 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
 
     // ------------------------------------------------------- 完成品の受け渡し
 
-    /** 完成品・端材を溜める。実際の ME への挿入は次の tick にまとめて行う。 */
+    /**
+     * 完成品・端材を溜める。実際の ME への挿入は {@link #serverTick()} でまとめて行う。
+     *
+     * <p>ここで {@code alertDevice} は呼ばない。このブロックはブロック側の ticker で
+     * <b>毎 tick 必ず動く</b>ので起こしてもらう必要が無く、
+     * 呼ぶとクラフト 1 回ごとにグリッドのティックキューを並べ替えることになる
+     * ({@code TickManagerService#alertDevice} は {@code updateQueuePosition} まで走る)。</p>
+     */
     void addPendingOutput(@Nullable AEKey what, long amount) {
         if (what != null && amount > 0) {
             pendingOutputs.add(what, amount);
-            getMainNode().ifPresent((grid, node) -> grid.getTickManager().alertDevice(node));
         }
     }
 
     @Override
     public void serverTick() {
+        // 溜めておいたパターン更新をここで流す (遅れは最大 1 tick)。
+        logic.flushPatternUpdate();
+
         if (pendingOutputs.isEmpty()) {
             return;
         }
@@ -138,7 +155,6 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
         }
 
         MEStorage storage = grid.getStorageService().getInventory();
-        boolean changed = false;
         for (var entry : pendingOutputs) {
             long amount = entry.getLongValue();
             if (amount <= 0) {
@@ -147,11 +163,33 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
             long inserted = storage.insert(entry.getKey(), amount, Actionable.MODULATE, actionSource);
             if (inserted > 0) {
                 entry.setValue(amount - inserted);
-                changed = true;
             }
         }
         pendingOutputs.removeZeros();
-        if (changed) {
+        savePendingIfNeeded();
+    }
+
+    /**
+     * 溜まっている完成品をディスクに残す必要があるときだけ {@code saveChanges()} する。
+     *
+     * <p>{@code saveChanges()} はチャンクに dirty を立てるので、
+     * 毎 tick 呼ぶと<b>オートセーブのたびに 1620 枠ぶんのパターン NBT を書き出す</b>ことになる。
+     * 普段は溜めた完成品をその tick のうちに全部 ME に入れられる = 保存すべき内容が
+     * 「空のまま」で変わらないので、保存自体が要らない。</p>
+     *
+     * <p>入りきらずに残っている間だけ保存し (詰まっている間は {@value #PENDING_SAVE_INTERVAL} tick に 1 回)、
+     * 捌けきったら「空になった」ことを 1 回だけ保存する。</p>
+     */
+    private void savePendingIfNeeded() {
+        if (!pendingOutputs.isEmpty()) {
+            if (!pendingWasSaved || ++ticksSincePendingSave >= PENDING_SAVE_INTERVAL) {
+                pendingWasSaved = true;
+                ticksSincePendingSave = 0;
+                saveChanges();
+            }
+        } else if (pendingWasSaved) {
+            pendingWasSaved = false;
+            ticksSincePendingSave = 0;
             saveChanges();
         }
     }
@@ -265,6 +303,9 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
                 pendingOutputs.add(stack.what(), stack.amount());
             }
         }
+        // 読み込んだ時点の中身は「保存済み」。空になったときに 1 回だけ保存すればよい。
+        pendingWasSaved = !pendingOutputs.isEmpty();
+        ticksSincePendingSave = 0;
     }
 
     @Override
