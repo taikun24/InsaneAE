@@ -16,6 +16,8 @@ import appeng.server.testplots.TestPlots;
 import appeng.server.testworld.PlotBuilder;
 import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.crafting.CraftingCalculationBatch;
+import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
+import jp.main.taikun.insaneae.registries.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.world.item.ItemStack;
@@ -122,12 +124,154 @@ public final class InsaneAETestPlots {
         });
     }
 
+    /**
+     * <b>連鎖クラフト</b>でも計算結果が変わらないことを確かめる。
+     *
+     * <p>「中間素材のパターンが反映されない」という報告を受けての回帰テスト。
+     * ダイヤ ← 銅 ← 鉄 の 2 段構えにして、さらに<b>銅を作れるパターンを 2 つ</b>登録する
+     * (2 つ目は材料が在庫に無いので必ず失敗する枝)。
+     * パターンが複数あるノードは AE2 が {@code limitsQuantity()} に関係なく
+     * 1 クラフトずつ回すので、まとめ処理が一番効く一方で一番危ない経路になる。</p>
+     */
+    @TestPlot("insaneae_crafting_batch_chain")
+    public static void craftingBatchChain(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,2] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
+            // 鉄だけ無限にある。金は無いので「金 → 銅」の枝は必ず失敗する。
+            drive.getInternalInventory().addItems(CreativeCellItem.ofItems(Items.IRON_INGOT));
+        });
+        plot.block("2 0 0", AEBlocks.PATTERN_PROVIDER);
+
+        plot.test(helper -> {
+            var state = new Object() {
+                Future<ICraftingPlan> pending;
+                ICraftingPlan withoutBatching;
+                ICraftingPlan withBatching;
+                long batchedBefore;
+            };
+
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var provider = (PatternProviderBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
+                var patterns = provider.getLogic().getPatternInv();
+                // 鉄 2 → 銅 1
+                patterns.addItems(processingPattern(Items.IRON_INGOT, 2, Items.COPPER_INGOT, 1));
+                // 金 2 → 銅 1 (材料が無いので使えない枝)
+                patterns.addItems(processingPattern(Items.GOLD_INGOT, 2, Items.COPPER_INGOT, 1));
+                // 銅 4 → ダイヤ 1
+                patterns.addItems(processingPattern(Items.COPPER_INGOT, 4, Items.DIAMOND, 1));
+            });
+
+            sequence.thenExecuteAfter(1, () -> {
+                InsaneAEConfig.setBatchCraftingCalculation(false);
+                state.pending = beginCalculation(helper, AEItemKey.of(Items.DIAMOND), 512);
+            });
+            sequence.thenWaitUntil(() -> state.withoutBatching = awaitPlan(state.pending));
+
+            sequence.thenExecute(() -> {
+                InsaneAEConfig.setBatchCraftingCalculation(true);
+                state.batchedBefore = CraftingCalculationBatch.batchedCrafts;
+                state.pending = beginCalculation(helper, AEItemKey.of(Items.DIAMOND), 512);
+            });
+            sequence.thenWaitUntil(() -> state.withBatching = awaitPlan(state.pending));
+
+            sequence.thenExecute(() -> {
+                var expected = state.withoutBatching;
+                var actual = state.withBatching;
+
+                helper.check(CraftingCalculationBatch.batchedCrafts > state.batchedBefore,
+                        "まとめ処理が一度も働いていない");
+                helper.check(!expected.simulation(),
+                        "中間素材を作れず simulation になった: テストの前提が崩れている"
+                                + " missing=" + toMap(expected.missingItems())
+                                + " used=" + toMap(expected.usedItems())
+                                + " patterns=" + expected.patternTimes().size());
+                helper.check(expected.simulation() == actual.simulation(),
+                        "simulation フラグが違う (まとめ処理側で中間素材が作れなくなっている)");
+                helper.check(expected.bytes() == actual.bytes(),
+                        "必要バイト数が違う: " + expected.bytes() + " → " + actual.bytes());
+                checkSameCounts(helper, "消費アイテム", expected.usedItems(), actual.usedItems());
+                checkSameCounts(helper, "不足アイテム", expected.missingItems(), actual.missingItems());
+                checkSamePatternTimes(helper, expected, actual);
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    /**
+     * <b>Quantum CPU に入れたパターン</b>が連鎖クラフトで使われることを確かめる。
+     *
+     * <p>「登録してあるクラフトパターンが反映されない」という報告を受けての回帰テスト。
+     * Quantum CPU はパターンの読み直しを 1 tick 遅らせている ({@code QuantumCpuLogic#updatePatterns})
+     * ので、グリッドのクラフト索引に載り損ねていないかをここで見る。</p>
+     */
+    @TestPlot("insaneae_quantum_cpu_patterns")
+    public static void quantumCpuPatterns(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,2] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
+            drive.getInternalInventory().addItems(CreativeCellItem.ofItems(Items.IRON_INGOT));
+        });
+        plot.blockState("2 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        plot.test(helper -> {
+            var state = new Object() {
+                Future<ICraftingPlan> pending;
+                ICraftingPlan plan;
+            };
+
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
+                var patterns = cpu.getLogic().getPatternInv();
+                patterns.addItems(processingPattern(Items.IRON_INGOT, 2, Items.COPPER_INGOT, 1));
+                patterns.addItems(processingPattern(Items.COPPER_INGOT, 4, Items.DIAMOND, 1));
+            });
+
+            // パターン投入の直後に計算を始める (遅延した読み直しが間に合っているかを見たいので待たない)。
+            sequence.thenExecute(() -> state.pending = beginCalculation(helper, AEItemKey.of(Items.DIAMOND), 64));
+            sequence.thenWaitUntil(() -> state.plan = awaitPlan(state.pending));
+
+            sequence.thenExecute(() -> {
+                helper.check(!state.plan.simulation(),
+                        "Quantum CPU のパターンが使われなかった: missing=" + toMap(state.plan.missingItems()));
+                helper.check(state.plan.missingItems().isEmpty(),
+                        "不足アイテムが出た: " + toMap(state.plan.missingItems()));
+                helper.check(state.plan.patternTimes().size() == 2,
+                        "使われたパターンが 2 種類ではない: " + state.plan.patternTimes().size());
+                // ダイヤ 64 個 = 銅 256 個 = 鉄 512 個
+                helper.check(toMap(state.plan.usedItems()).getOrDefault(AEItemKey.of(Items.IRON_INGOT), 0L) == 512L,
+                        "鉄の消費数が合わない: " + toMap(state.plan.usedItems()));
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    private static ItemStack processingPattern(net.minecraft.world.item.Item input, long inputAmount,
+            net.minecraft.world.item.Item output, long outputAmount) {
+        return appeng.api.crafting.PatternDetailsHelper.encodeProcessingPattern(
+                new appeng.api.stacks.GenericStack[] {
+                        new appeng.api.stacks.GenericStack(AEItemKey.of(input), inputAmount) },
+                new appeng.api.stacks.GenericStack[] {
+                        new appeng.api.stacks.GenericStack(AEItemKey.of(output), outputAmount) });
+    }
+
     private static Future<ICraftingPlan> beginCalculation(appeng.server.testworld.PlotTestHelper helper) {
+        return beginCalculation(helper, AEItemKey.of(Items.CAKE), CAKES);
+    }
+
+    private static Future<ICraftingPlan> beginCalculation(appeng.server.testworld.PlotTestHelper helper,
+            AEItemKey what, long amount) {
         var grid = helper.getGrid(BlockPos.ZERO);
         var source = new MachineSource(grid::getPivot);
         ICraftingSimulationRequester requester = () -> source;
         return grid.getCraftingService().beginCraftingCalculation(
-                grid.getPivot().getLevel(), requester, AEItemKey.of(Items.CAKE), CAKES,
+                grid.getPivot().getLevel(), requester, what, amount,
                 CalculationStrategy.REPORT_MISSING_ITEMS);
     }
 
@@ -171,3 +315,4 @@ public final class InsaneAETestPlots {
         return map;
     }
 }
+
