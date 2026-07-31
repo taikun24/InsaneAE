@@ -1,5 +1,9 @@
 package jp.main.taikun.insaneae.quantum;
 
+import jp.main.taikun.insaneae.registries.ModBlockEntities;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.minecraft.core.HolderLookup;
+import appeng.api.AECapabilities;
 import appeng.api.config.Actionable;
 import appeng.api.implementations.blockentities.PatternContainerGroup;
 import appeng.api.inventories.ISegmentedInventory;
@@ -17,7 +21,7 @@ import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.api.util.AECableType;
 import appeng.blockentity.ServerTickingBlockEntity;
-import appeng.blockentity.grid.AENetworkBlockEntity;
+import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.core.localization.GuiText;
 import appeng.core.localization.Tooltips;
 import appeng.helpers.patternprovider.PatternProviderLogic;
@@ -25,7 +29,7 @@ import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import appeng.me.helpers.MachineSource;
 import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuLocator;
+import appeng.menu.locator.MenuHostLocator;
 import jp.main.taikun.insaneae.menu.QuantumCpuMenu;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
@@ -42,8 +46,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.util.LazyOptional;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.EnumSet;
@@ -60,7 +62,7 @@ import java.util.List;
  * {@link ModUpgrades#QUANTUM_ACCELERATION_CARD 加速カード} 1 枚ごとに
  * {@link #MULTIPLIER_PER_CARD} 倍になり、{@link #MAX_ACCELERATION_CARDS} 枚で long の上限に達する。</p>
  */
-public class QuantumCpuBlockEntity extends AENetworkBlockEntity
+public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
         implements PatternProviderLogicHost, IUpgradeableObject, ServerTickingBlockEntity {
 
     /** カード無しでの 1 tick あたりの組み立て回数。 */
@@ -235,7 +237,7 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
     }
 
     @Override
-    public void openMenu(Player player, MenuLocator locator) {
+    public void openMenu(Player player, MenuHostLocator locator) {
         MenuOpener.open(QuantumCpuMenu.TYPE, player, locator);
     }
 
@@ -274,31 +276,34 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
         return AECableType.SMART;
     }
 
+    // 1.20.5 以降、NBT の読み書きにはレジストリ参照 (HolderLookup.Provider) が要る。
+    // データコンポーネントを含む ItemStack をタグ化するのにレジストリが必要になったため。
     @Override
-    public void saveAdditional(CompoundTag data) {
-        super.saveAdditional(data);
-        logic.writeToNBT(data);
-        upgrades.writeToNBT(data, NBT_UPGRADES);
+    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
+        super.saveAdditional(data, registries);
+        logic.writeToNBT(data, registries);
+        upgrades.writeToNBT(data, NBT_UPGRADES, registries);
 
         ListTag pending = new ListTag();
         for (var entry : pendingOutputs) {
             if (entry.getLongValue() > 0) {
-                pending.add(GenericStack.writeTag(new GenericStack(entry.getKey(), entry.getLongValue())));
+                pending.add(GenericStack.writeTag(registries,
+                        new GenericStack(entry.getKey(), entry.getLongValue())));
             }
         }
         data.put(NBT_PENDING, pending);
     }
 
     @Override
-    public void loadTag(CompoundTag data) {
-        super.loadTag(data);
-        logic.readFromNBT(data);
-        upgrades.readFromNBT(data, NBT_UPGRADES);
+    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
+        super.loadTag(data, registries);
+        logic.readFromNBT(data, registries);
+        upgrades.readFromNBT(data, NBT_UPGRADES, registries);
 
         pendingOutputs.reset();
         ListTag pending = data.getList(NBT_PENDING, Tag.TAG_COMPOUND);
         for (int i = 0; i < pending.size(); i++) {
-            GenericStack stack = GenericStack.readTag(pending.getCompound(i));
+            GenericStack stack = GenericStack.readTag(registries, pending.getCompound(i));
             if (stack != null) {
                 pendingOutputs.add(stack.what(), stack.amount());
             }
@@ -328,9 +333,19 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
         pendingOutputs.reset();
     }
 
-    @Override
-    public <T> LazyOptional<T> getCapability(Capability<T> cap, @Nullable Direction side) {
-        LazyOptional<T> fromLogic = logic.getCapability(cap);
-        return fromLogic.isPresent() ? fromLogic : super.getCapability(cap, side);
+    /**
+     * 取り出し用インベントリ (クラフト結果の戻り先) を capability として公開する。
+     *
+     * <p>1.20.1 では {@code getCapability} を override して
+     * {@code PatternProviderLogic#getCapability} に委譲していたが、
+     * NeoForge では capability は BlockEntityType ごとに
+     * {@link RegisterCapabilitiesEvent} で登録する方式に変わった。
+     * AE2 も本家パターンプロバイダを {@code InitCapabilityProviders} で同じように登録している。</p>
+     */
+    public static void registerCapabilities(RegisterCapabilitiesEvent event) {
+        event.registerBlockEntity(
+                AECapabilities.GENERIC_INTERNAL_INV,
+                ModBlockEntities.QUANTUM_CPU.get(),
+                (blockEntity, context) -> blockEntity.getLogic().getReturnInv());
     }
 }

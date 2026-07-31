@@ -156,8 +156,9 @@ public class QuantumCpuScreen extends PatternProviderScreen<QuantumCpuMenu> {
     }
 
     @Override
-    public boolean mouseScrolled(double x, double y, double wheelDelta) {
-        if (super.mouseScrolled(x, y, wheelDelta)) {
+    // 1.21 で横スクロール (scrollX) が引数に加わった。ページ送りは縦だけ見る。
+    public boolean mouseScrolled(double x, double y, double scrollX, double wheelDelta) {
+        if (super.mouseScrolled(x, y, scrollX, wheelDelta)) {
             return true;
         }
         if (wheelDelta != 0 && isOverPatternGrid(x, y)) {

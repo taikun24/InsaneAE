@@ -1,6 +1,7 @@
 package jp.main.taikun.insaneae.datagen;
 
 import jp.main.taikun.insaneae.registries.ModBlocks;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.data.loot.BlockLootSubProvider;
 import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.level.block.Block;
@@ -14,8 +15,9 @@ import java.util.stream.Stream;
  */
 public class ModBlockLootProvider extends BlockLootSubProvider {
 
-    public ModBlockLootProvider() {
-        super(Set.of(), FeatureFlags.REGISTRY.allFlags());
+    // 1.21 から BlockLootSubProvider はレジストリ参照 (HolderLookup.Provider) を要求する。
+    public ModBlockLootProvider(HolderLookup.Provider registries) {
+        super(Set.of(), FeatureFlags.REGISTRY.allFlags(), registries);
     }
 
     @Override

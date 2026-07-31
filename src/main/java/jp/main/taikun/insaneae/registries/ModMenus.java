@@ -1,12 +1,12 @@
 package jp.main.taikun.insaneae.registries;
 
+import net.minecraft.core.registries.Registries;
 import jp.main.taikun.insaneae.InsaneAE;
 import jp.main.taikun.insaneae.menu.QuantumCpuMenu;
 import net.minecraft.world.inventory.MenuType;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 /**
  * 独自 GUI の {@link MenuType}。
@@ -16,9 +16,9 @@ import net.minecraftforge.registries.RegistryObject;
  */
 public class ModMenus {
     private static final DeferredRegister<MenuType<?>> MENU_TYPES =
-            DeferredRegister.create(ForgeRegistries.MENU_TYPES, InsaneAE.MODID);
+            DeferredRegister.create(Registries.MENU, InsaneAE.MODID);
 
-    public static final RegistryObject<MenuType<QuantumCpuMenu>> QUANTUM_CPU =
+    public static final DeferredHolder<MenuType<?>, MenuType<QuantumCpuMenu>> QUANTUM_CPU =
             MENU_TYPES.register("quantum_cpu", () -> QuantumCpuMenu.TYPE);
 
     public static void register(IEventBus bus) {

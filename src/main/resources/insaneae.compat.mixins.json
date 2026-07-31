@@ -3,8 +3,7 @@
   "required": false,
   "minVersion": "0.8",
   "package": "jp.main.taikun.insaneae.mixin",
-  "compatibilityLevel": "JAVA_17",
-  "refmap": "insaneae.refmap.json",
+  "compatibilityLevel": "JAVA_21",
   "priority": 1500,
   "mixins": [
     "CraftingCpuBudgetMixin",

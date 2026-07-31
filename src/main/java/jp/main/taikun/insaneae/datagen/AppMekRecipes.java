@@ -1,10 +1,10 @@
 package jp.main.taikun.insaneae.datagen;
 
 import appeng.core.definitions.AEBlocks;
-import gripe._90.megacells.integration.appmek.AppMekItems;
+import gripe._90.megacells.definition.MEGAItems;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.integration.appmek.AppMekCells;
-import net.minecraft.data.recipes.FinishedRecipe;
+import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.world.level.ItemLike;
 
 import java.util.function.Consumer;
@@ -22,8 +22,8 @@ final class AppMekRecipes {
     private AppMekRecipes() {
     }
 
-    static void build(Consumer<FinishedRecipe> consumer, InsaneCraftingUnitType tier, ItemLike component) {
-        ItemLike housing = AppMekItems.MEGA_CHEMICAL_CELL_HOUSING;
+    static void build(RecipeOutput consumer, InsaneCraftingUnitType tier, ItemLike component) {
+        ItemLike housing = MEGAItems.MEGA_CHEMICAL_CELL_HOUSING;
 
         ModRecipeProvider.conditionalShapeless(consumer,
                 AppMekCells.CHEMICAL_CELLS.get(tier).get(), component,
@@ -31,7 +31,7 @@ final class AppMekRecipes {
 
         ModRecipeProvider.conditionalShapeless(consumer,
                 AppMekCells.PORTABLE_CHEMICAL_CELLS.get(tier).get(), component,
-                b -> b.requires(AEBlocks.CHEST)
+                b -> b.requires(AEBlocks.ME_CHEST)
                         .requires(component)
                         .requires(AEBlocks.DENSE_ENERGY_CELL)
                         .requires(housing));

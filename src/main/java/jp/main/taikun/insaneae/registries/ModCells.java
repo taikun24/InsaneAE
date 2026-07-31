@@ -1,5 +1,6 @@
 package jp.main.taikun.insaneae.registries;
 
+import net.minecraft.core.registries.Registries;
 import appeng.api.stacks.AEKeyType;
 import appeng.items.storage.StorageTier;
 import appeng.menu.me.common.MEStorageMenu;
@@ -12,10 +13,9 @@ import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.util.TieredNames;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.ItemLike;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -32,7 +32,7 @@ import java.util.function.Supplier;
  */
 public class ModCells {
     private static final DeferredRegister<Item> ITEMS =
-            DeferredRegister.create(ForgeRegistries.ITEMS, InsaneAE.MODID);
+            DeferredRegister.create(Registries.ITEM, InsaneAE.MODID);
 
     /** 型ごとに予約されるバイト数。容量に対して十分小さい固定値で足りる。 */
     public static final int BYTES_PER_TYPE = 8192;
@@ -47,13 +47,13 @@ public class ModCells {
 
     public static final Map<InsaneCraftingUnitType, StorageTier> TIERS =
             new EnumMap<>(InsaneCraftingUnitType.class);
-    public static final Map<InsaneCraftingUnitType, RegistryObject<Item>> ITEM_CELLS =
+    public static final Map<InsaneCraftingUnitType, DeferredHolder<Item, Item>> ITEM_CELLS =
             new EnumMap<>(InsaneCraftingUnitType.class);
-    public static final Map<InsaneCraftingUnitType, RegistryObject<Item>> FLUID_CELLS =
+    public static final Map<InsaneCraftingUnitType, DeferredHolder<Item, Item>> FLUID_CELLS =
             new EnumMap<>(InsaneCraftingUnitType.class);
-    public static final Map<InsaneCraftingUnitType, RegistryObject<Item>> PORTABLE_ITEM_CELLS =
+    public static final Map<InsaneCraftingUnitType, DeferredHolder<Item, Item>> PORTABLE_ITEM_CELLS =
             new EnumMap<>(InsaneCraftingUnitType.class);
-    public static final Map<InsaneCraftingUnitType, RegistryObject<Item>> PORTABLE_FLUID_CELLS =
+    public static final Map<InsaneCraftingUnitType, DeferredHolder<Item, Item>> PORTABLE_FLUID_CELLS =
             new EnumMap<>(InsaneCraftingUnitType.class);
 
     /**
@@ -61,7 +61,7 @@ public class ModCells {
      * 報告する在庫量が 21 億 ({@code int}) ではなく約 922 京 ({@code long})。
      * 種類の制限は無いので 1 個でアイテムも液体も化学物質もまかなう。
      */
-    public static final RegistryObject<Item> CREATIVE_CELL =
+    public static final DeferredHolder<Item, Item> CREATIVE_CELL =
             register("creative_cell", () -> new InsaneCreativeCellItem(new Item.Properties()));
 
     static {
@@ -131,7 +131,7 @@ public class ModCells {
     }
 
     /** 化学物質セルなど、他クラスからアイテムを追加するための入口。 */
-    public static RegistryObject<Item> register(String name, Supplier<Item> factory) {
+    public static DeferredHolder<Item, Item> register(String name, Supplier<Item> factory) {
         return ITEMS.register(name, factory);
     }
 

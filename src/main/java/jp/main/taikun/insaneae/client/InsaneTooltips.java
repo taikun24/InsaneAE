@@ -6,8 +6,8 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 
 import java.util.IdentityHashMap;
 import java.util.Locale;
@@ -50,7 +50,7 @@ public final class InsaneTooltips {
 
     /** クライアント初期化時に 1 度だけ呼ぶ。 */
     public static void register() {
-        MinecraftForge.EVENT_BUS.addListener(InsaneTooltips::onTooltip);
+        NeoForge.EVENT_BUS.addListener(InsaneTooltips::onTooltip);
     }
 
     private static void onTooltip(ItemTooltipEvent event) {

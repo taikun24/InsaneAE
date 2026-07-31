@@ -1,5 +1,6 @@
 package jp.main.taikun.insaneae.registries;
 
+import net.minecraft.core.registries.Registries;
 import appeng.api.upgrades.Upgrades;
 import appeng.core.definitions.AEBlocks;
 import appeng.core.definitions.AEParts;
@@ -10,10 +11,9 @@ import jp.main.taikun.insaneae.upgrade.InsaneSpeedCardType;
 import jp.main.taikun.insaneae.upgrade.QuantumAccelerationCardItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.ItemLike;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -27,7 +27,7 @@ import java.util.Map;
  */
 public class ModUpgrades {
     private static final DeferredRegister<Item> ITEMS =
-            DeferredRegister.create(ForgeRegistries.ITEMS, InsaneAE.MODID);
+            DeferredRegister.create(Registries.ITEM, InsaneAE.MODID);
 
     /** 1 機械あたりの取り付け上限。倍率が大きいので 1 枚で十分。 */
     private static final int MAX_INSTALLED = 1;
@@ -40,17 +40,17 @@ public class ModUpgrades {
             AEBlocks.INSCRIBER,
             AEBlocks.IO_PORT);
 
-    public static final Map<InsaneSpeedCardType, RegistryObject<Item>> SPEED_CARDS =
+    public static final Map<InsaneSpeedCardType, DeferredHolder<Item, Item>> SPEED_CARDS =
             new EnumMap<>(InsaneSpeedCardType.class);
 
     /** Quantum CPU 専用の加速カード。1 枚ごとに組み立て速度が 256 倍。 */
-    public static final RegistryObject<Item> QUANTUM_ACCELERATION_CARD =
+    public static final DeferredHolder<Item, Item> QUANTUM_ACCELERATION_CARD =
             ITEMS.register("quantum_acceleration_card",
                     () -> new QuantumAccelerationCardItem(new Item.Properties()));
 
     static {
         for (InsaneSpeedCardType type : InsaneSpeedCardType.values()) {
-            RegistryObject<Item> card = ITEMS.register(type.id(),
+            DeferredHolder<Item, Item> card = ITEMS.register(type.id(),
                     () -> new InsaneSpeedCardItem(new Item.Properties(), type));
             type.setItem(card::get);
             SPEED_CARDS.put(type, card);

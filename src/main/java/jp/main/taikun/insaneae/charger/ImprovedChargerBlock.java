@@ -5,6 +5,7 @@ import appeng.util.InteractionUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -36,18 +37,41 @@ public class ImprovedChargerBlock extends AEBaseEntityBlock<ImprovedChargerBlock
         return 2;
     }
 
+    // 1.20.5 でブロックの右クリックは「手に持っている場合 (useItemOn)」と
+    // 「素手の場合 (useWithoutItem)」に分割され、AE2 の onActivated も無くなった。
+    // どちらも同じ「入れる／取り出す」を行うので、実処理は activate() に寄せてある。
+
     @Override
-    public InteractionResult onActivated(Level level, BlockPos pos, Player player, InteractionHand hand,
-            @Nullable ItemStack heldItem, BlockHitResult hit) {
+    protected ItemInteractionResult useItemOn(ItemStack heldItem, BlockState state, Level level, BlockPos pos,
+            Player player, InteractionHand hand, BlockHitResult hit) {
+        if (InteractionUtil.isInAlternateUseMode(player)) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        // メモリーカード等、AE2 側が処理するものを先に通す。
+        var handled = super.useItemOn(heldItem, state, level, pos, player, hand, hit);
+        if (handled != ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION) {
+            return handled;
+        }
+        activate(level, pos, player);
+        return ItemInteractionResult.sidedSuccess(level.isClientSide());
+    }
+
+    @Override
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
+            BlockHitResult hit) {
         if (InteractionUtil.isInAlternateUseMode(player)) {
             return InteractionResult.PASS;
         }
+        activate(level, pos, player);
+        return InteractionResult.sidedSuccess(level.isClientSide());
+    }
+
+    private void activate(Level level, BlockPos pos, Player player) {
         if (!level.isClientSide()) {
             ImprovedChargerBlockEntity be = getBlockEntity(level, pos);
             if (be != null) {
                 be.activate(player);
             }
         }
-        return InteractionResult.sidedSuccess(level.isClientSide());
     }
 }

@@ -1,5 +1,6 @@
 package jp.main.taikun.insaneae.registries;
 
+import net.minecraft.core.registries.Registries;
 import appeng.blockentity.crafting.CraftingBlockEntity;
 import appeng.blockentity.networking.EnergyCellBlockEntity;
 import jp.main.taikun.insaneae.InsaneAE;
@@ -9,10 +10,9 @@ import jp.main.taikun.insaneae.energy.SolarPanelBlockEntity;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 /**
  * 独自の {@link CraftingBlockEntity} 用 BlockEntityType。
@@ -22,20 +22,20 @@ import net.minecraftforge.registries.RegistryObject;
  */
 public class ModBlockEntities {
     private static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =
-            DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, InsaneAE.MODID);
+            DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, InsaneAE.MODID);
 
-    public static final RegistryObject<BlockEntityType<CraftingBlockEntity>> CRAFTING_STORAGE =
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CraftingBlockEntity>> CRAFTING_STORAGE =
             BLOCK_ENTITY_TYPES.register("crafting_storage", () -> {
                 Block[] blocks = ModBlocks.allCraftingBlocks().toArray(Block[]::new);
                 // build(null): 全階層ブロックで有効な CraftingBlockEntity 型を構築。
                 // CraftingBlockEntity のコンストラクタは type を要求するため、遅延解決する
-                // RegistryObject を参照するラムダで供給する (実行はワールドロード時)。
+                // DeferredHolder を参照するラムダで供給する (実行はワールドロード時)。
                 return BlockEntityType.Builder
                         .of((pos, state) -> new CraftingBlockEntity(type(), pos, state), blocks)
                         .build(null);
             });
 
-    public static final RegistryObject<BlockEntityType<QuantumCpuBlockEntity>> QUANTUM_CPU =
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<QuantumCpuBlockEntity>> QUANTUM_CPU =
             BLOCK_ENTITY_TYPES.register("quantum_cpu", () -> BlockEntityType.Builder
                     .of((pos, state) -> new QuantumCpuBlockEntity(quantumCpuType(), pos, state),
                             ModBlocks.QUANTUM_CPU.get())
@@ -47,7 +47,7 @@ public class ModBlockEntities {
      * <p>{@link EnergyCellBlockEntity} は容量・充電速度・優先度をすべて
      * {@code getBlockState().getBlock()} 経由で引くので、AE2 のクラスをそのまま使える。</p>
      */
-    public static final RegistryObject<BlockEntityType<EnergyCellBlockEntity>> ENERGY_CELL =
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EnergyCellBlockEntity>> ENERGY_CELL =
             BLOCK_ENTITY_TYPES.register("energy_cell", () -> BlockEntityType.Builder
                     .of((pos, state) -> new EnergyCellBlockEntity(energyCellType(), pos, state),
                             ModBlocks.allEnergyCells().toArray(Block[]::new))
@@ -57,14 +57,14 @@ public class ModBlockEntities {
      * 全階層のソーラーパネルで共有する BlockEntityType。
      * 階層はブロックステートの {@link SolarPanelBlock} から引く。
      */
-    public static final RegistryObject<BlockEntityType<SolarPanelBlockEntity>> SOLAR_PANEL =
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SolarPanelBlockEntity>> SOLAR_PANEL =
             BLOCK_ENTITY_TYPES.register("solar_panel", () -> BlockEntityType.Builder
                     .of((pos, state) -> new SolarPanelBlockEntity(solarPanelType(), pos, state,
                                     ((SolarPanelBlock) state.getBlock()).getTier()),
                             ModBlocks.allSolarPanels().toArray(Block[]::new))
                     .build(null));
 
-    public static final RegistryObject<BlockEntityType<ImprovedChargerBlockEntity>> IMPROVED_CHARGER =
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ImprovedChargerBlockEntity>> IMPROVED_CHARGER =
             BLOCK_ENTITY_TYPES.register("improved_charger", () -> BlockEntityType.Builder
                     .of((pos, state) -> new ImprovedChargerBlockEntity(improvedChargerType(), pos, state),
                             ModBlocks.IMPROVED_CHARGER.get())

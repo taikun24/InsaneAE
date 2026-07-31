@@ -34,6 +34,7 @@ import java.util.concurrent.Future;
  * <p>走らせ方: {@code ./gradlew runGameTestServer} (AE2 のテストも一緒に走る)。
  * テスト名は AE2 のアダプタ経由なので {@code ae2.insaneae_crafting_batch}。</p>
  */
+@appeng.server.testplots.TestPlotClass
 public final class InsaneAETestPlots {
 
     /** ケーキ 1 個につきバケツ 3 個が行き来する = コンテナアイテム持ちのパターン。 */
@@ -42,10 +43,9 @@ public final class InsaneAETestPlots {
     private InsaneAETestPlots() {
     }
 
-    /** AE2 のプロット一覧に登録する。{@code appeng.tests} が有効なときだけ呼ぶこと。 */
-    public static void register() {
-        TestPlots.addPlotClass(InsaneAETestPlots.class);
-    }
+    // AE2 19.2 では TestPlots.addPlotClass() による手動登録が廃止され、
+    // @TestPlotClass の付いたクラスを FML のスキャンデータから自動で拾う方式になった
+    // (プロットが実際に読まれるのは appeng.tests が有効なときだけ、というのは変わらない)。
 
     /**
      * クラフト計算のまとめ処理が<b>AE2 本来の計算と同じ結果になる</b>ことを確かめる。
@@ -254,11 +254,10 @@ public final class InsaneAETestPlots {
 
     private static ItemStack processingPattern(net.minecraft.world.item.Item input, long inputAmount,
             net.minecraft.world.item.Item output, long outputAmount) {
+        // 19.2 で配列ではなく List を取るようになった。
         return appeng.api.crafting.PatternDetailsHelper.encodeProcessingPattern(
-                new appeng.api.stacks.GenericStack[] {
-                        new appeng.api.stacks.GenericStack(AEItemKey.of(input), inputAmount) },
-                new appeng.api.stacks.GenericStack[] {
-                        new appeng.api.stacks.GenericStack(AEItemKey.of(output), outputAmount) });
+                java.util.List.of(new appeng.api.stacks.GenericStack(AEItemKey.of(input), inputAmount)),
+                java.util.List.of(new appeng.api.stacks.GenericStack(AEItemKey.of(output), outputAmount)));
     }
 
     private static Future<ICraftingPlan> beginCalculation(appeng.server.testworld.PlotTestHelper helper) {

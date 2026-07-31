@@ -288,7 +288,7 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
         for (int slot = 0; slot < GRID_SLOTS; slot++) {
             ItemStack expected = cachedGrid[slot];
             ItemStack actual = craftingInv.getItem(slot);
-            if (expected.getCount() != actual.getCount() || !ItemStack.isSameItemSameTags(expected, actual)) {
+            if (expected.getCount() != actual.getCount() || !ItemStack.isSameItemSameComponents(expected, actual)) {
                 return false;
             }
         }
@@ -303,7 +303,10 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
             cachedGrid[slot] = craftingInv.getItem(slot).copy();
         }
 
-        ItemStack output = pattern.assemble(craftingInv, level);
+        // 1.21 でレシピの入力は CraftingContainer ではなく CraftingInput になった。
+        // asCraftInput() は中身の入っている範囲に切り詰めた不変のビューを返す。
+        var craftInput = craftingInv.asCraftInput();
+        ItemStack output = pattern.assemble(craftInput, level);
         if (output.isEmpty()) {
             if (!warnedAboutFailedAssembly) {
                 warnedAboutFailedAssembly = true;
@@ -321,7 +324,9 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
         // 以降の同一クラフトはまとめて処理するため、クラフト回数ぶんは発火しない。
         CraftingEvent.fireAutoCraftingEvent(level, pattern, output, craftingInv);
 
-        NonNullList<ItemStack> remainders = pattern.getRemainingItems(craftingInv);
+        // ここでは端材を「スロット位置に戻す」のではなく非空のものを集めるだけなので、
+        // CraftingInput が切り詰められていても取りこぼしは起きない。
+        NonNullList<ItemStack> remainders = pattern.getRemainingItems(craftInput);
         cachedRemainders.clear();
         for (ItemStack remainder : remainders) {
             if (!remainder.isEmpty()) {

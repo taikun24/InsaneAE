@@ -1,6 +1,7 @@
 package jp.main.taikun.insaneae.cell;
 
 import appeng.api.config.FuzzyMode;
+import appeng.api.ids.AEComponents;
 import appeng.api.storage.cells.ICellWorkbenchItem;
 import appeng.items.contents.CellConfig;
 import appeng.util.ConfigInventory;
@@ -24,9 +25,6 @@ import net.minecraft.world.item.ItemStack;
  */
 public class InsaneCreativeCellItem extends Item implements ICellWorkbenchItem {
 
-    /** AE2 のセルと同じ NBT キー (ワークベンチのファジー設定)。 */
-    private static final String FUZZY_MODE_TAG = "FuzzyMode";
-
     public InsaneCreativeCellItem(Properties props) {
         super(props.stacksTo(1));
     }
@@ -38,21 +36,16 @@ public class InsaneCreativeCellItem extends Item implements ICellWorkbenchItem {
         return CellConfig.create(is);
     }
 
+    // 1.20.5 で ItemStack の NBT がデータコンポーネントに置き換わったため、
+    // ファジー設定は AE2 のセルと同じコンポーネント (AEComponents.STORAGE_CELL_FUZZY_MODE) に持つ。
+    // 値の検証とコーデックは AE2 側が持っているので、壊れた値を握り潰す処理は不要になった。
     @Override
     public FuzzyMode getFuzzyMode(ItemStack is) {
-        var tag = is.getTag();
-        if (tag != null && tag.contains(FUZZY_MODE_TAG)) {
-            try {
-                return FuzzyMode.valueOf(tag.getString(FUZZY_MODE_TAG));
-            } catch (IllegalArgumentException ignored) {
-                // 壊れた NBT は既定値に倒す
-            }
-        }
-        return FuzzyMode.IGNORE_ALL;
+        return is.getOrDefault(AEComponents.STORAGE_CELL_FUZZY_MODE, FuzzyMode.IGNORE_ALL);
     }
 
     @Override
     public void setFuzzyMode(ItemStack is, FuzzyMode fuzzyMode) {
-        is.getOrCreateTag().putString(FUZZY_MODE_TAG, fuzzyMode.name());
+        is.set(AEComponents.STORAGE_CELL_FUZZY_MODE, fuzzyMode);
     }
 }

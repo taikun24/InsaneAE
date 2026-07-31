@@ -1,14 +1,14 @@
 package jp.main.taikun.insaneae.registries;
 
+import net.minecraft.core.registries.Registries;
 import jp.main.taikun.insaneae.InsaneAE;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.util.TieredItem;
 import jp.main.taikun.insaneae.util.TieredNames;
 import net.minecraft.world.item.Item;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -21,10 +21,10 @@ import java.util.Map;
  */
 public class ModItems {
     private static final DeferredRegister<Item> ITEMS =
-            DeferredRegister.create(ForgeRegistries.ITEMS, InsaneAE.MODID);
+            DeferredRegister.create(Registries.ITEM, InsaneAE.MODID);
 
     /** 各階層 → セルコンポーネント。 */
-    public static final Map<InsaneCraftingUnitType, RegistryObject<Item>> CELL_COMPONENTS =
+    public static final Map<InsaneCraftingUnitType, DeferredHolder<Item, Item>> CELL_COMPONENTS =
             new EnumMap<>(InsaneCraftingUnitType.class);
 
     static {

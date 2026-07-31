@@ -8,11 +8,11 @@ import appeng.menu.MenuOpener;
 import appeng.menu.SlotSemantic;
 import appeng.menu.SlotSemantics;
 import appeng.menu.implementations.PatternProviderMenu;
-import appeng.menu.locator.MenuLocator;
+import appeng.menu.locator.MenuHostLocator;
 import appeng.menu.locator.MenuLocators;
 import appeng.menu.slot.AppEngSlot;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
@@ -23,8 +23,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.common.extensions.IForgeMenuType;
-import net.minecraftforge.network.NetworkHooks;
+import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 
 import java.util.List;
 
@@ -44,7 +43,7 @@ import java.util.List;
  */
 public class QuantumCpuMenu extends PatternProviderMenu {
 
-    public static final MenuType<QuantumCpuMenu> TYPE = IForgeMenuType.create(QuantumCpuMenu::fromNetwork);
+    public static final MenuType<QuantumCpuMenu> TYPE = IMenuTypeExtension.create(QuantumCpuMenu::fromNetwork);
 
     /** 表示ページの変更をサーバに伝えるアクション。 */
     private static final String ACTION_SET_PAGE = "insaneaeSetPage";
@@ -171,8 +170,10 @@ public class QuantumCpuMenu extends PatternProviderMenu {
         return semantic == SlotSemantics.PLAYER_INVENTORY || semantic == SlotSemantics.PLAYER_HOTBAR;
     }
 
-    private static QuantumCpuMenu fromNetwork(int containerId, Inventory playerInventory, FriendlyByteBuf buf) {
-        MenuLocator locator = MenuLocators.readFromPacket(buf);
+    // 1.20.5 で画面を開くときのバッファがレジストリ参照つき (RegistryFriendlyByteBuf) になった。
+    private static QuantumCpuMenu fromNetwork(int containerId, Inventory playerInventory,
+            RegistryFriendlyByteBuf buf) {
+        MenuHostLocator locator = MenuLocators.readFromPacket(buf);
         PatternProviderLogicHost host = locator.locate(playerInventory.player, PatternProviderLogicHost.class);
         if (host == null) {
             throw new IllegalStateException("Couldn't find a Quantum CPU at " + locator + " on the client.");
@@ -182,7 +183,7 @@ public class QuantumCpuMenu extends PatternProviderMenu {
         return menu;
     }
 
-    private static boolean open(Player player, MenuLocator locator, boolean fromSubMenu) {
+    private static boolean open(Player player, MenuHostLocator locator, boolean fromSubMenu) {
         if (!(player instanceof ServerPlayer serverPlayer)) {
             return false;
         }
@@ -198,7 +199,9 @@ public class QuantumCpuMenu extends PatternProviderMenu {
             menu.setLocator(locator);
             return menu;
         }, title);
-        NetworkHooks.openScreen(serverPlayer, provider, buf -> {
+        // NetworkHooks は NeoForge で廃止され、ServerPlayer#openMenu が
+        // 追加データ書き込み用のコールバックを直接受け取るようになった。
+        serverPlayer.openMenu(provider, buf -> {
             MenuLocators.writeToPacket(buf, locator);
             buf.writeBoolean(fromSubMenu);
         });

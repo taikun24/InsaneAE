@@ -22,11 +22,12 @@ import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.RegisterColorHandlersEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.joml.Vector3f;
 
@@ -64,6 +65,7 @@ public final class InsaneAEClient {
         bus.addListener(InsaneAEClient::registerItemColors);
         bus.addListener(InsaneAEClient::clientSetup);
         bus.addListener(InsaneAEClient::registerRenderers);
+        bus.addListener(InsaneAEClient::registerScreens);
     }
 
     /**
@@ -92,8 +94,16 @@ public final class InsaneAEClient {
         // 登録しないと solid になり、formed の枠テクスチャの透明部分が正しく抜けない。
         event.enqueueWork(() -> ModBlocks.allCraftingBlocks()
                 .forEach(block -> ItemBlockRenderTypes.setRenderLayer(block, RenderType.cutout())));
-        event.enqueueWork(() -> InitScreens.register(
-                QuantumCpuMenu.TYPE, QuantumCpuScreen::new, "/screens/insaneae/quantum_cpu.json"));
+    }
+
+    /**
+     * 画面の登録。1.20.5 で専用イベント {@link RegisterMenuScreensEvent} が新設され、
+     * {@code FMLClientSetupEvent} からの登録はできなくなった
+     * (AE2 の {@code InitScreens#register} もイベントを第 1 引数に取るようになっている)。
+     */
+    private static void registerScreens(RegisterMenuScreensEvent event) {
+        InitScreens.register(event,
+                QuantumCpuMenu.TYPE, QuantumCpuScreen::new, "/screens/insaneae/quantum_cpu.json");
     }
 
     /** formed 状態のブロックモデルを、階層色の発光レイヤを持つマルチブロック用モデルに差し替える。 */

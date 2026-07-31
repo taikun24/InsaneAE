@@ -1,5 +1,6 @@
 package jp.main.taikun.insaneae.cell;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import appeng.api.stacks.AEKeyType;
 import appeng.items.storage.StorageTier;
 import appeng.items.tools.powered.PortableCellItem;
@@ -7,7 +8,6 @@ import appeng.menu.me.common.MEStorageMenu;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * 2 GiB を超える容量を持つポータブルセル。
@@ -63,7 +63,7 @@ public class InsanePortableCellItem extends PortableCellItem implements IHugeCel
      */
     @Override
     public ResourceLocation getRecipeId() {
-        return ForgeRegistries.ITEMS.getKey(this);
+        return BuiltInRegistries.ITEM.getKey(this);
     }
 
     @Override

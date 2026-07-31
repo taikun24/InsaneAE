@@ -1,5 +1,6 @@
 package jp.main.taikun.insaneae.registries;
 
+import net.minecraft.core.registries.Registries;
 import appeng.block.crafting.CraftingUnitBlock;
 import appeng.block.networking.EnergyCellBlock;
 import appeng.block.networking.EnergyCellBlockItem;
@@ -17,10 +18,9 @@ import jp.main.taikun.insaneae.quantum.QuantumCpuBlock;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -29,38 +29,38 @@ import java.util.stream.Stream;
 
 public class ModBlocks {
     private static final DeferredRegister<Block> BLOCKS =
-            DeferredRegister.create(ForgeRegistries.BLOCKS, InsaneAE.MODID);
+            DeferredRegister.create(Registries.BLOCK, InsaneAE.MODID);
     private static final DeferredRegister<Item> BLOCK_ITEMS =
-            DeferredRegister.create(ForgeRegistries.ITEMS, InsaneAE.MODID);
+            DeferredRegister.create(Registries.ITEM, InsaneAE.MODID);
 
     /** 各クラフトストレージ階層 → 登録済みブロック。 */
-    public static final Map<InsaneCraftingUnitType, RegistryObject<CraftingUnitBlock>> CRAFTING_STORAGE =
+    public static final Map<InsaneCraftingUnitType, DeferredHolder<Block, CraftingUnitBlock>> CRAFTING_STORAGE =
             new EnumMap<>(InsaneCraftingUnitType.class);
 
     /** 各クラフト協調処理ユニット (アクセラレータ) 階層 → 登録済みブロック。 */
-    public static final Map<InsaneAcceleratorType, RegistryObject<CraftingUnitBlock>> CRAFTING_ACCELERATOR =
+    public static final Map<InsaneAcceleratorType, DeferredHolder<Block, CraftingUnitBlock>> CRAFTING_ACCELERATOR =
             new EnumMap<>(InsaneAcceleratorType.class);
 
     /** 各エネルギーセル階層 → 登録済みブロック。 */
-    public static final Map<InsaneEnergyCellTier, RegistryObject<EnergyCellBlock>> ENERGY_CELLS =
+    public static final Map<InsaneEnergyCellTier, DeferredHolder<Block, EnergyCellBlock>> ENERGY_CELLS =
             new EnumMap<>(InsaneEnergyCellTier.class);
 
     /** 各ソーラーパネル階層 → 登録済みブロック。 */
-    public static final Map<SolarPanelTier, RegistryObject<SolarPanelBlock>> SOLAR_PANELS =
+    public static final Map<SolarPanelTier, DeferredHolder<Block, SolarPanelBlock>> SOLAR_PANELS =
             new EnumMap<>(SolarPanelTier.class);
 
     /** パターンプロバイダ + 分子組立装置を合体させた自己完結型のクラフト機。 */
-    public static final RegistryObject<QuantumCpuBlock> QUANTUM_CPU =
+    public static final DeferredHolder<Block, QuantumCpuBlock> QUANTUM_CPU =
             BLOCKS.register("quantum_cpu", QuantumCpuBlock::new);
 
     /** AE2 のチャージャーの限界突破版。 */
-    public static final RegistryObject<ImprovedChargerBlock> IMPROVED_CHARGER =
+    public static final DeferredHolder<Block, ImprovedChargerBlock> IMPROVED_CHARGER =
             BLOCKS.register("improved_charger", ImprovedChargerBlock::new);
 
     static {
         // 表示名は階層ごとの lang キーではなく「書式キー + 階層ラベル」で作る → TieredNames。
         for (InsaneCraftingUnitType type : InsaneCraftingUnitType.values()) {
-            RegistryObject<CraftingUnitBlock> block = BLOCKS.register(type.blockId(),
+            DeferredHolder<Block, CraftingUnitBlock> block = BLOCKS.register(type.blockId(),
                     () -> new InsaneCraftingUnitBlock(type, TieredNames.CRAFTING_STORAGE, type.label()));
             BLOCK_ITEMS.register(type.blockId(),
                     () -> new TieredBlockItem(block.get(), new Item.Properties()));
@@ -69,7 +69,7 @@ public class ModBlocks {
             CRAFTING_STORAGE.put(type, block);
         }
         for (InsaneAcceleratorType type : InsaneAcceleratorType.values()) {
-            RegistryObject<CraftingUnitBlock> block = BLOCKS.register(type.blockId(),
+            DeferredHolder<Block, CraftingUnitBlock> block = BLOCKS.register(type.blockId(),
                     () -> new InsaneCraftingUnitBlock(type, TieredNames.CRAFTING_ACCELERATOR, type.label()));
             BLOCK_ITEMS.register(type.blockId(),
                     () -> new TieredBlockItem(block.get(), new Item.Properties()));
@@ -80,14 +80,14 @@ public class ModBlocks {
             // AE2 の EnergyCellBlock / EnergyCellBlockItem をそのまま使う。
             // AE2 側は「registry を走査して EnergyCellBlockItem なら fill_level を登録」する作りなので、
             // アイテムモデルの残量表示もクライアント側の追加処理なしで動く。
-            RegistryObject<EnergyCellBlock> block = BLOCKS.register(tier.id(),
+            DeferredHolder<Block, EnergyCellBlock> block = BLOCKS.register(tier.id(),
                     () -> new EnergyCellBlock(tier.maxPower(), tier.chargeRate(), tier.priority()));
             BLOCK_ITEMS.register(tier.id(),
                     () -> new EnergyCellBlockItem(block.get(), new Item.Properties()));
             ENERGY_CELLS.put(tier, block);
         }
         for (SolarPanelTier tier : SolarPanelTier.values()) {
-            RegistryObject<SolarPanelBlock> block =
+            DeferredHolder<Block, SolarPanelBlock> block =
                     BLOCKS.register(tier.id(), () -> new SolarPanelBlock(tier));
             BLOCK_ITEMS.register(tier.id(), () -> new BlockItem(block.get(), new Item.Properties()));
             SOLAR_PANELS.put(tier, block);
@@ -100,18 +100,18 @@ public class ModBlocks {
     /** ストレージ + アクセラレータの全ブロック (BlockEntityType やドロップ生成用)。 */
     public static List<CraftingUnitBlock> allCraftingBlocks() {
         return Stream.concat(CRAFTING_STORAGE.values().stream(), CRAFTING_ACCELERATOR.values().stream())
-                .map(RegistryObject::get)
+                .map(DeferredHolder::get)
                 .toList();
     }
 
     /** 全階層のエネルギーセルブロック。 */
     public static List<EnergyCellBlock> allEnergyCells() {
-        return ENERGY_CELLS.values().stream().map(RegistryObject::get).toList();
+        return ENERGY_CELLS.values().stream().map(DeferredHolder::get).toList();
     }
 
     /** 全階層のソーラーパネルブロック。 */
     public static List<SolarPanelBlock> allSolarPanels() {
-        return SOLAR_PANELS.values().stream().map(RegistryObject::get).toList();
+        return SOLAR_PANELS.values().stream().map(DeferredHolder::get).toList();
     }
 
     public static void register(IEventBus bus) {

@@ -1,6 +1,6 @@
 package jp.main.taikun.insaneae.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -16,10 +16,10 @@ import org.apache.commons.lang3.tuple.Pair;
 public final class InsaneAEConfig {
 
     private static final Common COMMON;
-    public static final ForgeConfigSpec SPEC;
+    public static final ModConfigSpec SPEC;
 
     static {
-        Pair<Common, ForgeConfigSpec> pair = new ForgeConfigSpec.Builder().configure(Common::new);
+        Pair<Common, ModConfigSpec> pair = new ModConfigSpec.Builder().configure(Common::new);
         COMMON = pair.getLeft();
         SPEC = pair.getRight();
     }
@@ -56,7 +56,7 @@ public final class InsaneAEConfig {
      * <p>{@code ConfigValue#get()} は読み込み前に呼ぶと例外になるので、
      * その場合はコード側の既定値を返す。</p>
      */
-    private static <T> T get(ForgeConfigSpec.ConfigValue<T> value, T fallback) {
+    private static <T> T get(ModConfigSpec.ConfigValue<T> value, T fallback) {
         if (!SPEC.isLoaded()) {
             return fallback;
         }
@@ -65,11 +65,11 @@ public final class InsaneAEConfig {
 
     private static final class Common {
 
-        private final ForgeConfigSpec.BooleanValue batchCraftingCalculation;
-        private final ForgeConfigSpec.IntValue craftingBatchThreshold;
-        private final ForgeConfigSpec.BooleanValue serverSidePatternPaging;
+        private final ModConfigSpec.BooleanValue batchCraftingCalculation;
+        private final ModConfigSpec.IntValue craftingBatchThreshold;
+        private final ModConfigSpec.BooleanValue serverSidePatternPaging;
 
-        private Common(ForgeConfigSpec.Builder builder) {
+        private Common(ModConfigSpec.Builder builder) {
             builder.comment("クラフト計算 (Calculating... の部分) の軽量化").push("crafting_calculation");
 
             batchCraftingCalculation = builder

@@ -1,0 +1,62 @@
+modLoader = "javafml"
+loaderVersion = "${loader_version_range}"
+license = "${mod_license}"
+issueTrackerURL = "https://github.com/taikun24/InsaneAE/issues"
+
+[[mods]]
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName = "${mod_name}"
+displayURL = "https://github.com/taikun24/InsaneAE"
+authors = "${mod_authors}"
+description = '''${mod_description}'''
+
+# NeoForge は 1.20.5 以降、Mixin config を mods.toml で宣言しないと読み込まない
+# (1.20.1 の Forge では jar のマニフェスト経由だった)。
+[[mixins]]
+config = "${mod_id}.mixins.json"
+
+[[mixins]]
+config = "${mod_id}.compat.mixins.json"
+
+[[dependencies."${mod_id}"]]
+modId = "neoforge"
+type = "required"
+versionRange = "${neo_version_range}"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies."${mod_id}"]]
+modId = "minecraft"
+type = "required"
+versionRange = "${minecraft_version_range}"
+ordering = "NONE"
+side = "BOTH"
+
+# Applied Energistics 2 - 必須。先に読み込ませてブロック・型を確定させる。
+# AE2 の内部 (BasicCellInventory / CraftingCPUCluster / 画面スタイルの generatedBackground など) に
+# 深く踏み込んでいるので、実際にテストしたビルド以上を要求する。古い AE2 だと Mixin が外れたり
+# Quantum CPU の画面スタイルが読めなかったりするが、ここで弾けば分かりやすい依存エラーになる。
+[[dependencies."${mod_id}"]]
+modId = "ae2"
+type = "required"
+versionRange = "[19.2.17,20)"
+ordering = "AFTER"
+side = "BOTH"
+
+# MEGA Cells - 必須。1M〜256M のクラフトストレージは MEGA Cells 側が提供し、
+# InsaneAE はその上 (1G〜) を担当する。1G のレシピが megacells:256m_crafting_storage を要求する。
+[[dependencies."${mod_id}"]]
+modId = "megacells"
+type = "required"
+versionRange = "[4.11,5)"
+ordering = "AFTER"
+side = "BOTH"
+
+# Applied Mekanistics - 任意。導入されている場合のみ化学物質セルを追加する。
+[[dependencies."${mod_id}"]]
+modId = "appmek"
+type = "optional"
+versionRange = "[1.6,)"
+ordering = "AFTER"
+side = "BOTH"

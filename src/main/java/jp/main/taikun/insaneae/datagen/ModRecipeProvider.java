@@ -1,5 +1,6 @@
 package jp.main.taikun.insaneae.datagen;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import appeng.core.definitions.AEBlocks;
 import appeng.core.definitions.AEItems;
 import gripe._90.megacells.definition.MEGABlocks;
@@ -20,10 +21,11 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
-import net.minecraftforge.common.crafting.ConditionalRecipe;
-import net.minecraftforge.common.crafting.conditions.ModLoadedCondition;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.HolderLookup;
+import net.neoforged.neoforge.common.conditions.ModLoadedCondition;
+
+import java.util.concurrent.CompletableFuture;
+import net.neoforged.fml.ModList;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
@@ -49,12 +51,12 @@ public class ModRecipeProvider extends RecipeProvider {
     private static final Item SINGULARITY = AEItems.SINGULARITY.asItem();
     private static final Item ACCUMULATION_PROCESSOR = MEGAItems.ACCUMULATION_PROCESSOR.asItem();
 
-    public ModRecipeProvider(PackOutput output) {
-        super(output);
+    public ModRecipeProvider(PackOutput output, CompletableFuture<HolderLookup.Provider> registries) {
+        super(output, registries);
     }
 
     @Override
-    protected void buildRecipes(Consumer<FinishedRecipe> consumer) {
+    protected void buildRecipes(RecipeOutput consumer) {
         boolean appMek = ModList.get().isLoaded(InsaneAE.APPMEK_MODID);
         if (!appMek) {
             LOGGER.warn("Applied Mekanistics not present: 化学物質セルのレシピは生成されません。"
@@ -189,20 +191,20 @@ public class ModRecipeProvider extends RecipeProvider {
     }
 
     private static void portable(ShapelessRecipeBuilder builder, ItemLike component, ItemLike housing) {
-        builder.requires(AEBlocks.CHEST)
+        builder.requires(AEBlocks.ME_CHEST)
                 .requires(component)
                 .requires(AEBlocks.DENSE_ENERGY_CELL)
                 .requires(housing);
     }
 
     /** 素材を組み立てて shapeless レシピを 1 件出す (解禁条件は素材のコンポーネント)。 */
-    static void shapeless(Consumer<FinishedRecipe> consumer, ItemLike result, ItemLike unlockedBy,
+    static void shapeless(RecipeOutput consumer, ItemLike result, ItemLike unlockedBy,
             Consumer<ShapelessRecipeBuilder> ingredients) {
         ShapelessRecipeBuilder builder = ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, result);
         ingredients.accept(builder);
         builder.unlockedBy("has_component", has(unlockedBy)).save(consumer);
     }
-    static void shaped(Consumer<FinishedRecipe> consumer, ItemLike result, ItemLike unlockedBy, String[] pattern, Map<Character, ItemLike> ingredients) {
+    static void shaped(RecipeOutput consumer, ItemLike result, ItemLike unlockedBy, String[] pattern, Map<Character, ItemLike> ingredients) {
         ShapedRecipeBuilder builder = ShapedRecipeBuilder.shaped(RecipeCategory.MISC, result);
         for (String s : pattern) {
             builder.pattern(s);
@@ -214,17 +216,15 @@ public class ModRecipeProvider extends RecipeProvider {
     }
 
     /** appmek 導入時のみ有効な条件付きレシピを出す。 */
-    static void conditionalShapeless(Consumer<FinishedRecipe> consumer, ItemLike result, ItemLike unlockedBy,
+    static void conditionalShapeless(RecipeOutput consumer, ItemLike result, ItemLike unlockedBy,
             Consumer<ShapelessRecipeBuilder> ingredients) {
-        ResourceLocation id = ForgeRegistries.ITEMS.getKey(result.asItem());
-        ConditionalRecipe.builder()
-                .addCondition(new ModLoadedCondition(InsaneAE.APPMEK_MODID))
-                .addRecipe(wrapped -> {
-                    ShapelessRecipeBuilder builder = ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, result);
-                    ingredients.accept(builder);
-                    builder.unlockedBy("has_component", has(unlockedBy)).save(wrapped, id);
-                })
-                .generateAdvancement()
-                .build(consumer, id);
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(result.asItem());
+        // NeoForge では ConditionalRecipe のビルダーが廃止され、
+        // RecipeOutput#withConditions で「条件つきの出力先」を作って普通に save する方式になった。
+        // 進捗 (advancement) も条件つきで一緒に出るので generateAdvancement() 相当は不要。
+        RecipeOutput conditional = consumer.withConditions(new ModLoadedCondition(InsaneAE.APPMEK_MODID));
+        ShapelessRecipeBuilder builder = ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, result);
+        ingredients.accept(builder);
+        builder.unlockedBy("has_component", has(unlockedBy)).save(conditional, id);
     }
 }

@@ -63,12 +63,6 @@ public abstract class BasicCellInventoryMixin {
     @Shadow
     private Object2LongMap<AEKey> storedAmounts;
 
-    /**
-     * AE2 の {@code BasicCellInventory.STACK_AMOUNTS} と同じタグ名。
-     */
-    @Unique
-    private static final String STACK_AMOUNTS_TAG = "amts";
-
     @Shadow
     public abstract long getFreeBytes();
 
@@ -108,22 +102,9 @@ public abstract class BasicCellInventoryMixin {
         }
     }
 
-    /**
-     * 保存されている型数。AE2 の {@code storedItems} は <b>short</b> なので、
-     * 32767 種を超えると桁あふれして負値になり、使用バイト数と残り型数が壊れる。
-     *
-     * <p>巨大セルでは、読み込み済みなら在庫マップの件数、まだなら NBT の
-     * キー配列の長さ (コンストラクタが short に丸める前の値と同じもの) を返す。
-     * どちらも中身のパースを伴わないので、この置き換えで重くはならない。</p>
-     */
-    @Inject(method = "getStoredItemTypes", at = @At("HEAD"), cancellable = true)
-    private void insaneae$storedItemTypesWithoutShortOverflow(CallbackInfoReturnable<Long> cir) {
-        if (!(cellType instanceof IHugeCellItem)) {
-            return;
-        }
-        long types = storedAmounts != null
-                ? storedAmounts.size()
-                : i.getOrCreateTag().getLongArray(STACK_AMOUNTS_TAG).length;
-        cir.setReturnValue(types);
-    }
+    // 1.20.1 (AE2 15.2.16) にはここに getStoredItemTypes への注入があった。
+    // 当時 AE2 の storedItems が short だったため 32767 種で桁あふれして
+    // 使用バイト数と残り型数が壊れていたのを、NBT のキー配列長から数え直していた。
+    // AE2 19.2 で storedItems は int になり、値も NBT 直読みではなく
+    // getStoredStacks().size() から入るようになったので、この回避策は不要になった。
 }
