@@ -320,19 +320,40 @@ class Templates:
         self.used.append(name if image is not None else f"{name} (手続き描画)")
         return image if image is not None else fallback()
 
-    def _component(self, directory: str, index: int) -> Component:
-        """base + color の 2 枚 → 1 枚版 → 手続き描画 の順に探す。"""
-        base = load_template(directory, f"component_p{index}_base.png")
-        color = load_template(directory, f"component_p{index}_color.png")
-        if color is not None:
-            self.used.append(f"component_p{index}_base+color.png"
-                             if base is not None else f"component_p{index}_color.png")
-            return Component(base, color)
-        single = load_template(directory, f"component_p{index}.png")
-        if single is not None:
-            self.used.append(f"component_p{index}.png (1 枚版)")
-            return Component(None, single)
-        self.used.append(f"component_p{index} (手続き描画)")
+    def _component(self, directory, index: int) -> Component:
+        """1 パターンぶんの下敷きを選ぶ。<b>ディレクトリ優先</b>で、その中で
+
+            1. component_p<N>_base.png + component_p<N>_color.png   (2 枚方式)
+            2. component_p<N>.png                                    (旧 1 枚方式)
+
+        の順に見る。ディレクトリを先に回すのが要点で、名前を先に回すと
+        バージョン別ディレクトリに 2 枚方式で置いても、
+        共通ディレクトリの 1 枚版が勝ってしまう。
+
+        2 枚のうち片方しか無い場合も<b>そのディレクトリを採用する</b>
+        (1 枚版に落ちて、置いたはずの絵が黙って無視されるのを防ぐ)。
+        描きかけだと分かるように警告を出す。
+        """
+        stem = f"component_p{index}"
+        for d in ([directory] if isinstance(directory, str) else directory):
+            base = load_template(d, f"{stem}_base.png")
+            color = load_template(d, f"{stem}_color.png")
+            if base is not None or color is not None:
+                if color is None:
+                    print(f"  警告: {stem}_base.png はあるが {stem}_color.png が無い。"
+                          f" 階層色に染まる部分が無いので、全階層とも同じ見た目になる。")
+                    color = Image.new("RGBA", base.size)
+                    self.used.append(f"{stem}_base.png のみ")
+                elif base is None:
+                    self.used.append(f"{stem}_color.png のみ (地は透明)")
+                else:
+                    self.used.append(f"{stem}_base+color.png")
+                return Component(base, color)
+            single = load_template(d, f"{stem}.png")
+            if single is not None:
+                self.used.append(f"{stem}.png (1 枚版)")
+                return Component(None, single)
+        self.used.append(f"{stem} (手続き描画)")
         return Component(draw_component_fallback("base"), draw_component_fallback("color"))
 
     def cell(self, tier: str, color) -> Image.Image:
