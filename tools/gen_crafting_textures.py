@@ -216,7 +216,25 @@ CHASSIS = (0x4c, 0x4c, 0x4c)      # 筐体の地
 RECESS = (0x23, 0x23, 0x23)       # 中央パネルの落とし込み枠
 
 SIZE = 16
-FRAMES = 8
+
+# 下敷きの共有名。ストレージと協調処理ユニットで同じ絵を使う場合はこの名前で置く
+# (crafting_base.png など)。種類ごとに変えたいものだけ storage_* / accelerator_* を置けば、
+# そちらが優先される。
+SHARED_PREFIX = "crafting"
+
+# 発光レイヤのコマ数。
+#
+# <b>AE2 は 1.21 でクラフトストレージの発光をアニメーション無しに変えた</b>
+# (15.2.16 には block/crafting/*.mcmeta が 5 個あり 1k_storage_light.png は 2252 バイトだったが、
+#  19.2.17 では mcmeta が 0 個で 203 バイトの静止画になっている)。
+# 見た目を AE2 に合わせるため、こちらも 1 コマ = アニメーション無しにしてある。
+#
+# 2 以上にすると下敷きの先頭からそのコマ数を使い、.mcmeta も書き出す。
+# 下敷きが 16xN で N がこれより多い場合は先頭のコマだけ使う。
+LIGHT_FRAMES = 1
+
+# 手続き描画で発光レイヤを描くときのコマ数 (下敷きが無いときの見た目用)。
+FRAMES = max(8, LIGHT_FRAMES)
 
 # 発光レイヤのドット絵 (# = 光る)
 # ストレージ: 外周のリングから 4 本のリードが中央のチップに伸びる回路パターン。
@@ -625,14 +643,28 @@ class Kind:
         self.prefix = prefix
         # 中央 (color) と発光 (light) を「何色で描いてあるか」。base は染めないので関係ない。
         self.template_hue = template_hue
-        self.base = load_template(directory, f"{prefix}_base.png") or draw_base()
-        self.color = load_template(directory, f"{prefix}_color.png") or draw_color_layer()
-        self.light = load_template(directory, f"{prefix}_light.png") or draw_light_layer(mask)
-        self.used = [
-            f"{prefix}_base.png" if load_template(directory, f"{prefix}_base.png") else "(手続き描画)",
-            f"{prefix}_color.png" if load_template(directory, f"{prefix}_color.png") else "(手続き描画)",
-            f"{prefix}_light.png" if load_template(directory, f"{prefix}_light.png") else "(手続き描画)",
-        ]
+        self.used = []
+        self.base = self._pick(directory, "base", draw_base)
+        self.color = self._pick(directory, "color", draw_color_layer)
+        self.light = self._pick(directory, "light", lambda: draw_light_layer(mask))
+
+    def _pick(self, directory, part: str, fallback):
+        """下敷きを 1 枚選ぶ。<b>ディレクトリ優先</b>で、その中で専用名 → 共有名の順に見る。
+
+            1. <dir>/<prefix>_<part>.png    その種類だけの絵 (storage_base.png など)
+            2. <dir>/<SHARED>_<part>.png    ストレージと協調処理ユニットで共通の絵
+
+        ディレクトリを先に回すのが要点。名前を先に回すと、バージョン別ディレクトリに
+        共有名で置いても、共通ディレクトリの古い専用名の絵が勝ってしまう。
+        """
+        for d in ([directory] if isinstance(directory, str) else directory):
+            for name in (f"{self.prefix}_{part}.png", f"{SHARED_PREFIX}_{part}.png"):
+                image = load_template(d, name)
+                if image is not None:
+                    self.used.append(name)
+                    return image
+        self.used.append(f"{part} (手続き描画)")
+        return fallback()
 
     def _paint(self, template: Image.Image, color, rainbow: bool) -> Image.Image:
         if rainbow:
@@ -648,7 +680,11 @@ class Kind:
 
     def light_for(self, color, rainbow: bool = False) -> tuple[Image.Image, int]:
         img = self._paint(self.light, color, rainbow)
-        frames = max(1, img.height // img.width)
+        frames = min(max(1, img.height // img.width), LIGHT_FRAMES)
+        # 下敷きが必要以上のコマを持っていたら先頭だけ切り出す
+        # (LIGHT_FRAMES=1 なら 16x16 の静止画になり、.mcmeta も書かれない)。
+        if img.height > img.width * frames:
+            img = img.crop((0, 0, img.width, img.width * frames))
         return img, frames
 
 
@@ -667,12 +703,19 @@ def write(name: str, image: Image.Image, frames: int) -> None:
 def dump_templates(directory: str | list[str]) -> None:
     directory = write_dir(directory)      # 書き出すのは探索パスの先頭
     os.makedirs(directory, exist_ok=True)
+    # 地と中央は 2 種類で同じ絵なので共有名で 1 組だけ書き出す。
+    draw_base().save(os.path.join(directory, f"{SHARED_PREFIX}_base.png"))
+    draw_color_layer().save(os.path.join(directory, f"{SHARED_PREFIX}_color.png"))
+    # 発光は模様 (マスク) が種類ごとに違うので専用名で書き出す。
     for prefix, mask in (("storage", STORAGE_MASK), ("accelerator", ACCELERATOR_MASK)):
-        draw_base().save(os.path.join(directory, f"{prefix}_base.png"))
-        draw_color_layer().save(os.path.join(directory, f"{prefix}_color.png"))
-        draw_light_layer(mask).save(os.path.join(directory, f"{prefix}_light.png"))
+        light = draw_light_layer(mask)
+        if light.height > light.width * LIGHT_FRAMES:
+            light = light.crop((0, 0, light.width, light.width * LIGHT_FRAMES))
+        light.save(os.path.join(directory, f"{prefix}_light.png"))
     print(f"下敷きを書き出した -> {directory}\n"
-          f"編集して置いておけば次回から使われる (消せば手続き描画に戻る)")
+          f"編集して置いておけば次回から使われる (消せば手続き描画に戻る)\n"
+          f"{SHARED_PREFIX}_*.png はストレージと協調処理ユニットの共用。\n"
+          f"種類ごとに変えたいものだけ storage_*.png / accelerator_*.png を置けばそちらが優先される。")
 
 
 def main() -> None:
