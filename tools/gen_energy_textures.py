@@ -27,15 +27,18 @@
 --------------------------------------------------------------------------------------
 tools/textures/ に次の名前で置くと、そちらが優先して使われる (無ければ手続き描画)。
 
-    energy_base.png    筐体。<b>そのまま</b>使われる
-    energy_color.png   常時出る階層色のレイヤ (省略可 — 下記)
-    energy_light.png   発光レイヤ。残量で点く部分を全部描いておく
+    energy_base.png    筐体 (ベース)。<b>染まらない</b>。地に色が付いていても構わない
+    energy_color.png   常時出る階層色のレイヤ (色)。残量に関係なく必ず出る
+    energy_light.png   充電ぶんの発光レイヤ (充電)。残量で点く部分を全部描いておく
 
-<b>energy_color.png を置かなかった場合は energy_base.png から自動で切り出す</b>。
-彩度のある画素 (AE2 のエネルギーセルなら水色の結晶パネル) を色レイヤとして抜き出し、
-残りのグレーだけを筐体として使う。つまり<b>置いた下敷きが AE2 のセルそのものでも、
-結晶の部分だけが階層色に染まる</b>。色付きの下敷きは色相を回すだけなので、
-淡い色合いはそのまま保たれる (グレースケールで置いた場合は明度から染める)。
+<b>この 3 枚に分けて描くこと。</b>クラフトストレージ側の
+crafting_base / crafting_color / crafting_light と同じ役割分担で、
+base は染まらないので階層に依らない部分をすべてここに描けばよい。
+
+    energy_color.png を置かなかった場合に限り、後方互換として
+    energy_base.png から<b>彩度で</b>色レイヤを切り出す (警告が出る)。
+    この方式は地に少しでも色が付いていると一緒に染まってしまうので、
+    `--dump-templates` で 3 枚に分けた叩き台を書き出して移行すること。
 
 発光レイヤの「何段目のセグメントか」は<b>中心からの距離 (リング) で自動的に決まる</b>。
 中心の 2x2 (リング 0) に描いた画素は常時点灯、そこから外に向かって 1 段ずつ
@@ -338,10 +341,16 @@ def main() -> None:
     if color_layer is not None:
         used.append("color=energy_color.png")
     else:
-        # 色レイヤが無ければ筐体の下敷きから彩度のある部分を抜き出す。
+        # 後方互換: 色レイヤが無ければ筐体の下敷きから彩度のある部分を抜き出す。
+        # 地に少しでも色が付いていると一緒に染まってしまうので、分けたほうがよい。
         base, color_layer = split_color(base)
-        used.append("color=(energy_base.png の彩度のある部分)" if color_layer
-                    else "color=(手続き描画)")
+        if color_layer is not None:
+            print("  警告: energy_color.png が無いので energy_base.png から彩度で切り出した。"
+                  " 地に色が付いていると一緒に染まってしまうので、"
+                  " --dump-templates で 3 枚に分けた叩き台を書き出して移行すること。")
+            used.append("color=(energy_base.png の彩度のある部分)")
+        else:
+            used.append("color=(手続き描画)")
         color_layer = color_layer if color_layer is not None else draw_color()
     print(f"下敷き: {' '.join(used)}\n")
 

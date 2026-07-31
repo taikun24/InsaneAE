@@ -175,6 +175,14 @@ STORAGE_BAND_LUMA = {
     "e": (0.16, 0.30),   # 緑
 }
 
+# セル (アイテム) 側は暗い背景に置かれるので輝度は揃えない。
+# 帯の中で下位ほど暗くする度合いだけを指定する (1.0 にすると帯の中は全部同じ明るさ)。
+#
+# セルコンポーネントは<b>明るい筐体の上に数ドットだけ色が乗る</b>デザインなので、
+# 明るさを落とすと「濁った点」に見えてしまう。帯の中の階層差はドットの数と配置
+# (5 パターン) でも付いているため、色は鮮やかさを優先して高めに寄せてある。
+BAND_MIN_BRIGHTNESS = 0.88
+
 # --------------------------------------------------------------------------------------
 # 虹色にする階層 (最上段の特別扱い)
 # --------------------------------------------------------------------------------------
@@ -345,6 +353,29 @@ def fit_luminance(color, target: float) -> tuple[int, int, int]:
         return rgb_of(s0, search(lambda v: rgb_of(s0, v), 0.0, 1.0))
     # 明度は振り切っているので、ここから先は彩度を落として明るくする (パステル寄りになる)
     return rgb_of(search(lambda s: rgb_of(s, 1.0), s0, 0.0), 1.0)
+
+
+def band_color_value(tier: str, tiers: list[str]) -> tuple[int, int, int]:
+    """帯の色を<b>明度の比</b>で決める。セル (アイテム) 用。
+
+    ブロックは明るい地の上に載るので輝度を揃える必要があるが
+    ({@link band_color})、アイテムはインベントリの暗い背景に置かれるので、
+    輝度を揃えると全体が沈んで濁ってしまう。
+    アイテム側は色相ごとの<b>自然な明るさをそのまま活かす</b>ほうが鮮やかに出る。
+
+    色相と彩度はブロック側と共通なので、同じ階層のブロックとアイテムは
+    明るさが違うだけで同じ色味に見える。
+    """
+    if tier in STORAGE_TIER_OVERRIDES:
+        return parse_hex(STORAGE_TIER_OVERRIDES[tier])
+    if tier in STORAGE_RAINBOW_TIERS:
+        return parse_hex(RAINBOW_BASE)
+    band = tier[-1]
+    in_band = [t for t in tiers if t[-1] == band
+               and t not in STORAGE_TIER_OVERRIDES and t not in STORAGE_RAINBOW_TIERS]
+    pos = in_band.index(tier) / max(1, len(in_band) - 1)
+    return scale(parse_hex(STORAGE_BAND_COLORS[band]),
+                 BAND_MIN_BRIGHTNESS + (1.0 - BAND_MIN_BRIGHTNESS) * pos)
 
 
 def band_color(tier: str, tiers: list[str]) -> tuple[int, int, int]:

@@ -63,7 +63,7 @@ from gen_crafting_textures import (  # noqa: E402  (パス調整の後に import
     RAINBOW_BASE,
     RAINBOW_STEP,
     STORAGE_RAINBOW_TIERS,
-    band_color,
+    band_color_value,
     hue_rotate,
     rainbow_recolor,
     STORAGE_BAND_COLORS,
@@ -154,12 +154,17 @@ COMPONENT_FALLBACK = [
 
 
 def tier_color(tier: str) -> tuple[int, int, int]:
-    """階層色。ブロック側 (gen_crafting_textures.storage_color) と<b>同じ実装</b>を呼ぶ。
+    """階層色。<b>アイテム用なので明度ランプのほう</b>を使う。
 
-    虹色の階層は帯の位置計算から外れるので、ブロック側と階層一覧の中身が
-    多少違っても、他の階層の色は完全に一致する。
+    ブロック側 (gen_crafting_textures.storage_color) は明るい地に載る都合で
+    知覚輝度を揃えているが、同じことをアイテムでやると
+    インベントリの暗い背景に対して全体が沈み、黄緑や緑の帯が濁ってしまう。
+    アイテムは色相ごとの自然な明るさをそのまま活かす。
+
+    色相と彩度は帯の基準色 (STORAGE_BAND_COLORS) をブロックと共有しているので、
+    同じ階層のブロックとアイテムは明るさが違うだけで同じ色味に見える。
     """
-    return band_color(tier, CELL_TIERS)
+    return band_color_value(tier, CELL_TIERS)
 
 
 def pattern_index(tier: str) -> int:
@@ -172,52 +177,6 @@ def pattern_index(tier: str) -> int:
 # --------------------------------------------------------------------------------------
 # 色ユーティリティ
 # --------------------------------------------------------------------------------------
-
-
-def hue_rotate(template: Image.Image, target, rainbow: bool = False,
-               min_sat: float = MIN_SAT, step: float | None = None) -> Image.Image:
-    """色付きテンプレートを階層色に回す。彩度の無い画素 (筐体のグレー) は触らない。
-
-    「テンプレの主要色相 → target の色相」の回転なので、1 枚の中の色相差
-    (濃い緑の陰など) は相対関係のまま保たれる。明度はテンプレの最大明度が
-    target の明度になるよう比率で合わせる。
-    """
-    src = template.convert("RGBA")
-    ref_h, _, ref_v = dominant_hue(src, min_sat)
-    tgt_h, tgt_s, tgt_v = colorsys.rgb_to_hsv(*[c / 255 for c in target])
-    delta = tgt_h - ref_h
-    gain = tgt_v / ref_v if ref_v > 0 else 1.0
-
-    out = []
-    width = src.width
-    for i, (r, g, b, a) in enumerate(src.getdata()):
-        if a == 0:
-            out.append((r, g, b, a))
-            continue
-        h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
-        if s < min_sat:
-            out.append((r, g, b, a))       # 地のグレーはそのまま
-            continue
-        shift = delta
-        if rainbow:
-            x, y = i % width, i // width
-            shift += (RAINBOW_STEP if step is None else step) * (x + y - 6)
-        nr, ng, nb = colorsys.hsv_to_rgb((h + shift) % 1.0, s, min(1.0, v * gain))
-        out.append((round(nr * 255), round(ng * 255), round(nb * 255), a))
-
-    result = Image.new("RGBA", src.size)
-    result.putdata(out)
-    return result
-
-
-def rainbow_recolor(template: Image.Image, target, step: float | None = None) -> Image.Image:
-    """グレースケールのテンプレートを (x+y) で色相を振りながら染める。
-
-    step は「(x+y) が 1 増えるごとに回す色相」。光る部分が狭い絵ほど大きくしないと
-    虹に見えないので、呼び出し側で指定できるようにしてある。
-    """
-    base = recolor(template, target)
-    return hue_rotate(base, target, rainbow=True, min_sat=0.05, step=step)
 
 
 def paint(template: Image.Image, tier: str, color) -> Image.Image:
