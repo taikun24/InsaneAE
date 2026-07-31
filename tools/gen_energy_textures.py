@@ -20,7 +20,10 @@
 見た目は AE2 のエネルギーセルと同じ考え方で、中央のコアから十字に伸びる 4 段の
 セグメントが残量ぶんだけ光る。消灯中の段も階層色で(暗く)描いてあるので、
 空っぽでも何階層のセルかは見て分かる。<b>階層の色は 1 段ごとに色相を回した
-虹のグラデーション</b>で、最上段 (cosmic) だけはドットごとに色相を一周させた虹色になる。
+虹のグラデーション</b>で、水色 → 青 → 紫 → ピンクと進む。ただし<b>色相を回すだけだと
+明るさが桁違いに変わる</b>ので、相対輝度は ENERGY_LUMA に揃えてある (揃えないと
+中段の青紫だけが真っ黒に沈む)。最上段 (cosmic) だけは<b>残量の段ごとに色相が変わる
+同心の虹色</b>になり、充電が進むにつれて色が増えていく。
 
 --------------------------------------------------------------------------------------
 下敷きの差し替え
@@ -56,7 +59,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from gen_crafting_textures import (hue_rotate, load_template, rainbow_recolor,
+from gen_crafting_textures import (RED, fit_luminance, load_template, rainbow_recolor,
                                    read_minecraft_version, recolor,
                                    resolve_template_dirs, write_dir)  # noqa: E402  (パス調整の後に import する)
 
@@ -81,15 +84,41 @@ RAINBOW_TIERS = {"cosmic"}
 HUE_START = 0.50
 HUE_END = 0.92
 SATURATION = 0.82
-VALUE = 1.00
 
-# 虹色の階層の基準色と、(x+y) 1 ドットあたりに回す色相。
-# 光るのは十字の部分だけ (対角で 16 ドットぶん) なので、そこで一周させる。
+# 階層色の<b>相対輝度</b>を (最下段, 最上段) の範囲に揃える。
+#
+# 色相を回すだけだと「人が感じる明るさ」が色によって桁違いに変わる。この階層は
+# 水色 → 青 → 紫 → ピンクと回すので、明度を 1.0 で固定すると水色は輝度 0.79、
+# 中段の青紫は 0.11 と<b>7 倍も差が出て</b>、中段のセルだけが真っ黒に沈んでいた。
+# 輝度で揃えたうえで、上位ほど少しだけ明るくして階層の進みが分かるようにする。
+#
+# 光る部分は暗い落とし込みの中にあるので、地 (一番明るいところで 0.888) ほど
+# 明るくする必要はない。上げすぎると白っぽくなって色が飛ぶ。
+ENERGY_LUMA = (0.16, 0.32)
+
+# 虹色の階層の基準色と、色相の振り方。
+#
+# <b>中心からの距離 (ring) で振る</b>のが要点。このテクスチャは残量の段が
+# 中心からのリングそのものなので、リングごとに色相を回すと<b>段と虹の輪が一致し</b>、
+# 充電が進むごとに色が変わって見える。斜め (diag) で振ると十字に伸びる腕の上で
+# 色相がばらけ、同じ段なのに色が違う濁った見た目になった。
+#
+# 輝度は保つ (keep_luma)。ここは 4 リングしかないので 1 リングあたりの回転が大きく、
+# 保たないと「金色に光る輪」と「黒く沈む輪」が交互に出てしまう。
 RAINBOW_BASE = "#00e5ff"
-RAINBOW_STEP = -1.0 / 16.0
+RAINBOW_STEP = -1.0 / 4.0
+RAINBOW_AXIS = "ring"
+RAINBOW_KEEP_LUMA = True
 
 MAX_FULLNESS = 4          # EnergyCellBlock.MAX_FULLNESS
 SIZE = 16
+
+# 色 (energy_color.png) と充電 (energy_light.png) を<b>何色で描いてあるか</b>。
+# 宣言しておくと「その色相 → 階層色の色相」の回転になるので、1 枚の中でわざとずらした
+# 色相差がそのまま保たれる。None にすると下敷きの主要色相を自動判定する。
+# クラフトストレージの協調処理ユニットと同じく赤で描く前提。
+# 下敷きがグレースケールなら、この指定は無視されて明度から染める方式になる。
+ENERGY_TEMPLATE_HUE = RED
 
 # --------------------------------------------------------------------------------------
 # 手続き描画のパラメータ
@@ -128,13 +157,18 @@ COLOR_SATURATION = 0.12
 
 
 def tier_color(tier: str) -> tuple[int, int, int]:
-    """階層の色。色相を 1 段ずつ回す (虹色の階層は基準色を返す)。"""
+    """階層の色。色相を 1 段ずつ回し、<b>相対輝度は ENERGY_LUMA に揃える</b>。
+
+    虹色の階層は基準色を返す (色相はドットごとに振られるので、ここでは輝度だけ合わせる)。
+    """
+    lo, hi = ENERGY_LUMA
     if tier in RAINBOW_TIERS:
-        return parse_hex(RAINBOW_BASE)
+        return fit_luminance(parse_hex(RAINBOW_BASE), hi)
     ramp = [t for t in ENERGY_TIERS if t not in RAINBOW_TIERS]
     pos = ramp.index(tier) / max(1, len(ramp) - 1)
     hue = HUE_START + (HUE_END - HUE_START) * pos
-    return tuple(round(c * 255) for c in colorsys.hsv_to_rgb(hue, SATURATION, VALUE))
+    rgb = tuple(round(c * 255) for c in colorsys.hsv_to_rgb(hue, SATURATION, 1.0))
+    return fit_luminance(rgb, lo + (hi - lo) * pos)
 
 
 def parse_hex(value: str) -> tuple[int, int, int]:
@@ -173,16 +207,6 @@ def segment_rings(light: Image.Image) -> dict[int, int]:
         print(f"警告: 発光レイヤの段数が {step} 段。残量は 0〜{MAX_FULLNESS} なので "
               f"{MAX_FULLNESS} 段で描くこと (多い/少ない段は端の残量に丸められる)")
     return mapping
-
-
-def is_greyscale(image: Image.Image, threshold: float = 0.05) -> bool:
-    """下敷きが「陰影だけ」かどうか。色が付いていれば色相を回す方で染める。"""
-    for r, g, b, a in image.getdata():
-        if a == 0:
-            continue
-        if colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)[1] >= threshold:
-            return False
-    return True
 
 
 def split_color(base: Image.Image) -> tuple[Image.Image, Image.Image | None]:
@@ -286,14 +310,19 @@ def _next_to_chassis(x: int, y: int) -> bool:
 def paint(template: Image.Image, tier: str, color) -> Image.Image:
     """テンプレートを階層色に染める (虹色の階層も面倒を見る)。
 
-    グレースケールの下敷きは明度から染め、色付きの下敷きは色相を回すだけにする
-    (淡い色合いを潰さないため)。
+    <b>クラフトストレージ側と同じ {@code recolor} を使う。</b>下敷きがグレースケールなら
+    明度から染め、色を付けて描いてあるなら「{@link ENERGY_TEMPLATE_HUE} → 階層色の色相」の
+    回転になり、陰影は<b>輝度の比</b>で保たれる。
+
+    以前は色付きの下敷きに対して色相を回すだけ ({@code hue_rotate}) にしていたが、
+    それだと<b>下敷きの彩度がそのまま上限になる</b>。今の下敷きは彩度 0.55 までしか
+    使っていないので、階層色の彩度 (SATURATION) をいくら上げても全階層が
+    パステルのまま眠い色になっていた。
     """
-    rainbow = tier in RAINBOW_TIERS
-    if is_greyscale(template):
-        return rainbow_recolor(template, color, RAINBOW_STEP) if rainbow \
-            else recolor(template, color)
-    return hue_rotate(template, color, rainbow=rainbow, step=RAINBOW_STEP)
+    if tier in RAINBOW_TIERS:
+        return rainbow_recolor(template, color, RAINBOW_STEP, ENERGY_TEMPLATE_HUE,
+                               RAINBOW_AXIS, RAINBOW_KEEP_LUMA)
+    return recolor(template, color, ENERGY_TEMPLATE_HUE)
 
 
 def masked(light: Image.Image, fullness: int, rings: dict[int, int]) -> Image.Image:

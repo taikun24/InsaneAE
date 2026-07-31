@@ -186,12 +186,30 @@ BAND_MIN_BRIGHTNESS = 0.88
 # --------------------------------------------------------------------------------------
 # 虹色にする階層 (最上段の特別扱い)
 # --------------------------------------------------------------------------------------
-# 単色ではなく (x+y) で色相を一周させる。セル側 (gen_cell_textures.py) の 8E と同じ扱い。
+# 単色ではなく画素の位置で色相を振る。セル側 (gen_cell_textures.py) の 8E と同じ扱い。
 # ここに入れた階層は帯の位置計算から外れるので、足しても他の階層の色は動かない。
 STORAGE_RAINBOW_TIERS = {"8e"}
 ACCELERATOR_RAINBOW_TIERS = {"2g"}
-RAINBOW_BASE = "#df00ff"     # (x+y) == 6 の位置の色
+
+# 虹の振り方は<b>種類ごとに変える</b>。地・中央・発光の下敷きを 2 種類で共用している
+# (crafting_*.png) ので、ここまで同じにすると 8E ストレージと 2G 協調処理ユニットが
+# 1 ドットも違わない絵になってしまう。基準色・振る向き・1 ドットあたりの回転量の
+# 3 つをずらして、最上段どうしが並んでも別物と分かるようにしてある。
+#
+# axis は色相を振る方向で、rainbow_offset() が対応している 3 種類から選ぶ。
+#   "diag"  x+y      左上→右下の斜めに流れる
+#   "anti"  x-y      右上→左下の斜めに流れる
+#   "ring"  中心からの距離  中心から外へ同心に広がる
+RAINBOW_BASE = "#df00ff"     # ストレージ 8E の基準色。(x+y) == 6 の位置がこの色になる
 RAINBOW_STEP = -1.0 / 32.0   # x+y が 1 増えるごとに回す色相
+RAINBOW_AXIS = "diag"        # 斜めにゆっくり流れる虹
+
+# 2G は<b>同じ基準色のまま振り方だけ変える</b>。中心から外へ 1 リングごとに 1/4 周ぶん
+# 回すので、中央のピンクから シアン → 緑 → マゼンタ → 紫 と同心に広がる。
+# 8E の「斜めにゆっくり流れる虹」とは絵として全く別物になる。
+ACCELERATOR_RAINBOW_BASE = RAINBOW_BASE
+ACCELERATOR_RAINBOW_STEP = -1.0 / 4.0
+ACCELERATOR_RAINBOW_AXIS = "ring"
 
 # --------------------------------------------------------------------------------------
 # テンプレートを「何色で描いてあるか」
@@ -212,6 +230,9 @@ ACCELERATOR_TEMPLATE_HUE = RED    # 中央と発光は赤で描く
 
 # 色相を持つ画素とみなす最小彩度。これ未満は「地のグレー / 白いハイライト」として扱う。
 MIN_SAT = 0.15
+
+# 「彩度が同じ画素」とみなす幅 (recolor の基準画素を選ぶときに使う)。
+SAT_TIE = 0.05
 
 # --------------------------------------------------------------------------------------
 # 手続き描画のパラメータ (テンプレートが無いときに使う)
@@ -407,7 +428,7 @@ def accelerator_color(tier: str) -> tuple[int, int, int]:
     虹色の階層も<b>階層一覧からは外さない</b>ので、下位の色は虹色を足しても動かない。
     """
     if tier in ACCELERATOR_RAINBOW_TIERS:
-        return parse_hex(RAINBOW_BASE)
+        return parse_hex(ACCELERATOR_RAINBOW_BASE)
     pos = ACCELERATOR_TIERS.index(tier) / max(1, len(ACCELERATOR_TIERS) - 1)
     h, s, v = colorsys.rgb_to_hsv(*[c / 255 for c in parse_hex(ACCELERATOR_COLOR)])
     s *= 1.0 - ACCELERATOR_MAX_DESATURATION * pos
@@ -480,13 +501,20 @@ def recolor(template: Image.Image, target, source_hue: float | None = None) -> I
     # 陰影を彩度で描いた絵 (濃い赤 → 薄い赤) を明度の比だけで写すと、
     # 色相によって輝度差になったりならなかったりして、階層によって
     # 陰影が消えて単色に見えてしまう (黄緑の帯で顕著だった)。
-    # 基準は「一番彩度の高い画素」= 階層色そのものになる画素。
+    #
+    # 基準は「階層色そのものになる画素」= 彩度が一番高い画素。ただし<b>同じ彩度の画素が
+    # 複数あるときは一番明るいものを採る</b>。ここを走査順まかせにすると、濃い影のほうが
+    # 基準に選ばれた瞬間に本体の輝度比が 1 を大きく超え、fit_luminance が彩度を捨てて
+    # <b>面全体が白く飛ぶ</b> (エネルギーセルの下敷きが彩度 0.55 の 2 色を持っていて実際に起きた)。
     ref_lum = 0.0
     if not greyscale:
-        core = max((p for p in px if p[3] > 0
-                    and colorsys.rgb_to_hsv(*[c / 255 for c in p[:3]])[1] >= MIN_SAT),
-                   key=lambda p: colorsys.rgb_to_hsv(*[c / 255 for c in p[:3]])[1], default=None)
-        ref_lum = relative_luminance(core[:3]) if core else 0.0
+        colored = [(colorsys.rgb_to_hsv(*[c / 255 for c in p[:3]])[1], relative_luminance(p[:3]))
+                   for p in px if p[3] > 0
+                   and colorsys.rgb_to_hsv(*[c / 255 for c in p[:3]])[1] >= MIN_SAT]
+        if colored:
+            top = max(s for s, _ in colored)
+            # 彩度が僅かに違うだけの画素も同格とみなす (手描きだとぴったりは揃わない)。
+            ref_lum = max(lum for s, lum in colored if s >= top - SAT_TIE)
     tgt_lum = relative_luminance(target)
 
     out = []
@@ -515,15 +543,43 @@ def recolor(template: Image.Image, target, source_hue: float | None = None) -> I
     return result
 
 
+def rainbow_offset(x: int, y: int, width: int, axis: str) -> float:
+    """虹色を振るときの「その画素の位置」。axis で向きを選ぶ。
+
+    ここで返した値に step を掛けたぶんだけ色相が回る。0 を返す位置が基準色になる。
+
+        "diag"  x+y            左上→右下の斜め。0 は (x+y) == 6 の帯
+        "anti"  x-y            右上→左下の斜め。0 は主対角線
+        "ring"  中心からの距離  中心から外へ同心に広がる。0 は中央の 2x2
+
+    y は<b>コマ内の位置</b>にしてある (発光レイヤが 16xN の縦並びでも、
+    コマごとに同じ模様が出るように)。
+    """
+    row = y % width
+    if axis == "anti":
+        return x - row
+    if axis == "ring":
+        c = (width - 1) / 2
+        return round(max(abs(x - c), abs(row - c)) - 0.5)
+    return x + row - 6
+
+
 def hue_rotate(template: Image.Image, target, rainbow: bool = False,
-               min_sat: float = MIN_SAT, step: float | None = None) -> Image.Image:
+               min_sat: float = MIN_SAT, step: float | None = None,
+               axis: str = RAINBOW_AXIS, keep_luma: bool = False) -> Image.Image:
     """色付きテンプレートの色相を回す。彩度の無い画素 (地のグレー) は触らない。
 
     「テンプレの主要色相 → target の色相」の回転なので、1 枚の中の色相差
     (濃い緑の陰など) は相対関係のまま保たれる。明度はテンプレの最大明度が
     target の明度になるよう比率で合わせる。
 
-    rainbow=True にすると、そこからさらに (x+y) に応じて色相を振る (虹色の階層用)。
+    rainbow=True にすると、そこからさらに画素の位置に応じて色相を振る (虹色の階層用)。
+    振る向きは axis で選ぶ ({@link rainbow_offset})。
+
+    keep_luma=True にすると、<b>色相を回しても相対輝度が変わらない</b>ようにする。
+    彩度と明度を据え置いたまま色相だけ回すと、黄色は輝度 0.93・青は 0.07 と
+    桁違いに明るさが変わるので、虹の輪が「金色に光る帯」と「黒く沈む帯」の
+    まだら模様になってしまう。輝度を保つと色だけが変わる素直な虹になる。
     """
     src = template.convert("RGBA")
     ref_h, _, ref_v = dominant_hue(src, min_sat)
@@ -543,10 +599,15 @@ def hue_rotate(template: Image.Image, target, rainbow: bool = False,
             continue
         shift = delta
         if rainbow:
-            x, y = i % width, i // width
-            shift += (RAINBOW_STEP if step is None else step) * (x + y - 6)
-        nr, ng, nb = colorsys.hsv_to_rgb((h + shift) % 1.0, s, min(1.0, v * gain))
-        out.append((round(nr * 255), round(ng * 255), round(nb * 255), a))
+            shift += ((RAINBOW_STEP if step is None else step)
+                      * rainbow_offset(i % width, i // width, width, axis))
+        nv = min(1.0, v * gain)
+        rotated = tuple(round(c * 255) for c in colorsys.hsv_to_rgb((h + shift) % 1.0, s, nv))
+        if keep_luma:
+            # 回す前の色 (= 色相だけ据え置いたもの) の輝度に合わせ直す。
+            unrotated = tuple(round(c * 255) for c in colorsys.hsv_to_rgb(h, s, nv))
+            rotated = fit_luminance(rotated, relative_luminance(unrotated))
+        out.append((*rotated, a))
 
     result = Image.new("RGBA", src.size)
     result.putdata(out)
@@ -554,15 +615,19 @@ def hue_rotate(template: Image.Image, target, rainbow: bool = False,
 
 
 def rainbow_recolor(template: Image.Image, target, step: float | None = None,
-                    source_hue: float | None = None) -> Image.Image:
-    """テンプレートを (x+y) で色相を振りながら染める。
+                    source_hue: float | None = None,
+                    axis: str = RAINBOW_AXIS, keep_luma: bool = False) -> Image.Image:
+    """テンプレートを画素の位置で色相を振りながら染める。
 
     まず普通に染めてから色相を振るので、グレースケールで描いた下敷きでも虹色になる。
-    step は「(x+y) が 1 増えるごとに回す色相」。光る部分が狭い絵ほど大きくしないと
+    step は「位置が 1 進むごとに回す色相」。光る部分が狭い絵ほど大きくしないと
     虹に見えないので、呼び出し側で指定できるようにしてある。
+    axis は振る向き ({@link rainbow_offset})、keep_luma は輝度を保つかどうか
+    (どちらも {@link hue_rotate} 参照)。
     """
     base = recolor(template, target, source_hue)
-    return hue_rotate(base, target, rainbow=True, min_sat=0.05, step=step)
+    return hue_rotate(base, target, rainbow=True, min_sat=0.05, step=step, axis=axis,
+                      keep_luma=keep_luma)
 
 
 # --------------------------------------------------------------------------------------
@@ -670,10 +735,15 @@ def write_dir(directory: str | list[str]) -> str:
 class Kind:
     """ストレージ / 協調処理ユニットのどちらかぶんの下敷き一式。"""
 
-    def __init__(self, prefix: str, mask, directory: str, template_hue: float | None = None):
+    def __init__(self, prefix: str, mask, directory: str, template_hue: float | None = None,
+                 rainbow_step: float = RAINBOW_STEP, rainbow_axis: str = RAINBOW_AXIS):
         self.prefix = prefix
         # 中央 (color) と発光 (light) を「何色で描いてあるか」。base は染めないので関係ない。
         self.template_hue = template_hue
+        # 最上段の虹色の振り方。下敷きを 2 種類で共用しているので、
+        # ここを変えないとストレージと協調処理ユニットの最上段が同じ絵になる。
+        self.rainbow_step = rainbow_step
+        self.rainbow_axis = rainbow_axis
         self.used = []
         self.base = self._pick(directory, "base", draw_base)
         self.color = self._pick(directory, "color", draw_color_layer)
@@ -699,7 +769,8 @@ class Kind:
 
     def _paint(self, template: Image.Image, color, rainbow: bool) -> Image.Image:
         if rainbow:
-            return rainbow_recolor(template, color, source_hue=self.template_hue)
+            return rainbow_recolor(template, color, step=self.rainbow_step,
+                                   source_hue=self.template_hue, axis=self.rainbow_axis)
         return recolor(template, color, self.template_hue)
 
     def face(self, color, rainbow: bool = False) -> Image.Image:
@@ -767,8 +838,10 @@ def main() -> None:
         return
 
     os.makedirs(OUT_DIR, exist_ok=True)
-    storage = Kind("storage", STORAGE_MASK, args.templates, STORAGE_TEMPLATE_HUE)
-    accelerator = Kind("accelerator", ACCELERATOR_MASK, args.templates, ACCELERATOR_TEMPLATE_HUE)
+    storage = Kind("storage", STORAGE_MASK, args.templates, STORAGE_TEMPLATE_HUE,
+                   RAINBOW_STEP, RAINBOW_AXIS)
+    accelerator = Kind("accelerator", ACCELERATOR_MASK, args.templates, ACCELERATOR_TEMPLATE_HUE,
+                       ACCELERATOR_RAINBOW_STEP, ACCELERATOR_RAINBOW_AXIS)
     print(f"下敷き: storage={storage.used} accelerator={accelerator.used}\n")
 
     for tier in STORAGE_TIERS:

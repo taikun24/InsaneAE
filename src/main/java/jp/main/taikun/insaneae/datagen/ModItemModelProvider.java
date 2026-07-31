@@ -22,9 +22,16 @@ import net.neoforged.neoforge.common.data.ExistingFileHelper;
  * レイヤで重ねる。生成側のマスクは借りているハウジングのドット位置に合わせてあるので、
  * ハウジングを差し替えるならマスクも描き直すこと。</p>
  *
- * <p>レイヤ番号には意味がある。AE2 の色ハンドラ ({@code BasicStorageCell#getColor} /
- * {@code AbstractPortableCell#getColor}) が <b>layer1 を中身の量の色</b>、
- * ポータブルはさらに <b>layer2 を染色色</b> として塗るので、この順番は動かせない。</p>
+ * <p><b>レイヤ番号には意味がある。</b>{@code item/generated} は layerN に tintindex N を振り、
+ * AE2 の色ハンドラ ({@code BasicStorageCell#getColor} / {@code AbstractPortableCell#getColor}) が
+ * <b>tintindex 1 を中身の量の色</b>、ポータブルはさらに <b>tintindex 2 を画面の色</b>として塗る。
+ * したがってレイヤの順番は AE2 / MEGA 本体のモデルと 1 ドットも違えてはならない。</p>
+ *
+ * <p>ポータブルセルの順番は <b>ハウジング → LED → 画面 → 側面</b>。
+ * 1.20.1 では画面が layer0・ハウジングが layer2 だったが、AE2 19.2 で入れ替わった
+ * ({@code ae2:item/portable_item_cell_1k} 参照)。<b>古い順番のままだと不透明なハウジングが
+ * 一番上に来て他のレイヤを全部隠し、そのうえ染色色 (既定は白) で塗られるので、
+ * ポータブルセルが真っ白な塊になる。</b></p>
  *
  * <p>化学物質セルは Applied Mekanistics 未導入だとアイテム自体が登録されないが、
  * モデルは名前だけで生成できるので常に出力しておく (使われないだけで害はない)。</p>
@@ -48,15 +55,18 @@ public class ModItemModelProvider extends ItemModelProvider {
      */
     private static final ResourceLocation PORTABLE_ITEM_SCREEN = mega("ae2", "item/portable_cell_screen");
     private static final ResourceLocation PORTABLE_FLUID_SCREEN = PORTABLE_ITEM_SCREEN;
-    private static final ResourceLocation PORTABLE_ITEM_HOUSING = mega("ae2", "item/portable_cell_item_housing");
-    private static final ResourceLocation PORTABLE_FLUID_HOUSING = mega("ae2", "item/portable_cell_fluid_housing");
     /**
-     * 化学物質のポータブルセル用の筐体。
+     * ポータブルセルの筐体。<b>MEGA のものを使う</b> (AE2 のものではない)。
      *
-     * <p>1.20.1 では AE2 の汎用テクスチャ {@code ae2:item/portable_cell_housing} を使っていたが、
-     * AE2 19.2 で汎用版が無くなった (種類ごとの専用テクスチャのみになった)。
-     * MEGA Cells が化学物質用の筐体を持っているのでそちらを使う。</p>
+     * <p>AE2 19.2 の {@code ae2:item/portable_cell_*_housing} は<b>ほぼ真っ白なグレースケール</b>
+     * になっている。1.20.1 では濃いグレーで描かれていたので AE2 のものをそのまま借りていたが、
+     * そのまま 1.21.1 に持ってくるとポータブルセルが真っ白な塊になってしまう。
+     * MEGA は 4.x でも自前の濃い筐体を持っているので、通常セル (mega_*_cell_housing) と揃えて
+     * そちらを使う。化学物質用は 1.20.1 の時点で既に MEGA のものを使っていた
+     * (AE2 19.2 で汎用の {@code ae2:item/portable_cell_housing} が無くなったため)。</p>
      */
+    private static final ResourceLocation PORTABLE_ITEM_HOUSING = mega("megacells", "item/portable_cell_item_housing");
+    private static final ResourceLocation PORTABLE_FLUID_HOUSING = mega("megacells", "item/portable_cell_fluid_housing");
     private static final ResourceLocation PORTABLE_HOUSING = mega("megacells", "item/portable_cell_chemical_housing");
     private static final ResourceLocation SPEED_CARD = mega("ae2", "item/card_speed");
     /** AE2 の {@code InitItemModelsProperties} が登録するエネルギーセルの残量プロパティ。 */
@@ -86,12 +96,13 @@ public class ModItemModelProvider extends ItemModelProvider {
             layered("fluid_storage_cell_" + id, FLUID_HOUSING, CELL_LED, standardCell(id));
             layered("chemical_storage_cell_" + id, CHEMICAL_HOUSING, CELL_LED, standardCell(id));
 
+            // ハウジング → LED → 画面 (layer2 が染色色で塗られる) → 階層色、の順。
             layered("portable_item_cell_" + id,
-                    PORTABLE_ITEM_SCREEN, PORTABLE_LED, PORTABLE_ITEM_HOUSING, portableSide(id));
+                    PORTABLE_ITEM_HOUSING, PORTABLE_LED, PORTABLE_ITEM_SCREEN, portableSide(id));
             layered("portable_fluid_cell_" + id,
-                    PORTABLE_FLUID_SCREEN, PORTABLE_LED, PORTABLE_FLUID_HOUSING, portableSide(id));
+                    PORTABLE_FLUID_HOUSING, PORTABLE_LED, PORTABLE_FLUID_SCREEN, portableSide(id));
             layered("portable_chemical_cell_" + id,
-                    PORTABLE_ITEM_SCREEN, PORTABLE_LED, PORTABLE_HOUSING, portableSide(id));
+                    PORTABLE_HOUSING, PORTABLE_LED, PORTABLE_ITEM_SCREEN, portableSide(id));
         }
 
         simple("creative_cell");
