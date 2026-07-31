@@ -23,12 +23,24 @@ tools/textures/ に次の名前で置くと、そちらが優先して使われ�
 それをペイントソフトで直してから戻すのが早い。
 
     storage_base.png       未 formed 面の下地。階層に依らず<b>そのまま</b>使われる
-    storage_color.png      その上に重ねる色レイヤ。不透明な画素だけ階層色に染まる
-    storage_light.png      formed の発光レイヤ。全体が階層色に染まる
+    storage_color.png      その上に重ねる中央の色レイヤ。階層色に染まる
+    storage_light.png      formed の発光レイヤ。階層色に染まる
     accelerator_base.png / accelerator_color.png / accelerator_light.png
 
-染め方は HSV で、「テンプレの一番明るい画素 → 階層色そのもの」になるように
-色相を回し、彩度と明度を比率で合わせる。つまり<b>グレースケールで陰影だけ描けばよい</b>。
+<b>base は染めないので、地に色が付いていても構わない</b> (無彩色で描く必要はない)。
+階層に依らない部分はすべて base に描くこと。
+
+染める 2 枚 (color / light) は、次のどちらの描き方でもよい。
+
+    グレースケールで描く  明度だけが残り、色相と彩度は階層色のものになる。
+                          陰影だけ描けばよいが、1 枚の中で色相は変えられない。
+    色を付けて描く        「基準色相 → 階層色の色相」の回転になる。1 枚の中の
+                          色相差はそのまま保たれるので、中央のグラデーションなど
+                          意図的な色相のズレを残せる。基準色相は下の
+                          STORAGE_TEMPLATE_HUE / ACCELERATOR_TEMPLATE_HUE で宣言する
+                          (協調処理ユニットは赤で描く前提にしてある)。
+
+どちらの場合も彩度の無い画素は白のまま残るので、光の粒は白くできる。
 アルファはそのまま維持されるので、抜きたい部分は透明にしておくこと。
 
 発光レイヤは高さが 16 ならアニメ無し、16xN ならそのまま N コマとして扱う。
@@ -78,6 +90,26 @@ ACCELERATOR_TIERS = ["16x", "64x", "256x", "1k", "4k", "16k", "64k", "256k",
 ACCELERATOR_COLOR = "#ff00ff"
 ACCELERATOR_MIN_BRIGHTNESS = 0.60
 ACCELERATOR_MAX_DESATURATION = 0.80   # 最上段でどこまで白に寄せるか
+
+# --------------------------------------------------------------------------------------
+# テンプレートを「何色で描いてあるか」
+# --------------------------------------------------------------------------------------
+# 中央 (color) と発光 (light) のテンプレートに色を付けて描く場合、その基準色相をここで宣言する。
+# 宣言しておくと「その色相 → 階層色の色相」の回転になるので、1 枚の中でわざと色相を
+# ずらした部分 (中央のグラデーションなど) が相対関係のまま保たれる。
+#
+# None にすると自動判定 (テンプレの主要色相を基準にする)。
+# テンプレがグレースケールのままなら、どちらを指定しても今までどおり
+# 「明度だけ残して階層色を乗せる」染め方になるので、塗り替える前に設定しても害はない。
+#
+# 値は色相 (0.0〜1.0)。RED / GREEN / BLUE を使うと分かりやすい。
+RED, GREEN, BLUE = 0.0, 1.0 / 3.0, 2.0 / 3.0
+
+STORAGE_TEMPLATE_HUE = None       # 自動判定
+ACCELERATOR_TEMPLATE_HUE = RED    # 中央と発光は赤で描く
+
+# 色相を持つ画素とみなす最小彩度。これ未満は「地のグレー / 白いハイライト」として扱う。
+MIN_SAT = 0.15
 
 # --------------------------------------------------------------------------------------
 # 手続き描画のパラメータ (テンプレートが無いときに使う)
@@ -178,23 +210,65 @@ def accelerator_color(tier: str) -> tuple[int, int, int]:
     return scale(parse_hex(ACCELERATOR_COLOR), factor, ACCELERATOR_MAX_DESATURATION * pos)
 
 
-def recolor(template: Image.Image, target) -> Image.Image:
-    """テンプレートを階層色に染める。
+def dominant_hue(image: Image.Image, min_sat: float = MIN_SAT) -> tuple[float, float, float]:
+    """テンプレートの「主要な色相」と、彩度のある画素の最大彩度・全体の最大明度を返す。
 
-    「一番明るい不透明画素」が target そのものになるように HSV を合わせ、
-    他の画素はそこからの相対値を保つ。テンプレがグレースケールなら
-    彩度は target のものをそのまま使う (= 陰影だけ描けばよい)。
+    <b>面積で決める</b>のが要点。色相を 72 分割したヒストグラムに彩度のある画素だけを
+    入れ、一番画素数の多い色相を基準にする。「一番明るい画素」を基準にすると、
+    白いハイライトが 1 点あるだけで全体の回転量がそれに引きずられてしまう
+    (加速機の中央で意図しない色相のズレが出ていたのはこれが原因)。
+
+    彩度のある画素が 1 つも無ければ彩度に 0.0 を返す = グレースケール扱い。
+    """
+    counts: dict[int, int] = {}
+    peak_s = 0.0
+    peak_v = 0.0
+    for r, g, b, a in image.convert("RGBA").getdata():
+        if a == 0:
+            continue
+        h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+        peak_v = max(peak_v, v)
+        if s < min_sat:
+            continue
+        counts[round(h * 72) % 72] = counts.get(round(h * 72) % 72, 0) + 1
+        peak_s = max(peak_s, s)
+    if not counts:
+        return 0.0, 0.0, peak_v
+    return max(counts.items(), key=lambda kv: kv[1])[0] / 72.0, peak_s, peak_v
+
+
+def recolor(template: Image.Image, target, source_hue: float | None = None) -> Image.Image:
+    """テンプレートを階層色に染める。テンプレの描き方で 2 通りに分かれる。
+
+    <b>グレースケールで描いた場合</b> (彩度のある画素が 1 つも無い)
+        明度だけを残し、色相と彩度は target のものをそのまま乗せる。
+        陰影だけ描けばよいので楽だが、1 枚の中で色相を変えることはできない。
+
+    <b>色を付けて描いた場合</b>
+        「テンプレの基準色相 → target の色相」の回転になる。
+        1 枚の中の色相差は<b>相対関係のまま保たれる</b>ので、
+        わざと色相をずらした陰影やグラデーションがそのまま出る。
+        基準色相は source_hue で明示できる (省略時はテンプレの主要色相)。
+        たとえば赤 (#ff0000) で描いて source_hue=0.0 を渡せば、
+        「赤で描いた絵をそのまま階層色に回した」結果になる。
+
+    どちらの場合も彩度の無い画素 (白いハイライトなど) は彩度 0 のまま残るので、
+    光の粒などは白いままにできる。明度はテンプレの最大明度が target の明度に
+    なるよう比率で合わせる。アルファはそのまま維持される。
     """
     src = template.convert("RGBA")
     px = list(src.getdata())
-    opaque = [p for p in px if p[3] > 0]
-    if not opaque:
+    if not any(p[3] > 0 for p in px):
         return src
 
-    hsv = [colorsys.rgb_to_hsv(*[c / 255 for c in p[:3]]) for p in opaque]
-    peak_h, peak_s, peak_v = max(hsv, key=lambda c: c[2])
+    ref_h, ref_s, peak_v = dominant_hue(src)
+    if source_hue is not None:
+        ref_h = source_hue
+    # 彩度のある画素が無ければ色相を回しようがないので、グレースケールとして扱う
+    # (source_hue を指定してあっても同じ。テンプレを塗るまでは今までどおり動く)。
+    greyscale = ref_s <= 0.0
+    peak_v = peak_v or 1.0
     tgt_h, tgt_s, tgt_v = colorsys.rgb_to_hsv(*[c / 255 for c in target])
-    greyscale = peak_s < 0.05
 
     out = []
     for p in px:
@@ -205,9 +279,9 @@ def recolor(template: Image.Image, target) -> Image.Image:
         if greyscale:
             nh, ns = tgt_h, tgt_s
         else:
-            nh = (h + (tgt_h - peak_h)) % 1.0
-            ns = min(1.0, s * (tgt_s / peak_s))
-        nv = min(1.0, v * (tgt_v / peak_v)) if peak_v > 0 else 0.0
+            nh = (h + (tgt_h - ref_h)) % 1.0
+            ns = min(1.0, s * (tgt_s / ref_s))
+        nv = min(1.0, v * (tgt_v / peak_v))
         r, g, b = colorsys.hsv_to_rgb(nh, ns, nv)
         out.append((round(r * 255), round(g * 255), round(b * 255), p[3]))
 
@@ -312,8 +386,10 @@ def load_template(directory: str, name: str) -> Image.Image | None:
 class Kind:
     """ストレージ / 協調処理ユニットのどちらかぶんの下敷き一式。"""
 
-    def __init__(self, prefix: str, mask, directory: str):
+    def __init__(self, prefix: str, mask, directory: str, template_hue: float | None = None):
         self.prefix = prefix
+        # 中央 (color) と発光 (light) を「何色で描いてあるか」。base は染めないので関係ない。
+        self.template_hue = template_hue
         self.base = load_template(directory, f"{prefix}_base.png") or draw_base()
         self.color = load_template(directory, f"{prefix}_color.png") or draw_color_layer()
         self.light = load_template(directory, f"{prefix}_light.png") or draw_light_layer(mask)
@@ -324,12 +400,14 @@ class Kind:
         ]
 
     def face(self, color) -> Image.Image:
+        # base はそのまま。地に若干色が付いていても染まらないので、
+        # 無彩色で描く必要はない (階層に依らない部分はここに描く)。
         img = self.base.copy()
-        img.alpha_composite(recolor(self.color, color))
+        img.alpha_composite(recolor(self.color, color, self.template_hue))
         return img
 
     def light_for(self, color) -> tuple[Image.Image, int]:
-        img = recolor(self.light, color)
+        img = recolor(self.light, color, self.template_hue)
         frames = max(1, img.height // img.width)
         return img, frames
 
@@ -370,8 +448,8 @@ def main() -> None:
         return
 
     os.makedirs(OUT_DIR, exist_ok=True)
-    storage = Kind("storage", STORAGE_MASK, args.templates)
-    accelerator = Kind("accelerator", ACCELERATOR_MASK, args.templates)
+    storage = Kind("storage", STORAGE_MASK, args.templates, STORAGE_TEMPLATE_HUE)
+    accelerator = Kind("accelerator", ACCELERATOR_MASK, args.templates, ACCELERATOR_TEMPLATE_HUE)
     print(f"下敷き: storage={storage.used} accelerator={accelerator.used}\n")
 
     for tier in STORAGE_TIERS:

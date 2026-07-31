@@ -32,12 +32,19 @@ tools/textures/ に次の名前で置くと、そちらが優先して使われ�
 
     cell_overlay.png     通常セルの色レイヤ。グレースケールで陰影だけ描く (階層色に染まる)
     portable_side.png    ポータブルセルの側面の帯。グレースケールで陰影だけ描く
-    component_p0..p4.png セルコンポーネントの 5 パターン。<b>こちらは色付きのまま置く</b>
+    component_p<N>_base.png    セルコンポーネントの地。<b>染まらない</b>
+    component_p<N>_color.png   その上に重ねる、階層色に染まる部分 (色付きで描く)
 
-コンポーネントだけは色付きのテンプレートで、AE2 の 1k/4k/16k/64k/256k 相当の 5 パターンを
-帯の中で循環させる (1g,4g,16g,64g,256g → 1t,4t,... と同じ並び)。染めるときは
-「テンプレの主要な色相 → 階層色の色相」の回転になるので、1 枚の中の色の差 (濃い緑の陰など)
-はそのまま保たれる。
+コンポーネントは AE2 の 1k/4k/16k/64k/256k 相当の 5 パターン (N = 0〜4) を帯の中で
+循環させる (1g,4g,16g,64g,256g → 1t,4t,... と同じ並び)。
+
+<b>地と色は別ファイルに分けること。</b>base はそのまま下に敷かれるので、
+地に若干色が付いていても染まらない。color 側だけが「テンプレの主要な色相 →
+階層色の色相」に回されるので、1 枚の中の色の差 (濃い緑の陰など) はそのまま保たれる。
+
+    旧形式 (1 枚版 component_p<N>.png) も読める。その場合は<b>彩度で地と色を見分ける</b>
+    ので、地に色が付いていると一緒に染まってしまう。`--dump-templates` を実行すると
+    1 枚版を彩度で分けた base/color の叩き台を書き出すので、そこから手で直すのが早い。
 """
 
 from __future__ import annotations
@@ -53,8 +60,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from gen_crafting_textures import (  # noqa: E402  (パス調整の後に import する必要がある)
     BAND_MIN_BRIGHTNESS,
+    MIN_SAT,
     STORAGE_BAND_COLORS,
     STORAGE_TIER_OVERRIDES,
+    dominant_hue,
     parse_hex,
     scale,
     recolor,
@@ -167,28 +176,8 @@ def pattern_index(tier: str) -> int:
 # --------------------------------------------------------------------------------------
 
 
-def dominant_hue(image: Image.Image, min_sat: float = 0.15) -> tuple[float, float]:
-    """テンプレートの「主要な色相」と、その色の中の最大明度を返す。
-
-    彩度のある画素だけを見て、一番多い色相をテンプレートの基準色とする。
-    """
-    counts: dict[int, int] = {}
-    peak = 0.0
-    for r, g, b, a in image.getdata():
-        if a == 0:
-            continue
-        h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
-        if s < min_sat:
-            continue
-        counts[round(h * 72) % 72] = counts.get(round(h * 72) % 72, 0) + 1
-        peak = max(peak, v)
-    if not counts:
-        return 0.0, 1.0
-    return max(counts.items(), key=lambda kv: kv[1])[0] / 72.0, peak or 1.0
-
-
 def hue_rotate(template: Image.Image, target, rainbow: bool = False,
-               min_sat: float = 0.15, step: float | None = None) -> Image.Image:
+               min_sat: float = MIN_SAT, step: float | None = None) -> Image.Image:
     """色付きテンプレートを階層色に回す。彩度の無い画素 (筐体のグレー) は触らない。
 
     「テンプレの主要色相 → target の色相」の回転なので、1 枚の中の色相差
@@ -196,7 +185,7 @@ def hue_rotate(template: Image.Image, target, rainbow: bool = False,
     target の明度になるよう比率で合わせる。
     """
     src = template.convert("RGBA")
-    ref_h, ref_v = dominant_hue(src, min_sat)
+    ref_h, _, ref_v = dominant_hue(src, min_sat)
     tgt_h, tgt_s, tgt_v = colorsys.rgb_to_hsv(*[c / 255 for c in target])
     delta = tgt_h - ref_h
     gain = tgt_v / ref_v if ref_v > 0 else 1.0
@@ -271,8 +260,13 @@ def draw_portable_side() -> Image.Image:
     return img
 
 
-def draw_component_fallback() -> Image.Image:
-    """コンポーネントの下敷きが 1 枚も無いときの手続き描画。"""
+def draw_component_fallback(part: str = "all") -> Image.Image:
+    """コンポーネントの下敷きが無いときの手続き描画。
+
+    part="base"   地の部分だけ (染まらない)
+    part="color"  階層色になる部分だけ
+    part="all"    両方を 1 枚にしたもの (1 枚版 component_p<N>.png 相当)
+    """
     img = Image.new("RGBA", (SIZE, SIZE))
     px = img.load()
     for y, row in enumerate(COMPONENT_FALLBACK):
@@ -280,11 +274,10 @@ def draw_component_fallback() -> Image.Image:
             if ch == ".":
                 continue
             if ch == "#":
-                px[x, y] = (0xff, 0x42, 0xc6, 255)   # 染める対象 (彩度のある画素)
-            elif ch == "+":
-                px[x, y] = grey(0.82)
-            else:
-                px[x, y] = grey(0.38)
+                if part in ("all", "color"):
+                    px[x, y] = (0xff, 0x42, 0xc6, 255)   # 染める対象
+            elif part in ("all", "base"):
+                px[x, y] = grey(0.82) if ch == "+" else grey(0.38)
     return img
 
 
@@ -298,27 +291,62 @@ def load_template(directory: str, name: str) -> Image.Image | None:
     return Image.open(path).convert("RGBA") if os.path.isfile(path) else None
 
 
+class Component:
+    """セルコンポーネントの下敷き 1 パターンぶん。
+
+    <b>base + color の 2 枚に分けるのが推奨</b>。base はそのまま下に敷かれ、
+    color だけが階層色に染まる。地に若干色が付いていても base に置いてあれば
+    染まらないので、「無彩色で描かないと地まで染まってしまう」問題が起きない。
+
+    1 枚版 (component_p<N>.png) しか無ければ従来どおり、
+    <b>彩度で地と色を見分ける</b>方式で動く (彩度 MIN_SAT 未満は地とみなす)。
+    """
+
+    def __init__(self, base: Image.Image | None, color: Image.Image):
+        self.base = base
+        self.color = color
+
+    def render(self, tier: str, target) -> Image.Image:
+        layer = hue_rotate(self.color, target, rainbow=tier in RAINBOW_TIERS)
+        if self.base is None:
+            return layer
+        img = self.base.copy()
+        img.alpha_composite(layer)
+        return img
+
+
 class Templates:
     def __init__(self, directory: str):
         self.used: list[str] = []
         self.overlay = self._pick(directory, "cell_overlay.png", draw_cell_overlay)
         self.side = self._pick(directory, "portable_side.png", draw_portable_side)
-        self.components = [
-            self._pick(directory, f"component_p{i}.png", draw_component_fallback)
-            for i in range(5)
-        ]
+        self.components = [self._component(directory, i) for i in range(5)]
 
     def _pick(self, directory: str, name: str, fallback) -> Image.Image:
         image = load_template(directory, name)
         self.used.append(name if image is not None else f"{name} (手続き描画)")
         return image if image is not None else fallback()
 
+    def _component(self, directory: str, index: int) -> Component:
+        """base + color の 2 枚 → 1 枚版 → 手続き描画 の順に探す。"""
+        base = load_template(directory, f"component_p{index}_base.png")
+        color = load_template(directory, f"component_p{index}_color.png")
+        if color is not None:
+            self.used.append(f"component_p{index}_base+color.png"
+                             if base is not None else f"component_p{index}_color.png")
+            return Component(base, color)
+        single = load_template(directory, f"component_p{index}.png")
+        if single is not None:
+            self.used.append(f"component_p{index}.png (1 枚版)")
+            return Component(None, single)
+        self.used.append(f"component_p{index} (手続き描画)")
+        return Component(draw_component_fallback("base"), draw_component_fallback("color"))
+
     def cell(self, tier: str, color) -> Image.Image:
         return paint(self.overlay, tier, color)
 
     def component(self, tier: str, color) -> Image.Image:
-        return hue_rotate(self.components[pattern_index(tier)], color,
-                          rainbow=tier in RAINBOW_TIERS)
+        return self.components[pattern_index(tier)].render(tier, color)
 
     def portable_side(self, tier: str, color) -> Image.Image:
         return paint(self.side, tier, color)
@@ -330,16 +358,52 @@ def write(relative: str, image: Image.Image) -> None:
     image.save(path)
 
 
+def split_by_saturation(image: Image.Image, min_sat: float = MIN_SAT):
+    """1 枚版の下敷きを base (染めない) と color (染まる) の 2 枚に分ける。
+
+    彩度 min_sat 以上の画素を color 側、それ以外を base 側に振り分ける。
+    2 枚方式に移行するときの<b>叩き台</b>で、地に色が乗ってしまっている絵だと
+    境目がずれるので、書き出したあと手で直すこと。
+    """
+    src = image.convert("RGBA")
+    base = Image.new("RGBA", src.size)
+    color = Image.new("RGBA", src.size)
+    bp, cp = base.load(), color.load()
+    for i, (r, g, b, a) in enumerate(src.getdata()):
+        if a == 0:
+            continue
+        x, y = i % src.width, i // src.width
+        _, s, _ = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+        if s >= min_sat:
+            cp[x, y] = (r, g, b, a)
+        else:
+            bp[x, y] = (r, g, b, a)
+    return base, color
+
+
 def dump_templates(directory: str) -> None:
     os.makedirs(directory, exist_ok=True)
     draw_cell_overlay().save(os.path.join(directory, "cell_overlay.png"))
     draw_portable_side().save(os.path.join(directory, "portable_side.png"))
     for i in range(5):
-        path = os.path.join(directory, f"component_p{i}.png")
-        if not os.path.isfile(path):        # 既にある 5 パターンは潰さない
-            draw_component_fallback().save(path)
+        base_path = os.path.join(directory, f"component_p{i}_base.png")
+        color_path = os.path.join(directory, f"component_p{i}_color.png")
+        if os.path.isfile(base_path) or os.path.isfile(color_path):
+            continue                        # 既にある 2 枚方式の下敷きは潰さない
+        single = load_template(directory, f"component_p{i}.png")
+        if single is not None:
+            # 1 枚版があれば、彩度で地と色に分けた叩き台を書き出す。
+            base, color = split_by_saturation(single)
+        else:
+            base = draw_component_fallback("base")
+            color = draw_component_fallback("color")
+        base.save(base_path)
+        color.save(color_path)
     print(f"下敷きを書き出した -> {directory}\n"
-          f"編集して置いておけば次回から使われる (消せば手続き描画に戻る)")
+          f"編集して置いておけば次回から使われる (消せば手続き描画に戻る)\n"
+          f"コンポーネントは component_p<N>_base.png (染めない) と\n"
+          f"component_p<N>_color.png (階層色に染まる) の 2 枚方式。\n"
+          f"2 枚が揃うと 1 枚版の component_p<N>.png は使われなくなる。")
 
 
 def main() -> None:
