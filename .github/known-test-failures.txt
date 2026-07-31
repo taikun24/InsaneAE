@@ -1,0 +1,8 @@
+# runGameTestServer で「落ちるのが既知」のテスト。CI はこの顔ぶれと完全一致するかで判定する。
+# ここに無いテストが落ちたら CI が失敗する。逆に、ここにあるテストが直ったときも失敗するので、
+# その場合はこのファイルから消すこと。
+#
+# 以下はいずれも AE2 本体のテストで、InsaneAE を入れない状態 (git stash) でも落ちることを確認済み。
+ae2.channel_assignment_test
+ae2.import_from_cauldron
+ae2.p2p_channel_reconnect_behavior

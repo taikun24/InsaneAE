@@ -2,8 +2,19 @@
 
 > More Storage, Better Gameplay...?
 
-Applied Energistics 2 / MEGA Cells の「その先」を足す Minecraft 1.20.1 (Forge) 用アドオンです。
+Applied Energistics 2 / MEGA Cells の「その先」を足す Minecraft アドオンです。
 MEGA Cells が 256M で止めているところから、1G 以上の容量・クラフト能力・電力を追加します。
+
+## 対応バージョン
+
+Minecraft のバージョンごとにブランチを分けています。**不具合を報告するときは、どちらを使っているか書いてください。**
+
+| ブランチ | Minecraft | ローダー |
+|---|---|---|
+| [`main`](https://github.com/taikun24/InsaneAE/tree/main) | 1.20.1 | Forge |
+| [`1.21.1`](https://github.com/taikun24/InsaneAE/tree/1.21.1) | 1.21.1 | NeoForge |
+
+このブランチは **1.20.1 (Forge)** です。
 
 ## 必要環境
 
@@ -37,7 +48,20 @@ AE2 のバージョン範囲は実際に検証した `[15.2.16,16)` に固定し
 ./gradlew build
 ```
 
-`build/libs/` に jar が生成されます。開発環境での起動は `./gradlew runClient` / `./gradlew runServer`。
+`build/libs/` に jar が生成されます (`insaneae-1.20.1-<version>.jar`)。
+
+| コマンド | 内容 |
+|---|---|
+| `./gradlew runClient` / `runServer` | 開発環境で起動 |
+| `./gradlew runData` | `src/generated/resources` の再生成 |
+| `./gradlew runGameTestServer` | AE2 のテストプロットに相乗りした検証を実行 |
+
+## 開発メモ
+
+- 修正は原則このブランチ (`main`) で入れて `1.21.1` に `git cherry-pick` します。
+  Mixin と計算まわりのクラスは両ブランチで内容が一致しているので、たいていそのまま通ります。
+- Forge は実行時に難読化されたままなので Mixin の refmap (`insaneae.refmap.json`) が要ります。
+  1.21.1 ブランチは NeoForge で実行時も Mojang 公式マッピングなので不要です。
 
 ## ライセンス
 

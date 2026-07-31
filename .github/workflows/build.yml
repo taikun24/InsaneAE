@@ -1,0 +1,92 @@
+name: build
+
+# 1.20.1 (main) と 1.21.1 は別ブランチで並行メンテしている。
+# このファイルは両ブランチに同じ内容で置いてあり、それぞれ自分のブランチをビルドする。
+# 片方に cherry-pick したときにもう片方を壊していないかを、push 時点で拾うのが目的。
+#
+# ブランチごとに違うのは次の 2 つだけ:
+#   - 下の Java バージョン (main = 17 / 1.21.1 = 21)
+#   - .github/known-test-failures.txt の中身
+# このファイルを cherry-pick するときは Java バージョンを戻し忘れないこと。
+
+on:
+  push:
+    branches: [main, '1.21.1']
+  pull_request:
+    branches: [main, '1.21.1']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ★ブランチ依存: main は 17、1.21.1 は 21
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - run: chmod +x ./gradlew
+
+      - name: Build
+        run: ./gradlew build
+
+      # GameTestServer はワールドを作るので EULA への同意が要る。
+      # run/ は .gitignore なのでここで用意する。
+      - name: Accept EULA
+        run: |
+          mkdir -p run
+          echo "eula=true" > run/eula.txt
+
+      # AE2 のテストプロットに相乗りした検証を含め、登録済みの GameTest を全部走らせる。
+      # AE2 本体に元から落ちるテストがあるので、終了コードではなく
+      # 「落ちたテストの顔ぶれが known-test-failures.txt と一致するか」で判定する。
+      - name: Game tests
+        run: |
+          ./gradlew runGameTestServer 2>&1 | tee gametest.log || true
+
+          # サーバーがテストに到達せず落ちた場合を先に弾く (下の diff だと素通りしてしまう)。
+          if ! grep -qE 'required tests (passed|failed)' gametest.log; then
+            echo "::error::テストが実行されていません (サーバーが起動途中で落ちた可能性)"
+            exit 1
+          fi
+
+          grep -oE 'LogTestReporter\]: [a-z0-9_.]+ failed!' gametest.log \
+            | sed -E 's/.*\]: //; s/ failed!$//' | sort -u > actual-failures.txt
+          grep -vE '^\s*(#|$)' .github/known-test-failures.txt | sort -u > expected-failures.txt
+
+          echo "--- 落ちたテスト ---"
+          cat actual-failures.txt
+          if diff -u expected-failures.txt actual-failures.txt; then
+            echo "既知の失敗のみ。"
+          else
+            echo "::error::想定外のテスト結果です (+ 行 = 新たに落ちた / - 行 = 直ったので許可リストから消すこと)"
+            exit 1
+          fi
+
+      - name: Upload jar
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: insaneae-${{ github.ref_name }}
+          path: build/libs/*.jar
+          if-no-files-found: error
+
+      # 落ちたときに原因を追えるようにログを残す。
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ github.ref_name }}
+          path: |
+            run/logs/
+            gametest.log
+          if-no-files-found: ignore

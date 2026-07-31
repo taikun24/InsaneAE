@@ -21,7 +21,9 @@ group = mod_group_id
 version = mod_version
 
 base {
-    archivesName = mod_id
+    // jar 名に MC バージョンを入れる (insaneae-1.20.1-1.0.2.1.jar)。
+    // 1.21.1 ブランチと同名の jar が出ると GitHub Releases で区別できなくなるため。
+    archivesName = "${mod_id}-${minecraft_version}"
 }
 
 java {
