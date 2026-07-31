@@ -8,7 +8,9 @@ version = mod_version
 group = mod_group_id
 
 base {
-    archivesName = mod_id
+    // jar 名に MC バージョンを入れる (insaneae-1.21.1-1.0.2.1.jar)。
+    // 1.20.1 ブランチと同名の jar が出ると GitHub Releases で区別できなくなるため。
+    archivesName = "${mod_id}-${minecraft_version}"
 }
 
 // Mojang は 1.20.5 以降 Java 21 を配布しているので、Mod も 21 を狙う。
@@ -107,6 +109,10 @@ dependencies {
     if (project.findProperty('withAppMek') != 'false') {
         localRuntime "curse.maven:applied-mekanistics-574300:${appmek_file}"
         localRuntime "curse.maven:mekanism-268560:${mekanism_file}"
+        // Mekanism Generators — この Mod は参照しないが、MEGA Cells の
+        // 放射性化学物質セルのレシピが reactor_glass を要求するので dev 実行時に要る
+        // (無いと runData / runServer のたびにレシピの解析エラーが出る)。
+        localRuntime "curse.maven:mekanism-generators-268566:${mekanism_generators_file}"
     }
 
     // テスト用
