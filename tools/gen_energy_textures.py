@@ -53,12 +53,13 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from gen_crafting_textures import recolor  # noqa: E402  (パス調整の後に import する)
+from gen_crafting_textures import (load_template, read_minecraft_version, recolor,
+                                   resolve_template_dirs, write_dir)  # noqa: E402  (パス調整の後に import する)
 from gen_cell_textures import hue_rotate, rainbow_recolor  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_DIR = os.path.join(REPO, "src/main/resources/assets/insaneae/textures/block/energy")
-TEMPLATE_DIR = os.path.join(REPO, "tools/textures")
+TEMPLATE_DIRS = resolve_template_dirs(REPO)
 
 # --------------------------------------------------------------------------------------
 # 階層と色 — ここだけ触れば見た目が変わる
@@ -279,11 +280,6 @@ def _next_to_chassis(x: int, y: int) -> bool:
 # --------------------------------------------------------------------------------------
 
 
-def load_template(directory: str, name: str) -> Image.Image | None:
-    path = os.path.join(directory, name)
-    return Image.open(path).convert("RGBA") if os.path.isfile(path) else None
-
-
 def paint(template: Image.Image, tier: str, color) -> Image.Image:
     """テンプレートを階層色に染める (虹色の階層も面倒を見る)。
 
@@ -313,17 +309,22 @@ def masked(light: Image.Image, fullness: int, rings: dict[int, int]) -> Image.Im
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--templates", default=TEMPLATE_DIR, help="下敷きを探すディレクトリ")
+    parser.add_argument("--templates", default=TEMPLATE_DIRS, help="下敷きを探すディレクトリ")
     parser.add_argument("--dump-templates", action="store_true",
                         help="いまの見た目を編集用の下敷きとして書き出して終了")
     args = parser.parse_args()
 
+    # どの下敷きを使ったのか毎回出す (バージョンごとに分けていると取り違えやすいので)。
+    print(f"下敷きディレクトリ: {args.templates}"
+          f"  (gradle.properties の minecraft_version = {read_minecraft_version() or '不明'})")
+
     if args.dump_templates:
-        os.makedirs(args.templates, exist_ok=True)
-        draw_base().save(os.path.join(args.templates, "energy_base.png"))
-        draw_color().save(os.path.join(args.templates, "energy_color.png"))
-        draw_light().save(os.path.join(args.templates, "energy_light.png"))
-        print(f"下敷きを書き出した -> {args.templates}")
+        out = write_dir(args.templates)
+        os.makedirs(out, exist_ok=True)
+        draw_base().save(os.path.join(out, "energy_base.png"))
+        draw_color().save(os.path.join(out, "energy_color.png"))
+        draw_light().save(os.path.join(out, "energy_light.png"))
+        print(f"下敷きを書き出した -> {out}")
         return
 
     base = load_template(args.templates, "energy_base.png")

@@ -64,6 +64,10 @@ from gen_crafting_textures import (  # noqa: E402  (パス調整の後に import
     STORAGE_BAND_COLORS,
     STORAGE_TIER_OVERRIDES,
     dominant_hue,
+    load_template,
+    read_minecraft_version,
+    resolve_template_dirs,
+    write_dir,
     parse_hex,
     scale,
     recolor,
@@ -71,7 +75,7 @@ from gen_crafting_textures import (  # noqa: E402  (パス調整の後に import
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_DIR = os.path.join(REPO, "src/main/resources/assets/insaneae/textures/item")
-TEMPLATE_DIR = os.path.join(REPO, "tools/textures")
+TEMPLATE_DIRS = resolve_template_dirs(REPO)
 
 # --------------------------------------------------------------------------------------
 # 階層と色
@@ -286,11 +290,6 @@ def draw_component_fallback(part: str = "all") -> Image.Image:
 # --------------------------------------------------------------------------------------
 
 
-def load_template(directory: str, name: str) -> Image.Image | None:
-    path = os.path.join(directory, name)
-    return Image.open(path).convert("RGBA") if os.path.isfile(path) else None
-
-
 class Component:
     """セルコンポーネントの下敷き 1 パターンぶん。
 
@@ -381,13 +380,15 @@ def split_by_saturation(image: Image.Image, min_sat: float = MIN_SAT):
     return base, color
 
 
-def dump_templates(directory: str) -> None:
-    os.makedirs(directory, exist_ok=True)
-    draw_cell_overlay().save(os.path.join(directory, "cell_overlay.png"))
-    draw_portable_side().save(os.path.join(directory, "portable_side.png"))
+def dump_templates(directory: str | list[str]) -> None:
+    # 読むのは探索パス全体、書き出すのはその先頭 (一番具体的なところ)。
+    out = write_dir(directory)
+    os.makedirs(out, exist_ok=True)
+    draw_cell_overlay().save(os.path.join(out, "cell_overlay.png"))
+    draw_portable_side().save(os.path.join(out, "portable_side.png"))
     for i in range(5):
-        base_path = os.path.join(directory, f"component_p{i}_base.png")
-        color_path = os.path.join(directory, f"component_p{i}_color.png")
+        base_path = os.path.join(out, f"component_p{i}_base.png")
+        color_path = os.path.join(out, f"component_p{i}_color.png")
         if os.path.isfile(base_path) or os.path.isfile(color_path):
             continue                        # 既にある 2 枚方式の下敷きは潰さない
         single = load_template(directory, f"component_p{i}.png")
@@ -409,11 +410,15 @@ def dump_templates(directory: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--templates", default=TEMPLATE_DIR,
+    parser.add_argument("--templates", default=TEMPLATE_DIRS,
                         help="下敷きを探すディレクトリ")
     parser.add_argument("--dump-templates", action="store_true",
                         help="いまの見た目を編集用の下敷きとして書き出して終了")
     args = parser.parse_args()
+
+    # どの下敷きを使ったのか毎回出す (バージョンごとに分けていると取り違えやすいので)。
+    print(f"下敷きディレクトリ: {args.templates}"
+          f"  (gradle.properties の minecraft_version = {read_minecraft_version() or '不明'})")
 
     if args.dump_templates:
         dump_templates(args.templates)

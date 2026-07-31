@@ -16,11 +16,25 @@
 色を変えたいときは下の STORAGE_BAND_COLORS / ACCELERATOR_COLOR をいじって流し直すだけ。
 
 --------------------------------------------------------------------------------------
+下敷きの置き場所 (MC バージョンごとに分けられる)
+--------------------------------------------------------------------------------------
+下敷きは次の順に<b>ファイル単位で</b>探す。gradle.properties の minecraft_version を
+読むので、チェックアウトしているブランチに合ったものが自動で選ばれる。
+
+    1. tools/textures/<minecraft_version>/   そのバージョン専用の絵
+    2. tools/textures/                       バージョン共通の絵
+
+<b>バージョンで変えたい絵だけ</b> tools/textures/<version>/ に置けばよく、
+残りは共通のものがそのまま使われる。全部コピーして二重管理する必要はない。
+バージョン用のディレクトリが無ければ tools/textures/ だけを見る (従来どおり)。
+`--templates <dir>` を渡すとその 1 か所だけを見る。
+
+--------------------------------------------------------------------------------------
 ベーステクスチャ / 色テクスチャを差し替える
 --------------------------------------------------------------------------------------
-tools/textures/ に次の名前で置くと、そちらが優先して使われる (無いものは下の
+上の置き場所に次の名前で置くと、そちらが優先して使われる (無いものは下の
 描画コードが手続き的に描く)。`--dump-templates` で今の見た目を書き出せるので、
-それをペイントソフトで直してから戻すのが早い。
+それをペイントソフトで直してから戻すのが早い (書き出し先は探索パスの先頭)。
 
     storage_base.png       未 formed 面の下地。階層に依らず<b>そのまま</b>使われる
     storage_color.png      その上に重ねる中央の色レイヤ。階層色に染まる
@@ -57,7 +71,51 @@ from PIL import Image
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_DIR = os.path.join(REPO, "src/main/resources/assets/insaneae/textures/block/crafting")
-TEMPLATE_DIR = os.path.join(REPO, "tools/textures")
+
+
+# --------------------------------------------------------------------------------------
+# 下敷きディレクトリの解決 (MC バージョンごとに分けられる)
+# --------------------------------------------------------------------------------------
+
+
+def read_minecraft_version(repo: str = REPO) -> str | None:
+    """gradle.properties の minecraft_version を読む。読めなければ None。"""
+    try:
+        with open(os.path.join(repo, "gradle.properties"), encoding="utf-8") as fh:
+            for line in fh:
+                key, sep, value = line.partition("=")
+                if sep and key.strip() == "minecraft_version":
+                    return value.strip() or None
+    except OSError:
+        pass
+    return None
+
+
+def resolve_template_dirs(repo: str = REPO) -> list[str]:
+    """下敷きを探す順番を決める。<b>ファイル単位</b>で前から順に見る。
+
+        1. tools/textures/<minecraft_version>/   そのバージョン専用の絵
+        2. tools/textures/                       バージョン共通の絵
+
+    MC バージョンごとにブランチを分けている (main = 1.20.1 / 1.21.1) ので、
+    gradle.properties を見れば<b>チェックアウトしているブランチに合った下敷きが
+    自動で選ばれる</b>。
+
+    探索がファイル単位なのが要点で、<b>バージョンで変えたい絵だけ</b>
+    tools/textures/<version>/ に置けばよい。残りは tools/textures/ の共通の絵が
+    そのまま使われるので、全部コピーして二重管理する必要はない。
+    バージョン用のディレクトリが無ければ、従来どおり tools/textures/ だけを見る。
+    """
+    root = os.path.join(repo, "tools/textures")
+    version = read_minecraft_version(repo)
+    if version:
+        versioned = os.path.join(root, version)
+        if os.path.isdir(versioned):
+            return [versioned, root]
+    return [root]
+
+
+TEMPLATE_DIRS = resolve_template_dirs()
 
 # --------------------------------------------------------------------------------------
 # 色の設定 — ここだけ触れば見た目が変わる
@@ -378,9 +436,18 @@ def draw_light_layer(mask) -> Image.Image:
 # --------------------------------------------------------------------------------------
 
 
-def load_template(directory: str, name: str) -> Image.Image | None:
-    path = os.path.join(directory, name)
-    return Image.open(path).convert("RGBA") if os.path.isfile(path) else None
+def load_template(directory: str | list[str], name: str) -> Image.Image | None:
+    """下敷きを 1 枚読む。ディレクトリを複数渡すと<b>前から順に</b>探す。"""
+    for d in ([directory] if isinstance(directory, str) else directory):
+        path = os.path.join(d, name)
+        if os.path.isfile(path):
+            return Image.open(path).convert("RGBA")
+    return None
+
+
+def write_dir(directory: str | list[str]) -> str:
+    """--dump-templates の書き出し先。探索パスの先頭 (一番具体的なところ)。"""
+    return directory if isinstance(directory, str) else directory[0]
 
 
 class Kind:
@@ -424,7 +491,8 @@ def write(name: str, image: Image.Image, frames: int) -> None:
         os.remove(meta)
 
 
-def dump_templates(directory: str) -> None:
+def dump_templates(directory: str | list[str]) -> None:
+    directory = write_dir(directory)      # 書き出すのは探索パスの先頭
     os.makedirs(directory, exist_ok=True)
     for prefix, mask in (("storage", STORAGE_MASK), ("accelerator", ACCELERATOR_MASK)):
         draw_base().save(os.path.join(directory, f"{prefix}_base.png"))
@@ -437,11 +505,15 @@ def dump_templates(directory: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--templates", default=TEMPLATE_DIR,
+    parser.add_argument("--templates", default=TEMPLATE_DIRS,
                         help="ベース/色/発光テクスチャを探すディレクトリ")
     parser.add_argument("--dump-templates", action="store_true",
                         help="いまの見た目を編集用の下敷きとして書き出して終了")
     args = parser.parse_args()
+
+    # どの下敷きを使ったのか毎回出す (バージョンごとに分けていると取り違えやすいので)。
+    print(f"下敷きディレクトリ: {args.templates}"
+          f"  (gradle.properties の minecraft_version = {read_minecraft_version() or '不明'})")
 
     if args.dump_templates:
         dump_templates(args.templates)
