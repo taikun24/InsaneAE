@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "insaneae:solar_panel"
+    },
+    "B": {
+      "item": "insaneae:degenerate_energy_cell"
+    }
+  },
+  "pattern": [
+    "AAA",
+    "ABA",
+    "AAA"
+  ],
+  "result": {
+    "count": 1,
+    "id": "insaneae:advanced_solar_panel"
+  }
+}

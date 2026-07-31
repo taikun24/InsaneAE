@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "megacells:accumulation_processor"
+    },
+    "B": {
+      "item": "ae2:molecular_assembler"
+    },
+    "C": {
+      "item": "ae2:pattern_provider"
+    }
+  },
+  "pattern": [
+    "ABA",
+    "BCB",
+    "ABA"
+  ],
+  "result": {
+    "count": 1,
+    "id": "insaneae:quantum_cpu"
+  }
+}

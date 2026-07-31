@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "insaneae:1g_crafting_accelerator"
+    },
+    {
+      "item": "insaneae:1g_crafting_accelerator"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "insaneae:2g_crafting_accelerator"
+  }
+}

@@ -1,5 +1,7 @@
 package jp.main.taikun.insaneae.datagen;
 
+import net.neoforged.neoforge.common.conditions.ModLoadedCondition;
+import jp.main.taikun.insaneae.InsaneAE;
 import appeng.core.definitions.AEBlocks;
 import gripe._90.megacells.definition.MEGAItems;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
@@ -28,6 +30,11 @@ final class AppMekRecipes {
         ModRecipeProvider.conditionalShapeless(consumer,
                 AppMekCells.CHEMICAL_CELLS.get(tier).get(), component,
                 b -> b.requires(housing).requires(component));
+
+        // 分解 (AE2 19.2 でデータ駆動レシピになったぶん)。appmek 未導入では無効。
+        ModRecipeProvider.cellDisassembly(
+                consumer.withConditions(new ModLoadedCondition(InsaneAE.APPMEK_MODID)),
+                AppMekCells.CHEMICAL_CELLS.get(tier).get(), component, housing);
 
         ModRecipeProvider.conditionalShapeless(consumer,
                 AppMekCells.PORTABLE_CHEMICAL_CELLS.get(tier).get(), component,

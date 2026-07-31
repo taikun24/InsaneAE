@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "megacells:mega_fluid_cell_housing"
+    },
+    {
+      "item": "insaneae:cell_component_256t"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "insaneae:fluid_storage_cell_256t"
+  }
+}

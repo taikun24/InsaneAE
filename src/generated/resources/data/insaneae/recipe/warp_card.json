@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "insaneae:hypersonic_card"
+    },
+    {
+      "item": "insaneae:hypersonic_card"
+    },
+    {
+      "item": "insaneae:hypersonic_card"
+    },
+    {
+      "item": "insaneae:hypersonic_card"
+    },
+    {
+      "item": "megacells:accumulation_processor"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "insaneae:warp_card"
+  }
+}

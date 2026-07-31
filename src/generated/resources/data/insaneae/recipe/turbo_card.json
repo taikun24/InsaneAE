@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "ae2:speed_card"
+    },
+    {
+      "item": "ae2:speed_card"
+    },
+    {
+      "item": "ae2:speed_card"
+    },
+    {
+      "item": "ae2:speed_card"
+    },
+    {
+      "item": "megacells:accumulation_processor"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "insaneae:turbo_card"
+  }
+}

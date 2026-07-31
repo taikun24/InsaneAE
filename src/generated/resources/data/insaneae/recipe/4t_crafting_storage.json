@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "megacells:mega_crafting_unit"
+    },
+    {
+      "item": "insaneae:cell_component_4t"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "insaneae:4t_crafting_storage"
+  }
+}

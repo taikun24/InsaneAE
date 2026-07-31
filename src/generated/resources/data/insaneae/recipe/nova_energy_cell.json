@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "insaneae:quasar_energy_cell"
+    },
+    "B": {
+      "item": "megacells:accumulation_processor"
+    }
+  },
+  "pattern": [
+    "AAA",
+    "ABA",
+    "AAA"
+  ],
+  "result": {
+    "count": 1,
+    "id": "insaneae:nova_energy_cell"
+  }
+}

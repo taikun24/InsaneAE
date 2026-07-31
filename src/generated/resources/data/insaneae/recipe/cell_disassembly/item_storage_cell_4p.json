@@ -1,0 +1,14 @@
+{
+  "type": "ae2:storage_cell_disassembly",
+  "cell": "insaneae:item_storage_cell_4p",
+  "cell_disassembly_items": [
+    {
+      "count": 1,
+      "id": "insaneae:cell_component_4p"
+    },
+    {
+      "count": 1,
+      "id": "megacells:mega_item_cell_housing"
+    }
+  ]
+}

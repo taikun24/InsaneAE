@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "insaneae:overclock_card"
+    },
+    {
+      "item": "insaneae:overclock_card"
+    },
+    {
+      "item": "insaneae:overclock_card"
+    },
+    {
+      "item": "insaneae:overclock_card"
+    },
+    {
+      "item": "megacells:accumulation_processor"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "insaneae:hypersonic_card"
+  }
+}

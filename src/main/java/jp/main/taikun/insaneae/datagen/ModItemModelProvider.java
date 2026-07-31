@@ -39,14 +39,25 @@ public class ModItemModelProvider extends ItemModelProvider {
     private static final ResourceLocation ITEM_HOUSING = mega("megacells", "item/mega_item_cell_housing");
     private static final ResourceLocation FLUID_HOUSING = mega("megacells", "item/mega_fluid_cell_housing");
     private static final ResourceLocation CHEMICAL_HOUSING = mega("megacells", "item/mega_chemical_cell_housing");
-    private static final ResourceLocation PORTABLE_ITEM_SCREEN =
-            mega("megacells", "item/cell/portable/portable_cell_item_screen");
-    private static final ResourceLocation PORTABLE_FLUID_SCREEN =
-            mega("megacells", "item/cell/portable/portable_cell_fluid_screen");
+    /**
+     * ポータブルセルの画面部分。
+     *
+     * <p>MEGA Cells 4.x でアイテム用 / 液体用に分かれていた
+     * {@code megacells:item/cell/portable/portable_cell_*_screen} が無くなり、
+     * MEGA 自身のポータブルセルも AE2 の汎用テクスチャ 1 枚を使うようになったので、そちらに合わせる。</p>
+     */
+    private static final ResourceLocation PORTABLE_ITEM_SCREEN = mega("ae2", "item/portable_cell_screen");
+    private static final ResourceLocation PORTABLE_FLUID_SCREEN = PORTABLE_ITEM_SCREEN;
     private static final ResourceLocation PORTABLE_ITEM_HOUSING = mega("ae2", "item/portable_cell_item_housing");
     private static final ResourceLocation PORTABLE_FLUID_HOUSING = mega("ae2", "item/portable_cell_fluid_housing");
-    /** 化学物質のポータブルセル用。AE2 に専用の筐体が無いので汎用のものを使う。 */
-    private static final ResourceLocation PORTABLE_HOUSING = mega("ae2", "item/portable_cell_housing");
+    /**
+     * 化学物質のポータブルセル用の筐体。
+     *
+     * <p>1.20.1 では AE2 の汎用テクスチャ {@code ae2:item/portable_cell_housing} を使っていたが、
+     * AE2 19.2 で汎用版が無くなった (種類ごとの専用テクスチャのみになった)。
+     * MEGA Cells が化学物質用の筐体を持っているのでそちらを使う。</p>
+     */
+    private static final ResourceLocation PORTABLE_HOUSING = mega("megacells", "item/portable_cell_chemical_housing");
     private static final ResourceLocation SPEED_CARD = mega("ae2", "item/card_speed");
     /** AE2 の {@code InitItemModelsProperties} が登録するエネルギーセルの残量プロパティ。 */
     private static final ResourceLocation ENERGY_FILL_LEVEL = mega("ae2", "fill_level");

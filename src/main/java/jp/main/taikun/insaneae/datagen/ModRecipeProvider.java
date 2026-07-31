@@ -1,5 +1,8 @@
 package jp.main.taikun.insaneae.datagen;
 
+import java.util.List;
+import java.util.Arrays;
+import appeng.recipes.game.StorageCellDisassemblyRecipe;
 import net.minecraft.core.registries.BuiltInRegistries;
 import appeng.core.definitions.AEBlocks;
 import appeng.core.definitions.AEItems;
@@ -98,6 +101,12 @@ public class ModRecipeProvider extends RecipeProvider {
                     b -> b.requires(MEGAItems.MEGA_ITEM_CELL_HOUSING).requires(component));
             shapeless(consumer, ModCells.FLUID_CELLS.get(tier).get(), component,
                     b -> b.requires(MEGAItems.MEGA_FLUID_CELL_HOUSING).requires(component));
+
+            // 分解 (空のセルを右クリックでコンポーネント + ハウジングに戻す)。
+            cellDisassembly(consumer, ModCells.ITEM_CELLS.get(tier).get(),
+                    component, MEGAItems.MEGA_ITEM_CELL_HOUSING);
+            cellDisassembly(consumer, ModCells.FLUID_CELLS.get(tier).get(),
+                    component, MEGAItems.MEGA_FLUID_CELL_HOUSING);
 
             // ポータブルセル: ME チェスト + コンポーネント + 高密度エネルギーセル + ハウジング
             shapeless(consumer, ModCells.PORTABLE_ITEM_CELLS.get(tier).get(), component,
@@ -213,6 +222,20 @@ public class ModRecipeProvider extends RecipeProvider {
             builder.define(entry.getKey(), entry.getValue());
         }
         builder.unlockedBy("has_component", has(unlockedBy)).save(consumer);
+    }
+
+    /**
+     * セルの分解レシピ。空のセルを右クリックすると、ここで指定したアイテムに戻る。
+     *
+     * <p>1.20.1 (AE2 15.2.16) では戻すアイテムを {@code BasicStorageCell} のコンストラクタに
+     * 渡していたが、AE2 19.2 で {@code StorageCellDisassemblyRecipe} というデータ駆動レシピに
+     * 変わったため、datagen 側で出す必要がある。これを出さないとセルを分解できなくなる。</p>
+     */
+    static void cellDisassembly(RecipeOutput consumer, ItemLike cell, ItemLike... results) {
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(cell.asItem()).withPrefix("cell_disassembly/");
+        List<ItemStack> stacks = Arrays.stream(results).map(ItemStack::new).toList();
+        // 分解レシピはクラフト台に出ないので進捗 (advancement) は付けない。
+        consumer.accept(id, new StorageCellDisassemblyRecipe(cell.asItem(), stacks), null);
     }
 
     /** appmek 導入時のみ有効な条件付きレシピを出す。 */
