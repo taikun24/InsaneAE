@@ -132,7 +132,9 @@ STORAGE_TIERS = ["1g", "4g", "16g", "64g", "256g",
 STORAGE_BAND_COLORS = {
     "g": "#ff42c6",   # マゼンタ
     "t": "#ff5c20",   # オレンジ
-    "p": "#d2ff20",   # 黄緑
+    # 黄緑。純粋な黄緑 (#d2ff20) は輝度を落とすとオリーブ/黄土色に濁るので、
+    # 少し緑寄りに振ってある。振りすぎると e 帯の緑と見分けが付かなくなる。
+    "p": "#b4ff20",
     "e": "#33ec4c",   # 緑
 }
 # 帯の中の例外 (最上段だけ別色にしたい等)。
@@ -156,8 +158,22 @@ ACCELERATOR_MAX_DESATURATION = 0.35   # 最上段でどこまで白に寄せる�
 # 明度で揃えると、黄緑の帯だけ地より明るくなって沈んでしまう。
 #
 # 下げるほど中央が濃くコントラストが強くなる。地の絵を明るくしたら下げること。
-STORAGE_LUMA = (0.13, 0.30)
-ACCELERATOR_LUMA = (0.13, 0.34)
+#
+# <b>ここで指定するのは「陰影の一番濃いところ」の輝度</b>であることに注意。
+# 中央レイヤに陰影が描いてあると、明るい側はこの値の (テンプレの輝度比) 倍まで上がる。
+# 今の下敷きは比 1.91 なので、0.32 を指定すると明るい側は約 0.61 になる。
+# 地の輝度 (0.888) を超えないよう、上限は 0.33 くらいまでに留めること。
+STORAGE_LUMA = (0.11, 0.28)
+ACCELERATOR_LUMA = (0.11, 0.30)
+
+# 帯ごとの上書き。<b>暗くすると濁る色は、ここで明るめに逃がす。</b>
+# 黄緑や緑は輝度を落とすとオリーブ/黄土色になってしまうので、
+# コントラストを少し譲ってでも明るい側に置いたほうが色が生きる
+# (そのぶん地との差は小さくなるが、色相が地のグレーと大きく違うので読める)。
+STORAGE_BAND_LUMA = {
+    "p": (0.20, 0.32),   # 黄緑
+    "e": (0.16, 0.30),   # 緑
+}
 
 # --------------------------------------------------------------------------------------
 # 虹色にする階層 (最上段の特別扱い)
@@ -328,7 +344,7 @@ def band_color(tier: str, tiers: list[str]) -> tuple[int, int, int]:
     in_band = [t for t in tiers if t[-1] == band
                and t not in STORAGE_TIER_OVERRIDES and t not in STORAGE_RAINBOW_TIERS]
     pos = in_band.index(tier) / max(1, len(in_band) - 1)
-    lo, hi = STORAGE_LUMA
+    lo, hi = STORAGE_BAND_LUMA.get(band, STORAGE_LUMA)
     return fit_luminance(parse_hex(STORAGE_BAND_COLORS[band]), lo + (hi - lo) * pos)
 
 
@@ -411,6 +427,19 @@ def recolor(template: Image.Image, target, source_hue: float | None = None) -> I
     peak_v = peak_v or 1.0
     tgt_h, tgt_s, tgt_v = colorsys.rgb_to_hsv(*[c / 255 for c in target])
 
+    # 色付きテンプレの陰影は「輝度の比」で残す。
+    # 陰影を彩度で描いた絵 (濃い赤 → 薄い赤) を明度の比だけで写すと、
+    # 色相によって輝度差になったりならなかったりして、階層によって
+    # 陰影が消えて単色に見えてしまう (黄緑の帯で顕著だった)。
+    # 基準は「一番彩度の高い画素」= 階層色そのものになる画素。
+    ref_lum = 0.0
+    if not greyscale:
+        core = max((p for p in px if p[3] > 0
+                    and colorsys.rgb_to_hsv(*[c / 255 for c in p[:3]])[1] >= MIN_SAT),
+                   key=lambda p: colorsys.rgb_to_hsv(*[c / 255 for c in p[:3]])[1], default=None)
+        ref_lum = relative_luminance(core[:3]) if core else 0.0
+    tgt_lum = relative_luminance(target)
+
     out = []
     for p in px:
         if p[3] == 0:
@@ -418,13 +447,19 @@ def recolor(template: Image.Image, target, source_hue: float | None = None) -> I
             continue
         h, s, v = colorsys.rgb_to_hsv(*[c / 255 for c in p[:3]])
         if greyscale:
-            nh, ns = tgt_h, tgt_s
+            r, g, b = colorsys.hsv_to_rgb(tgt_h, tgt_s, min(1.0, v * (tgt_v / peak_v)))
+            out.append((round(r * 255), round(g * 255), round(b * 255), p[3]))
+            continue
+        nh = (h + (tgt_h - ref_h)) % 1.0
+        ns = min(1.0, s * (tgt_s / ref_s))
+        if ref_lum > 0:
+            want = min(1.0, tgt_lum * (relative_luminance(p[:3]) / ref_lum))
+            r, g, b = fit_luminance(
+                tuple(round(c * 255) for c in colorsys.hsv_to_rgb(nh, ns, 1.0)), want)
         else:
-            nh = (h + (tgt_h - ref_h)) % 1.0
-            ns = min(1.0, s * (tgt_s / ref_s))
-        nv = min(1.0, v * (tgt_v / peak_v))
-        r, g, b = colorsys.hsv_to_rgb(nh, ns, nv)
-        out.append((round(r * 255), round(g * 255), round(b * 255), p[3]))
+            r, g, b = (round(c * 255)
+                       for c in colorsys.hsv_to_rgb(nh, ns, min(1.0, v * (tgt_v / peak_v))))
+        out.append((r, g, b, p[3]))
 
     result = Image.new("RGBA", src.size)
     result.putdata(out)
