@@ -125,7 +125,7 @@ TEMPLATE_DIRS = resolve_template_dirs()
 STORAGE_TIERS = ["1g", "4g", "16g", "64g", "256g",
                  "1t", "4t", "16t", "64t", "256t",
                  "1p", "4p", "16p", "64p", "256p",
-                 "1e", "4e"]
+                 "1e", "4e", "8e"]
 
 # 単位帯ごとの基準色。cell_component_<tier>.png (手描きのアイテムテクスチャ) から
 # 拾った色に合わせてあるので、アイテムとブロックの色が揃う。
@@ -138,16 +138,36 @@ STORAGE_BAND_COLORS = {
 # 帯の中の例外 (最上段だけ別色にしたい等)。
 STORAGE_TIER_OVERRIDES = {
 }
-# 同じ帯の中で下位ほど暗くする度合い。1.0 にすると帯の中は全部同じ色になる。
-BAND_MIN_BRIGHTNESS = 0.72
 
 # 協調処理ユニットの階層。
 ACCELERATOR_TIERS = ["16x", "64x", "256x", "1k", "4k", "16k", "64k", "256k",
                      "1m", "4m", "16m", "64m", "256m", "1g", "2g"]
-# 加速側は「上位ほど白熱していく」1 色系。下位=濃いシアン → 上位=ほぼ白。
+# 加速側は 1 色系。上位ほど明るく、少しだけ白に寄せる。
 ACCELERATOR_COLOR = "#ff00ff"
-ACCELERATOR_MIN_BRIGHTNESS = 0.60
-ACCELERATOR_MAX_DESATURATION = 0.80   # 最上段でどこまで白に寄せるか
+ACCELERATOR_MAX_DESATURATION = 0.35   # 最上段でどこまで白に寄せるか
+
+# --------------------------------------------------------------------------------------
+# コントラスト — 中央の色が地に対してどれくらい暗くなるか
+# --------------------------------------------------------------------------------------
+# (帯の最下段, 帯の最上段) の目標<b>相対輝度</b>。地は明るいグレーなので、
+# 中央は常にこの範囲まで落とすことで、どの帯でも同じくらいの読みやすさになる。
+#
+# HSV の明度ではなく輝度で指定しているのが要点 (fit_luminance の説明を参照)。
+# 明度で揃えると、黄緑の帯だけ地より明るくなって沈んでしまう。
+#
+# 下げるほど中央が濃くコントラストが強くなる。地の絵を明るくしたら下げること。
+STORAGE_LUMA = (0.13, 0.30)
+ACCELERATOR_LUMA = (0.13, 0.34)
+
+# --------------------------------------------------------------------------------------
+# 虹色にする階層 (最上段の特別扱い)
+# --------------------------------------------------------------------------------------
+# 単色ではなく (x+y) で色相を一周させる。セル側 (gen_cell_textures.py) の 8E と同じ扱い。
+# ここに入れた階層は帯の位置計算から外れるので、足しても他の階層の色は動かない。
+STORAGE_RAINBOW_TIERS = {"8e"}
+ACCELERATOR_RAINBOW_TIERS = {"2g"}
+RAINBOW_BASE = "#df00ff"     # (x+y) == 6 の位置の色
+RAINBOW_STEP = -1.0 / 32.0   # x+y が 1 増えるごとに回す色相
 
 # --------------------------------------------------------------------------------------
 # テンプレートを「何色で描いてあるか」
@@ -251,21 +271,84 @@ def scale(color, factor: float, desaturate: float = 0.0):
     return tuple(round(c * 255) for c in colorsys.hsv_to_rgb(h, s, v))
 
 
-def storage_color(tier: str) -> tuple[int, int, int]:
+def relative_luminance(rgb) -> float:
+    """sRGB の相対輝度 (0.0〜1.0)。人が感じる明るさに近い。"""
+    def lin(c: float) -> float:
+        c /= 255
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+    r, g, b = (lin(c) for c in rgb)
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def fit_luminance(color, target: float) -> tuple[int, int, int]:
+    """色相・彩度を保ったまま、<b>相対輝度が target になるよう</b>明度を合わせる。
+
+    HSV の明度と「人が感じる明るさ」は色によって大きくずれる。
+    たとえば同じ明度 1.0 でも 黄緑 #d2ff20 は輝度 0.85、マゼンタ #ff42c6 は 0.29 しかない。
+    明度を比率で動かす方式だと、帯によって地とのコントラストが全く揃わず、
+    明るい帯 (黄緑) は明るい地に溶けて見えなくなる。輝度で揃えればこれが起きない。
+
+    彩度が高い色は明度を上げきっても target に届かないことがある
+    (マゼンタ #ff42c6 は明度 1.0 でも輝度 0.292 が上限)。その場合は<b>彩度を落として</b>
+    明るくする。これをやらないと帯の上位が全部同じ色になって階層の差が消える。
+    """
+    h, s0, _ = colorsys.rgb_to_hsv(*[c / 255 for c in color])
+
+    def rgb_of(s: float, v: float):
+        return tuple(round(c * 255) for c in colorsys.hsv_to_rgb(h, s, v))
+
+    def search(make, lo: float, hi: float):
+        """make(x) の輝度が target になる x を二分探索する (24 回で 8bit には十分)。"""
+        for _ in range(24):
+            mid = (lo + hi) / 2
+            if relative_luminance(make(mid)) < target:
+                lo = mid
+            else:
+                hi = mid
+        return (lo + hi) / 2
+
+    if relative_luminance(rgb_of(s0, 1.0)) >= target:
+        return rgb_of(s0, search(lambda v: rgb_of(s0, v), 0.0, 1.0))
+    # 明度は振り切っているので、ここから先は彩度を落として明るくする (パステル寄りになる)
+    return rgb_of(search(lambda s: rgb_of(s, 1.0), s0, 0.0), 1.0)
+
+
+def band_color(tier: str, tiers: list[str]) -> tuple[int, int, int]:
+    """クラフトストレージ / セルの階層色。ブロックとアイテムで<b>共通</b>。
+
+    帯 (g/t/p/e) ごとの基準色の色相・彩度を使い、帯の中の位置で輝度を上げていく。
+    虹色の階層と個別指定の階層は帯の位置計算から外してあるので、
+    それらを足しても他の階層の色は動かない。
+    """
     if tier in STORAGE_TIER_OVERRIDES:
         return parse_hex(STORAGE_TIER_OVERRIDES[tier])
+    if tier in STORAGE_RAINBOW_TIERS:
+        return parse_hex(RAINBOW_BASE)
     band = tier[-1]
-    base = parse_hex(STORAGE_BAND_COLORS[band])
-    # 同じ帯の中での位置 (0.0 = 帯の最下段, 1.0 = 帯の最上段)
-    in_band = [t for t in STORAGE_TIERS if t[-1] == band and t not in STORAGE_TIER_OVERRIDES]
+    in_band = [t for t in tiers if t[-1] == band
+               and t not in STORAGE_TIER_OVERRIDES and t not in STORAGE_RAINBOW_TIERS]
     pos = in_band.index(tier) / max(1, len(in_band) - 1)
-    return scale(base, BAND_MIN_BRIGHTNESS + (1.0 - BAND_MIN_BRIGHTNESS) * pos)
+    lo, hi = STORAGE_LUMA
+    return fit_luminance(parse_hex(STORAGE_BAND_COLORS[band]), lo + (hi - lo) * pos)
+
+
+def storage_color(tier: str) -> tuple[int, int, int]:
+    return band_color(tier, STORAGE_TIERS)
 
 
 def accelerator_color(tier: str) -> tuple[int, int, int]:
+    """協調処理ユニットの階層色。1 色系のまま、上位ほど明るく・少し白っぽくする。
+
+    虹色の階層も<b>階層一覧からは外さない</b>ので、下位の色は虹色を足しても動かない。
+    """
+    if tier in ACCELERATOR_RAINBOW_TIERS:
+        return parse_hex(RAINBOW_BASE)
     pos = ACCELERATOR_TIERS.index(tier) / max(1, len(ACCELERATOR_TIERS) - 1)
-    factor = ACCELERATOR_MIN_BRIGHTNESS + (1.0 - ACCELERATOR_MIN_BRIGHTNESS) * pos
-    return scale(parse_hex(ACCELERATOR_COLOR), factor, ACCELERATOR_MAX_DESATURATION * pos)
+    h, s, v = colorsys.rgb_to_hsv(*[c / 255 for c in parse_hex(ACCELERATOR_COLOR)])
+    s *= 1.0 - ACCELERATOR_MAX_DESATURATION * pos
+    toned = tuple(round(c * 255) for c in colorsys.hsv_to_rgb(h, s, v))
+    lo, hi = ACCELERATOR_LUMA
+    return fit_luminance(toned, lo + (hi - lo) * pos)
 
 
 def dominant_hue(image: Image.Image, min_sat: float = MIN_SAT) -> tuple[float, float, float]:
@@ -346,6 +429,56 @@ def recolor(template: Image.Image, target, source_hue: float | None = None) -> I
     result = Image.new("RGBA", src.size)
     result.putdata(out)
     return result
+
+
+def hue_rotate(template: Image.Image, target, rainbow: bool = False,
+               min_sat: float = MIN_SAT, step: float | None = None) -> Image.Image:
+    """色付きテンプレートの色相を回す。彩度の無い画素 (地のグレー) は触らない。
+
+    「テンプレの主要色相 → target の色相」の回転なので、1 枚の中の色相差
+    (濃い緑の陰など) は相対関係のまま保たれる。明度はテンプレの最大明度が
+    target の明度になるよう比率で合わせる。
+
+    rainbow=True にすると、そこからさらに (x+y) に応じて色相を振る (虹色の階層用)。
+    """
+    src = template.convert("RGBA")
+    ref_h, _, ref_v = dominant_hue(src, min_sat)
+    tgt_h, tgt_s, tgt_v = colorsys.rgb_to_hsv(*[c / 255 for c in target])
+    delta = tgt_h - ref_h
+    gain = tgt_v / ref_v if ref_v > 0 else 1.0
+
+    out = []
+    width = src.width
+    for i, (r, g, b, a) in enumerate(src.getdata()):
+        if a == 0:
+            out.append((r, g, b, a))
+            continue
+        h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+        if s < min_sat:
+            out.append((r, g, b, a))       # 地のグレーはそのまま
+            continue
+        shift = delta
+        if rainbow:
+            x, y = i % width, i // width
+            shift += (RAINBOW_STEP if step is None else step) * (x + y - 6)
+        nr, ng, nb = colorsys.hsv_to_rgb((h + shift) % 1.0, s, min(1.0, v * gain))
+        out.append((round(nr * 255), round(ng * 255), round(nb * 255), a))
+
+    result = Image.new("RGBA", src.size)
+    result.putdata(out)
+    return result
+
+
+def rainbow_recolor(template: Image.Image, target, step: float | None = None,
+                    source_hue: float | None = None) -> Image.Image:
+    """テンプレートを (x+y) で色相を振りながら染める。
+
+    まず普通に染めてから色相を振るので、グレースケールで描いた下敷きでも虹色になる。
+    step は「(x+y) が 1 増えるごとに回す色相」。光る部分が狭い絵ほど大きくしないと
+    虹に見えないので、呼び出し側で指定できるようにしてある。
+    """
+    base = recolor(template, target, source_hue)
+    return hue_rotate(base, target, rainbow=True, min_sat=0.05, step=step)
 
 
 # --------------------------------------------------------------------------------------
@@ -466,15 +599,20 @@ class Kind:
             f"{prefix}_light.png" if load_template(directory, f"{prefix}_light.png") else "(手続き描画)",
         ]
 
-    def face(self, color) -> Image.Image:
+    def _paint(self, template: Image.Image, color, rainbow: bool) -> Image.Image:
+        if rainbow:
+            return rainbow_recolor(template, color, source_hue=self.template_hue)
+        return recolor(template, color, self.template_hue)
+
+    def face(self, color, rainbow: bool = False) -> Image.Image:
         # base はそのまま。地に若干色が付いていても染まらないので、
         # 無彩色で描く必要はない (階層に依らない部分はここに描く)。
         img = self.base.copy()
-        img.alpha_composite(recolor(self.color, color, self.template_hue))
+        img.alpha_composite(self._paint(self.color, color, rainbow))
         return img
 
-    def light_for(self, color) -> tuple[Image.Image, int]:
-        img = recolor(self.light, color, self.template_hue)
+    def light_for(self, color, rainbow: bool = False) -> tuple[Image.Image, int]:
+        img = self._paint(self.light, color, rainbow)
         frames = max(1, img.height // img.width)
         return img, frames
 
@@ -526,14 +664,18 @@ def main() -> None:
 
     for tier in STORAGE_TIERS:
         color = storage_color(tier)
-        write(f"{tier}_storage.png", storage.face(color), 1)
-        write(f"{tier}_storage_light.png", *storage.light_for(color))
-        print(f"{tier + '_storage':16s} #{color[0]:02x}{color[1]:02x}{color[2]:02x}")
+        rainbow = tier in STORAGE_RAINBOW_TIERS
+        write(f"{tier}_storage.png", storage.face(color, rainbow), 1)
+        write(f"{tier}_storage_light.png", *storage.light_for(color, rainbow))
+        print(f"{tier + '_storage':16s} #{color[0]:02x}{color[1]:02x}{color[2]:02x}"
+              f"{' (虹)' if rainbow else ''}")
     for tier in ACCELERATOR_TIERS:
         color = accelerator_color(tier)
-        write(f"{tier}_accelerator.png", accelerator.face(color), 1)
-        write(f"{tier}_accelerator_light.png", *accelerator.light_for(color))
-        print(f"{tier + '_accelerator':16s} #{color[0]:02x}{color[1]:02x}{color[2]:02x}")
+        rainbow = tier in ACCELERATOR_RAINBOW_TIERS
+        write(f"{tier}_accelerator.png", accelerator.face(color, rainbow), 1)
+        write(f"{tier}_accelerator_light.png", *accelerator.light_for(color, rainbow))
+        print(f"{tier + '_accelerator':16s} #{color[0]:02x}{color[1]:02x}{color[2]:02x}"
+              f"{' (虹)' if rainbow else ''}")
     print(f"\n-> {OUT_DIR}")
 
 

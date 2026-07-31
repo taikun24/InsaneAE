@@ -59,8 +59,13 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from gen_crafting_textures import (  # noqa: E402  (パス調整の後に import する必要がある)
-    BAND_MIN_BRIGHTNESS,
     MIN_SAT,
+    RAINBOW_BASE,
+    RAINBOW_STEP,
+    STORAGE_RAINBOW_TIERS,
+    band_color,
+    hue_rotate,
+    rainbow_recolor,
     STORAGE_BAND_COLORS,
     STORAGE_TIER_OVERRIDES,
     dominant_hue,
@@ -87,10 +92,8 @@ CELL_TIERS = ["1g", "4g", "16g", "64g", "256g",
               "1p", "4p", "16p", "64p", "256p",
               "1e", "4e", "8e"]
 
-# 単色ではなく虹色にする階層。x+y で色相を一周させる (最上段の特別扱い)。
-RAINBOW_TIERS = {"8e"}
-RAINBOW_BASE = "#df00ff"     # (x+y) == 6 の位置の色
-RAINBOW_STEP = -1.0 / 32.0   # x+y が 1 増えるごとに回す色相
+# 虹色にする階層はブロック側と共通 (gen_crafting_textures.STORAGE_RAINBOW_TIERS)。
+RAINBOW_TIERS = STORAGE_RAINBOW_TIERS
 
 SIZE = 16
 
@@ -151,21 +154,12 @@ COMPONENT_FALLBACK = [
 
 
 def tier_color(tier: str) -> tuple[int, int, int]:
-    """階層色。gen_crafting_textures.storage_color と同じ計算 (虹色の階層を除く)。
+    """階層色。ブロック側 (gen_crafting_textures.storage_color) と<b>同じ実装</b>を呼ぶ。
 
-    帯の中の位置で明度を上げていく。虹色の階層は帯の明度計算から外してあるので、
-    ブロック側 (STORAGE_TIERS に 8e を含まない) と色が完全に一致する。
+    虹色の階層は帯の位置計算から外れるので、ブロック側と階層一覧の中身が
+    多少違っても、他の階層の色は完全に一致する。
     """
-    if tier in STORAGE_TIER_OVERRIDES:
-        return parse_hex(STORAGE_TIER_OVERRIDES[tier])
-    if tier in RAINBOW_TIERS:
-        return parse_hex(RAINBOW_BASE)
-    band = tier[-1]
-    base = parse_hex(STORAGE_BAND_COLORS[band])
-    in_band = [t for t in CELL_TIERS
-               if t[-1] == band and t not in STORAGE_TIER_OVERRIDES and t not in RAINBOW_TIERS]
-    pos = in_band.index(tier) / max(1, len(in_band) - 1)
-    return scale(base, BAND_MIN_BRIGHTNESS + (1.0 - BAND_MIN_BRIGHTNESS) * pos)
+    return band_color(tier, CELL_TIERS)
 
 
 def pattern_index(tier: str) -> int:
