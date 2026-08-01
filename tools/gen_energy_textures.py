@@ -20,10 +20,12 @@
 見た目は AE2 のエネルギーセルと同じ考え方で、中央のコアから十字に伸びる 4 段の
 セグメントが残量ぶんだけ光る。消灯中の段も階層色で(暗く)描いてあるので、
 空っぽでも何階層のセルかは見て分かる。<b>階層の色は 1 段ごとに色相を回した
-虹のグラデーション</b>で、水色 → 青 → 紫 → ピンクと進む。ただし<b>色相を回すだけだと
-明るさが桁違いに変わる</b>ので、相対輝度は ENERGY_LUMA に揃えてある (揃えないと
-中段の青紫だけが真っ黒に沈む)。最上段 (cosmic) だけは<b>残量の段ごとに色相が変わる
-同心の虹色</b>になり、充電が進むにつれて色が増えていく。
+虹のグラデーション</b>で、水色 → 青 → 紫 → マゼンタ → 赤 → 橙 → 金と「熱く」なっていく。
+ただし<b>色相を回すだけだと明るさが桁違いに変わる</b>ので、相対輝度は ENERGY_LUMA に
+揃えてある (揃えないと中段の青紫だけが真っ黒に沈む)。逆に輝度を揃えるために
+彩度を捨てすぎると上位が全部同じ白茶けたピンクになるので、彩度の下限を
+ENERGY_MIN_SATURATION で切ってある。最上段 (cosmic) だけは<b>残量の段ごとに色相が
+変わる同心の虹色</b>になり、充電が進むにつれて水色から紫へ色が増えていく。
 
 --------------------------------------------------------------------------------------
 下敷きの差し替え
@@ -80,34 +82,63 @@ ENERGY_TIERS = ["hyperdense", "ultradense", "neutron", "degenerate", "collapsar"
 RAINBOW_TIERS = {"cosmic"}
 
 # 階層の色 = 色相を HUE_START から HUE_END まで均等に回したもの。
-# MEGA の Superdense (白) の続きなので、シアン → 青 → 紫 → ピンクと「熱く」していく。
+#
+# MEGA の Superdense (白) の続きなので、<b>冷たい色から熱い色へ</b>回していく。
+# 水色 → 青 → 紫 → マゼンタ → ピンク → 赤 → 橙 → 金 の<b>色相 1 周ぶんの 2/3</b>。
+# HUE_END が 1.0 を超えているのは「1 周を回り込んで暖色まで行く」という意味で、
+# 実際の色相は 1.0 で折り返す (1.14 → 0.14 = 金)。
+#
+# 以前はピンク (0.92) で止めていたが、それだと上位 5 段ほどが全部ピンクに見えて
+# <b>階層の差が読めなかった</b>。暖色まで回すと 12 段すべてが一目で別の色になり、
+# 「上位ほど熱い」という並びも直感に合う。
+#
+# 1.14 (黄色) まで回すと最上段が #c8ac1c のオリーブ色に濁る (黄色は輝度が高すぎて、
+# ENERGY_LUMA まで落とすと明度をかなり削ることになるため)。琥珀色の 1.10 で止める。
 HUE_START = 0.50
-HUE_END = 0.92
-SATURATION = 0.82
+HUE_END = 1.10
+SATURATION = 0.86
 
 # 階層色の<b>相対輝度</b>を (最下段, 最上段) の範囲に揃える。
 #
-# 色相を回すだけだと「人が感じる明るさ」が色によって桁違いに変わる。この階層は
-# 水色 → 青 → 紫 → ピンクと回すので、明度を 1.0 で固定すると水色は輝度 0.79、
-# 中段の青紫は 0.11 と<b>7 倍も差が出て</b>、中段のセルだけが真っ黒に沈んでいた。
-# 輝度で揃えたうえで、上位ほど少しだけ明るくして階層の進みが分かるようにする。
+# 色相を回すだけだと「人が感じる明るさ」が色によって桁違いに変わる。明度を 1.0 で
+# 固定すると水色は輝度 0.79、中段の青紫は 0.11 と<b>7 倍も差が出て</b>、
+# 中段のセルだけが真っ黒に沈む。輝度で揃えたうえで、上位ほど少しだけ明るくして
+# 階層の進みが分かるようにする。
 #
 # 光る部分は暗い落とし込みの中にあるので、地 (一番明るいところで 0.888) ほど
-# 明るくする必要はない。上げすぎると白っぽくなって色が飛ぶ。
-ENERGY_LUMA = (0.16, 0.32)
+# 明るくする必要はない。
+ENERGY_LUMA = (0.26, 0.44)
+
+# 輝度を揃えるときに<b>彩度をここまでしか落とさない</b>。
+#
+# 輝度合わせは「明度を上げきっても目標に届かないときは彩度を落として明るくする」
+# 仕組みで、青や紫のように輝度の上限が低い色相ではこれが効きすぎる。実際、上限を
+# 設けていなかったときは上位のマゼンタ〜ピンクが彩度 0.34〜0.47 まで白茶けて、
+# 全部サーモンピンクの同じ色に見えていた。届かないぶんは<b>暗いまま受け入れて
+# 色を守る</b>ほうが、暗い落とし込みの中では鮮やかに出る。
+ENERGY_MIN_SATURATION = 0.62
 
 # 虹色の階層の基準色と、色相の振り方。
 #
 # <b>中心からの距離 (ring) で振る</b>のが要点。このテクスチャは残量の段が
 # 中心からのリングそのものなので、リングごとに色相を回すと<b>段と虹の輪が一致し</b>、
-# 充電が進むごとに色が変わって見える。斜め (diag) で振ると十字に伸びる腕の上で
+# 充電が進むごとに色が増えていく。斜め (diag) で振ると十字に伸びる腕の上で
 # 色相がばらけ、同じ段なのに色が違う濁った見た目になった。
 #
-# 輝度は保つ (keep_luma)。ここは 4 リングしかないので 1 リングあたりの回転が大きく、
-# 保たないと「金色に光る輪」と「黒く沈む輪」が交互に出てしまう。
+# ORIGIN = 4 は<b>絵が中心から 4 リング目より外にしか無い</b>から。常時出る色レイヤと
+# 発光レイヤの一番内側がちょうどリング 4 なので、そこに基準色 (水色) が来るようにする。
+# ここを 0 のままにすると内側の 4 リングぶん先回りして回った状態から始まってしまう。
+#
+# STEP = 1/8 は<b>1 周まるごとは回さない</b>ということ。4 段で半周だけ回して
+# 水色 → 青 → 紫 → マゼンタ と進む。以前は 1 段 1/4 周 (4 段で 1 周) にしていたが、
+# それだと必ず黄〜黄緑を通る。この色相は輝度を落とすとオリーブ/黄土色に濁るので、
+# 腕の先だけ泥のような色になっていた。半周にすれば<b>濁る色相を一切通らない</b>。
+#
+# 輝度は保つ (keep_luma)。保たないと段ごとに明るさが跳ねる。
 RAINBOW_BASE = "#00e5ff"
-RAINBOW_STEP = -1.0 / 4.0
+RAINBOW_STEP = 1.0 / 8.0
 RAINBOW_AXIS = "ring"
+RAINBOW_ORIGIN = 4.0
 RAINBOW_KEEP_LUMA = True
 
 MAX_FULLNESS = 4          # EnergyCellBlock.MAX_FULLNESS
@@ -163,12 +194,13 @@ def tier_color(tier: str) -> tuple[int, int, int]:
     """
     lo, hi = ENERGY_LUMA
     if tier in RAINBOW_TIERS:
-        return fit_luminance(parse_hex(RAINBOW_BASE), hi)
+        return fit_luminance(parse_hex(RAINBOW_BASE), hi, ENERGY_MIN_SATURATION)
     ramp = [t for t in ENERGY_TIERS if t not in RAINBOW_TIERS]
     pos = ramp.index(tier) / max(1, len(ramp) - 1)
-    hue = HUE_START + (HUE_END - HUE_START) * pos
+    # HUE_END は 1.0 を超えることがある (暖色まで回り込む)。色相は 1.0 で折り返す。
+    hue = (HUE_START + (HUE_END - HUE_START) * pos) % 1.0
     rgb = tuple(round(c * 255) for c in colorsys.hsv_to_rgb(hue, SATURATION, 1.0))
-    return fit_luminance(rgb, lo + (hi - lo) * pos)
+    return fit_luminance(rgb, lo + (hi - lo) * pos, ENERGY_MIN_SATURATION)
 
 
 def parse_hex(value: str) -> tuple[int, int, int]:
@@ -341,8 +373,9 @@ def paint(template: Image.Image, tier: str, color) -> Image.Image:
     """
     if tier in RAINBOW_TIERS:
         return rainbow_recolor(template, color, RAINBOW_STEP, ENERGY_TEMPLATE_HUE,
-                               RAINBOW_AXIS, RAINBOW_KEEP_LUMA)
-    return recolor(template, color, ENERGY_TEMPLATE_HUE)
+                               RAINBOW_AXIS, RAINBOW_KEEP_LUMA,
+                               RAINBOW_ORIGIN, ENERGY_MIN_SATURATION)
+    return recolor(template, color, ENERGY_TEMPLATE_HUE, ENERGY_MIN_SATURATION)
 
 
 def masked(light: Image.Image, fullness: int, rings: dict[int, int]) -> Image.Image:

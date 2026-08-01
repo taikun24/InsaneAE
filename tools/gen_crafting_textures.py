@@ -204,12 +204,22 @@ RAINBOW_BASE = "#df00ff"     # ストレージ 8E の基準色。(x+y) == 6 の�
 RAINBOW_STEP = -1.0 / 32.0   # x+y が 1 増えるごとに回す色相
 RAINBOW_AXIS = "diag"        # 斜めにゆっくり流れる虹
 
-# 2G は<b>同じ基準色のまま振り方だけ変える</b>。中心から外へ 1 リングごとに 1/4 周ぶん
-# 回すので、中央のピンクから シアン → 緑 → マゼンタ → 紫 と同心に広がる。
+# 2G は<b>中心から外へ同心に</b>回す。加速機の色そのもの (マゼンタ) を中心に置いて、
+# 外へ向かって 1 リングごとに 1/16 周ずつ<b>紫 → 青 → 水色</b>と冷えていく。
 # 8E の「斜めにゆっくり流れる虹」とは絵として全く別物になる。
-ACCELERATOR_RAINBOW_BASE = RAINBOW_BASE
-ACCELERATOR_RAINBOW_STEP = -1.0 / 4.0
+#
+# <b>1 周まるごと回さないのが要点。</b>以前は 1 リングあたり 1/4 周も回していて、
+# 4 リングで色相を一周していた。そうすると必ず黄〜黄緑の帯を通るが、この色は
+# 輝度を落とすとオリーブ/黄土色に濁るので、輪ごとに「金色に光る帯」と「黒く沈む帯」が
+# 交互に出る的当てのような絵になっていた。マゼンタ → 水色は<b>濁る色相を一切通らない</b>
+# 半周ぶんなので、どのリングも素直に発色する。
+#
+# keep_luma を入れてあるのも同じ理由 (色相を回しても明るさを変えない)。
+ACCELERATOR_RAINBOW_BASE = ACCELERATOR_COLOR
+ACCELERATOR_RAINBOW_STEP = -1.0 / 16.0
 ACCELERATOR_RAINBOW_AXIS = "ring"
+ACCELERATOR_RAINBOW_ORIGIN = 0.0        # 中央の 2x2 が基準色
+ACCELERATOR_RAINBOW_KEEP_LUMA = True
 
 # --------------------------------------------------------------------------------------
 # テンプレートを「何色で描いてあるか」
@@ -343,7 +353,7 @@ def relative_luminance(rgb) -> float:
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
 
-def fit_luminance(color, target: float) -> tuple[int, int, int]:
+def fit_luminance(color, target: float, min_saturation: float = 0.0) -> tuple[int, int, int]:
     """色相・彩度を保ったまま、<b>相対輝度が target になるよう</b>明度を合わせる。
 
     HSV の明度と「人が感じる明るさ」は色によって大きくずれる。
@@ -354,6 +364,12 @@ def fit_luminance(color, target: float) -> tuple[int, int, int]:
     彩度が高い色は明度を上げきっても target に届かないことがある
     (マゼンタ #ff42c6 は明度 1.0 でも輝度 0.292 が上限)。その場合は<b>彩度を落として</b>
     明るくする。これをやらないと帯の上位が全部同じ色になって階層の差が消える。
+
+    ただし<b>彩度を落として明るくするのは色が白茶けるのと引き換え</b>で、
+    青や紫のように輝度の上限がそもそも低い色相だと目標に届くまでに彩度をほとんど
+    使い切ってしまう。min_saturation を渡すと<b>そこまでしか彩度を落とさず</b>、
+    届かないぶんは暗いまま受け入れる。暗い地の上に置く絵 (エネルギーセルの発光) は
+    こちらのほうが色が生きる。既定の 0.0 は従来どおり (いくらでも白に寄せる)。
     """
     h, s0, _ = colorsys.rgb_to_hsv(*[c / 255 for c in color])
 
@@ -372,8 +388,11 @@ def fit_luminance(color, target: float) -> tuple[int, int, int]:
 
     if relative_luminance(rgb_of(s0, 1.0)) >= target:
         return rgb_of(s0, search(lambda v: rgb_of(s0, v), 0.0, 1.0))
-    # 明度は振り切っているので、ここから先は彩度を落として明るくする (パステル寄りになる)
-    return rgb_of(search(lambda s: rgb_of(s, 1.0), s0, 0.0), 1.0)
+    # 明度は振り切っているので、ここから先は彩度を落として明るくする (パステル寄りになる)。
+    floor = min(s0, max(0.0, min_saturation))
+    if relative_luminance(rgb_of(floor, 1.0)) <= target:
+        return rgb_of(floor, 1.0)      # ここまで落としても届かない → 彩度のほうを守る
+    return rgb_of(search(lambda s: rgb_of(s, 1.0), s0, floor), 1.0)
 
 
 def band_color_value(tier: str, tiers: list[str]) -> tuple[int, int, int]:
@@ -464,7 +483,8 @@ def dominant_hue(image: Image.Image, min_sat: float = MIN_SAT) -> tuple[float, f
     return max(counts.items(), key=lambda kv: kv[1])[0] / 72.0, peak_s, peak_v
 
 
-def recolor(template: Image.Image, target, source_hue: float | None = None) -> Image.Image:
+def recolor(template: Image.Image, target, source_hue: float | None = None,
+            min_saturation: float = 0.0) -> Image.Image:
     """テンプレートを階層色に染める。テンプレの描き方で 2 通りに分かれる。
 
     <b>グレースケールで描いた場合</b> (彩度のある画素が 1 つも無い)
@@ -482,6 +502,11 @@ def recolor(template: Image.Image, target, source_hue: float | None = None) -> I
     どちらの場合も彩度の無い画素 (白いハイライトなど) は彩度 0 のまま残るので、
     光の粒などは白いままにできる。明度はテンプレの最大明度が target の明度に
     なるよう比率で合わせる。アルファはそのまま維持される。
+
+    min_saturation は<b>陰影の明るい側がパステルに飛ぶのを止める</b>ための下限
+    ({@link fit_luminance} 参照)。下敷きに target より明るい画素があると、その画素は
+    target を超える輝度を要求されて彩度を失う。暗い地の上に置く絵ではここを
+    指定しておくと、明るい側も色が残る。
     """
     src = template.convert("RGBA")
     px = list(src.getdata())
@@ -532,7 +557,8 @@ def recolor(template: Image.Image, target, source_hue: float | None = None) -> I
         if ref_lum > 0:
             want = min(1.0, tgt_lum * (relative_luminance(p[:3]) / ref_lum))
             r, g, b = fit_luminance(
-                tuple(round(c * 255) for c in colorsys.hsv_to_rgb(nh, ns, 1.0)), want)
+                tuple(round(c * 255) for c in colorsys.hsv_to_rgb(nh, ns, 1.0)),
+                want, min_saturation)
         else:
             r, g, b = (round(c * 255)
                        for c in colorsys.hsv_to_rgb(nh, ns, min(1.0, v * (tgt_v / peak_v))))
@@ -543,7 +569,7 @@ def recolor(template: Image.Image, target, source_hue: float | None = None) -> I
     return result
 
 
-def rainbow_offset(x: int, y: int, width: int, axis: str) -> float:
+def rainbow_offset(x: int, y: int, width: int, axis: str, origin: float = 0.0) -> float:
     """虹色を振るときの「その画素の位置」。axis で向きを選ぶ。
 
     ここで返した値に step を掛けたぶんだけ色相が回る。0 を返す位置が基準色になる。
@@ -552,21 +578,28 @@ def rainbow_offset(x: int, y: int, width: int, axis: str) -> float:
         "anti"  x-y            右上→左下の斜め。0 は主対角線
         "ring"  中心からの距離  中心から外へ同心に広がる。0 は中央の 2x2
 
+    origin は<b>基準色を置きたい位置</b>で、そのぶんだけ全体をずらす。
+    絵が中央に無い場合 (エネルギーセルの発光は中心から 4 リング目より外にしか無い) に
+    これを合わせておかないと、絵の一番内側がすでに大きく色相を回された状態から
+    始まってしまい、狙った色の並びにならない。基準色の hex を先回りして回した値に
+    書き換える手もあるが、それだと<b>設定を読んでも何色になるか分からなくなる</b>。
+
     y は<b>コマ内の位置</b>にしてある (発光レイヤが 16xN の縦並びでも、
     コマごとに同じ模様が出るように)。
     """
     row = y % width
     if axis == "anti":
-        return x - row
+        return (x - row) - origin
     if axis == "ring":
         c = (width - 1) / 2
-        return round(max(abs(x - c), abs(row - c)) - 0.5)
-    return x + row - 6
+        return round(max(abs(x - c), abs(row - c)) - 0.5) - origin
+    return (x + row - 6) - origin
 
 
 def hue_rotate(template: Image.Image, target, rainbow: bool = False,
                min_sat: float = MIN_SAT, step: float | None = None,
-               axis: str = RAINBOW_AXIS, keep_luma: bool = False) -> Image.Image:
+               axis: str = RAINBOW_AXIS, keep_luma: bool = False,
+               origin: float = 0.0, min_saturation: float = 0.0) -> Image.Image:
     """色付きテンプレートの色相を回す。彩度の無い画素 (地のグレー) は触らない。
 
     「テンプレの主要色相 → target の色相」の回転なので、1 枚の中の色相差
@@ -600,13 +633,13 @@ def hue_rotate(template: Image.Image, target, rainbow: bool = False,
         shift = delta
         if rainbow:
             shift += ((RAINBOW_STEP if step is None else step)
-                      * rainbow_offset(i % width, i // width, width, axis))
+                      * rainbow_offset(i % width, i // width, width, axis, origin))
         nv = min(1.0, v * gain)
         rotated = tuple(round(c * 255) for c in colorsys.hsv_to_rgb((h + shift) % 1.0, s, nv))
         if keep_luma:
             # 回す前の色 (= 色相だけ据え置いたもの) の輝度に合わせ直す。
             unrotated = tuple(round(c * 255) for c in colorsys.hsv_to_rgb(h, s, nv))
-            rotated = fit_luminance(rotated, relative_luminance(unrotated))
+            rotated = fit_luminance(rotated, relative_luminance(unrotated), min_saturation)
         out.append((*rotated, a))
 
     result = Image.new("RGBA", src.size)
@@ -616,18 +649,19 @@ def hue_rotate(template: Image.Image, target, rainbow: bool = False,
 
 def rainbow_recolor(template: Image.Image, target, step: float | None = None,
                     source_hue: float | None = None,
-                    axis: str = RAINBOW_AXIS, keep_luma: bool = False) -> Image.Image:
+                    axis: str = RAINBOW_AXIS, keep_luma: bool = False,
+                    origin: float = 0.0, min_saturation: float = 0.0) -> Image.Image:
     """テンプレートを画素の位置で色相を振りながら染める。
 
     まず普通に染めてから色相を振るので、グレースケールで描いた下敷きでも虹色になる。
     step は「位置が 1 進むごとに回す色相」。光る部分が狭い絵ほど大きくしないと
     虹に見えないので、呼び出し側で指定できるようにしてある。
-    axis は振る向き ({@link rainbow_offset})、keep_luma は輝度を保つかどうか
-    (どちらも {@link hue_rotate} 参照)。
+    axis は振る向き、origin は基準色を置く位置 ({@link rainbow_offset})、
+    keep_luma は輝度を保つかどうか ({@link hue_rotate} 参照)。
     """
-    base = recolor(template, target, source_hue)
+    base = recolor(template, target, source_hue, min_saturation)
     return hue_rotate(base, target, rainbow=True, min_sat=0.05, step=step, axis=axis,
-                      keep_luma=keep_luma)
+                      keep_luma=keep_luma, origin=origin, min_saturation=min_saturation)
 
 
 # --------------------------------------------------------------------------------------
@@ -736,7 +770,8 @@ class Kind:
     """ストレージ / 協調処理ユニットのどちらかぶんの下敷き一式。"""
 
     def __init__(self, prefix: str, mask, directory: str, template_hue: float | None = None,
-                 rainbow_step: float = RAINBOW_STEP, rainbow_axis: str = RAINBOW_AXIS):
+                 rainbow_step: float = RAINBOW_STEP, rainbow_axis: str = RAINBOW_AXIS,
+                 rainbow_origin: float = 0.0, rainbow_keep_luma: bool = False):
         self.prefix = prefix
         # 中央 (color) と発光 (light) を「何色で描いてあるか」。base は染めないので関係ない。
         self.template_hue = template_hue
@@ -744,6 +779,8 @@ class Kind:
         # ここを変えないとストレージと協調処理ユニットの最上段が同じ絵になる。
         self.rainbow_step = rainbow_step
         self.rainbow_axis = rainbow_axis
+        self.rainbow_origin = rainbow_origin
+        self.rainbow_keep_luma = rainbow_keep_luma
         self.used = []
         self.base = self._pick(directory, "base", draw_base)
         self.color = self._pick(directory, "color", draw_color_layer)
@@ -770,7 +807,9 @@ class Kind:
     def _paint(self, template: Image.Image, color, rainbow: bool) -> Image.Image:
         if rainbow:
             return rainbow_recolor(template, color, step=self.rainbow_step,
-                                   source_hue=self.template_hue, axis=self.rainbow_axis)
+                                   source_hue=self.template_hue, axis=self.rainbow_axis,
+                                   keep_luma=self.rainbow_keep_luma,
+                                   origin=self.rainbow_origin)
         return recolor(template, color, self.template_hue)
 
     def face(self, color, rainbow: bool = False) -> Image.Image:
@@ -841,7 +880,8 @@ def main() -> None:
     storage = Kind("storage", STORAGE_MASK, args.templates, STORAGE_TEMPLATE_HUE,
                    RAINBOW_STEP, RAINBOW_AXIS)
     accelerator = Kind("accelerator", ACCELERATOR_MASK, args.templates, ACCELERATOR_TEMPLATE_HUE,
-                       ACCELERATOR_RAINBOW_STEP, ACCELERATOR_RAINBOW_AXIS)
+                       ACCELERATOR_RAINBOW_STEP, ACCELERATOR_RAINBOW_AXIS,
+                       ACCELERATOR_RAINBOW_ORIGIN, ACCELERATOR_RAINBOW_KEEP_LUMA)
     print(f"下敷き: storage={storage.used} accelerator={accelerator.used}\n")
 
     for tier in STORAGE_TIERS:
