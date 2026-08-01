@@ -18,6 +18,7 @@ import jp.main.taikun.insaneae.menu.QuantumCpuMenu;
 import jp.main.taikun.insaneae.registries.ModBlockEntities;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModCells;
+import net.minecraft.client.color.item.ItemColor;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
@@ -115,20 +116,48 @@ public final class InsaneAEClient {
     /**
      * ストレージセルのモデル 2 レイヤ目 (LED) の色付け。AE2 の
      * {@link BasicStorageCell#getColor} が中身の量に応じた色を返す。
+     *
+     * <p><b>必ず {@link #opaque} を通して登録すること。</b>理由はそちらの説明を参照。</p>
      */
     private static void registerItemColors(RegisterColorHandlersEvent.Item event) {
-        ModCells.ITEM_CELLS.values().forEach(cell -> event.register(BasicStorageCell::getColor, cell.get()));
-        ModCells.FLUID_CELLS.values().forEach(cell -> event.register(BasicStorageCell::getColor, cell.get()));
+        ItemColor basic = opaque(BasicStorageCell::getColor);
         // ポータブルセルは染色できるので AE2 側の色解決を使う。
-        ModCells.PORTABLE_ITEM_CELLS.values()
-                .forEach(cell -> event.register(AbstractPortableCell::getColor, cell.get()));
-        ModCells.PORTABLE_FLUID_CELLS.values()
-                .forEach(cell -> event.register(AbstractPortableCell::getColor, cell.get()));
+        ItemColor portable = opaque(AbstractPortableCell::getColor);
+        ModCells.ITEM_CELLS.values().forEach(cell -> event.register(basic, cell.get()));
+        ModCells.FLUID_CELLS.values().forEach(cell -> event.register(basic, cell.get()));
+        ModCells.PORTABLE_ITEM_CELLS.values().forEach(cell -> event.register(portable, cell.get()));
+        ModCells.PORTABLE_FLUID_CELLS.values().forEach(cell -> event.register(portable, cell.get()));
         if (ModList.get().isLoaded(InsaneAE.APPMEK_MODID)) {
             jp.main.taikun.insaneae.integration.appmek.AppMekCells.CHEMICAL_CELLS.values()
-                    .forEach(cell -> event.register(BasicStorageCell::getColor, cell.get()));
+                    .forEach(cell -> event.register(basic, cell.get()));
             jp.main.taikun.insaneae.integration.appmek.AppMekCells.PORTABLE_CHEMICAL_CELLS.values()
-                    .forEach(cell -> event.register(AbstractPortableCell::getColor, cell.get()));
+                    .forEach(cell -> event.register(portable, cell.get()));
         }
+    }
+
+    /**
+     * 色ハンドラの戻り値を<b>不透明にして</b>から使う。これを通さないとセルが丸ごと消える。
+     *
+     * <p>AE2 の {@link BasicStorageCell#getColor} / {@link AbstractPortableCell#getColor} は
+     * 色を付けないレイヤに {@code 0xFFFFFF} を返す。これは ARGB として見ると
+     * <b>アルファが 0</b> であり、NeoForge 1.21.1 の {@code ItemRenderer#renderQuadList} は</p>
+     *
+     * <pre>float f = FastColor.ARGB32.alpha(色) / 255.0F;   // ← 1.20.1 には無かった
+     *buffer.putBulkData(pose, quad, r, g, b, f, ...);</pre>
+     *
+     * <p>と<b>戻り値のアルファを頂点に掛ける</b>ので、そのまま登録すると全レイヤの
+     * アルファが 0 になり、アイテムが完全に透明になって見えなくなる
+     * ({@code item/generated} は layerN に tintindex N を振るため、
+     * 筐体も階層色も例外なく色ハンドラを通る)。1.20.1 の {@code ItemRenderer} は
+     * アルファを 1.0 固定にしていたので、これは 1.21.1 で初めて出る問題。</p>
+     *
+     * <p>色ハンドラを登録していないアイテム (セルコンポーネントなど) は既定値 {@code -1}
+     * = {@code 0xFFFFFFFF} が使われるので影響を受けない。<b>セルだけが消えていたのはこのため。</b></p>
+     *
+     * <p>AE2 自身も {@code InitItemColors#makeOpaque} で同じ処理をしてから登録しているが、
+     * private で借りられないのでこちらで用意する。</p>
+     */
+    private static ItemColor opaque(ItemColor color) {
+        return (stack, tintIndex) -> color.getColor(stack, tintIndex) | 0xFF000000;
     }
 }
