@@ -206,7 +206,27 @@ def segment_rings(light: Image.Image) -> dict[int, int]:
     if step != MAX_FULLNESS:
         print(f"警告: 発光レイヤの段数が {step} 段。残量は 0〜{MAX_FULLNESS} なので "
               f"{MAX_FULLNESS} 段で描くこと (多い/少ない段は端の残量に丸められる)")
+    check_symmetry(light)
     return mapping
+
+
+def check_symmetry(light: Image.Image) -> None:
+    """発光レイヤが上下左右対称かを見て、崩れていたら画素を挙げて警告する。
+
+    このテクスチャは中心から十字に伸びる 4 本の腕でできていて、<b>腕は同じ長さで
+    同じ段から始まる</b>のが前提。1 ドット描き落とすとその腕だけ段がひとつ外へずれ、
+    残量が増えたときに<b>1 本だけ光り出しが遅れて 1px 外側にずれて見える</b>。
+    ゲームを起動しないと気付きにくいので、生成のたびに見ておく。
+    """
+    px = light.load()
+    lit = {(x, y) for y in range(SIZE) for x in range(SIZE) if px[x, y][3] > 0}
+    for label, flip in (("上下", lambda p: (p[0], SIZE - 1 - p[1])),
+                        ("左右", lambda p: (SIZE - 1 - p[0], p[1]))):
+        missing = sorted({flip(p) for p in lit} - lit)
+        if missing:
+            print(f"警告: 発光レイヤが{label}対称になっていない。"
+                  f" 描き落としの疑いがある画素 {missing[:8]}"
+                  f"{' ほか' if len(missing) > 8 else ''}")
 
 
 def split_color(base: Image.Image) -> tuple[Image.Image, Image.Image | None]:

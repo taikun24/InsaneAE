@@ -101,35 +101,64 @@ SIZE = 16
 # 手続き描画のパラメータ
 # --------------------------------------------------------------------------------------
 
-# 通常セルの色レイヤ。MEGA のハウジング (mega_item/fluid/chemical_cell_housing) の
-# 上面に開いた窓と、左面の帯のドットをなぞったマスク。
-# 'L' = 明るい方 (階層色そのもの) / 'D' = 暗い方 / '.' = 透明。
-# LED (9,12) は AE2 の LED レイヤが乗るので必ず空けておくこと。
+# 通常セルの色レイヤ。MEGA のハウジング (mega_item/fluid/chemical_cell_housing) に
+# 開いた窓をなぞったマスクで、<b>MEGA 4.11 の storage_cell_side_<tier>.png を
+# 1 ドットずつ写したもの</b> (MEGA は全階層でこの形を共通に使い、色だけ変えている)。
+#
+# <b>MEGA は 4.x でセルの絵を描き直した。</b>3.x (1.20.1) はハウジングと色が 1 枚に
+# 焼かれていて (megacells:item/cell/standard/item_storage_cell_1m)、窓の位置も違う。
+# 1.20.1 側のマスクをそのまま持ってくると、色がハウジングの窓から外れて
+# 「地の金属の上に模様が乗っているだけ」になるので、ここはバージョンごとに合わせること。
+#
+# 'L' = 一番明るい / 'M' = 中間 / 'D' = 一番暗い / '.' = 透明。
+# LED は AE2 の LED レイヤが乗るので必ず空けておくこと。
 CELL_OVERLAY_MASK = [
     "................",
     "................",
     "................",
     "................",
-    "........D.......",
-    "......DDLD......",
-    ".....DLLLLD.....",
-    ".L....LLLL......",
-    ".LD....L........",
-    "..LD............",
-    "...LD...........",
-    "....LD..........",
-    ".....L..........",
+    "................",
+    ".......DDD......",
+    "..DDDD..MMD.....",
+    "..DLMMD..MLD....",
+    "..DDLMMD..MLD...",
+    "...MD......MD...",
+    "....M......DD...",
+    "................",
+    "................",
     "................",
     "................",
     "................",
 ]
 
-# ポータブルセルの側面の帯。ae2:item/portable_cell_item_housing の左下の斜面に沿う。
-# (暗い方, 明るい方) の順で、AE2 の portable_cell_side_<tier> と同じドットを踏む。
-PORTABLE_SIDE_PIXELS = [((1 + i, 6 + i), (1 + i, 7 + i)) for i in range(5)]
+# ポータブルセルの側面の帯。megacells:item/portable_cell_*_housing の左下の斜面に沿う。
+# こちらも <b>MEGA 4.11 の portable_cell_side_<tier>.png を写したもの</b>で、
+# 2 本の破線が平行に走る形になっている (1.20.1 の 2 ドット幅の実線とは別物)。
+PORTABLE_SIDE_MASK = [
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+    "D...............",
+    ".M..............",
+    "D.M.............",
+    ".M.M............",
+    "..L.D...........",
+    "...L............",
+    "....D...........",
+    "................",
+    "................",
+    "................",
+]
 
-# 'D' を 'L' の何倍の明るさにするか (MEGA のセルの 2 階調の比に合わせてある)。
-DARK_LEVEL = 0.86
+# マスクの記号 → 明るさ。'L' が階層色そのものになる。
+#
+# MEGA の絵は明度ではなく<b>彩度</b>で 3 階調を作っている (#faffbf / #fff373 / #ffcf40)
+# ので、そのままの数値は使えない。知覚輝度の比 (1.00 : 0.91 : 0.69) が出るよう
+# 明度に直した値を入れてある (輝度はおおよそ明度の 2.2 乗)。
+MASK_LEVELS = {"L": 1.00, "M": 0.96, "D": 0.85}
 
 # セルコンポーネントの手続き描画 (テンプレートが 1 枚も無いときのフォールバック)。
 # '#' = 階層色 / '+' = 明るい地 / '-' = 暗い地 / '.' = 透明。
@@ -194,27 +223,25 @@ def grey(level: float) -> tuple[int, int, int, int]:
     return (value, value, value, 255)
 
 
-def draw_cell_overlay() -> Image.Image:
-    """通常セルの色レイヤ。ハウジングの窓と左面の帯をなぞった 2 階調のグレースケール。"""
+def draw_mask(mask) -> Image.Image:
+    """3 階調のマスクをグレースケールに起こす。'L' が階層色そのものになる。"""
     img = Image.new("RGBA", (SIZE, SIZE))
     px = img.load()
-    for y, row in enumerate(CELL_OVERLAY_MASK):
+    for y, row in enumerate(mask):
         for x, ch in enumerate(row):
-            if ch == "L":
-                px[x, y] = grey(1.0)      # 一番明るい画素 = 階層色そのものになる
-            elif ch == "D":
-                px[x, y] = grey(DARK_LEVEL)
+            if ch in MASK_LEVELS:
+                px[x, y] = grey(MASK_LEVELS[ch])
     return img
+
+
+def draw_cell_overlay() -> Image.Image:
+    """通常セルの色レイヤ。MEGA のハウジングの窓をなぞった 3 階調のグレースケール。"""
+    return draw_mask(CELL_OVERLAY_MASK)
 
 
 def draw_portable_side() -> Image.Image:
-    """ポータブルセルの側面の帯。上側の 1 ドットを陰にした 2 段のグレースケール。"""
-    img = Image.new("RGBA", (SIZE, SIZE))
-    px = img.load()
-    for dark, light in PORTABLE_SIDE_PIXELS:
-        px[dark] = grey(0.72)
-        px[light] = grey(1.0)
-    return img
+    """ポータブルセルの側面の帯。MEGA の斜面に沿う 2 本の破線。"""
+    return draw_mask(PORTABLE_SIDE_MASK)
 
 
 def draw_component_fallback(part: str = "all") -> Image.Image:
