@@ -1,0 +1,253 @@
+name: release
+
+# CurseForge へのアップロードと GitHub Release の作成。
+#
+# <b>このファイルは main にだけ置いてあります。</b>workflow_dispatch は既定ブランチの
+# ワークフローしか実行できないため、両ブランチに置いても意味がありません
+# (build.yml はブランチごとの push で走るので両方に置いてある、という違い)。
+# 実際にビルドする中身は下のマトリクスが各ブランチをチェックアウトして持ってきます。
+#
+# 必要なシークレット:
+#   CF_API_TOKEN — https://legacy.curseforge.com/account/api-tokens で発行したもの。
+#                  console.curseforge.com の Core API キーでは<b>アップロードできません</b>。
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'CurseForge のリリース種別'
+        type: choice
+        options: [release, beta, alpha]
+        default: release
+      targets:
+        description: '対象'
+        type: choice
+        options: ['両方', 'main (1.20.1) だけ', '1.21.1 だけ']
+        default: '両方'
+      dry_run:
+        description: 'アップロードせずビルドと検証だけ行う'
+        type: boolean
+        default: false
+
+env:
+  CF_PROJECT_ID: '1627326'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      # 片方が失敗しても、もう片方は最後まで走らせる。
+      fail-fast: false
+      matrix:
+        include:
+          - branch: main
+            java: '17'
+            mc: '1.20.1'
+            loader: Forge
+          - branch: '1.21.1'
+            java: '21'
+            mc: '1.21.1'
+            loader: NeoForge
+
+    steps:
+      - name: 対象ブランチか判定
+        id: want
+        run: |
+          case "${{ inputs.targets }}" in
+            '両方') want=yes ;;
+            'main (1.20.1) だけ') [ "${{ matrix.branch }}" = 'main' ] && want=yes || want=no ;;
+            '1.21.1 だけ')        [ "${{ matrix.branch }}" = '1.21.1' ] && want=yes || want=no ;;
+            *) want=no ;;
+          esac
+          echo "want=$want" >> "$GITHUB_OUTPUT"
+          echo "${{ matrix.branch }} を処理するか: $want"
+
+      - uses: actions/checkout@v4
+        if: steps.want.outputs.want == 'yes'
+        with:
+          ref: ${{ matrix.branch }}
+
+      - name: Set up JDK
+        if: steps.want.outputs.want == 'yes'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+
+      - name: Set up Gradle
+        if: steps.want.outputs.want == 'yes'
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: バージョンと changelog を取り出す
+        if: steps.want.outputs.want == 'yes'
+        id: meta
+        run: |
+          version=$(grep -E '^mod_version=' gradle.properties | cut -d= -f2)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+          # CHANGELOG.md の「先頭のバージョン節」だけを抜き出す。
+          # 見出しが version と食い違っていたら、書き忘れとみなして止める。
+          head=$(grep -m1 -E '^## ' CHANGELOG.md | sed -E 's/^## +//')
+          if [ "$head" != "$version" ]; then
+            echo "::error::CHANGELOG.md の先頭が '$head' ですが mod_version は '$version' です"
+            exit 1
+          fi
+          awk '/^## /{ if (seen) exit; seen=1; next } seen' CHANGELOG.md > changelog.md
+          echo "--- changelog ---"
+          cat changelog.md
+
+      - run: chmod +x ./gradlew
+        if: steps.want.outputs.want == 'yes'
+
+      - name: Build
+        if: steps.want.outputs.want == 'yes'
+        run: ./gradlew build
+
+      # build.yml と同じ判定。リリースする物が既知の失敗以外で落ちていないかを見る。
+      - name: Game tests
+        if: steps.want.outputs.want == 'yes'
+        run: |
+          mkdir -p run
+          echo "eula=true" > run/eula.txt
+          ./gradlew runGameTestServer 2>&1 | tee gametest.log || true
+
+          if ! grep -qE 'required tests (passed|failed)' gametest.log; then
+            echo "::error::テストが実行されていません (サーバーが起動途中で落ちた可能性)"
+            exit 1
+          fi
+          grep -oE 'LogTestReporter\]: [a-z0-9_.]+ failed!' gametest.log \
+            | sed -E 's/.*\]: //; s/ failed!$//' | sort -u > actual-failures.txt
+          grep -vE '^\s*(#|$)' .github/known-test-failures.txt | sort -u > expected-failures.txt
+          if ! diff -u expected-failures.txt actual-failures.txt; then
+            echo "::error::想定外のテスト結果です。リリースを中止します"
+            exit 1
+          fi
+
+      - name: jar を特定する
+        if: steps.want.outputs.want == 'yes'
+        id: jar
+        run: |
+          # sources / javadoc が混ざらないよう名前で絞る (build.gradle の archivesName と揃えること)。
+          jar="build/libs/insaneae-${{ matrix.mc }}-${{ steps.meta.outputs.version }}.jar"
+          test -f "$jar" || { echo "::error::$jar が見つかりません"; ls -la build/libs; exit 1; }
+          echo "path=$jar" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$jar")" >> "$GITHUB_OUTPUT"
+          ls -la "$jar"
+
+      # ゲームバージョンの数値 ID は API から引く。ハードコードすると
+      # CurseForge 側の採番が変わったときに黙って壊れるため。
+      - name: CurseForge のゲームバージョン ID を解決する
+        if: steps.want.outputs.want == 'yes' && !inputs.dry_run
+        id: gv
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          if [ -z "$CF_API_TOKEN" ]; then
+            echo "::error::シークレット CF_API_TOKEN が設定されていません"
+            exit 1
+          fi
+          curl -sS -f -H "X-Api-Token: $CF_API_TOKEN" \
+            https://minecraft.curseforge.com/api/game/versions > versions.json
+
+          # <b>関数の中で exit してはいけない。</b>$(...) はサブシェルなので、
+          # そこで exit しても抜けるのはサブシェルだけでステップは成功扱いのまま進む。
+          # 空かどうかは呼び出した側で見る。
+          pick() { jq -r --arg n "$1" '[.[] | select(.name == $n)][0].id // empty' versions.json; }
+          need() {
+            if [ -z "$2" ]; then
+              echo "::error::CurseForge に '$1' というゲームバージョンが見つかりません"
+              exit 1
+            fi
+          }
+          mc=$(pick '${{ matrix.mc }}');            need '${{ matrix.mc }}' "$mc"
+          loader=$(pick '${{ matrix.loader }}');    need '${{ matrix.loader }}' "$loader"
+          java=$(pick 'Java ${{ matrix.java }}');   need 'Java ${{ matrix.java }}' "$java"
+          echo "ids=[$mc,$loader,$java]" >> "$GITHUB_OUTPUT"
+          echo "MC=${{ matrix.mc }}($mc) ローダー=${{ matrix.loader }}($loader) Java=${{ matrix.java }}($java)"
+
+      - name: CurseForge にアップロード
+        if: steps.want.outputs.want == 'yes' && !inputs.dry_run
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          jq -n \
+            --rawfile changelog changelog.md \
+            --arg name "InsaneAE ${{ steps.meta.outputs.version }} (${{ matrix.mc }})" \
+            --arg type "${{ inputs.release_type }}" \
+            --argjson versions '${{ steps.gv.outputs.ids }}' \
+            '{
+               changelog:     $changelog,
+               changelogType: "markdown",
+               displayName:   $name,
+               gameVersions:  $versions,
+               releaseType:   $type
+             }' > metadata.json
+          cat metadata.json
+
+          curl -sS -f -X POST \
+            -H "X-Api-Token: $CF_API_TOKEN" \
+            -F "metadata=<metadata.json" \
+            -F "file=@${{ steps.jar.outputs.path }}" \
+            "https://minecraft.curseforge.com/api/projects/${{ env.CF_PROJECT_ID }}/upload-file"
+          echo
+          echo "アップロードしました: ${{ steps.jar.outputs.name }}"
+
+      - name: 成果物を残す
+        if: steps.want.outputs.want == 'yes'
+        uses: actions/upload-artifact@v4
+        with:
+          name: insaneae-${{ matrix.mc }}-${{ steps.meta.outputs.version }}
+          path: build/libs/*.jar
+          if-no-files-found: error
+
+      - name: 失敗したらログを残す
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ matrix.branch }}
+          path: |
+            run/logs/
+            gametest.log
+          if-no-files-found: ignore
+
+  # 両方のビルドが通ってから、jar をまとめて GitHub Release に出す。
+  # CurseForge と違って「両方揃ってから 1 つのリリース」にしたいので別ジョブにしてある。
+  github-release:
+    needs: release
+    if: ${{ !inputs.dry_run && inputs.targets == '両方' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: バージョンと changelog を取り出す
+        id: meta
+        run: |
+          version=$(grep -E '^mod_version=' gradle.properties | cut -d= -f2)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          awk '/^## /{ if (seen) exit; seen=1; next } seen' CHANGELOG.md > changelog.md
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Release を作る
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la artifacts
+          # 同じタグで再実行したときに黙って上書きしないよう、あったら止める。
+          if gh release view "v${{ steps.meta.outputs.version }}" >/dev/null 2>&1; then
+            echo "::error::タグ v${{ steps.meta.outputs.version }} の Release が既にあります"
+            exit 1
+          fi
+          gh release create "v${{ steps.meta.outputs.version }}" \
+            --title "v${{ steps.meta.outputs.version }}" \
+            --notes-file changelog.md \
+            --target main \
+            artifacts/*.jar
