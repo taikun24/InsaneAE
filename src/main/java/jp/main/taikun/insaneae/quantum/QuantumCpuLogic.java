@@ -21,9 +21,10 @@ import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -38,7 +39,9 @@ import java.util.Set;
  * <h2>重さ対策</h2>
  * <p>1 回ごとに真面目にレシピを回すと重いので、
  * <b>同じパターンに同じ材料が並んだ場合は最初の 1 回だけ実際に組み立て、
- * 以降は記憶した結果を使い回して個数を足すだけ</b>にしている。
+ * 以降は記憶した結果を使い回して個数を足すだけ</b>にしている
+ * (記憶は<b>パターンごと</b>。1 枠しか持たないと、同時に走る小レシピが交互に来たときに
+ * 毎回無効化されて意味を成さない → {@link #assemblyCache})。
  * さらに完成品はその場でネットワークに入れず {@link QuantumCpuBlockEntity} 側に貯め、
  * <b>1 tick に 1 回だけまとめて挿入</b>する (ME への挿入が一番重いため)。</p>
  *
@@ -52,6 +55,9 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final int GRID_SLOTS = 9;
 
+    /** 組み立て結果を覚えておくパターンの数。同時に走る小レシピの数より多ければよい。 */
+    private static final int ASSEMBLY_CACHE_SIZE = 64;
+
     private final QuantumCpuBlockEntity host;
     private final IManagedGridNode mainNode;
 
@@ -59,11 +65,33 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
     private final CraftingContainer craftingInv =
             new TransientCraftingContainer(new AutoCraftingMenu(), 3, 3);
 
-    /** 直前に実際に組み立てたときのパターンと材料の並び。 */
-    private IPatternDetails cachedPattern;
-    private final ItemStack[] cachedGrid = new ItemStack[GRID_SLOTS];
-    private ItemStack cachedOutput = ItemStack.EMPTY;
-    private final List<ItemStack> cachedRemainders = new ArrayList<>();
+    /**
+     * 実際に組み立てた結果を<b>パターンごとに</b>覚えておく表。
+     *
+     * <p>以前はここが 1 枠しか無く、直前に組んだパターンとしか照合できなかった。
+     * ところが 1 つのクラフトジョブには普通いくつもの小レシピが同時に走っていて、
+     * CPU 側はタスクの表を舐めながら順に押し出してくる。<b>別のパターンが交互に来ると
+     * 1 枠のキャッシュは毎回無効化される</b>ので、命中率が 0 に落ちて
+     * {@link #assembleAndCache} を毎クラフト走らせていた (レシピの実行と
+     * {@code fireAutoCraftingEvent} の発火が丸ごと乗る)。</p>
+     *
+     * <p>上限付きの LRU にしてある。パターンは 1620 枠あるが、<b>同時に走る小レシピは
+     * せいぜい数十</b>なので {@link #ASSEMBLY_CACHE_SIZE} で足りる。</p>
+     */
+    private final Map<IPatternDetails, Assembly> assemblyCache =
+            new LinkedHashMap<>(16, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<IPatternDetails, Assembly> eldest) {
+                    return size() > ASSEMBLY_CACHE_SIZE;
+                }
+            };
+
+    /**
+     * 1 回の組み立ての結果。<b>材料の並びも一緒に覚える</b>のは、同じパターンでも
+     * 代替材料が違えば完成品が変わりうるため ({@link #matchesCache} で照合する)。
+     */
+    private record Assembly(ItemStack[] grid, ItemStack output, List<ItemStack> remainders) {
+    }
 
     /** この tick の残り組み立て回数。 */
     private long remainingCrafts;
@@ -87,7 +115,6 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
         super(mainNode, host, QuantumCpuBlockEntity.PATTERN_SLOTS);
         this.mainNode = mainNode;
         this.host = host;
-        Arrays.fill(cachedGrid, ItemStack.EMPTY);
     }
 
     // -------------------------------------------------------------- パターン管理
@@ -116,6 +143,9 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
         super.updatePatterns();
         patternSet.clear();
         patternSet.addAll(super.getAvailablePatterns());
+        // レシピ自体が差し替わっている可能性がある (データパックの再読み込みなど) ので、
+        // 覚えている組み立て結果は捨てる。ここは毎 tick 走る処理ではない。
+        assemblyCache.clear();
     }
 
     @Override
@@ -154,17 +184,16 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
 
         fillGrid(pattern, inputHolder, true);
 
-        if (!matchesCache(patternDetails)) {
-            if (!assembleAndCache(patternDetails, pattern, level)) {
-                // 組めなかった: 材料を握りつぶさずネットワークへ返す。
-                // (CPU 側の待ち行列は満たされないのでジョブは止まるが、アイテムは消えない)
-                returnGridToNetwork();
-                return true;
-            }
+        Assembly assembly = resolveAssembly(patternDetails, pattern, level);
+        if (assembly == null) {
+            // 組めなかった: 材料を握りつぶさずネットワークへ返す。
+            // (CPU 側の待ち行列は満たされないのでジョブは止まるが、アイテムは消えない)
+            returnGridToNetwork();
+            return true;
         }
 
         remainingCrafts--;
-        storeOutputs(1);
+        storeOutputs(assembly, 1);
         ((PatternProviderLogicAccessor) this).insaneae$onPushPatternSuccess(patternDetails);
         return true;
     }
@@ -209,24 +238,24 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
 
         fillGrid(pattern, inputHolder, false);
 
-        if (!matchesCache(details)) {
-            if (!assembleAndCache(details, pattern, level)) {
-                returnGridToNetwork();
-                return 0;
-            }
+        Assembly assembly = resolveAssembly(details, pattern, level);
+        if (assembly == null) {
+            returnGridToNetwork();
+            return 0;
         }
 
         remainingCrafts -= times;
-        storeOutputs(times);
+        storeOutputs(assembly, times);
         ((PatternProviderLogicAccessor) this).insaneae$onPushPatternSuccess(details);
         return times;
     }
 
     /** 完成品と端材を {@code times} 回ぶん貯める。 */
-    private void storeOutputs(long times) {
-        host.addPendingOutput(AEItemKey.of(cachedOutput),
-                SpeedBoost.saturatingMultiply(times, cachedOutput.getCount()));
-        for (ItemStack remainder : cachedRemainders) {
+    private void storeOutputs(Assembly assembly, long times) {
+        ItemStack output = assembly.output();
+        host.addPendingOutput(AEItemKey.of(output),
+                SpeedBoost.saturatingMultiply(times, output.getCount()));
+        for (ItemStack remainder : assembly.remainders()) {
             host.addPendingOutput(AEItemKey.of(remainder),
                     SpeedBoost.saturatingMultiply(times, remainder.getCount()));
         }
@@ -280,13 +309,24 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
         }
     }
 
-    /** 今グリッドに並んでいる材料が、記憶している組み立て結果のものと同じか。 */
-    private boolean matchesCache(IPatternDetails patternDetails) {
-        if (cachedPattern == null || !cachedPattern.equals(patternDetails) || cachedOutput.isEmpty()) {
-            return false;
+    /**
+     * 今グリッドに並んでいる材料に対する組み立て結果を返す。
+     * 覚えていればそれを使い、無ければ実際にレシピを回す。組めなければ null。
+     */
+    private Assembly resolveAssembly(IPatternDetails patternDetails,
+            IMolecularAssemblerSupportedPattern pattern, Level level) {
+        Assembly cached = assemblyCache.get(patternDetails);
+        if (cached != null && matchesGrid(cached)) {
+            return cached;
         }
+        return assembleAndCache(patternDetails, pattern, level);
+    }
+
+    /** 今グリッドに並んでいる材料が、記憶している組み立て結果のものと同じか。 */
+    private boolean matchesGrid(Assembly assembly) {
+        ItemStack[] grid = assembly.grid();
         for (int slot = 0; slot < GRID_SLOTS; slot++) {
-            ItemStack expected = cachedGrid[slot];
+            ItemStack expected = grid[slot];
             ItemStack actual = craftingInv.getItem(slot);
             if (expected.getCount() != actual.getCount() || !ItemStack.isSameItemSameComponents(expected, actual)) {
                 return false;
@@ -295,12 +335,13 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
         return true;
     }
 
-    /** 実際にレシピを回して結果を記憶する。組めなければ false。 */
-    private boolean assembleAndCache(IPatternDetails patternDetails,
+    /** 実際にレシピを回して結果を記憶する。組めなければ null。 */
+    private Assembly assembleAndCache(IPatternDetails patternDetails,
             IMolecularAssemblerSupportedPattern pattern, Level level) {
         // getRemainingItems() は中身を書き換えることがあるので、先に材料の並びを控える。
+        ItemStack[] grid = new ItemStack[GRID_SLOTS];
         for (int slot = 0; slot < GRID_SLOTS; slot++) {
-            cachedGrid[slot] = craftingInv.getItem(slot).copy();
+            grid[slot] = craftingInv.getItem(slot).copy();
         }
 
         // 1.21 でレシピの入力は CraftingContainer ではなく CraftingInput になった。
@@ -314,10 +355,8 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
                         + "ingredients are returned to the network.",
                         patternDetails.getDefinition(), host.getBlockPos());
             }
-            cachedPattern = null;
-            cachedOutput = ItemStack.EMPTY;
-            cachedRemainders.clear();
-            return false;
+            assemblyCache.remove(patternDetails);
+            return null;
         }
 
         // 1 回ぶんの組み立てとして 1 度だけ発火する。
@@ -327,16 +366,16 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
         // ここでは端材を「スロット位置に戻す」のではなく非空のものを集めるだけなので、
         // CraftingInput が切り詰められていても取りこぼしは起きない。
         NonNullList<ItemStack> remainders = pattern.getRemainingItems(craftInput);
-        cachedRemainders.clear();
+        List<ItemStack> kept = new ArrayList<>();
         for (ItemStack remainder : remainders) {
             if (!remainder.isEmpty()) {
-                cachedRemainders.add(remainder.copy());
+                kept.add(remainder.copy());
             }
         }
 
-        cachedOutput = output.copy();
-        cachedPattern = patternDetails;
-        return true;
+        Assembly assembly = new Assembly(grid, output.copy(), List.copyOf(kept));
+        assemblyCache.put(patternDetails, assembly);
+        return assembly;
     }
 
     /** グリッド上の材料をネットワークに戻す (組み立て失敗時の後始末)。 */

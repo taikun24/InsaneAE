@@ -9,20 +9,13 @@ import appeng.api.stacks.AEKey;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
 import appeng.crafting.execution.CraftingCpuHelper;
-import appeng.crafting.execution.ExecutingCraftingJob;
 import appeng.crafting.execution.InputTemplate;
 import appeng.crafting.inv.ListCraftingInventory;
-import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.me.service.CraftingService;
 import com.mojang.logging.LogUtils;
 import jp.main.taikun.insaneae.mixin.ElapsedTimeTrackerInvoker;
-import jp.main.taikun.insaneae.mixin.ExecutingCraftingJobAccessor;
-import jp.main.taikun.insaneae.mixin.TaskProgressAccessor;
 import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
-
-import java.util.Iterator;
-import java.util.Map;
 
 /**
  * 同じパターンを 1 tick に何度も処理するときの高速経路。
@@ -45,29 +38,27 @@ public final class QuantumBulkCrafting {
     }
 
     /**
-     * @return まとめ処理したクラフト回数。0 なら AE2 本来の処理を続行させること。
+     * @param view どの Mod のクラフト CPU かを問わないジョブの窓口 ({@link CraftingJobView})。
+     *             null なら何もしない。
+     * @return まとめ処理したクラフト回数。0 なら CPU 本来の処理を続行させること。
      */
-    public static int execute(ExecutingCraftingJob job, ListCraftingInventory inventory,
-            CraftingCPUCluster cluster, int maxPatterns,
+    public static int execute(CraftingJobView view, int maxPatterns,
             CraftingService craftingService, IEnergyService energyService, Level level) {
-        if (job == null || maxPatterns <= 0) {
+        if (view == null || maxPatterns <= 0) {
             return 0;
         }
 
-        ExecutingCraftingJobAccessor jobAccess = (ExecutingCraftingJobAccessor) job;
-        Map<Object, Object> tasks = jobAccess.insaneae$getTasks();
         int pushed = 0;
-
-        Iterator<Map.Entry<Object, Object>> it = tasks.entrySet().iterator();
-        while (it.hasNext() && pushed < maxPatterns) {
-            Map.Entry<Object, Object> task = it.next();
-            IPatternDetails details = (IPatternDetails) task.getKey();
-            TaskProgressAccessor progress = (TaskProgressAccessor) task.getValue();
-            long remaining = progress.insaneae$getValue();
+        CraftingJobView.TaskCursor cursor = view.tasks();
+        // 予算を先に見るのが要点。next() はカーソルを進めてしまうので、
+        // 使い切ったあとに呼ぶとそのタスクを 1 つ読み飛ばしたことになる。
+        while (pushed < maxPatterns && cursor.next()) {
+            long remaining = cursor.remaining();
             if (remaining <= 0) {
-                it.remove();
+                cursor.remove();
                 continue;
             }
+            IPatternDetails details = cursor.details();
 
             IBulkCraftingProvider provider = findBulkProvider(craftingService, details);
             if (provider == null) {
@@ -78,15 +69,15 @@ public final class QuantumBulkCrafting {
                 continue;
             }
 
-            long done = pushBulk(job, jobAccess, inventory, details, provider, limit, energyService, level);
+            long done = pushBulk(view, details, provider, limit, energyService, level);
             if (done > 0) {
                 pushed += (int) done;
                 long left = remaining - done;
-                progress.insaneae$setValue(left);
+                cursor.setRemaining(left);
                 if (left <= 0) {
-                    it.remove();
+                    cursor.remove();
                 }
-                cluster.markDirty();
+                view.markDirty();
             }
         }
 
@@ -94,9 +85,9 @@ public final class QuantumBulkCrafting {
     }
 
     /** 材料の取り出しから帳簿の更新まで。処理できた回数を返す。 */
-    private static long pushBulk(ExecutingCraftingJob job, ExecutingCraftingJobAccessor jobAccess,
-            ListCraftingInventory inventory, IPatternDetails details, IBulkCraftingProvider provider,
-            long limit, IEnergyService energyService, Level level) {
+    private static long pushBulk(CraftingJobView view, IPatternDetails details,
+            IBulkCraftingProvider provider, long limit, IEnergyService energyService, Level level) {
+        ListCraftingInventory inventory = view.getInventory();
         KeyCounter containerItems = new KeyCounter();
 
         // 電力が足りなければ回数を減らして 1 度だけやり直す。
@@ -127,11 +118,11 @@ public final class QuantumBulkCrafting {
                 return 0;
             }
 
-            ListCraftingInventory waitingFor = jobAccess.insaneae$getWaitingFor();
+            ListCraftingInventory waitingFor = view.getWaitingFor();
             for (GenericStack output : details.getOutputs()) {
                 waitingFor.insert(output.what(), output.amount() * done, Actionable.MODULATE);
             }
-            ElapsedTimeTrackerInvoker tracker = (ElapsedTimeTrackerInvoker) jobAccess.insaneae$getTimeTracker();
+            ElapsedTimeTrackerInvoker tracker = (ElapsedTimeTrackerInvoker) view.getTimeTracker();
             for (var entry : containerItems) {
                 waitingFor.insert(entry.getKey(), entry.getLongValue(), Actionable.MODULATE);
                 tracker.insaneae$addMaxItems(entry.getLongValue(), entry.getKey().getType());
