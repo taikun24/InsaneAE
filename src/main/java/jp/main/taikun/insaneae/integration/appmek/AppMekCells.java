@@ -63,7 +63,7 @@ public final class AppMekCells {
             PORTABLE_CHEMICAL_CELLS.put(tier, ModCells.register("portable_chemical_cell_" + tier.id(),
                     () -> new InsanePortableCellItem(new Item.Properties(), storageTier,
                             tier.getStorageBytes(), ModCells.totalTypes(tier), MekanismKeyType.TYPE,
-                            AMMenus.PORTABLE_CHEMICAL_CELL_TYPE, 0x33528D,
+                            AMMenus.PORTABLE_CHEMICAL_CELL_TYPE, ModCells.PORTABLE_SCREEN_COLOR,
                             TieredNames.PORTABLE_CHEMICAL_CELL, tier.label()) {
                         @Override
                         public boolean isBlackListed(ItemStack cellItem, AEKey requestedAddition) {

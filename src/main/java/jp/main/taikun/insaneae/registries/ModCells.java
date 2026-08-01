@@ -45,6 +45,21 @@ public class ModCells {
     /** MEGA Cells の階層 index (1M〜256M = 6〜10) の続きから振る。 */
     private static final int TIER_INDEX_OFFSET = 11;
 
+    /**
+     * ポータブルセルの画面 (上面) の色。<b>種類に依らず全部これ</b>。
+     *
+     * <p>{@code AbstractPortableCell#getColor} がこの値を tintindex 2 = 画面レイヤに塗る。
+     * こちらは 1.20.1 から種類ごとに違う色を渡していた (アイテム {@code 0x353535} /
+     * 液体 {@code 0xF1C5} / 化学物質 {@code 0x33528D}) が、AE2 19.2・MEGA Cells 4.11・
+     * Applied Mekanistics 1.6.3 の<b>いずれもこの水色 1 色に統一している</b>ので揃える
+     * (3 つとも同じ定数 {@code 8440575} を渡していることを jar で確認済み)。
+     * とくにアイテム用の {@code 0x353535} は画面が黒く潰れていた。
+     *
+     * <p>種類の区別は画面の色ではなく<b>筐体テクスチャ</b>のほうで付いている
+     * ({@code megacells:item/portable_cell_item/fluid/chemical_housing})。</p>
+     */
+    public static final int PORTABLE_SCREEN_COLOR = 0x80CFFF;
+
     public static final Map<InsaneCraftingUnitType, StorageTier> TIERS =
             new EnumMap<>(InsaneCraftingUnitType.class);
     public static final Map<InsaneCraftingUnitType, DeferredHolder<Item, Item>> ITEM_CELLS =
@@ -90,12 +105,12 @@ public class ModCells {
             PORTABLE_ITEM_CELLS.put(tier, register("portable_item_cell_" + tier.id(),
                     () -> new InsanePortableCellItem(new Item.Properties(), storageTier,
                             tier.getStorageBytes(), totalTypes(tier), AEKeyType.items(),
-                            MEStorageMenu.PORTABLE_ITEM_CELL_TYPE, 0x353535,
+                            MEStorageMenu.PORTABLE_ITEM_CELL_TYPE, PORTABLE_SCREEN_COLOR,
                             TieredNames.PORTABLE_ITEM_CELL, tier.label())));
             PORTABLE_FLUID_CELLS.put(tier, register("portable_fluid_cell_" + tier.id(),
                     () -> new InsanePortableCellItem(new Item.Properties(), storageTier,
                             tier.getStorageBytes(), totalTypes(tier), AEKeyType.fluids(),
-                            MEStorageMenu.PORTABLE_FLUID_CELL_TYPE, 0xF1C5,
+                            MEStorageMenu.PORTABLE_FLUID_CELL_TYPE, PORTABLE_SCREEN_COLOR,
                             TieredNames.PORTABLE_FLUID_CELL, tier.label())));
         }
     }
