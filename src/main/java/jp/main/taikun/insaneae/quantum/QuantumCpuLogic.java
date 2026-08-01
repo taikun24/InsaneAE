@@ -182,7 +182,7 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
             return false;
         }
 
-        fillGrid(pattern, inputHolder, true);
+        fillGrid(pattern, inputHolder, Leftovers.RETURN);
 
         Assembly assembly = resolveAssembly(patternDetails, pattern, level);
         if (assembly == null) {
@@ -224,7 +224,12 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
 
     /**
      * {@code times} 回ぶんの材料を受け取り、<b>組み立ては 1 回だけ</b>行って結果を {@code times} 倍する。
-     * 余った材料 ({@code times - 1} 回ぶん) は消費済みなのでそのまま捨てる。
+     *
+     * <p>{@code inputHolder} の扱いに注意。{@link #fillGrid} がグリッドに載せるのは 1 回ぶんだけで、
+     * 残りの {@code times - 1} 回ぶんは {@code inputHolder} に残ったままになる。
+     * これを<b>消費済みとして捨てられるのは組み立てが成功したときだけ</b>で、
+     * 失敗したときは呼び出し側 ({@code QuantumBulkCrafting}) が CPU の在庫へ戻せるよう
+     * <b>そのまま残して返す</b>。</p>
      */
     @Override
     public long pushPatternBulk(IPatternDetails details, KeyCounter[] inputHolder, long times) {
@@ -236,12 +241,19 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
             return 0;
         }
 
-        fillGrid(pattern, inputHolder, false);
+        fillGrid(pattern, inputHolder, Leftovers.KEEP);
 
         Assembly assembly = resolveAssembly(details, pattern, level);
         if (assembly == null) {
+            // 組めなかった。グリッドに載せた 1 回ぶんはネットワークへ返し、
+            // 残りは inputHolder に残したまま返す (呼び出し側が CPU の在庫へ戻す)。
             returnGridToNetwork();
             return 0;
+        }
+
+        // ここまで来たら times 回ぶんすべてを消費したことになるので、残りは捨ててよい。
+        for (KeyCounter counter : inputHolder) {
+            counter.reset();
         }
 
         remainingCrafts -= times;
@@ -284,26 +296,39 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
         return remainingCrafts;
     }
 
+    /** {@link #fillGrid} が使い残した材料をどうするか。 */
+    private enum Leftovers {
+        /**
+         * ネットワークに返して空にする。1 回ずつの経路 ({@link #pushPattern}) 用。
+         * ここでは残りが出ること自体が基本無いが、出たら消さずに返す。
+         */
+        RETURN,
+        /**
+         * <b>そのまま残す。</b>まとめ処理では残り = まだ組んでいない {@code times - 1} 回ぶんなので、
+         * 組み立てが成功して初めて「消費済み」になる。<b>先に捨ててはいけない</b> —
+         * 捨ててから組み立てに失敗すると、呼び出し側が戻そうとしても中身が無く、
+         * {@code times - 1} 回ぶんが消滅する。
+         */
+        KEEP
+    }
+
     /**
      * 材料をグリッドに並べる。{@code fillCraftingGrid} は<b>常に 1 回ぶんだけ</b>取り出す。
-     *
-     * @param returnLeftovers 残った材料をネットワークに返すか。
-     *                        まとめ処理では残り = 消費済みの {@code times - 1} 回ぶんなので返してはいけない。
      */
     private void fillGrid(IMolecularAssemblerSupportedPattern pattern, KeyCounter[] inputHolder,
-            boolean returnLeftovers) {
+            Leftovers leftovers) {
         for (int slot = 0; slot < GRID_SLOTS; slot++) {
             craftingInv.setItem(slot, ItemStack.EMPTY);
         }
         pattern.fillCraftingGrid(inputHolder, craftingInv::setItem);
 
+        if (leftovers == Leftovers.KEEP) {
+            return;
+        }
         for (KeyCounter counter : inputHolder) {
-            if (returnLeftovers) {
-                // 使い切れなかった材料が残ることは基本無いが、残ったらネットワークに返す (消さない)。
-                counter.removeZeros();
-                for (var entry : counter) {
-                    host.addPendingOutput(entry.getKey(), entry.getLongValue());
-                }
+            counter.removeZeros();
+            for (var entry : counter) {
+                host.addPendingOutput(entry.getKey(), entry.getLongValue());
             }
             counter.reset();
         }

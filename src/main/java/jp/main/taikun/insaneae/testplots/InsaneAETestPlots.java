@@ -16,6 +16,7 @@ import appeng.server.testplots.TestPlots;
 import appeng.server.testworld.PlotBuilder;
 import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.crafting.CraftingCalculationBatch;
+import jp.main.taikun.insaneae.quantum.CraftingJobView;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import net.minecraft.core.BlockPos;
@@ -250,6 +251,163 @@ public final class InsaneAETestPlots {
 
             sequence.thenSucceed();
         });
+    }
+
+    /**
+     * まとめクラフトが<b>材料以上に作らない</b>ことを確かめる (増殖の回帰テスト)。
+     *
+     * <p>{@code QuantumBulkCrafting.extractInputs} は在庫が足りなければ<b>黙って回数を減らす</b>。
+     * 以前はその縮小した回数を呼び出し側に返しておらず、要求した回数のまま組ませていたため、
+     * 「丸太 5 本ぶんの材料で 256 回ぶんの板材ができる」状態になっていた。
+     * 多段クラフトでは中間素材が順次でき上がる = 「残り回数 &gt;&gt; 手元の材料」が通常の進行状態なので、
+     * 日常的に踏む経路だった。</p>
+     *
+     * <p>ジョブの窓口 ({@link CraftingJobView}) を差し替えられるようにしてあるので、
+     * <b>在庫をこちらで固定して直接呼べる</b>。クラフト CPU を組んで実際にジョブを流すより
+     * 決定的で速い。</p>
+     */
+    @TestPlot("insaneae_quantum_cpu_bulk_conservation")
+    public static void quantumCpuBulkConservation(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,2] 0 0");
+        plot.blockState("2 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        // 丸太 1 本 → 板材 4 枚 (シェイプレス)。1 回ぶんの材料が 1 個なので数え違いが起きない。
+        final int logsInStock = 5;
+        final int planksPerCraft = 4;
+        final long requested = 1000;
+
+        plot.test(helper -> {
+            var state = new Object() {
+                FakeJobView view;
+                int pushed;
+            };
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_LOG)));
+            });
+
+            // パターンの読み直しは 1 tick 遅れ、グリッドのクラフト索引の更新にもう数 tick かかる。
+            sequence.thenIdle(5);
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
+                var patterns = cpu.getLogic().getAvailablePatterns();
+                helper.check(patterns.size() == 1,
+                        "Quantum CPU がパターンを 1 枚だけ持っている状態にならなかった: " + patterns.size());
+
+                var grid = helper.getGrid(BlockPos.ZERO);
+                state.view = new FakeJobView(patterns.get(0), requested);
+                // <b>5 回ぶんしか入れない。</b>要求は 1000 回。
+                state.view.inventory.insert(AEItemKey.of(Items.OAK_LOG), logsInStock,
+                        appeng.api.config.Actionable.MODULATE);
+
+                state.pushed = jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.execute(
+                        state.view, (int) requested,
+                        (appeng.me.service.CraftingService) grid.getCraftingService(),
+                        grid.getEnergyService(), grid.getPivot().getLevel());
+            });
+
+            sequence.thenExecute(() -> {
+                helper.check(state.pushed == logsInStock,
+                        "材料は " + logsInStock + " 回ぶんしか無いのに " + state.pushed + " 回ぶん作った");
+                helper.check(state.view.remaining == requested - logsInStock,
+                        "残り回数の引き方が合わない: " + state.view.remaining);
+                helper.check(state.view.inventory.list.get(AEItemKey.of(Items.OAK_LOG)) == 0,
+                        "材料が使い切られていない: "
+                                + state.view.inventory.list.get(AEItemKey.of(Items.OAK_LOG)));
+                long planks = state.view.waitingFor.list.get(AEItemKey.of(Items.OAK_PLANKS));
+                helper.check(planks == (long) logsInStock * planksPerCraft,
+                        "完成待ちの数が材料と釣り合っていない: " + planks + " 枚 (材料は "
+                                + logsInStock + " 本 = " + logsInStock * planksPerCraft + " 枚ぶん)");
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    /**
+     * {@link CraftingJobView} の最小の実装。タスクは 1 つだけ持つ。
+     * 在庫をこちらで固定できるので、まとめ処理の入出力を直接検算できる。
+     */
+    private static final class FakeJobView implements CraftingJobView {
+
+        final appeng.crafting.inv.ListCraftingInventory inventory =
+                new appeng.crafting.inv.ListCraftingInventory(what -> {
+                });
+        final appeng.crafting.inv.ListCraftingInventory waitingFor =
+                new appeng.crafting.inv.ListCraftingInventory(what -> {
+                });
+        final appeng.crafting.execution.ElapsedTimeTracker tracker =
+                new appeng.crafting.execution.ElapsedTimeTracker();
+
+        final appeng.api.crafting.IPatternDetails details;
+        long remaining;
+        boolean removed;
+
+        FakeJobView(appeng.api.crafting.IPatternDetails details, long remaining) {
+            this.details = details;
+            this.remaining = remaining;
+        }
+
+        @Override
+        public appeng.crafting.inv.ListCraftingInventory getInventory() {
+            return inventory;
+        }
+
+        @Override
+        public appeng.crafting.inv.ListCraftingInventory getWaitingFor() {
+            return waitingFor;
+        }
+
+        @Override
+        public appeng.crafting.execution.ElapsedTimeTracker getTimeTracker() {
+            return tracker;
+        }
+
+        @Override
+        public void markDirty() {
+        }
+
+        @Override
+        public TaskCursor tasks() {
+            return new TaskCursor() {
+                private boolean served;
+
+                @Override
+                public boolean next() {
+                    if (served || removed) {
+                        return false;
+                    }
+                    served = true;
+                    return true;
+                }
+
+                @Override
+                public appeng.api.crafting.IPatternDetails details() {
+                    return details;
+                }
+
+                @Override
+                public long remaining() {
+                    return remaining;
+                }
+
+                @Override
+                public void setRemaining(long value) {
+                    remaining = value;
+                }
+
+                @Override
+                public void remove() {
+                    removed = true;
+                }
+            };
+        }
     }
 
     private static ItemStack processingPattern(net.minecraft.world.item.Item input, long inputAmount,

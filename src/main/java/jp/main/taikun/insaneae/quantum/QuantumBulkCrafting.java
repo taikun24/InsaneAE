@@ -93,11 +93,14 @@ public final class QuantumBulkCrafting {
         // 電力が足りなければ回数を減らして 1 度だけやり直す。
         for (int attempt = 0; attempt < 2 && limit > 0; attempt++) {
             containerItems.reset();
-            KeyCounter[] inputs = extractInputs(details, inventory, level, limit, containerItems);
-            if (inputs == null) {
+            Extracted extracted = extractInputs(details, inventory, level, limit, containerItems);
+            if (extracted == null) {
                 return 0;
             }
-            long times = limit;
+            // <b>取り出せた回数を使うこと。</b>在庫が足りなければ extractInputs が回数を減らすので、
+            // ここで limit をそのまま使うと「10 回ぶんの材料で 1000 回ぶんの完成品」になる。
+            KeyCounter[] inputs = extracted.inputs();
+            long times = extracted.times();
 
             double power = CraftingCpuHelper.calculatePatternPower(inputs);
             if (power > 0.0) {
@@ -141,9 +144,12 @@ public final class QuantumBulkCrafting {
      * 混ざると「1 回組み立てて結果を N 倍する」が成り立たなくなるため
      * (代替材料によって完成品が変わるレシピがある)。</p>
      *
-     * @return 取り出した材料。1 回ぶんも取れなければ null。
+     * <p><b>取り出せた回数を必ず一緒に返すこと</b> ({@link Extracted})。ここは在庫が足りなければ
+     * 回数を黙って減らすので、呼び出し側が要求した回数のまま組ませるとアイテムが増える。</p>
+     *
+     * @return 取り出した材料と、実際に取り出せた回数。1 回ぶんも取れなければ null。
      */
-    private static KeyCounter[] extractInputs(IPatternDetails details, ListCraftingInventory inventory,
+    private static Extracted extractInputs(IPatternDetails details, ListCraftingInventory inventory,
             Level level, long times, KeyCounter containerItems) {
         IPatternDetails.IInput[] inputs = details.getInputs();
 
@@ -191,7 +197,16 @@ public final class QuantumBulkCrafting {
                 return null;
             }
         }
-        return holder;
+        return new Extracted(holder, times);
+    }
+
+    /**
+     * {@link #extractInputs} の戻り値。
+     *
+     * @param inputs 取り出した材料
+     * @param times  <b>実際に</b>取り出せた回数。要求した回数とは限らない
+     */
+    private record Extracted(KeyCounter[] inputs, long times) {
     }
 
     private static IBulkCraftingProvider findBulkProvider(CraftingService craftingService, IPatternDetails details) {
