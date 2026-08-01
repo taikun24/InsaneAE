@@ -193,12 +193,24 @@ jobs:
              }' > metadata.json
           cat metadata.json
 
-          curl -sS -f -X POST \
+          # <b>-f は使わない。</b>curl の -f は失敗時に本文を捨ててしまうので、
+          # CurseForge が返す errorCode / errorMessage が読めず原因が分からなくなる。
+          # ステータスコードは -w で受け取り、本文は必ず表示する。
+          http=$(curl -sS -o response.txt -w '%{http_code}' -X POST \
             -H "X-Api-Token: $CF_API_TOKEN" \
             -F "metadata=<metadata.json" \
             -F "file=@${{ steps.jar.outputs.path }}" \
-            "https://minecraft.curseforge.com/api/projects/${{ env.CF_PROJECT_ID }}/upload-file"
+            "https://minecraft.curseforge.com/api/projects/${{ env.CF_PROJECT_ID }}/upload-file")
+
+          echo "HTTP $http"
+          echo "--- response ---"
+          cat response.txt || true
           echo
+
+          if [ "$http" != "200" ]; then
+            echo "::error::アップロードに失敗しました (HTTP $http)"
+            exit 1
+          fi
           echo "アップロードしました: ${{ steps.jar.outputs.name }}"
 
       - name: 成果物を残す
