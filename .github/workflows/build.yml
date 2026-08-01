@@ -61,16 +61,31 @@ jobs:
 
           grep -oE 'LogTestReporter\]: [a-z0-9_.]+ failed!' gametest.log \
             | sed -E 's/.*\]: //; s/ failed!$//' | sort -u > actual-failures.txt
-          grep -vE '^\s*(#|$)' .github/known-test-failures.txt | sort -u > expected-failures.txt
+          # 行頭コメント・行末コメント・空行を落としてテスト名だけにする。
+          sed -E 's/#.*//; s/[[:space:]]+//g' .github/known-test-failures.txt \
+            | grep -vE '^$' | sort -u > expected-failures.txt
 
           echo "--- 落ちたテスト ---"
           cat actual-failures.txt
-          if diff -u expected-failures.txt actual-failures.txt; then
-            echo "既知の失敗のみ。"
-          else
-            echo "::error::想定外のテスト結果です (+ 行 = 新たに落ちた / - 行 = 直ったので許可リストから消すこと)"
+
+          # <b>完全一致では判定しない。</b>AE2 本体のテストにはタイミング依存で結果が変わるものがあり
+          # (channel_assignment_test / p2p_channel_reconnect_behavior は手元の Windows では落ちるが
+          #  CI のランナーでは通る)、完全一致にすると「想定より良い結果」でビルドが落ちる。
+          # 落とすのは<b>新しく落ちたテストがあるときだけ</b>にして、
+          # 「リストにあるのに通った」は警告に留める (直ったならリストから消す合図)。
+          comm -13 expected-failures.txt actual-failures.txt > new-failures.txt
+          comm -23 expected-failures.txt actual-failures.txt > now-passing.txt
+
+          if [ -s now-passing.txt ]; then
+            echo "::warning::許可リストにあるが今回は通ったテスト (環境差か、直ったならリストから消すこと):"
+            cat now-passing.txt
+          fi
+          if [ -s new-failures.txt ]; then
+            echo "::error::新たに落ちたテストがあります:"
+            cat new-failures.txt
             exit 1
           fi
+          echo "新規の失敗はありません。"
 
       - name: Upload jar
         if: success()

@@ -118,11 +118,19 @@ jobs:
           fi
           grep -oE 'LogTestReporter\]: [a-z0-9_.]+ failed!' gametest.log \
             | sed -E 's/.*\]: //; s/ failed!$//' | sort -u > actual-failures.txt
-          grep -vE '^\s*(#|$)' .github/known-test-failures.txt | sort -u > expected-failures.txt
-          if ! diff -u expected-failures.txt actual-failures.txt; then
-            echo "::error::想定外のテスト結果です。リリースを中止します"
+          sed -E 's/#.*//; s/[[:space:]]+//g' .github/known-test-failures.txt \
+            | grep -vE '^$' | sort -u > expected-failures.txt
+          # build.yml と同じ判定。新しく落ちたテストがあるときだけ止める
+          # (AE2 本体には環境で結果が変わるテストがあるため、完全一致では判定しない)。
+          echo "--- 落ちたテスト ---"
+          cat actual-failures.txt
+          comm -13 expected-failures.txt actual-failures.txt > new-failures.txt
+          if [ -s new-failures.txt ]; then
+            echo "::error::新たに落ちたテストがあります。リリースを中止します:"
+            cat new-failures.txt
             exit 1
           fi
+          echo "新規の失敗はありません。"
 
       - name: jar を特定する
         if: steps.want.outputs.want == 'yes'

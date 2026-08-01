@@ -1,8 +1,12 @@
-# runGameTestServer で「落ちるのが既知」のテスト。CI はこの顔ぶれと完全一致するかで判定する。
-# ここに無いテストが落ちたら CI が失敗する。逆に、ここにあるテストが直ったときも失敗するので、
-# その場合はこのファイルから消すこと。
+# runGameTestServer で「落ちても許す」テストの一覧。
+# ここに無いテストが落ちたら CI が失敗する。ここにあるテストが通った場合は警告だけ出る
+# (直ったならこのファイルから消すこと)。
+#
+# <b>完全一致では判定しない。</b>下の 2 つは実行環境によって結果が変わる:
+# 手元の Windows では落ちるが、CI の ubuntu ランナーでは通る。完全一致にしていたときは
+# 「想定より良い結果」でビルドが落ちていた。
 #
 # 以下はいずれも AE2 本体のテストで、InsaneAE を入れない状態 (git stash) でも落ちることを確認済み。
-ae2.channel_assignment_test
+ae2.channel_assignment_test          # 環境依存 (CI では通る)
 ae2.import_from_cauldron
-ae2.p2p_channel_reconnect_behavior
+ae2.p2p_channel_reconnect_behavior   # 環境依存 (CI では通る)
