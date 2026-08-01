@@ -1,5 +1,5 @@
 {
-  "_comment": "他 Mod と共存するための Mixin (加速カードの速度倍率 + 画面スタイルの寛容化 + クラフト CPU の 1 tick 予算の long 化)。required=false なので、注入に失敗してもログにエラーが出るだけでゲームは起動する (その機能が効かなくなるだけ)。壊れると危険な容量系・スレッド上限系は insaneae.mixins.json のまま required=true。",
+  "_comment": "他 Mod と共存するための Mixin (加速カードの速度倍率 + 画面スタイルの寛容化 + クラフト CPU の 1 tick 予算の long 化 + 他 Mod のクラフト CPU へのまとめ処理)。required=false なので、注入に失敗してもログにエラーが出るだけでゲームは起動する (その機能が効かなくなるだけ)。compat.* は @Pseudo 付きで、対象 Mod が入っていなければ黙って読み飛ばされる。壊れると危険な容量系・スレッド上限系は insaneae.mixins.json のまま required=true。",
   "required": false,
   "minVersion": "0.8",
   "package": "jp.main.taikun.insaneae.mixin",
@@ -14,7 +14,8 @@
     "IOBusPartMixin",
     "IOPortBlockEntityMixin",
     "MolecularAssemblerBlockEntityMixin",
-    "PatternProviderMenuMixin"
+    "PatternProviderMenuMixin",
+    "compat.AdvCraftingCpuLogicMixin"
   ],
   "client": [
     "ScreenStyleMixin"

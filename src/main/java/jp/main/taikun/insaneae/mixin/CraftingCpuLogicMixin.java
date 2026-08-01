@@ -5,7 +5,8 @@ import appeng.crafting.execution.CraftingCpuLogic;
 import appeng.crafting.execution.ExecutingCraftingJob;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.me.service.CraftingService;
-import jp.main.taikun.insaneae.quantum.QuantumBulkCrafting;
+import jp.main.taikun.insaneae.quantum.Ae2CraftingJobView;
+import jp.main.taikun.insaneae.quantum.BulkCraftingHook;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -41,11 +42,20 @@ public abstract class CraftingCpuLogicMixin {
     public abstract appeng.crafting.inv.ListCraftingInventory getInventory();
 
     /**
-     * この tick にまとめ処理で押し出した回数。AE2 の処理を通した後で戻り値に足し戻す。
-     * 常に {@link #insaneae$addBulkToResult} で 0 に戻すので、tick をまたいで残らない。
+     * まとめ処理の帳簿。3 つの注入で共有する。
+     * 予算の引き算と戻り値の足し戻しは {@link BulkCraftingHook} 側で清算される。
      */
     @Unique
-    private int insaneae$bulkPushed;
+    private BulkCraftingHook insaneae$hook;
+
+    /** Mixin のフィールド初期化子に頼らず、使うときに作る。 */
+    @Unique
+    private BulkCraftingHook insaneae$hook() {
+        if (insaneae$hook == null) {
+            insaneae$hook = new BulkCraftingHook();
+        }
+        return insaneae$hook;
+    }
 
     /**
      * まとめて処理できるぶんを先に片付ける。
@@ -63,17 +73,14 @@ public abstract class CraftingCpuLogicMixin {
     @Inject(method = "executeCrafting", at = @At("HEAD"), cancellable = true)
     private void insaneae$bulkCrafting(int maxPatterns, CraftingService craftingService,
             IEnergyService energyService, Level level, CallbackInfoReturnable<Integer> cir) {
-        int pushed = QuantumBulkCrafting.execute(job, getInventory(), cluster, maxPatterns,
-                craftingService, energyService, level);
-        if (pushed <= 0) {
+        if (cir.isCancelled()) {
             return;
         }
-        if (pushed >= maxPatterns) {
-            // 予算を使い切ったので、この tick に AE2 がやることはもう無い。
-            cir.setReturnValue(pushed);
-            return;
+        int finished = insaneae$hook().begin(Ae2CraftingJobView.of(job, getInventory(), cluster),
+                maxPatterns, craftingService, energyService, level);
+        if (finished >= 0) {
+            cir.setReturnValue(finished);
         }
-        insaneae$bulkPushed = pushed;
     }
 
     /**
@@ -84,16 +91,16 @@ public abstract class CraftingCpuLogicMixin {
      */
     @ModifyVariable(method = "executeCrafting", at = @At("HEAD"), argsOnly = true, ordinal = 0, require = 0)
     private int insaneae$reduceBudget(int maxPatterns) {
-        return maxPatterns - insaneae$bulkPushed;
+        return insaneae$hook().reduce(maxPatterns);
     }
 
     /** まとめ処理で押し出した回数を戻り値に足し戻し、印を消す。 */
     @Inject(method = "executeCrafting", at = @At("RETURN"), cancellable = true)
     private void insaneae$addBulkToResult(int maxPatterns, CraftingService craftingService,
             IEnergyService energyService, Level level, CallbackInfoReturnable<Integer> cir) {
-        if (insaneae$bulkPushed > 0) {
-            cir.setReturnValue(cir.getReturnValue() + insaneae$bulkPushed);
-            insaneae$bulkPushed = 0;
+        int bulk = insaneae$hook().takePushed();
+        if (bulk > 0) {
+            cir.setReturnValue(cir.getReturnValue() + bulk);
         }
     }
 }
