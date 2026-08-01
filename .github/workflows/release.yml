@@ -171,8 +171,16 @@ jobs:
           mc=$(pick '${{ matrix.mc }}');            need '${{ matrix.mc }}' "$mc"
           loader=$(pick '${{ matrix.loader }}');    need '${{ matrix.loader }}' "$loader"
           java=$(pick 'Java ${{ matrix.java }}');   need 'Java ${{ matrix.java }}' "$java"
-          echo "ids=[$mc,$loader,$java]" >> "$GITHUB_OUTPUT"
-          echo "MC=${{ matrix.mc }}($mc) ローダー=${{ matrix.loader }}($loader) Java=${{ matrix.java }}($java)"
+
+          # <b>Environment グループ (Client / Server) も必須。</b>
+          # 抜けていると errorCode 1021
+          # "You must select at least one version from the environment group of versions" で 400 になる。
+          # この Mod はクライアント側の描画もサーバ側のロジックも持つので両方を指定する。
+          client=$(pick 'Client');                  need 'Client' "$client"
+          server=$(pick 'Server');                  need 'Server' "$server"
+
+          echo "ids=[$mc,$loader,$java,$client,$server]" >> "$GITHUB_OUTPUT"
+          echo "MC=${{ matrix.mc }}($mc) ローダー=${{ matrix.loader }}($loader) Java=${{ matrix.java }}($java) Client($client) Server($server)"
 
       - name: CurseForge にアップロード
         if: steps.want.outputs.want == 'yes' && !inputs.dry_run
