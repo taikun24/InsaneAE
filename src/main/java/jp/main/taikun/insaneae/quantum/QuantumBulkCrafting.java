@@ -13,7 +13,6 @@ import appeng.crafting.execution.InputTemplate;
 import appeng.crafting.inv.ListCraftingInventory;
 import appeng.me.service.CraftingService;
 import com.mojang.logging.LogUtils;
-import jp.main.taikun.insaneae.mixin.ElapsedTimeTrackerInvoker;
 import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
 
@@ -125,10 +124,10 @@ public final class QuantumBulkCrafting {
             for (GenericStack output : details.getOutputs()) {
                 waitingFor.insert(output.what(), output.amount() * done, Actionable.MODULATE);
             }
-            ElapsedTimeTrackerInvoker tracker = (ElapsedTimeTrackerInvoker) view.getTimeTracker();
+            Object tracker = view.getTimeTracker();
             for (var entry : containerItems) {
                 waitingFor.insert(entry.getKey(), entry.getLongValue(), Actionable.MODULATE);
-                tracker.insaneae$addMaxItems(entry.getLongValue(), entry.getKey().getType());
+                TimeTrackerAdapter.addMaxItems(tracker, entry.getLongValue(), entry.getKey().getType());
             }
             return done;
         }

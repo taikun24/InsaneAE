@@ -1,6 +1,5 @@
 package jp.main.taikun.insaneae.quantum;
 
-import appeng.crafting.execution.ElapsedTimeTracker;
 import appeng.crafting.inv.ListCraftingInventory;
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
@@ -84,7 +83,7 @@ public final class ReflectiveCraftingJobView implements CraftingJobView {
     }
 
     @Override
-    public ElapsedTimeTracker getTimeTracker() {
+    public Object getTimeTracker() {
         return read(layout.timeTracker, job);
     }
 
@@ -157,7 +156,11 @@ public final class ReflectiveCraftingJobView implements CraftingJobView {
                 Class<?> jobClass = layout.job.getType();
                 layout.tasks = field(jobClass, "tasks", Map.class);
                 layout.waitingFor = field(jobClass, "waitingFor", ListCraftingInventory.class);
-                layout.timeTracker = field(jobClass, "timeTracker", ElapsedTimeTracker.class);
+                // 型は確かめない: Advanced AE は進捗カウンタまで自前のコピーで持っている
+                // (AE2 の ElapsedTimeTracker に限定すると AAE で丸ごと弾かれる)。
+                // 呼び方の差は TimeTrackerAdapter が吸収し、想定外の型でも加算を
+                // スキップするだけなので、ここで弾く必要が無い。
+                layout.timeTracker = field(jobClass, "timeTracker", Object.class);
 
                 layout.resolveMarkDirty(logicClass);
                 return layout;
