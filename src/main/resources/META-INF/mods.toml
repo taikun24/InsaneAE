@@ -86,3 +86,11 @@ mandatory = false
 versionRange = "[1.4,)"
 ordering = "AFTER"
 side = "BOTH"
+# AE2 Crafting Optimizer - 任意。導入時は公開BigInteger量会計APIをQuantum CPUの
+# 完成品待ち台帳へ使用する。ACOが無くても内蔵の同一規則へフォールバックする。
+[[dependencies."${mod_id}"]]
+modId = "ae2_crafting_optimizer"
+mandatory = false
+versionRange = "[1.5.9,)"
+ordering = "AFTER"
+side = "BOTH"
