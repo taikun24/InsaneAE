@@ -39,7 +39,7 @@ import java.util.List;
  * ({@code StyleManager} が ae2 名前空間固定で読むのでそちらに置いてある)。
  * 下の座標定数は JSON の {@code ENCODED_PATTERN} と揃えること。</p>
  */
-public class QuantumCpuScreen extends PatternProviderScreen<QuantumCpuMenu> {
+public class QuantumCpuScreen<C extends QuantumCpuMenu> extends PatternProviderScreen<C> {
 
     private static final Logger LOG = LogUtils.getLogger();
 
@@ -57,7 +57,7 @@ public class QuantumCpuScreen extends PatternProviderScreen<QuantumCpuMenu> {
 
     private int page;
 
-    public QuantumCpuScreen(QuantumCpuMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
+    public QuantumCpuScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
 
         if (menu.getTarget() instanceof IUpgradeableObject upgradeable) {
@@ -72,8 +72,7 @@ public class QuantumCpuScreen extends PatternProviderScreen<QuantumCpuMenu> {
                 Component.translatable("gui.insaneae.quantum_cpu.next_page"), btn -> turnPage(1));
         widgets.add("prevPage", prevPage);
         widgets.add("nextPage", nextPage);
-
-        setTextContent("dialog_title", Component.translatable("block.insaneae.quantum_cpu"));
+        // タイトルはスタイル JSON の dialog_title (画面ごとの translate キー) がそのまま出る。
     }
 
     /**

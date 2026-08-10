@@ -1,10 +1,14 @@
 package jp.main.taikun.insaneae.testplots;
 
+import appeng.api.AECapabilities;
+import appeng.api.networking.IGrid;
+import appeng.api.networking.IGridNode;
 import appeng.api.networking.crafting.CalculationStrategy;
 import appeng.api.networking.crafting.ICraftingPlan;
 import appeng.api.networking.crafting.ICraftingSimulationRequester;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
+import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.KeyCounter;
 import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import appeng.core.definitions.AEBlocks;
@@ -14,11 +18,16 @@ import appeng.server.testplots.CraftingPatternHelper;
 import appeng.server.testplots.TestPlot;
 import appeng.server.testplots.TestPlots;
 import appeng.server.testworld.PlotBuilder;
+import appeng.server.testworld.PlotTestHelper;
 import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.crafting.CraftingCalculationBatch;
+import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
+import jp.main.taikun.insaneae.iface.InsaneInterfaceBlockEntity;
+import jp.main.taikun.insaneae.provider.InsanePatternProviderBlockEntity;
 import jp.main.taikun.insaneae.quantum.CraftingJobView;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import jp.main.taikun.insaneae.registries.ModBlocks;
+import jp.main.taikun.insaneae.registries.ModCells;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.world.item.ItemStack;
@@ -203,20 +212,22 @@ public final class InsaneAETestPlots {
     }
 
     /**
-     * <b>Quantum CPU に入れたパターン</b>が連鎖クラフトで使われることを確かめる。
+     * <b>特大パターンプロバイダーに入れたパターン</b>が連鎖クラフトで使われることを確かめる。
      *
-     * <p>「登録してあるクラフトパターンが反映されない」という報告を受けての回帰テスト。
-     * Quantum CPU はパターンの読み直しを 1 tick 遅らせている ({@code QuantumCpuLogic#updatePatterns})
-     * ので、グリッドのクラフト索引に載り損ねていないかをここで見る。</p>
+     * <p>「登録してあるクラフトパターンが反映されない」という報告を受けての回帰テスト
+     * (元は Quantum CPU で見ていたが、加工パターンの置き場が特大パターンプロバイダーに
+     * 移ったのでこちらで見る。読み直しを 1 tick 遅らせる仕組みは共通
+     * {@code InsanePatternProviderLogic#updatePatterns})。
+     * グリッドのクラフト索引に載り損ねていないかをここで見る。</p>
      */
-    @TestPlot("insaneae_quantum_cpu_patterns")
-    public static void quantumCpuPatterns(PlotBuilder plot) {
+    @TestPlot("insaneae_pattern_provider_patterns")
+    public static void insanePatternProviderPatterns(PlotBuilder plot) {
         plot.creativeEnergyCell("0 -1 0");
         plot.cable("[0,2] 0 0");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
             drive.getInternalInventory().addItems(CreativeCellItem.ofItems(Items.IRON_INGOT));
         });
-        plot.blockState("2 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+        plot.blockState("2 0 0", ModBlocks.INSANE_PATTERN_PROVIDER.get().defaultBlockState());
 
         plot.test(helper -> {
             var state = new Object() {
@@ -227,8 +238,8 @@ public final class InsaneAETestPlots {
             var sequence = helper.startSequence();
 
             sequence.thenExecute(() -> {
-                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
-                var patterns = cpu.getLogic().getPatternInv();
+                var provider = (InsanePatternProviderBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
+                var patterns = provider.getLogic().getPatternInv();
                 patterns.addItems(processingPattern(Items.IRON_INGOT, 2, Items.COPPER_INGOT, 1));
                 patterns.addItems(processingPattern(Items.COPPER_INGOT, 4, Items.DIAMOND, 1));
             });
@@ -239,7 +250,7 @@ public final class InsaneAETestPlots {
 
             sequence.thenExecute(() -> {
                 helper.check(!state.plan.simulation(),
-                        "Quantum CPU のパターンが使われなかった: missing=" + toMap(state.plan.missingItems()));
+                        "特大パターンプロバイダーのパターンが使われなかった: missing=" + toMap(state.plan.missingItems()));
                 helper.check(state.plan.missingItems().isEmpty(),
                         "不足アイテムが出た: " + toMap(state.plan.missingItems()));
                 helper.check(state.plan.patternTimes().size() == 2,
@@ -251,6 +262,208 @@ public final class InsaneAETestPlots {
 
             sequence.thenSucceed();
         });
+    }
+
+    /**
+     * <b>パターンの受け入れルール</b>を確かめる。
+     *
+     * <ol>
+     *   <li>特大パターンプロバイダーは Quantum CPU と同じ 1620 枠あること。</li>
+     *   <li>特大パターンプロバイダーは加工・クラフト両方のパターンを受けること。</li>
+     *   <li>Quantum CPU は<b>加工パターンを受け付けない</b>こと
+     *       ({@code QuantumCpuLogic} のフィルタ。クラフトパターンは従来どおり受ける)。</li>
+     * </ol>
+     */
+    @TestPlot("insaneae_pattern_acceptance")
+    public static void patternAcceptance(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,2] 0 0");
+        plot.blockState("1 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+        plot.blockState("2 0 0", ModBlocks.INSANE_PATTERN_PROVIDER.get().defaultBlockState());
+
+        plot.test(helper -> {
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var level = helper.getLevel();
+                ItemStack processing = processingPattern(Items.IRON_INGOT, 2, Items.COPPER_INGOT, 1);
+                // 原木 → 板材 (shapeless)。Quantum CPU が自分で組めるパターンの代表。
+                ItemStack crafting = CraftingPatternHelper.encodeShapelessCraftingRecipe(level,
+                        new ItemStack(Items.OAK_LOG));
+
+                var provider = (InsanePatternProviderBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
+                var providerPatterns = provider.getLogic().getPatternInv();
+                helper.check(providerPatterns.size() == QuantumCpuBlockEntity.PATTERN_SLOTS,
+                        "特大パターンプロバイダーの枠数が " + QuantumCpuBlockEntity.PATTERN_SLOTS
+                                + " ではない: " + providerPatterns.size());
+                helper.check(providerPatterns.addItems(processing.copy()).isEmpty(),
+                        "特大パターンプロバイダーが加工パターンを受け付けない");
+                helper.check(providerPatterns.addItems(crafting.copy()).isEmpty(),
+                        "特大パターンプロバイダーがクラフトパターンを受け付けない");
+
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(1, 0, 0));
+                var cpuPatterns = cpu.getLogic().getPatternInv();
+                helper.check(!cpuPatterns.addItems(processing.copy()).isEmpty(),
+                        "Quantum CPU が加工パターンを受け付けてしまった");
+                helper.check(cpuPatterns.addItems(crafting.copy()).isEmpty(),
+                        "Quantum CPU がクラフトパターンまで弾いている");
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    /**
+     * 自前のブロックが<b>ME ネットワークに繋がる</b>ことを確かめる。
+     *
+     * <p>NeoForge の capability は BlockEntityType ごとの登録制で、AE2 のクラス
+     * ({@code CraftingBlockEntity} など) をそのまま使っていても
+     * <b>型が自前なら AE2 の一括登録には入らない</b>。
+     * {@code AECapabilities.IN_WORLD_GRID_NODE_HOST} を登録し忘れると
+     * {@code GridHelper.getNodeHost} ({@code Level#getCapability} 一発) がノードを見つけられず、
+     * 周りから見てただの石ころになる。{@code ModCapabilities} が抜けたときの回帰テスト。</p>
+     */
+    @TestPlot("insaneae_grid_connection")
+    public static void gridConnection(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,6] 0 0");
+        // ケーブルの上に自前のブロックを 1 つずつ載せる (階層があるものは最下段で代表させる)。
+        plot.blockState(new BlockPos(0, 1, 0), ModBlocks.allCraftingBlocks().get(0).defaultBlockState());
+        plot.blockState(new BlockPos(1, 1, 0), ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+        plot.blockState(new BlockPos(2, 1, 0), ModBlocks.allEnergyCells().get(0).defaultBlockState());
+        plot.blockState(new BlockPos(3, 1, 0), ModBlocks.allSolarPanels().get(0).defaultBlockState());
+        plot.blockState(new BlockPos(4, 1, 0), ModBlocks.IMPROVED_CHARGER.get().defaultBlockState());
+        plot.blockState(new BlockPos(5, 1, 0), ModBlocks.INSANE_INTERFACE.get().defaultBlockState());
+        plot.blockState(new BlockPos(6, 1, 0), ModBlocks.INSANE_PATTERN_PROVIDER.get().defaultBlockState());
+
+        plot.test(helper -> {
+            var sequence = helper.startSequence();
+
+            // グリッドが組み上がるまで少し待つ。
+            sequence.thenIdle(5);
+            sequence.thenExecute(() -> {
+                IGrid grid = helper.getGrid(new BlockPos(0, 0, 0));
+                for (int x = 0; x <= 6; x++) {
+                    checkOnGrid(helper, new BlockPos(x, 1, 0), grid);
+                }
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    /**
+     * 超特大インターフェイスの<b>枠数・1 枠の上限・long のまとめ受け</b>を確かめる。
+     *
+     * <p>見ているのは 3 点。</p>
+     * <ol>
+     *   <li>{@code GENERIC_INTERNAL_INV} が出ていて 81 枠あること
+     *       (出ていないと外の機械から中身が見えない)。</li>
+     *   <li>1 枠の上限が {@code Integer.MAX_VALUE} = 21 億であること。
+     *       容量を上げるだけでは<b>アイテムはスタック数 (64) で頭打ちになる</b>ので、
+     *       {@code ConfigInventoryAccessor} (allowOverstacking) が効いているかの回帰テストでもある。</li>
+     *   <li>1 枠に入り切らない量を 1 回で入れても<b>取りこぼさない</b>こと。
+     *       Mekanism 系の化学物質は long で来るので、ここで頭打ちにすると
+     *       溢れたぶんが機械側に押し戻される → {@code InterfaceOverflowInventory}。</li>
+     * </ol>
+     */
+    @TestPlot("insaneae_insane_interface")
+    public static void insaneInterface(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,2] 0 0");
+        // 21 億を超える量を受け止められる在庫が要るので、自前の 1G セルを 1 枚積む。
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> drive.getInternalInventory().addItems(
+                new ItemStack(ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_1G).get())));
+        plot.blockState("2 0 0", ModBlocks.INSANE_INTERFACE.get().defaultBlockState());
+
+        // int に収まらない量を 1 回で流し込む。
+        final long inserted = 3_000_000_000L;
+
+        plot.test(helper -> {
+            var pos = new BlockPos(2, 0, 0);
+            var state = new Object() {
+                long accepted;
+            };
+            var sequence = helper.startSequence();
+
+            // グリッドの起動 (チャネル割り当てまで) を待つ。
+            sequence.thenIdle(10);
+
+            sequence.thenExecute(() -> {
+                var inv = helper.getCapability(pos, AECapabilities.GENERIC_INTERNAL_INV, null);
+                helper.check(inv != null,
+                        "超特大インターフェイスが GENERIC_INTERNAL_INV を公開していない", pos);
+                helper.check(inv.size() == InsaneInterfaceBlockEntity.SLOTS,
+                        "枠数が " + InsaneInterfaceBlockEntity.SLOTS + " ではない: " + inv.size(), pos);
+                helper.check(inv.getCapacity(AEKeyType.items()) == InsaneInterfaceBlockEntity.MAX_PER_SLOT,
+                        "1 枠の容量が違う: " + inv.getCapacity(AEKeyType.items()), pos);
+                helper.check(inv.getMaxAmount(AEItemKey.of(Items.IRON_INGOT))
+                                == InsaneInterfaceBlockEntity.MAX_PER_SLOT,
+                        "1 枠に入るアイテム数がスタック数で頭打ちになっている: "
+                                + inv.getMaxAmount(AEItemKey.of(Items.IRON_INGOT))
+                                + " (allowOverstacking が効いていない)", pos);
+                helper.check(helper.getCapability(pos, AECapabilities.ME_STORAGE, null) != null,
+                        "超特大インターフェイスが ME_STORAGE を公開していない", pos);
+            });
+
+            sequence.thenExecute(() -> {
+                var inv = helper.getCapability(pos, AECapabilities.GENERIC_INTERNAL_INV, null);
+                state.accepted = inv.insert(0, AEItemKey.of(Items.IRON_INGOT), inserted,
+                        appeng.api.config.Actionable.MODULATE);
+            });
+
+            sequence.thenExecute(() -> {
+                helper.check(state.accepted == inserted,
+                        "1 枠の上限 (" + InsaneInterfaceBlockEntity.MAX_PER_SLOT + ") を超えるぶんが"
+                                + "押し戻された: " + state.accepted + " / " + inserted, pos);
+
+                // 未設定の枠なので、ネットワーク側に入っているはず (枠には残らない)。
+                var counter = new KeyCounter();
+                helper.getGrid(BlockPos.ZERO).getStorageService().getInventory()
+                        .getAvailableStacks(counter);
+                long inNetwork = counter.get(AEItemKey.of(Items.IRON_INGOT));
+                var inv = helper.getCapability(pos, AECapabilities.GENERIC_INTERNAL_INV, null);
+                long inSlot = inv.getAmount(0);
+                helper.check(inNetwork + inSlot == inserted,
+                        "入れた数と行き先が合わない: ネットワーク " + inNetwork + " + 枠 " + inSlot
+                                + " ≠ " + inserted, pos);
+                helper.check(inNetwork == inserted,
+                        "未設定の枠なのにネットワークへ直接入っていない (枠に " + inSlot + " 残っている)", pos);
+            });
+
+            // 壊したときに中身がネットワークへ戻ること。
+            // AEItemKey#addDrops は 1000 スタックを超えたぶんを黙って捨てるので、
+            // ドロップ任せにすると 1 枠ぶんでも大半が消える。
+            final long parked = 1_000_000_000L;
+            sequence.thenExecute(() -> {
+                var be = (InsaneInterfaceBlockEntity) helper.getBlockEntity(pos);
+                be.getInterfaceLogic().getStorage().setStack(5,
+                        new appeng.api.stacks.GenericStack(AEItemKey.of(Items.GOLD_INGOT), parked));
+            });
+            sequence.thenExecute(() -> helper.destroyBlock(pos));
+            sequence.thenIdle(5);
+            sequence.thenExecute(() -> {
+                var counter = new KeyCounter();
+                helper.getGrid(BlockPos.ZERO).getStorageService().getInventory()
+                        .getAvailableStacks(counter);
+                long gold = counter.get(AEItemKey.of(Items.GOLD_INGOT));
+                helper.check(gold == parked,
+                        "壊したときに中身がネットワークへ戻っていない: " + gold + " / " + parked, pos);
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    /** その位置のブロックが capability を公開していて、かつ同じグリッドに入っていること。 */
+    private static void checkOnGrid(PlotTestHelper helper, BlockPos pos, IGrid grid) {
+        String name = helper.getBlockState(pos).getBlock().getName().getString();
+        var host = helper.getCapability(pos, AECapabilities.IN_WORLD_GRID_NODE_HOST, null);
+        helper.check(host != null,
+                name + " が IN_WORLD_GRID_NODE_HOST を公開していない (ModCapabilities の登録漏れ)", pos);
+        IGridNode node = helper.getGridNode(pos);
+        helper.check(node != null && node.getGrid() == grid,
+                name + " がケーブルと同じネットワークに入っていない", pos);
     }
 
     /**

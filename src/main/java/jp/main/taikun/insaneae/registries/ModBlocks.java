@@ -14,6 +14,8 @@ import jp.main.taikun.insaneae.charger.ImprovedChargerBlock;
 import jp.main.taikun.insaneae.energy.InsaneEnergyCellTier;
 import jp.main.taikun.insaneae.energy.SolarPanelBlock;
 import jp.main.taikun.insaneae.energy.SolarPanelTier;
+import jp.main.taikun.insaneae.iface.InsaneInterfaceBlock;
+import jp.main.taikun.insaneae.provider.InsanePatternProviderBlock;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlock;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -57,6 +59,14 @@ public class ModBlocks {
     public static final DeferredHolder<Block, ImprovedChargerBlock> IMPROVED_CHARGER =
             BLOCKS.register("improved_charger", ImprovedChargerBlock::new);
 
+    /** ME インターフェイスの限界突破版 (9x9 枠 × 1 枠 21 億)。 */
+    public static final DeferredHolder<Block, InsaneInterfaceBlock> INSANE_INTERFACE =
+            BLOCKS.register("insane_interface", InsaneInterfaceBlock::new);
+
+    /** パターンプロバイダの限界突破版 (Quantum CPU と同じ 1620 枠)。加工パターンの置き場。 */
+    public static final DeferredHolder<Block, InsanePatternProviderBlock> INSANE_PATTERN_PROVIDER =
+            BLOCKS.register("insane_pattern_provider", InsanePatternProviderBlock::new);
+
     static {
         // 表示名は階層ごとの lang キーではなく「書式キー + 階層ラベル」で作る → TieredNames。
         for (InsaneCraftingUnitType type : InsaneCraftingUnitType.values()) {
@@ -95,6 +105,10 @@ public class ModBlocks {
         BLOCK_ITEMS.register("quantum_cpu", () -> new BlockItem(QUANTUM_CPU.get(), new Item.Properties()));
         BLOCK_ITEMS.register("improved_charger",
                 () -> new BlockItem(IMPROVED_CHARGER.get(), new Item.Properties()));
+        BLOCK_ITEMS.register("insane_interface",
+                () -> new BlockItem(INSANE_INTERFACE.get(), new Item.Properties()));
+        BLOCK_ITEMS.register("insane_pattern_provider",
+                () -> new BlockItem(INSANE_PATTERN_PROVIDER.get(), new Item.Properties()));
     }
 
     /** ストレージ + アクセラレータの全ブロック (BlockEntityType やドロップ生成用)。 */

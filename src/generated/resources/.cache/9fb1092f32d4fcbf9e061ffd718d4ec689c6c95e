@@ -1,4 +1,4 @@
-// 1.21.1	2026-07-31T18:49:43.1121282	Recipes
+// 1.21.1	2026-08-10T12:28:31.6113412	Recipes
 76676eec4d3336f3774ced8226ac9befea089988 data/insaneae/advancement/recipes/misc/16g_crafting_storage.json
 477857022b80635795c17b51c2fdf260f0985f60 data/insaneae/advancement/recipes/misc/16k_crafting_accelerator.json
 a21e5f230c17260505417571ca0d945dbf23f659 data/insaneae/advancement/recipes/misc/16m_crafting_accelerator.json
@@ -96,6 +96,8 @@ e8736c0457a37d1991e0fe29fae488885ae1e594 data/insaneae/advancement/recipes/misc/
 5b6c088951f43126cbb6d6ce2e9e0b216b44bb1c data/insaneae/advancement/recipes/misc/hypernova_energy_cell.json
 77bdfc8a284b42c36b176e284a67c4ae9e45722f data/insaneae/advancement/recipes/misc/hypersonic_card.json
 ab7bd4791b555e943b167f7e6316670720f0e349 data/insaneae/advancement/recipes/misc/improved_charger.json
+458be7d7dac87c91032a4283eb566d1b8a202a53 data/insaneae/advancement/recipes/misc/insane_interface.json
+9138a1e4e5e2481711eee97b137b50dea1f53191 data/insaneae/advancement/recipes/misc/insane_pattern_provider.json
 eb16045952748081fa7c1932660134e04e49e0c6 data/insaneae/advancement/recipes/misc/item_storage_cell_16g.json
 bd49c587b1e0b9716730e86b7bd4e81d241fc81a data/insaneae/advancement/recipes/misc/item_storage_cell_16p.json
 f9d8d66d140b3512a322b1aef87efdbc7f4a3bf7 data/insaneae/advancement/recipes/misc/item_storage_cell_16t.json
@@ -333,6 +335,8 @@ c67acb926146d41dcc22d8f9e1695db0e42b1ee9 data/insaneae/recipe/hyperdense_energy_
 f93ce4c7f30573eea82b91b889ca9809b76a5157 data/insaneae/recipe/hypernova_energy_cell.json
 038cb7ce7abb34c4cfcbf31beff6fe5e7b2c9dac data/insaneae/recipe/hypersonic_card.json
 2352447c4ebe5fa3c4508c454335e789a6f4fb2d data/insaneae/recipe/improved_charger.json
+323fbd0c9e95799db1d1d45bae1ad7a4f0de9742 data/insaneae/recipe/insane_interface.json
+ed6516ec6c069e2231b0c13be2a7f2ccda2e4ede data/insaneae/recipe/insane_pattern_provider.json
 46247615a3476f912e58b124c3a5f6a4dff7ad49 data/insaneae/recipe/item_storage_cell_16g.json
 dc72d0c947d10b885a020a413c9abcd9780fed0e data/insaneae/recipe/item_storage_cell_16p.json
 a4d3156d11da8f8809778e3e326f4642065bbf9e data/insaneae/recipe/item_storage_cell_16t.json

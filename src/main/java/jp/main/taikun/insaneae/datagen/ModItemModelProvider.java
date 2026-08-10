@@ -116,6 +116,10 @@ public class ModItemModelProvider extends ItemModelProvider {
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/quantum_cpu")));
         getBuilder("improved_charger").parent(new ModelFile.UncheckedModelFile(
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/improved_charger")));
+        getBuilder("insane_interface").parent(new ModelFile.UncheckedModelFile(
+                ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/insane_interface")));
+        getBuilder("insane_pattern_provider").parent(new ModelFile.UncheckedModelFile(
+                ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/insane_pattern_provider")));
 
         for (SolarPanelTier tier : SolarPanelTier.values()) {
             getBuilder(tier.id()).parent(new ModelFile.UncheckedModelFile(

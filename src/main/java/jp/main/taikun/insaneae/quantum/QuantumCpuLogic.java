@@ -2,16 +2,20 @@ package jp.main.taikun.insaneae.quantum;
 
 import appeng.api.config.LockCraftingMode;
 import appeng.api.crafting.IPatternDetails;
+import appeng.api.crafting.PatternDetailsHelper;
+import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.KeyCounter;
 import appeng.blockentity.crafting.IMolecularAssemblerSupportedPattern;
 import appeng.crafting.CraftingEvent;
-import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.menu.AutoCraftingMenu;
+import appeng.util.inv.AppEngInternalInventory;
+import appeng.util.inv.filter.IAEItemFilter;
 import com.mojang.logging.LogUtils;
 import jp.main.taikun.insaneae.mixin.PatternProviderLogicAccessor;
+import jp.main.taikun.insaneae.provider.InsanePatternProviderLogic;
 import jp.main.taikun.insaneae.upgrade.SpeedBoost;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.inventory.CraftingContainer;
@@ -21,11 +25,9 @@ import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Quantum CPU の頭脳。パターンプロバイダのロジックをそのまま使いつつ、
@@ -45,12 +47,18 @@ import java.util.Set;
  * さらに完成品はその場でネットワークに入れず {@link QuantumCpuBlockEntity} 側に貯め、
  * <b>1 tick に 1 回だけまとめて挿入</b>する (ME への挿入が一番重いため)。</p>
  *
- * <p>1620 枠あるパターン周りも AE2 のままでは効かないので 2 点変えてある:
- * 「持っているか」の判定を<b>ハッシュ集合</b>にして 1 クラフトあたりの線形探索を無くし
- * ({@link #patternSet})、パターンの読み直しを<b>1 tick に 1 回へまとめている</b>
- * ({@link #updatePatterns()})。</p>
+ * <p>1620 枠に耐えるためのパターン管理 (更新の 1 tick へのまとめ・ハッシュ集合での照合) は
+ * 特大パターンプロバイダーと共通 → {@link InsanePatternProviderLogic}。</p>
+ *
+ * <h2>加工パターンは受け付けない</h2>
+ * <p>自分で組めるのはクラフトテーブル系のパターンだけなので、
+ * <b>加工 (処理) パターンはパターン枠に入れられない</b> (コンストラクタのフィルタ)。
+ * 加工パターンは特大パターンプロバイダーに入れること。
+ * この制限より前に入れてあった加工パターンは、取り出せるし従来どおり
+ * 隣接インベントリへの押し出しも動く ({@link #pushPattern} のフォールバック) —
+ * 中身を消したり動作を止めたりはしない。</p>
  */
-public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCraftingProvider {
+public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulkCraftingProvider {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final int GRID_SLOTS = 9;
@@ -97,67 +105,34 @@ public class QuantumCpuLogic extends PatternProviderLogic implements IBulkCrafti
     private long remainingCrafts;
     private long budgetTick = Long.MIN_VALUE;
 
-    /**
-     * 入っているパターンの集合。
-     *
-     * <p>AE2 の {@link #getAvailablePatterns()} は {@code ArrayList} をそのまま返すので、
-     * {@code contains} が<b>パターン数に比例</b>する。通常のパターンプロバイダは 36 枠なので問題無いが、
-     * こちらは 1620 枠あり、しかも 1 クラフトごとに引く。ハッシュで持って O(1) にする。</p>
-     */
-    private final Set<IPatternDetails> patternSet = new HashSet<>();
-
-    /** パターンの再読み込みが必要か。{@link #flushPatternUpdate()} でまとめて処理する。 */
-    private boolean patternsDirty = true;
-
     private boolean warnedAboutFailedAssembly;
 
     public QuantumCpuLogic(IManagedGridNode mainNode, QuantumCpuBlockEntity host) {
         super(mainNode, host, QuantumCpuBlockEntity.PATTERN_SLOTS);
         this.mainNode = mainNode;
         this.host = host;
+
+        // 加工パターンお断り。自分で組めるパターンだけを受け付ける。
+        // AppEngSlot#mayPlace もインベントリの isItemValid を見るので、
+        // 画面・Shift クリック・パターン端末・インポートバスのどこから入れても効く。
+        // 既に入っているぶんには触らない (NBT の読み込みと取り出しはフィルタを通らない)。
+        ((AppEngInternalInventory) getPatternInv()).setFilter(new IAEItemFilter() {
+            @Override
+            public boolean allowInsert(InternalInventory inv, int slot, ItemStack stack) {
+                Level level = host.getLevel();
+                return level != null && PatternDetailsHelper.decodePattern(stack, level)
+                        instanceof IMolecularAssemblerSupportedPattern;
+            }
+        });
     }
 
     // -------------------------------------------------------------- パターン管理
 
-    /**
-     * AE2 はパターンを<b>1 枚出し入れするたび</b>にこれを呼び、
-     * 全スロットのデコードとグリッドのクラフト索引の再構築を行う。
-     * 1620 枠あるとパターン端末やインポートバスでまとめて動かしたときに刺さるので、
-     * ここでは印だけ付けて {@link #flushPatternUpdate()} に回す。
-     *
-     * <p>遅れは最大 1 tick。{@link QuantumCpuBlockEntity#serverTick()} が毎 tick 流すほか、
-     * パターンを実際に参照する経路 ({@link #getAvailablePatterns()} / {@link #hasPattern}) が
-     * 必ず先に流すので、古い一覧が見えることはない。</p>
-     */
+    /** パターン一覧が変わった: レシピ自体が差し替わっている可能性がある
+     * (データパックの再読み込みなど) ので、覚えている組み立て結果は捨てる。 */
     @Override
-    public void updatePatterns() {
-        patternsDirty = true;
-    }
-
-    /** 溜めていたパターン更新を実行する。何度呼んでも安全。 */
-    public void flushPatternUpdate() {
-        if (!patternsDirty) {
-            return;
-        }
-        patternsDirty = false;
-        super.updatePatterns();
-        patternSet.clear();
-        patternSet.addAll(super.getAvailablePatterns());
-        // レシピ自体が差し替わっている可能性がある (データパックの再読み込みなど) ので、
-        // 覚えている組み立て結果は捨てる。ここは毎 tick 走る処理ではない。
+    protected void onPatternsFlushed() {
         assemblyCache.clear();
-    }
-
-    @Override
-    public List<IPatternDetails> getAvailablePatterns() {
-        flushPatternUpdate();
-        return super.getAvailablePatterns();
-    }
-
-    /** このプロバイダがそのパターンを持っているか。{@code getAvailablePatterns().contains} の O(1) 版。 */
-    private boolean hasPattern(IPatternDetails details) {
-        flushPatternUpdate();
-        return patternSet.contains(details);
     }
 
     @Override

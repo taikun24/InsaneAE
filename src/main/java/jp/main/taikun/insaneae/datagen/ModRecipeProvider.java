@@ -149,6 +149,26 @@ public class ModRecipeProvider extends RecipeProvider {
                         'C', AEBlocks.PATTERN_PROVIDER
                 ));
 
+        // 超特大インターフェイス: ME インターフェイス + 集積プロセッサ 4 + 特異点 4。
+        // 1 枠 21 億 × 81 枠なので、他の限界突破ブロックと同じく特異点を要求する。
+        shaped(consumer, ModBlocks.INSANE_INTERFACE.get(), ACCUMULATION_PROCESSOR,
+                new String[]{"ABA", "BCB", "ABA"},
+                Map.of(
+                        'A', ACCUMULATION_PROCESSOR,
+                        'B', SINGULARITY,
+                        'C', AEBlocks.INTERFACE
+                ));
+
+        // 特大パターンプロバイダー: パターンプロバイダ + 集積プロセッサ 4 + 特異点 4。
+        // 枠数が 45 倍 (36 → 1620) なので、他の限界突破ブロックと同じく特異点を要求する。
+        shaped(consumer, ModBlocks.INSANE_PATTERN_PROVIDER.get(), ACCUMULATION_PROCESSOR,
+                new String[]{"ABA", "BCB", "ABA"},
+                Map.of(
+                        'A', ACCUMULATION_PROCESSOR,
+                        'B', SINGULARITY,
+                        'C', AEBlocks.PATTERN_PROVIDER
+                ));
+
         // エネルギーセル: 下位セル ×8 + 集積プロセッサ (AE2/MEGA の Dense / Superdense と同じ形)。
         // 容量が 1 段 8 倍なので、材料 8 個ぶんの容量がそのまま 1 個に収まる。
         InsaneEnergyCellTier[] energyCells = InsaneEnergyCellTier.values();

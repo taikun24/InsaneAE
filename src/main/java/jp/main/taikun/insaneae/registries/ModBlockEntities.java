@@ -7,12 +7,16 @@ import jp.main.taikun.insaneae.InsaneAE;
 import jp.main.taikun.insaneae.charger.ImprovedChargerBlockEntity;
 import jp.main.taikun.insaneae.energy.SolarPanelBlock;
 import jp.main.taikun.insaneae.energy.SolarPanelBlockEntity;
+import jp.main.taikun.insaneae.iface.InsaneInterfaceBlockEntity;
+import jp.main.taikun.insaneae.provider.InsanePatternProviderBlockEntity;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
+
+import java.util.List;
 
 /**
  * 独自の {@link CraftingBlockEntity} 用 BlockEntityType。
@@ -70,6 +74,18 @@ public class ModBlockEntities {
                             ModBlocks.IMPROVED_CHARGER.get())
                     .build(null));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<InsaneInterfaceBlockEntity>> INSANE_INTERFACE =
+            BLOCK_ENTITY_TYPES.register("insane_interface", () -> BlockEntityType.Builder
+                    .of((pos, state) -> new InsaneInterfaceBlockEntity(insaneInterfaceType(), pos, state),
+                            ModBlocks.INSANE_INTERFACE.get())
+                    .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<InsanePatternProviderBlockEntity>> INSANE_PATTERN_PROVIDER =
+            BLOCK_ENTITY_TYPES.register("insane_pattern_provider", () -> BlockEntityType.Builder
+                    .of((pos, state) -> new InsanePatternProviderBlockEntity(insanePatternProviderType(), pos, state),
+                            ModBlocks.INSANE_PATTERN_PROVIDER.get())
+                    .build(null));
+
     /** 自己参照コンパイルエラーを避けるための遅延アクセサ。 */
     private static BlockEntityType<CraftingBlockEntity> type() {
         return CRAFTING_STORAGE.get();
@@ -91,8 +107,29 @@ public class ModBlockEntities {
         return IMPROVED_CHARGER.get();
     }
 
+    private static BlockEntityType<InsaneInterfaceBlockEntity> insaneInterfaceType() {
+        return INSANE_INTERFACE.get();
+    }
+
+    private static BlockEntityType<InsanePatternProviderBlockEntity> insanePatternProviderType() {
+        return INSANE_PATTERN_PROVIDER.get();
+    }
+
     public static void register(IEventBus bus) {
         BLOCK_ENTITY_TYPES.register(bus);
+    }
+
+    /**
+     * 登録済みの BlockEntityType を全部返す。capability の登録に使う ({@link ModCapabilities})。
+     *
+     * <p>個別に並べるとブロックを増やしたときに<b>登録漏れが黙って起きる</b> (ネットワークに
+     * 繋がらないブロックができる) ので、DeferredRegister の中身をそのまま回す。
+     * レジストリ凍結後に呼ぶこと (capability の登録イベントはその後に来る)。</p>
+     */
+    public static List<BlockEntityType<?>> allTypes() {
+        return BLOCK_ENTITY_TYPES.getEntries().stream()
+                .<BlockEntityType<?>>map(DeferredHolder::get)
+                .toList();
     }
 
     /**
@@ -122,5 +159,15 @@ public class ModBlockEntities {
                         (level, pos, state, be) -> be.serverTick()));
         ModBlocks.IMPROVED_CHARGER.get().setBlockEntity(
                 ImprovedChargerBlockEntity.class, IMPROVED_CHARGER.get(), null, null);
+
+        // 超特大インターフェイスは IGridTickable (InterfaceLogic の Ticker) なので
+        // グリッド側から呼ばれる。ブロックの ticker は不要。
+        ModBlocks.INSANE_INTERFACE.get().setBlockEntity(
+                InsaneInterfaceBlockEntity.class, INSANE_INTERFACE.get(), null, null);
+
+        // 特大パターンプロバイダーは、まとめてあるパターン更新を流すために毎 tick 動く。
+        ModBlocks.INSANE_PATTERN_PROVIDER.get().setBlockEntity(
+                InsanePatternProviderBlockEntity.class, INSANE_PATTERN_PROVIDER.get(), null,
+                (level, pos, state, be) -> be.serverTick());
     }
 }

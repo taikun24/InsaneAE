@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import jp.main.taikun.insaneae.registries.ModBlockEntities;
 import jp.main.taikun.insaneae.registries.ModBlocks;
+import jp.main.taikun.insaneae.registries.ModCapabilities;
 import jp.main.taikun.insaneae.registries.ModCells;
 import jp.main.taikun.insaneae.registries.ModCreativeTabs;
 import jp.main.taikun.insaneae.registries.ModItems;
@@ -67,9 +68,10 @@ public class InsaneAE {
 
         bus.addListener(this::commonSetup);
         bus.addListener(this::gatherData);
-        // NeoForge では capability は BlockEntityType ごとに専用イベントで登録する
-        // (1.20.1 のように BlockEntity#getCapability を override する方式は廃止された)。
-        bus.addListener(jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity::registerCapabilities);
+        // NeoForge では capability は BlockEntityType / Item ごとに専用イベントで登録する
+        // (1.20.1 のように BlockEntity#getCapability を override して継承させる方式は廃止された)。
+        // AE2 の一括登録は AE2 自身の型しか見ないので、自前の型はここで全部登録し直す。
+        bus.addListener(ModCapabilities::register);
 
         // formed モデルの組み込み登録は ModelBakery より前に済ませる必要があるため、
         // client でのみ Mod 構築時に行う (AE2 の AppEngClient コンストラクタと同タイミング)。

@@ -2,6 +2,8 @@ package jp.main.taikun.insaneae.registries;
 
 import net.minecraft.core.registries.Registries;
 import jp.main.taikun.insaneae.InsaneAE;
+import jp.main.taikun.insaneae.menu.InsaneInterfaceMenu;
+import jp.main.taikun.insaneae.menu.InsanePatternProviderMenu;
 import jp.main.taikun.insaneae.menu.QuantumCpuMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.bus.api.IEventBus;
@@ -20,6 +22,12 @@ public class ModMenus {
 
     public static final DeferredHolder<MenuType<?>, MenuType<QuantumCpuMenu>> QUANTUM_CPU =
             MENU_TYPES.register("quantum_cpu", () -> QuantumCpuMenu.TYPE);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<InsaneInterfaceMenu>> INSANE_INTERFACE =
+            MENU_TYPES.register("insane_interface", () -> InsaneInterfaceMenu.TYPE);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<InsanePatternProviderMenu>> INSANE_PATTERN_PROVIDER =
+            MENU_TYPES.register("insane_pattern_provider", () -> InsanePatternProviderMenu.TYPE);
 
     public static void register(IEventBus bus) {
         MENU_TYPES.register(bus);

@@ -1,9 +1,6 @@
 package jp.main.taikun.insaneae.quantum;
 
-import jp.main.taikun.insaneae.registries.ModBlockEntities;
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.minecraft.core.HolderLookup;
-import appeng.api.AECapabilities;
 import appeng.api.config.Actionable;
 import appeng.api.implementations.blockentities.PatternContainerGroup;
 import appeng.api.inventories.ISegmentedInventory;
@@ -333,19 +330,8 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
         pendingOutputs.reset();
     }
 
-    /**
-     * 取り出し用インベントリ (クラフト結果の戻り先) を capability として公開する。
-     *
-     * <p>1.20.1 では {@code getCapability} を override して
-     * {@code PatternProviderLogic#getCapability} に委譲していたが、
-     * NeoForge では capability は BlockEntityType ごとに
-     * {@link RegisterCapabilitiesEvent} で登録する方式に変わった。
-     * AE2 も本家パターンプロバイダを {@code InitCapabilityProviders} で同じように登録している。</p>
-     */
-    public static void registerCapabilities(RegisterCapabilitiesEvent event) {
-        event.registerBlockEntity(
-                AECapabilities.GENERIC_INTERNAL_INV,
-                ModBlockEntities.QUANTUM_CPU.get(),
-                (blockEntity, context) -> blockEntity.getLogic().getReturnInv());
-    }
+    // capability の公開 (取り出し用インベントリ・グリッドノード) は
+    // jp.main.taikun.insaneae.registries.ModCapabilities にまとめてある。
+    // NeoForge では BlockEntityType ごとの登録制で、1.20.1 のように
+    // getCapability を override して継承させることはできない。
 }
