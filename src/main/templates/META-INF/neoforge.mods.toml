@@ -60,3 +60,13 @@ type = "optional"
 versionRange = "[1.6,)"
 ordering = "AFTER"
 side = "BOTH"
+
+# AE2 Crafting Optimizer - 任意。導入時は公開 BigInteger 量会計 API を Quantum CPU の
+# 完成品待ち台帳へ使用する。ACO が無くても内蔵の同一規則へフォールバックする。
+# (1.5.11 現在 ACO は Forge 1.20.1 向けのみだが、リポジトリは NeoForge 1.21.1 なので先に備えておく)
+[[dependencies."${mod_id}"]]
+modId = "ae2_crafting_optimizer"
+type = "optional"
+versionRange = "[1.5.11,)"
+ordering = "AFTER"
+side = "BOTH"

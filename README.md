@@ -25,8 +25,14 @@ Minecraft のバージョンごとにブランチを分けています。**不�
 | [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) | 19.2.17 以上 (必須) |
 | [MEGA Cells](https://github.com/62832/MEGACells) | 4.11 以上 (必須) |
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) | 1.6 以上 (任意 / 化学物質セル用) |
+| [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) | 1.5.11 以上 (任意 / BigInteger量会計用) |
 
 AE2 が [GuideME](https://github.com/AppliedEnergistics/GuideME) を必須依存として要求します (1.20.1 では AE2 に同梱されていました)。
+
+AE2 Crafting Optimizer は必須ではありません。導入されていて BigInteger バックエンドが有効な場合、
+Quantum CPU の完成品待ち台帳を ACO の公開 API へ接続します。無い場合や無効な場合は
+InsaneAE 内蔵の同じ BigInteger 台帳を使います (保存形式はどちらでも共通)。
+なお 1.5.11 現在、ACO の配布物は Forge 1.20.1 向けのみです。
 
 AE2 の内部 (`BasicCellInventory`、`CraftingCPUCluster`、ツールチップ描画など) に Mixin で踏み込んでいるため、
 AE2 のバージョン範囲は実際に検証した `[19.2.17,20)` に固定しています。

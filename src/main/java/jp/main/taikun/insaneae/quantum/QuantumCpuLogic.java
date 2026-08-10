@@ -16,7 +16,6 @@ import appeng.util.inv.filter.IAEItemFilter;
 import com.mojang.logging.LogUtils;
 import jp.main.taikun.insaneae.mixin.PatternProviderLogicAccessor;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderLogic;
-import jp.main.taikun.insaneae.upgrade.SpeedBoost;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.inventory.TransientCraftingContainer;
@@ -240,11 +239,13 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
     /** 完成品と端材を {@code times} 回ぶん貯める。 */
     private void storeOutputs(Assembly assembly, long times) {
         ItemStack output = assembly.output();
+        // 掛け算結果を long へ戻さない。ここが BigInteger 会計へ入る唯一の出力境界。
+        java.math.BigInteger factor = java.math.BigInteger.valueOf(times);
         host.addPendingOutput(AEItemKey.of(output),
-                SpeedBoost.saturatingMultiply(times, output.getCount()));
+                factor.multiply(java.math.BigInteger.valueOf(output.getCount())));
         for (ItemStack remainder : assembly.remainders()) {
             host.addPendingOutput(AEItemKey.of(remainder),
-                    SpeedBoost.saturatingMultiply(times, remainder.getCount()));
+                    factor.multiply(java.math.BigInteger.valueOf(remainder.getCount())));
         }
     }
 

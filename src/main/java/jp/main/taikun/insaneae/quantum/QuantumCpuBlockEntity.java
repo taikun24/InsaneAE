@@ -11,7 +11,6 @@ import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.GenericStack;
-import appeng.api.stacks.KeyCounter;
 import appeng.api.storage.MEStorage;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
@@ -28,6 +27,9 @@ import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
 import jp.main.taikun.insaneae.menu.QuantumCpuMenu;
+import jp.main.taikun.insaneae.integration.aco.OptionalAcoBigIntegerIntegration;
+import jp.main.taikun.insaneae.integration.aco.PendingOutputLedger;
+import jp.main.taikun.insaneae.integration.aco.PendingOutputNbt;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
 import jp.main.taikun.insaneae.upgrade.SpeedBoost;
@@ -45,8 +47,10 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
+import java.math.BigInteger;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Quantum CPU — パターンプロバイダと分子組立装置を 1 ブロックに合体させたもの。
@@ -87,6 +91,7 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
 
     private static final String NBT_UPGRADES = "upgrades";
     private static final String NBT_PENDING = "pendingOutputs";
+    private static final String NBT_PENDING_BIG = "pendingOutputsBig";
 
     /** 完成品が詰まっている間、何 tick おきに保存するか。 */
     private static final int PENDING_SAVE_INTERVAL = 20;
@@ -100,7 +105,7 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
      * 組み上がったが、まだネットワークに入れていない完成品。
      * ME への挿入は 1 tick に 1 回だけまとめて行うので、その間ここに溜まる。
      */
-    private final KeyCounter pendingOutputs = new KeyCounter();
+    private final PendingOutputLedger pendingOutputs = OptionalAcoBigIntegerIntegration.createOutputLedger();
 
     /** 直近の保存時点で {@link #pendingOutputs} が空でなかったか。 */
     private boolean pendingWasSaved;
@@ -135,9 +140,23 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
      * ({@code TickManagerService#alertDevice} は {@code updateQueuePosition} まで走る)。</p>
      */
     void addPendingOutput(@Nullable AEKey what, long amount) {
-        if (what != null && amount > 0) {
-            pendingOutputs.add(what, amount);
+        if (what == null || amount <= 0L) {
+            return;
         }
+        addPendingOutput(what, BigInteger.valueOf(amount));
+    }
+
+    /** 掛け算結果をlongへ戻さず、完成品の正確な量を台帳へ加える。 */
+    public void addPendingOutput(@Nullable AEKey what, BigInteger amount) {
+        if (what == null || amount == null || amount.signum() <= 0) {
+            return;
+        }
+        pendingOutputs.add(what, amount);
+    }
+
+    /** 完成品待ちの現在の中身 (コピー)。ゲームテスト用。 */
+    public Map<AEKey, BigInteger> getPendingOutputs() {
+        return pendingOutputs.snapshot();
     }
 
     @Override
@@ -154,17 +173,18 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
         }
 
         MEStorage storage = grid.getStorageService().getInventory();
-        for (var entry : pendingOutputs) {
-            long amount = entry.getLongValue();
-            if (amount <= 0) {
+        for (var entry : pendingOutputs.snapshot().entrySet()) {
+            // AE2 の insert は long API なので、BigInteger をこの一回分だけ安全に窓化する。
+            long amount = pendingOutputs.drain(entry.getKey(), Long.MAX_VALUE);
+            if (amount <= 0L) {
                 continue;
             }
             long inserted = storage.insert(entry.getKey(), amount, Actionable.MODULATE, actionSource);
-            if (inserted > 0) {
-                entry.setValue(amount - inserted);
+            if (inserted < amount) {
+                // 部分搬入分だけを正確に戻し、搬入済み分を二重計上しない。
+                pendingOutputs.add(entry.getKey(), BigInteger.valueOf(amount - inserted));
             }
         }
-        pendingOutputs.removeZeros();
         savePendingIfNeeded();
     }
 
@@ -281,14 +301,9 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
         logic.writeToNBT(data, registries);
         upgrades.writeToNBT(data, NBT_UPGRADES, registries);
 
-        ListTag pending = new ListTag();
-        for (var entry : pendingOutputs) {
-            if (entry.getLongValue() > 0) {
-                pending.add(GenericStack.writeTag(registries,
-                        new GenericStack(entry.getKey(), entry.getLongValue())));
-            }
-        }
-        data.put(NBT_PENDING, pending);
+        // BigInteger は byte[] として保存する。旧 ListTag は loadTag 側で移行する。
+        // 形式は台帳の実装 (ACO / 内蔵) に任せず、常に InsaneAE 側で固定する。
+        data.put(NBT_PENDING_BIG, PendingOutputNbt.save(pendingOutputs, registries));
     }
 
     @Override
@@ -297,12 +312,18 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
         logic.readFromNBT(data, registries);
         upgrades.readFromNBT(data, NBT_UPGRADES, registries);
 
-        pendingOutputs.reset();
-        ListTag pending = data.getList(NBT_PENDING, Tag.TAG_COMPOUND);
-        for (int i = 0; i < pending.size(); i++) {
-            GenericStack stack = GenericStack.readTag(registries, pending.getCompound(i));
-            if (stack != null) {
-                pendingOutputs.add(stack.what(), stack.amount());
+        pendingOutputs.clear();
+        if (data.contains(NBT_PENDING_BIG, Tag.TAG_COMPOUND)) {
+            // 読めないエントリはスキップされる (例外は投げない)。ここで投げるとチャンク読込が壊れる。
+            PendingOutputNbt.load(pendingOutputs, data.getCompound(NBT_PENDING_BIG), registries);
+        } else {
+            // 旧バージョンの long 台帳を読み、最初の保存で BigInteger 形式へ移行する。
+            ListTag pending = data.getList(NBT_PENDING, Tag.TAG_COMPOUND);
+            for (int i = 0; i < pending.size(); i++) {
+                GenericStack stack = GenericStack.readTag(registries, pending.getCompound(i));
+                if (stack != null && stack.amount() > 0L) {
+                    pendingOutputs.add(stack.what(), BigInteger.valueOf(stack.amount()));
+                }
             }
         }
         // 読み込んだ時点の中身は「保存済み」。空になったときに 1 回だけ保存すればよい。
@@ -317,8 +338,15 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
         for (ItemStack upgrade : upgrades) {
             drops.add(upgrade);
         }
-        for (var entry : pendingOutputs) {
-            entry.getKey().addDrops(entry.getLongValue(), drops, level, pos);
+        for (var entry : pendingOutputs.snapshot().entrySet()) {
+            BigInteger amount = entry.getValue();
+            if (amount.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) <= 0) {
+                entry.getKey().addDrops(amount.longValueExact(), drops, level, pos);
+            } else {
+                // AE2 のドロップ API 自体が long なので、これ以上は物理ドロップに変換できない
+                // (どのみち addDrops は 1000 スタックで打ち切る)。
+                entry.getKey().addDrops(Long.MAX_VALUE, drops, level, pos);
+            }
         }
     }
 
@@ -327,7 +355,7 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
         super.clearContent();
         logic.clearContent();
         upgrades.clear();
-        pendingOutputs.reset();
+        pendingOutputs.clear();
     }
 
     // capability の公開 (取り出し用インベントリ・グリッドノード) は
