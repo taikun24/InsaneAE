@@ -22,7 +22,7 @@
   "gui.insaneae.quantum_cpu.return_inventory": "返却インベントリ (ネットワークに戻すアイテム)",
   "item.insaneae.quantum_acceleration_card": "クァンタムCPU加速カード",
   "item.insaneae.quantum_acceleration_card.tooltip": "クァンタムCPUのクラフト速度 %s倍",
-  "block.insaneae.hyperdense_energy_cell": "超高密度エナジーセル",
+  "block.insaneae.hyperdense_energy_cell": "極超高密度エナジーセル",
   "block.insaneae.ultradense_energy_cell": "極限密度エナジーセル",
   "block.insaneae.neutron_energy_cell": "中性子エナジーセル",
   "block.insaneae.degenerate_energy_cell": "縮退エナジーセル",
