@@ -58,8 +58,12 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
         try {
             Class<?> api = Class.forName(API_CLASS);
             int apiVersion = api.getField("API_VERSION").getInt(null);
-            if (apiVersion < 4) {
-                LOGGER.warn("InsaneAE: ACO BigInteger API version {} is too old; using local ledger", apiVersion);
+            int ledgerVersion = api.getField("AMOUNT_LEDGER_API_VERSION").getInt(null);
+            if (apiVersion < 3 || ledgerVersion < 1) {
+                LOGGER.warn(
+                        "InsaneAE: ACO BigInteger API v{} / amount ledger v{} is too old; using local ledger",
+                        apiVersion,
+                        ledgerVersion);
                 return java.util.Optional.empty();
             }
             if (!(Boolean) api.getMethod("isEnabled").invoke(null)) {
