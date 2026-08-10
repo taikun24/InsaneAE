@@ -16,7 +16,6 @@ import appeng.util.inv.filter.IAEItemFilter;
 import com.mojang.logging.LogUtils;
 import jp.main.taikun.insaneae.mixin.PatternProviderLogicAccessor;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderLogic;
-import jp.main.taikun.insaneae.upgrade.SpeedBoost;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.inventory.TransientCraftingContainer;
@@ -28,6 +27,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.math.BigInteger;
 
 /**
  * Quantum CPU の頭脳。パターンプロバイダのロジックをそのまま使いつつ、
@@ -240,11 +240,13 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
     /** 完成品と端材を {@code times} 回ぶん貯める。 */
     private void storeOutputs(Assembly assembly, long times) {
         ItemStack output = assembly.output();
-        host.addPendingOutput(AEItemKey.of(output),
-                SpeedBoost.saturatingMultiply(times, output.getCount()));
+        // 掛け算結果をlongへ戻さない。ここがBigInteger会計へ入る唯一の出力境界。
+        BigInteger count = BigInteger.valueOf(times).multiply(BigInteger.valueOf(output.getCount()));
+        host.addPendingOutput(AEItemKey.of(output), count);
         for (ItemStack remainder : assembly.remainders()) {
-            host.addPendingOutput(AEItemKey.of(remainder),
-                    SpeedBoost.saturatingMultiply(times, remainder.getCount()));
+            BigInteger remainderCount = BigInteger.valueOf(times)
+                    .multiply(BigInteger.valueOf(remainder.getCount()));
+            host.addPendingOutput(AEItemKey.of(remainder), remainderCount);
         }
     }
 
