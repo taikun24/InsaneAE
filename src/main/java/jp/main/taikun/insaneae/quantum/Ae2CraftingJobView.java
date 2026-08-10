@@ -1,6 +1,5 @@
 package jp.main.taikun.insaneae.quantum;
 
-import appeng.crafting.execution.ElapsedTimeTracker;
 import appeng.crafting.execution.ExecutingCraftingJob;
 import appeng.crafting.inv.ListCraftingInventory;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
@@ -43,7 +42,7 @@ public final class Ae2CraftingJobView implements CraftingJobView {
     }
 
     @Override
-    public ElapsedTimeTracker getTimeTracker() {
+    public Object getTimeTracker() {
         return job.insaneae$getTimeTracker();
     }
 

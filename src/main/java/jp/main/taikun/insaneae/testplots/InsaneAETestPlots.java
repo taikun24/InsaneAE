@@ -501,6 +501,122 @@ public final class InsaneAETestPlots {
     }
 
     /**
+     * <b>AE2 を複製した他 Mod のクラフト CPU</b> でもまとめ処理が使えることを確かめる
+     * (Issue #2 の回帰テスト)。
+     *
+     * <p>Advanced AE (1.3.6 / 1.6.12 で確認) は {@code ExecutingCraftingJob} だけでなく
+     * 進捗カウンタ {@code ElapsedTimeTracker} まで<b>自前のコピー</b>で持っている。
+     * 以前は「timeTracker フィールドの型が AE2 の tracker であること」を要求していたため、
+     * ここで弾かれてまとめ処理が丸ごと諦めになっていた (1 クラフトずつの遅い経路に落ちる)。</p>
+     *
+     * <p>AAE を dev 環境に入れられないので、<b>同じフィールド構造のフェイク CPU</b>
+     * ({@link FakeForeignCpuLogic}: job / inventory / tasks / waitingFor /
+     * 自前型の timeTracker / markDirty()) を {@code ReflectiveCraftingJobView} に食わせて、
+     * 受理される・まとめ処理が走る・カウンタも呼ばれることを見る。</p>
+     */
+    @TestPlot("insaneae_bulk_foreign_cpu")
+    public static void bulkForeignCpu(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,2] 0 0");
+        plot.blockState("2 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        final int logsInStock = 5;
+        final int planksPerCraft = 4;
+        final long requested = 1000;
+
+        plot.test(helper -> {
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_LOG)));
+            });
+
+            sequence.thenIdle(5);
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
+                var patterns = cpu.getLogic().getAvailablePatterns();
+                helper.check(patterns.size() == 1, "パターンが 1 枚になっていない");
+
+                // 自前型カウンタが直接呼べること (AAE の addMaxItems はパッケージプライベート)
+                var tracker = new ForeignTimeTracker();
+                jp.main.taikun.insaneae.quantum.TimeTrackerAdapter.addMaxItems(
+                        tracker, 7, AEKeyType.items());
+                helper.check(tracker.max == 7,
+                        "自前型カウンタへの加算が効いていない: " + tracker.max);
+
+                // AAE と同じフィールド構造のフェイク CPU がレイアウト検査を通ること
+                var logic = new FakeForeignCpuLogic();
+                logic.job.tasks.put(patterns.get(0), new ForeignTaskProgress(requested));
+                logic.inventory.insert(AEItemKey.of(Items.OAK_LOG), logsInStock,
+                        appeng.api.config.Actionable.MODULATE);
+
+                var view = jp.main.taikun.insaneae.quantum.ReflectiveCraftingJobView.of(logic);
+                helper.check(view != null,
+                        "自前カウンタ型を持つ CPU がレイアウト検査で弾かれた (Issue #2 の再発)");
+
+                var grid = helper.getGrid(BlockPos.ZERO);
+                int pushed = jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.execute(
+                        view, (int) requested,
+                        (appeng.me.service.CraftingService) grid.getCraftingService(),
+                        grid.getEnergyService(), grid.getPivot().getLevel());
+
+                helper.check(pushed == logsInStock,
+                        "まとめ処理が期待回数走らない: " + pushed);
+                long planks = logic.job.waitingFor.list.get(AEItemKey.of(Items.OAK_PLANKS));
+                helper.check(planks == (long) logsInStock * planksPerCraft,
+                        "完成待ちの数が合わない: " + planks);
+                helper.check(logic.dirty, "markDirty が呼ばれていない");
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    /** AAE の自前 ElapsedTimeTracker に相当。addMaxItems はパッケージプライベート (本物と同じ)。 */
+    private static final class ForeignTimeTracker {
+        long max;
+
+        void addMaxItems(long amount, AEKeyType type) {
+            max += amount;
+        }
+    }
+
+    /** AE2 の TaskProgress に相当 (long の value フィールドだけが要る)。 */
+    private static final class ForeignTaskProgress {
+        long value;
+
+        ForeignTaskProgress(long value) {
+            this.value = value;
+        }
+    }
+
+    /** AAE の ExecutingCraftingJob に相当するフィールド構造。 */
+    private static final class ForeignExecutingJob {
+        final Map<appeng.api.crafting.IPatternDetails, ForeignTaskProgress> tasks = new HashMap<>();
+        final appeng.crafting.inv.ListCraftingInventory waitingFor =
+                new appeng.crafting.inv.ListCraftingInventory(what -> {
+                });
+        final ForeignTimeTracker timeTracker = new ForeignTimeTracker();
+    }
+
+    /** AAE の AdvCraftingCPULogic に相当するフィールド構造。 */
+    private static final class FakeForeignCpuLogic {
+        final ForeignExecutingJob job = new ForeignExecutingJob();
+        final appeng.crafting.inv.ListCraftingInventory inventory =
+                new appeng.crafting.inv.ListCraftingInventory(what -> {
+                });
+        boolean dirty;
+
+        public void markDirty() {
+            dirty = true;
+        }
+    }
+
+    /**
      * 完成品待ち台帳の BigInteger 会計 (PR #3) の回帰テスト。
      *
      * <ol>

@@ -1,7 +1,6 @@
 package jp.main.taikun.insaneae.quantum;
 
 import appeng.api.crafting.IPatternDetails;
-import appeng.crafting.execution.ElapsedTimeTracker;
 import appeng.crafting.inv.ListCraftingInventory;
 
 /**
@@ -23,9 +22,11 @@ import appeng.crafting.inv.ListCraftingInventory;
  * <p>そこで「ジョブから何が要るか」だけをここに定義し、CPU ごとの差は実装側に閉じ込める。
  * 新しい CPU に対応するときは<b>この窓口の実装を 1 つ足して、注入点を 1 つ増やすだけ</b>で済む。</p>
  *
- * <p>幸い、抱えている中身の型は {@link ListCraftingInventory} も {@link ElapsedTimeTracker} も
- * {@link IPatternDetails} も<b>AE2 のものがそのまま使われている</b> (複製されているのは
- * 入れ物のクラスだけ) ので、抽象化が要るのは「どこから取り出すか」だけになる。</p>
+ * <p>抱えている中身の型は {@link ListCraftingInventory} も {@link IPatternDetails} も
+ * <b>AE2 のものがそのまま使われている</b>ことが多いが、進捗カウンタ
+ * ({@code ElapsedTimeTracker}) だけは Advanced AE が自前のコピーを持っている
+ * (1.3.6 / 1.6.12 で確認)。そのためカウンタは型を決めず {@link Object} で受け渡し、
+ * 呼び方の差は {@link TimeTrackerAdapter} が吸収する。</p>
  *
  * @see Ae2CraftingJobView       AE2 本体のクラフト CPU 用 (コンパイル時に型が分かる)
  * @see ReflectiveCraftingJobView 複製された CPU 用 (フィールド名で辿る)
@@ -38,8 +39,11 @@ public interface CraftingJobView {
     /** 完成待ちのアイテム。ここに入れておかないと CPU がクラフト結果を受け取らない。 */
     ListCraftingInventory getWaitingFor();
 
-    /** 進捗表示用のカウンタ。 */
-    ElapsedTimeTracker getTimeTracker();
+    /**
+     * 進捗表示用のカウンタ。AE2 の {@code ElapsedTimeTracker} とは限らない
+     * (Advanced AE は自前のコピーを持つ) ので、{@link TimeTrackerAdapter} 経由で触ること。
+     */
+    Object getTimeTracker();
 
     /** 保存が必要になったことを CPU に伝える。 */
     void markDirty();
