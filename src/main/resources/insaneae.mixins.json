@@ -7,6 +7,7 @@
   "_comment": "壊れると危険な注入 (容量・スレッド上限・ツールチップ) はこちら。required=true なので失敗したら起動時に落ちる。加速カードの速度倍率だけは insaneae.speed.mixins.json に分けてあり、そちらは他 Mod と衝突しても落ちない。",
   "mixins": [
     "BasicCellInventoryMixin",
+    "ConfigInventoryAccessor",
     "CraftingCPUClusterMixin",
     "CraftingCpuLogicMixin",
     "CraftingUnitThreadLimitMixin",

@@ -14,6 +14,8 @@ import jp.main.taikun.insaneae.InsaneAE;
 import jp.main.taikun.insaneae.charger.ImprovedChargerBlockEntity;
 import jp.main.taikun.insaneae.crafting.InsaneAcceleratorType;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
+import jp.main.taikun.insaneae.menu.InsaneInterfaceMenu;
+import jp.main.taikun.insaneae.menu.InsanePatternProviderMenu;
 import jp.main.taikun.insaneae.menu.QuantumCpuMenu;
 import jp.main.taikun.insaneae.registries.ModBlockEntities;
 import jp.main.taikun.insaneae.registries.ModBlocks;
@@ -93,7 +95,14 @@ public final class InsaneAEClient {
         event.enqueueWork(() -> ModBlocks.allCraftingBlocks()
                 .forEach(block -> ItemBlockRenderTypes.setRenderLayer(block, RenderType.cutout())));
         event.enqueueWork(() -> InitScreens.register(
-                QuantumCpuMenu.TYPE, QuantumCpuScreen::new, "/screens/insaneae/quantum_cpu.json"));
+                QuantumCpuMenu.TYPE, QuantumCpuScreen<QuantumCpuMenu>::new,
+                "/screens/insaneae/quantum_cpu.json"));
+        event.enqueueWork(() -> InitScreens.register(
+                InsaneInterfaceMenu.TYPE, InsaneInterfaceScreen::new, "/screens/insaneae/insane_interface.json"));
+        // 特大パターンプロバイダーは画面クラスごと Quantum CPU と共用 (レイアウトも同じ)。
+        event.enqueueWork(() -> InitScreens.register(
+                InsanePatternProviderMenu.TYPE, QuantumCpuScreen<InsanePatternProviderMenu>::new,
+                "/screens/insaneae/insane_pattern_provider.json"));
     }
 
     /** formed 状態のブロックモデルを、階層色の発光レイヤを持つマルチブロック用モデルに差し替える。 */

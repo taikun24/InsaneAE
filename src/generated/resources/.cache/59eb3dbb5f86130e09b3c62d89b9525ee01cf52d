@@ -1,4 +1,4 @@
-// 1.20.1	2026-07-26T00:03:34.5833237	Loot Tables
+// 1.20.1	2026-08-10T12:35:21.8579621	Loot Tables
 bcf8b361567e2e2b0152c1d32f1f1dc1c5359893 data/insaneae/loot_tables/blocks/16g_crafting_storage.json
 e8b7d85e93a05285bfb588a5791407f25f6dcf9e data/insaneae/loot_tables/blocks/16k_crafting_accelerator.json
 7b19fc266cc2173f6c1272d2c6c7c864c19844b5 data/insaneae/loot_tables/blocks/16m_crafting_accelerator.json
@@ -41,6 +41,8 @@ c6ab7c8be110e658433587532829eed3902029a9 data/insaneae/loot_tables/blocks/elite_
 165464d8a9a9337c07d7377fd170e4bcf596df59 data/insaneae/loot_tables/blocks/hyperdense_energy_cell.json
 54af8a5ec5caca2f682e9c6003c4462cf19ed51b data/insaneae/loot_tables/blocks/hypernova_energy_cell.json
 69371db52fda1df9071030a968f71bc57de590e9 data/insaneae/loot_tables/blocks/improved_charger.json
+c3728cf98a59b1e7e40e7897b271e1cdbca3ff1e data/insaneae/loot_tables/blocks/insane_interface.json
+436262c02ef84a8ce192e8214c169ec7685b83bf data/insaneae/loot_tables/blocks/insane_pattern_provider.json
 8e8f5f125cc566eb486e5d7001daaf184594b3af data/insaneae/loot_tables/blocks/neutron_energy_cell.json
 e390270b446a1ebce8d71e610170d0003d7d74cb data/insaneae/loot_tables/blocks/nova_energy_cell.json
 9795d511cb1bba0f7bd0362f813d7af56d84d106 data/insaneae/loot_tables/blocks/pulsar_energy_cell.json

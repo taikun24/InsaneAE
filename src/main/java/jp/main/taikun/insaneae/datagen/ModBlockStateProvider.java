@@ -87,6 +87,17 @@ public class ModBlockStateProvider extends BlockStateProvider {
         }
         simpleBlock(ModBlocks.QUANTUM_CPU.get(), handwritten("quantum_cpu"));
         simpleBlock(ModBlocks.IMPROVED_CHARGER.get(), handwritten("improved_charger"));
+
+        // 超特大インターフェイスはただのキューブ。テクスチャは AE2 の ME インターフェイスの
+        // 色相を回したもので、1.21.1 ブランチの tools/gen_interface_texture.py が生成している
+        // (画像は版に依存しないので、生成済みの PNG をそのまま持ってきている)。
+        simpleBlock(ModBlocks.INSANE_INTERFACE.get(), models().cubeAll("insane_interface",
+                ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/insane_interface")));
+
+        // 特大パターンプロバイダーも同様に、AE2 のパターンプロバイダの色相を回したキューブ。
+        // tools/gen_pattern_provider_texture.py が生成している。
+        simpleBlock(ModBlocks.INSANE_PATTERN_PROVIDER.get(), models().cubeAll("insane_pattern_provider",
+                ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/insane_pattern_provider")));
     }
 
     /**

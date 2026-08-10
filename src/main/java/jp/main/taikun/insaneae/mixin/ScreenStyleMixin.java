@@ -35,7 +35,8 @@ import java.util.Set;
  * 必要ならスタイル JSON に位置を書いて正しく表示させられる。</p>
  *
  * <p>他の画面 (AE2 本体や他 Mod のもの) は素の挙動のまま。判定は「このスタイルに
- * {@code nextPage} があるか」= Quantum CPU のスタイルかどうかで行う。</p>
+ * {@code nextPage} があるか」= 自前の画面 (Quantum CPU / 超特大インターフェイス) の
+ * スタイルかどうかで行う。</p>
  */
 @Mixin(value = ScreenStyle.class, remap = false)
 public abstract class ScreenStyleMixin {
@@ -47,7 +48,7 @@ public abstract class ScreenStyleMixin {
     @Unique
     private static final Set<String> INSANEAE_REPORTED = new HashSet<>();
 
-    /** Quantum CPU のスタイルだけを見分けるための目印 (こちらの JSON にしかない ID)。 */
+    /** 自前の画面のスタイルだけを見分けるための目印 (こちらの JSON にしかない ID)。 */
     @Unique
     private static final String INSANEAE_MARKER = "nextPage";
 
@@ -61,7 +62,7 @@ public abstract class ScreenStyleMixin {
             return;   // 定義済み、または Quantum CPU 以外の画面 → AE2 の挙動のまま
         }
         if (INSANEAE_REPORTED.add(id)) {
-            INSANEAE_LOG.warn("InsaneAE: Quantum CPU の画面スタイルに widget \"{}\" が無い"
+            INSANEAE_LOG.warn("InsaneAE: 自前の画面スタイルに widget \"{}\" が無い"
                     + " (他の AE2 アドオンが PatternProviderScreen に足したもの)。"
                     + " 画面外に逃がして表示だけ諦める。", id);
         }

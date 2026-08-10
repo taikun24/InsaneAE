@@ -64,7 +64,13 @@ public class QuantumCpuMenu extends PatternProviderMenu {
     private PagedPatternInventory patternWindow;
 
     public QuantumCpuMenu(int id, Inventory playerInventory, PatternProviderLogicHost host) {
-        super(TYPE, id, playerInventory, host);
+        this(TYPE, id, playerInventory, host);
+    }
+
+    /** 特大パターンプロバイダー ({@code InsanePatternProviderMenu}) が MenuType を差し替えて使う。 */
+    protected QuantumCpuMenu(MenuType<? extends QuantumCpuMenu> type, int id, Inventory playerInventory,
+            PatternProviderLogicHost host) {
+        super(type, id, playerInventory, host);
 
         registerClientAction(ACTION_SET_PAGE, Integer.class, this::applyPage);
         // アップグレードスロット。

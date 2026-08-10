@@ -1,0 +1,87 @@
+{
+  "$schema": "../schema.json",
+  "$comment": "超特大インターフェイスの画面。StyleManager が ae2 名前空間固定で読むので assets/ae2 に置いている。CONFIG / STORAGE の座標は InsaneInterfaceScreen の定数と揃えること (実際の配置は 1 ページぶんだけ画面側が上書きする)。9x3 ずつを 3 ページに分けているので、ページ送り (prevPage/nextPage/page) と歯車 (setAmountMode) は在庫枠の下 top=158 の 1 行にまとめてある。プレイヤーインベントリは bottom=84 = top 191 から。",
+  "includes": [
+    "../common/common.json",
+    "../common/player_inventory.json",
+    "../common/toolbox.json"
+  ],
+  "generatedBackground": {
+    "width": 176,
+    "height": 275
+  },
+  "slots": {
+    "CONFIG": {
+      "$comment": "9x3 の 1 ページぶんだけ表示する。実際の配置は InsaneInterfaceScreen が上書きする。",
+      "left": 8,
+      "top": 32,
+      "grid": "BREAK_AFTER_9COLS"
+    },
+    "STORAGE": {
+      "left": 8,
+      "top": 102,
+      "grid": "BREAK_AFTER_9COLS"
+    }
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "block.insaneae.insane_interface"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    },
+    "interface_config": {
+      "$comment": "AE2 本体と同じ訳語を使うため ae2 のキーをそのまま借りる。",
+      "text": {
+        "translate": "gui.ae2.Config"
+      },
+      "position": {
+        "left": 8,
+        "top": 20
+      }
+    },
+    "interface_stored_items": {
+      "text": {
+        "translate": "gui.ae2.StoredItems"
+      },
+      "position": {
+        "left": 8,
+        "top": 90
+      }
+    },
+    "page": {
+      "$comment": "中身は InsaneInterfaceScreen が毎フレーム差し替える。ページ送りボタンと同じ行。",
+      "text": {
+        "text": "1/3"
+      },
+      "color": "MUTED_TEXT_COLOR",
+      "align": "CENTER",
+      "position": {
+        "left": 137,
+        "top": 163
+      }
+    }
+  },
+  "widgets": {
+    "openPriority": {
+      "left": 154,
+      "top": 2
+    },
+    "setAmountMode": {
+      "$comment": "押してから設定枠をクリックするとストック数の入力画面が開く。",
+      "left": 8,
+      "top": 158
+    },
+    "prevPage": {
+      "left": 104,
+      "top": 158
+    },
+    "nextPage": {
+      "left": 154,
+      "top": 158
+    }
+  }
+}

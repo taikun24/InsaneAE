@@ -4,6 +4,8 @@ import appeng.blockentity.crafting.CraftingBlockEntity;
 import appeng.blockentity.networking.EnergyCellBlockEntity;
 import jp.main.taikun.insaneae.InsaneAE;
 import jp.main.taikun.insaneae.charger.ImprovedChargerBlockEntity;
+import jp.main.taikun.insaneae.iface.InsaneInterfaceBlockEntity;
+import jp.main.taikun.insaneae.provider.InsanePatternProviderBlockEntity;
 import jp.main.taikun.insaneae.energy.SolarPanelBlock;
 import jp.main.taikun.insaneae.energy.SolarPanelBlockEntity;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
@@ -70,6 +72,18 @@ public class ModBlockEntities {
                             ModBlocks.IMPROVED_CHARGER.get())
                     .build(null));
 
+    public static final RegistryObject<BlockEntityType<InsaneInterfaceBlockEntity>> INSANE_INTERFACE =
+            BLOCK_ENTITY_TYPES.register("insane_interface", () -> BlockEntityType.Builder
+                    .of((pos, state) -> new InsaneInterfaceBlockEntity(insaneInterfaceType(), pos, state),
+                            ModBlocks.INSANE_INTERFACE.get())
+                    .build(null));
+
+    public static final RegistryObject<BlockEntityType<InsanePatternProviderBlockEntity>> INSANE_PATTERN_PROVIDER =
+            BLOCK_ENTITY_TYPES.register("insane_pattern_provider", () -> BlockEntityType.Builder
+                    .of((pos, state) -> new InsanePatternProviderBlockEntity(insanePatternProviderType(), pos, state),
+                            ModBlocks.INSANE_PATTERN_PROVIDER.get())
+                    .build(null));
+
     /** 自己参照コンパイルエラーを避けるための遅延アクセサ。 */
     private static BlockEntityType<CraftingBlockEntity> type() {
         return CRAFTING_STORAGE.get();
@@ -89,6 +103,14 @@ public class ModBlockEntities {
 
     private static BlockEntityType<ImprovedChargerBlockEntity> improvedChargerType() {
         return IMPROVED_CHARGER.get();
+    }
+
+    private static BlockEntityType<InsaneInterfaceBlockEntity> insaneInterfaceType() {
+        return INSANE_INTERFACE.get();
+    }
+
+    private static BlockEntityType<InsanePatternProviderBlockEntity> insanePatternProviderType() {
+        return INSANE_PATTERN_PROVIDER.get();
     }
 
     public static void register(IEventBus bus) {
@@ -122,5 +144,14 @@ public class ModBlockEntities {
                         (level, pos, state, be) -> be.serverTick()));
         ModBlocks.IMPROVED_CHARGER.get().setBlockEntity(
                 ImprovedChargerBlockEntity.class, IMPROVED_CHARGER.get(), null, null);
+        // 超特大インターフェイスの補充処理は InterfaceLogic の Ticker (IGridTickable) が
+        // グリッド側から呼ぶので、ブロックの ticker は不要。
+        ModBlocks.INSANE_INTERFACE.get().setBlockEntity(
+                InsaneInterfaceBlockEntity.class, INSANE_INTERFACE.get(), null, null);
+
+        // 特大パターンプロバイダーは、まとめてあるパターン更新を流すために毎 tick 動く。
+        ModBlocks.INSANE_PATTERN_PROVIDER.get().setBlockEntity(
+                InsanePatternProviderBlockEntity.class, INSANE_PATTERN_PROVIDER.get(), null,
+                (level, pos, state, be) -> be.serverTick());
     }
 }
