@@ -15,7 +15,14 @@
     "IOPortBlockEntityMixin",
     "MolecularAssemblerBlockEntityMixin",
     "PatternProviderMenuMixin",
-    "compat.AdvCraftingCpuLogicMixin"
+    "compat.AAEQuantumCrafterMixin",
+    "compat.AAEReactionChamberMixin",
+    "compat.AdvCraftingCpuLogicMixin",
+    "compat.ExCircuitCutterMixin",
+    "compat.ExCraftingThreadMixin",
+    "compat.ExFormationPlaneMixin",
+    "compat.ExIOPortMixin",
+    "compat.ExInscriberThreadMixin"
   ],
   "client": [
     "ScreenStyleMixin"
