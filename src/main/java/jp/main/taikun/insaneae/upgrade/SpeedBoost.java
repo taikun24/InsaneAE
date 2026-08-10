@@ -1,6 +1,11 @@
 package jp.main.taikun.insaneae.upgrade;
 
 import appeng.api.upgrades.IUpgradeInventory;
+import appeng.api.upgrades.IUpgradeableObject;
+
+import java.lang.reflect.Field;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 取り付けられている加速カードから機械の速度倍率を求めるヘルパー。Mixin から呼ばれる。
@@ -43,6 +48,58 @@ public final class SpeedBoost {
             }
         }
         return total;
+    }
+
+    /**
+     * 「{@code host} フィールドに機械本体を持つ作業スレッド」から速度倍率を求める。
+     *
+     * <p>ExtendedAE の {@code InscriberThread} のように、速度計算が機械本体ではなく
+     * 内部スレッドのクラスにあり、しかも {@code host} フィールドの型が相手 Mod のクラス
+     * (コンパイル時に参照できない) の場合に使う。フィールドはクラスごとに 1 回だけ
+     * リフレクションで探して覚えておくので、毎 tick 呼んでも軽い。</p>
+     *
+     * <p>host が見つからない・{@link IUpgradeableObject} でない場合は 1 (= 効かないだけ)。</p>
+     */
+    public static int multiplierFromHost(Object owner) {
+        Field field = HOST_FIELDS.computeIfAbsent(owner.getClass(), SpeedBoost::findHostField);
+        if (field == MISSING) {
+            return 1;
+        }
+        try {
+            return field.get(owner) instanceof IUpgradeableObject upgradeable
+                    ? multiplier(upgradeable.getUpgrades())
+                    : 1;
+        } catch (IllegalAccessException e) {
+            return 1;
+        }
+    }
+
+    /** {@code host} フィールドが無いクラスの印 (ConcurrentHashMap は null を持てない)。 */
+    private static final Field MISSING;
+
+    static {
+        try {
+            MISSING = SpeedBoost.class.getDeclaredField("HOST_FIELDS");
+        } catch (NoSuchFieldException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static final Map<Class<?>, Field> HOST_FIELDS = new ConcurrentHashMap<>();
+
+    private static Field findHostField(Class<?> type) {
+        for (Class<?> c = type; c != null && c != Object.class; c = c.getSuperclass()) {
+            try {
+                Field field = c.getDeclaredField("host");
+                field.setAccessible(true);
+                return field;
+            } catch (NoSuchFieldException ignored) {
+                // 親クラスを見る
+            } catch (RuntimeException e) {
+                break;  // InaccessibleObjectException など。効かないだけに留める。
+            }
+        }
+        return MISSING;
     }
 
     /** int の範囲で頭打ちにする掛け算 (オーバーフローで速度が負になるのを防ぐ)。 */

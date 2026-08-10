@@ -265,6 +265,40 @@ public final class InsaneAETestPlots {
     }
 
     /**
+     * 自作の ME ストレージセルに<b>アップグレードカードが挿せる</b>ことを確かめる。
+     *
+     * <p>どのカードを挿せるかは {@code Upgrades.add} での登録がすべてで、
+     * 登録が無いとセルワークベンチが何も受け付けない
+     * (「追加されたセルに拡張カードを挿せない」不具合の回帰テスト)。
+     * ワールドは使わないが、他のプロットと同じ場所で走らせる。</p>
+     */
+    @TestPlot("insaneae_cell_upgrades")
+    public static void cellUpgrades(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.test(helper -> helper.succeedIf(() -> {
+            var itemCell = ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_1G).get();
+            var fluidCell = ModCells.FLUID_CELLS.get(InsaneCraftingUnitType.STORAGE_1G).get();
+            var portable = ModCells.PORTABLE_ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_1G).get();
+
+            helper.check(appeng.api.upgrades.Upgrades.getMaxInstallable(
+                            appeng.core.definitions.AEItems.FUZZY_CARD, itemCell) > 0,
+                    "アイテムセルにあいまいカードを登録していない");
+            helper.check(appeng.api.upgrades.Upgrades.getMaxInstallable(
+                            appeng.core.definitions.AEItems.VOID_CARD, itemCell) > 0,
+                    "アイテムセルに超過破棄カードを登録していない");
+            helper.check(appeng.api.upgrades.Upgrades.getMaxInstallable(
+                            appeng.core.definitions.AEItems.INVERTER_CARD, fluidCell) > 0,
+                    "液体セルに白黒リストカードを登録していない");
+            helper.check(appeng.api.upgrades.Upgrades.getMaxInstallable(
+                            appeng.core.definitions.AEItems.EQUAL_DISTRIBUTION_CARD, fluidCell) > 0,
+                    "液体セルに均等配分カードを登録していない");
+            helper.check(appeng.api.upgrades.Upgrades.getMaxInstallable(
+                            appeng.core.definitions.AEItems.ENERGY_CARD, portable) == 2,
+                    "ポータブルセルにエネルギーカード ×2 を登録していない");
+        }));
+    }
+
+    /**
      * <b>パターンの受け入れルール</b>を確かめる。
      *
      * <ol>

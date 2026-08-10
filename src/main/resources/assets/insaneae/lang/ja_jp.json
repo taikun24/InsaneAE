@@ -14,6 +14,8 @@
   "item.insaneae.hypersonic_card": "ハイパーソニック加速カード",
   "item.insaneae.warp_card": "ワープ加速カード",
   "item.insaneae.speed_card.tooltip": "処理速度 %s倍",
+  "insaneae.upgrade_group.extendedae": "ExtendedAEの機械",
+  "insaneae.upgrade_group.advanced_ae": "AdvancedAEの機械",
   "block.insaneae.quantum_cpu": "クァンタムCPU",
   "gui.insaneae.quantum_cpu.previous_page": "前のページ",
   "gui.insaneae.quantum_cpu.next_page": "次のページ",

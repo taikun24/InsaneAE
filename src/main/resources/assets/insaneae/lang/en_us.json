@@ -14,6 +14,8 @@
   "item.insaneae.hypersonic_card": "Hypersonic Acceleration Card",
   "item.insaneae.warp_card": "Warp Acceleration Card",
   "item.insaneae.speed_card.tooltip": "Machine speed ×%s",
+  "insaneae.upgrade_group.extendedae": "ExtendedAE Machines",
+  "insaneae.upgrade_group.advanced_ae": "AdvancedAE Machines",
   "block.insaneae.quantum_cpu": "Quantum CPU",
   "gui.insaneae.quantum_cpu.previous_page": "Previous page",
   "gui.insaneae.quantum_cpu.next_page": "Next page",
