@@ -28,6 +28,7 @@ import appeng.menu.locator.MenuLocator;
 import jp.main.taikun.insaneae.menu.QuantumCpuMenu;
 import jp.main.taikun.insaneae.integration.aco.OptionalAcoBigIntegerIntegration;
 import jp.main.taikun.insaneae.integration.aco.PendingOutputLedger;
+import jp.main.taikun.insaneae.integration.aco.PendingOutputNbt;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
 import jp.main.taikun.insaneae.upgrade.SpeedBoost;
@@ -146,11 +147,16 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
     }
 
     /** 掛け算結果をlongへ戻さず、完成品の正確な量を台帳へ加える。 */
-    void addPendingOutput(@Nullable AEKey what, BigInteger amount) {
+    public void addPendingOutput(@Nullable AEKey what, BigInteger amount) {
         if (what == null || amount == null || amount.signum() <= 0) {
             return;
         }
         pendingOutputs.add(what, amount);
+    }
+
+    /** 完成品待ちの現在の中身 (コピー)。ゲームテスト用。 */
+    public java.util.Map<AEKey, BigInteger> getPendingOutputs() {
+        return pendingOutputs.snapshot();
     }
 
     @Override
@@ -294,7 +300,8 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
         upgrades.writeToNBT(data, NBT_UPGRADES);
 
         // BigIntegerはbyte[]として保存する。旧ListTagはloadTag側で移行する。
-        data.put(NBT_PENDING_BIG, pendingOutputs.save());
+        // 形式は台帳の実装 (ACO / 内蔵) に任せず、常に InsaneAE 側で固定する。
+        data.put(NBT_PENDING_BIG, PendingOutputNbt.save(pendingOutputs));
     }
 
     @Override
@@ -305,7 +312,8 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
 
         pendingOutputs.clear();
         if (data.contains(NBT_PENDING_BIG, Tag.TAG_COMPOUND)) {
-            pendingOutputs.load(data.getCompound(NBT_PENDING_BIG));
+            // 読めないエントリはスキップされる (例外は投げない)。ここで投げるとチャンク読込が壊れる。
+            PendingOutputNbt.load(pendingOutputs, data.getCompound(NBT_PENDING_BIG));
         } else {
             // 旧バージョンのlong台帳を読み、最初の保存でBigInteger形式へ移行する。
             ListTag pending = data.getList(NBT_PENDING, Tag.TAG_COMPOUND);

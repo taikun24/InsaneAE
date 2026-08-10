@@ -346,6 +346,100 @@ public final class InsaneAETestPlots {
     }
 
     /**
+     * 完成品待ち台帳の BigInteger 会計 (PR #3) の回帰テスト。
+     *
+     * <ol>
+     *   <li>long を超える量を積んでも欠けない (クランプ・折り返しが無い)</li>
+     *   <li>NBT の保存 → 読み込みで量が 1 個もずれない</li>
+     *   <li>壊れたエントリ (解決できないキー・負の量・空の量) は<b>例外を投げず</b>
+     *       そのエントリだけ捨てる — Mod を抜いたらチャンクが壊れる、が最悪の後退なので</li>
+     *   <li>旧 (long 形式) の NBT から移行できる</li>
+     *   <li>ネットワークに入り切らないぶんは serverTick 後も台帳に正確に残る</li>
+     * </ol>
+     */
+    @TestPlot("insaneae_bigint_pending_outputs")
+    public static void bigintPendingOutputs(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("0 0 0");
+        plot.blockState("1 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        // Long.MAX_VALUE + 5。long のどこにも収まらない代表値。
+        final java.math.BigInteger overLong =
+                java.math.BigInteger.valueOf(Long.MAX_VALUE).add(java.math.BigInteger.valueOf(5));
+        final AEItemKey log = AEItemKey.of(Items.OAK_LOG);
+
+        plot.test(helper -> {
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(1, 0, 0));
+
+                // 1) long 超の量が正確に載る
+                cpu.addPendingOutput(log, overLong);
+                helper.check(overLong.equals(cpu.getPendingOutputs().get(log)),
+                        "long 超の量が正確に積まれていない: " + cpu.getPendingOutputs().get(log));
+
+                // 2) NBT 往復で 1 個もずれない
+                var tag = new net.minecraft.nbt.CompoundTag();
+                cpu.saveAdditional(tag);
+                cpu.loadTag(tag);
+                helper.check(overLong.equals(cpu.getPendingOutputs().get(log)),
+                        "NBT 往復で量がずれた: " + cpu.getPendingOutputs().get(log));
+
+                // 3) 壊れたエントリは例外なしで捨てられ、正常なエントリは残る
+                var broken = tag.copy();
+                var entries = broken.getCompound("pendingOutputsBig")
+                        .getList("entries", net.minecraft.nbt.Tag.TAG_COMPOUND);
+                var badKey = entries.getCompound(0).copy();
+                badKey.getCompound("key").putString("id", "nomod:removed_item");
+                entries.add(badKey);
+                var badAmount = entries.getCompound(0).copy();
+                badAmount.putByteArray("amount",
+                        java.math.BigInteger.valueOf(-5).toByteArray());
+                entries.add(badAmount);
+                cpu.loadTag(broken); // ここで例外が出たらテストごと落ちる = 検出できる
+                helper.check(overLong.equals(cpu.getPendingOutputs().get(log)),
+                        "壊れたエントリ混在で正常なエントリまで壊れた: " + cpu.getPendingOutputs().get(log));
+                helper.check(cpu.getPendingOutputs().size() == 1,
+                        "壊れたエントリが捨てられていない: " + cpu.getPendingOutputs());
+
+                // 4) 旧 long 形式から移行できる
+                var legacy = new net.minecraft.nbt.CompoundTag();
+                cpu.saveAdditional(legacy);
+                legacy.remove("pendingOutputsBig");
+                var legacyList = new net.minecraft.nbt.ListTag();
+                legacyList.add(appeng.api.stacks.GenericStack.writeTag(
+                        new appeng.api.stacks.GenericStack(log, 123_456_789L)));
+                legacy.put("pendingOutputs", legacyList);
+                cpu.loadTag(legacy);
+                helper.check(java.math.BigInteger.valueOf(123_456_789L)
+                                .equals(cpu.getPendingOutputs().get(log)),
+                        "旧形式の移行に失敗: " + cpu.getPendingOutputs().get(log));
+
+                // 5) の準備: long 超の量に戻す
+                cpu.loadTag(tag);
+            });
+
+            // serverTick が走る (このネットワークにはストレージが無いので 1 個も入らない)
+            sequence.thenIdle(2);
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(1, 0, 0));
+                var grid = helper.getGrid(BlockPos.ZERO);
+                long stored = grid.getStorageService().getInventory()
+                        .getAvailableStacks().get(log);
+                // 入ったぶん + 台帳の残り = 元の量 (1 個も消えていない)
+                var pending = cpu.getPendingOutputs().getOrDefault(log, java.math.BigInteger.ZERO);
+                var total = pending.add(java.math.BigInteger.valueOf(stored));
+                helper.check(overLong.equals(total),
+                        "serverTick 後に量が合わない: 台帳 " + pending + " + ME " + stored);
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    /**
      * まとめクラフトが<b>材料以上に作らない</b>ことを確かめる (増殖の回帰テスト)。
      *
      * <p>{@code QuantumBulkCrafting.extractInputs} は在庫が足りなければ<b>黙って回数を減らす</b>。

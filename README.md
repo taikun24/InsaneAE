@@ -25,7 +25,7 @@ Minecraft のバージョンごとにブランチを分けています。**不�
 | [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) | 15.2.16 以上 (必須) |
 | [MEGA Cells](https://github.com/62832/MEGACells) | 2.4.6 以上 (必須) |
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) | 1.4 以上 (任意 / 化学物質セル用) |
-| [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) | 1.5.9 以上 (任意 / BigInteger量会計用) |
+| [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) | 1.5.11 以上 (任意 / BigInteger量会計用) |
 
 AE2 の内部 (`BasicCellInventory`、`CraftingCPUCluster`、ツールチップ描画など) に Mixin で踏み込んでいるため、
 AE2 のバージョン範囲は実際に検証した `[15.2.16,16)` に固定しています。
