@@ -490,6 +490,62 @@ public final class InsaneAETestPlots {
         });
     }
 
+    /**
+     * 超特大インターフェイスの吸い込みモード。
+     *
+     * <p>押し込み ({@code IItemHandler#insertItem}) は送り手が 1 tick に 1 スタックずつしか
+     * 渡してこないため、スタックサイズが搬入速度の上限になる。吸い込みモードは受け手側から
+     * 1 tick に何度も取り出すので、<b>複数スタックを 1 度にまとめて</b> ME へ移せる。
+     * ここでは 10 スタックが 2 tick 以内に全部移ることを見る (押し込みなら 10 tick かかる量)。
+     * 既定 (無効) では吸わないことも見る。</p>
+     */
+    @TestPlot("insaneae_interface_pull_mode")
+    public static void insaneInterfacePullMode(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,2] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> drive.getInternalInventory().addItems(
+                new ItemStack(ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_1G).get())));
+        plot.blockState("2 0 0", ModBlocks.INSANE_INTERFACE.get().defaultBlockState());
+
+        final int stacks = 10;
+        final long total = stacks * 64L;
+        ItemStack[] chestContents = new ItemStack[stacks];
+        for (int i = 0; i < stacks; i++) {
+            chestContents[i] = new ItemStack(Items.IRON_INGOT, 64);
+        }
+        plot.chest("2 1 0", chestContents);
+
+        plot.test(helper -> {
+            var pos = new BlockPos(2, 0, 0);
+            var sequence = helper.startSequence();
+
+            // グリッドの起動 (チャネル割り当てまで) を待つ。
+            sequence.thenIdle(10);
+
+            sequence.thenExecute(() -> {
+                helper.check(countInNetwork(helper, Items.IRON_INGOT) == 0,
+                        "吸い込みモードが無効なのに吸っている", pos);
+                ((InsaneInterfaceBlockEntity) helper.getBlockEntity(pos)).setPullMode(true);
+            });
+
+            sequence.thenIdle(2);
+            sequence.thenExecute(() -> {
+                long inNetwork = countInNetwork(helper, Items.IRON_INGOT);
+                helper.check(inNetwork == total,
+                        "2 tick で " + stacks + " スタック全部が移っていない: " + inNetwork + " / " + total
+                                + " (1 tick 1 スタックの壁を超えられていない)", pos);
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    private static long countInNetwork(PlotTestHelper helper, net.minecraft.world.item.Item item) {
+        var counter = new KeyCounter();
+        helper.getGrid(BlockPos.ZERO).getStorageService().getInventory().getAvailableStacks(counter);
+        return counter.get(AEItemKey.of(item));
+    }
+
     /** その位置のブロックが capability を公開していて、かつ同じグリッドに入っていること。 */
     private static void checkOnGrid(PlotTestHelper helper, BlockPos pos, IGrid grid) {
         String name = helper.getBlockState(pos).getBlock().getName().getString();

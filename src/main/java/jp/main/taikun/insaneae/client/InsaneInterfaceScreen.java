@@ -60,6 +60,7 @@ public class InsaneInterfaceScreen extends UpgradeableScreen<InsaneInterfaceMenu
     private final PageButton prevPage;
     private final PageButton nextPage;
     private final AmountModeButton amountMode;
+    private final PullModeButton pullMode;
 
     private int page;
 
@@ -77,9 +78,11 @@ public class InsaneInterfaceScreen extends UpgradeableScreen<InsaneInterfaceMenu
         nextPage = new PageButton(Icon.ARROW_RIGHT,
                 Component.translatable("gui.insaneae.insane_interface.next_page"), btn -> turnPage(1));
         amountMode = new AmountModeButton();
+        pullMode = new PullModeButton(btn -> menu.togglePullMode());
         widgets.add("prevPage", prevPage);
         widgets.add("nextPage", nextPage);
         widgets.add("setAmountMode", amountMode);
+        widgets.add("togglePullMode", pullMode);
     }
 
     @Override
@@ -177,6 +180,7 @@ public class InsaneInterfaceScreen extends UpgradeableScreen<InsaneInterfaceMenu
         setTextContent("page", Component.literal((page + 1) + "/" + PAGES));
         prevPage.active = page > 0;
         nextPage.active = page < PAGES - 1;
+        pullMode.setState(menu.isPullMode());
     }
 
     /**
@@ -213,6 +217,31 @@ public class InsaneInterfaceScreen extends UpgradeableScreen<InsaneInterfaceMenu
         @Override
         protected Icon getIcon() {
             return icon;
+        }
+    }
+
+    /**
+     * 吸い込みモードの切り替えボタン。状態はサーバ持ち ({@code InsaneInterfaceBlockEntity}) で、
+     * ここは表示と切り替え要求だけ。
+     */
+    private static final class PullModeButton extends IconButton {
+
+        private boolean state;
+
+        private PullModeButton(Button.OnPress onPress) {
+            super(onPress);
+        }
+
+        private void setState(boolean state) {
+            this.state = state;
+            setMessage(Component.translatable(state
+                    ? "gui.insaneae.insane_interface.pull_mode_on"
+                    : "gui.insaneae.insane_interface.pull_mode_off"));
+        }
+
+        @Override
+        protected Icon getIcon() {
+            return state ? Icon.AUTO_EXPORT_ON : Icon.AUTO_EXPORT_OFF;
         }
     }
 
