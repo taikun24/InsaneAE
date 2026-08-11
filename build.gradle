@@ -155,6 +155,10 @@ repositories {
     maven {
         url "https://cursemaven.com"
     }
+    maven {
+        // AE2 は Modrinth の maven から取る (cursemaven は AE2 の新しいファイルが引けないことがある)
+        url "https://api.modrinth.com/maven"
+    }
 }
 
 dependencies {
@@ -181,7 +185,7 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-    implementation fg.deobf("curse.maven:applied-energistics-2-223794:7148487")
+    implementation fg.deobf("maven.modrinth:ae2:15.4.10")
     // MEGA Cells (megacells) — 1M〜256M のクラフトストレージはこちらに委譲するため必須依存。
     implementation fg.deobf("curse.maven:mega-cells-622112:6175008")
     // Cloth Config API — MEGA Cells が mandatory 依存として要求する (無いと FML の依存解決で落ちる)。
