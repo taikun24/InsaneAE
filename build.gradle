@@ -119,6 +119,9 @@ dependencies {
     localRuntime "curse.maven:jei-238222:${jei_file}"
     testImplementation platform("org.junit:junit-bom:5.10.2")
     testImplementation "org.junit.jupiter:junit-jupiter"
+    // NeoForge ModDevが生成するMinecraft統合JARを通常JUnitの実行時にも渡す。
+    // これがないと、ComponentやICraftingUnitTypeを使う境界テストだけが実行時に欠落する。
+    testRuntimeOnly files("$buildDir/moddev/artifacts/neoforge-${neo_version}.jar")
 }
 
 tasks.named('test', Test).configure {

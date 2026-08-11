@@ -1,10 +1,8 @@
 package jp.main.taikun.insaneae.crafting;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigInteger;
-import net.minecraft.network.chat.Component;
 import org.junit.jupiter.api.Test;
 
 class BigIntegerCapacityDisplayMarkerTest {
@@ -12,23 +10,23 @@ class BigIntegerCapacityDisplayMarkerTest {
     @Test
     void formatsTwoEightEStorageBlocksAsSixteenE() {
         BigInteger sixteenEib = BigInteger.ONE.shiftLeft(64);
-        var display = BigIntegerCapacityDisplayMarker.DisplayValue.capture(sixteenEib);
-        assertEquals("16E", BigIntegerCapacityDisplayMarker.format(display));
+        var display = BigIntegerCapacityDisplayValue.capture(sixteenEib);
+        assertEquals("16E", display.format());
     }
 
     @Test
     void keepsScientificNotationForVeryLargeValues() {
         BigInteger huge = BigInteger.TEN.pow(100);
-        var display = BigIntegerCapacityDisplayMarker.DisplayValue.capture(huge);
-        assertEquals("1 × 10^100 B", BigIntegerCapacityDisplayMarker.format(display));
+        var display = BigIntegerCapacityDisplayValue.capture(huge);
+        assertEquals("1 × 10^100 B", display.format());
     }
 
     @Test
-    void carriesExactCapacityWithoutGivingUnnamedCpuAVisibleName() {
+    void markerPayloadRoundTripsExactCapacity() {
         BigInteger sixteenEib = BigInteger.ONE.shiftLeft(64);
-        Component marked = BigIntegerCapacityDisplayMarker.mark(Component.empty(), sixteenEib);
+        var display = BigIntegerCapacityDisplayValue.capture(sixteenEib);
 
-        assertEquals("", marked.getString());
-        assertTrue(BigIntegerCapacityDisplayMarker.read(marked).isPresent());
+        assertEquals(display,
+                BigIntegerCapacityDisplayValue.decode(display.encode()).orElseThrow());
     }
 }
