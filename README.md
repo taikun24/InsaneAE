@@ -48,7 +48,10 @@ AE2 のバージョン範囲は実際に検証した `[19.2.17,20)` に固定し
 
 - **ストレージセル** — アイテム / 液体 / 化学物質 (Applied Mekanistics 導入時) の 1G 〜 8E セル。
   同階層のポータブルセル、クリエイティブセルもあります。
-- **クラフトストレージ** — 1G 〜 8E。AE2 のバイト表示が溢れる問題を Mixin で回避しています。
+- **クラフトストレージ** — 1G 〜 8E。AE2 のバイト表示が 32bit で溢れる問題を Mixin で回避しています。
+  同じCPUに複数の4E以上を接続した合計は、longへ丸める前にBigIntegerで再計算します。
+  AE2互換のlong getterはLong.MAX_VALUEへ飽和しますが、連携Modは
+  `IBigCraftingCapacity#insaneae$exactStorageCapacity()`から正確な容量を取得できます。
 - **クラフト協調処理ユニット** — 16x 〜 2G。AE2 の 16 スレッド上限を外し、1 ブロックで多数の並列クラフトを担当します。
 - **Quantum CPU** — 大量クラフトを一括処理するための専用 CPU。専用の GUI 付き。
 - **BigInteger クラフト CPU** — ACO の BigInteger 計画を試す実験用 CPU。既存 Quantum CPU と同じ
