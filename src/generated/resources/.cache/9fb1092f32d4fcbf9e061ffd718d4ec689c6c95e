@@ -1,4 +1,4 @@
-// 1.20.1	2026-08-10T12:35:21.8589629	Recipes
+// 1.20.1	2026-08-11T16:07:54.9423778	Recipes
 f8e7ba079b6f21d3d7521b6ff9702bd41a990dc0 data/insaneae/advancements/recipes/chemical_storage_cell_16g.json
 c9c7164d56418d488022fde0dc161616373d371d data/insaneae/advancements/recipes/chemical_storage_cell_16p.json
 716b96e45718dbcac8f3d7903dc37d1a292052a4 data/insaneae/advancements/recipes/chemical_storage_cell_16t.json
@@ -162,6 +162,7 @@ fc7f0f23fe5eb8e23f356c474d4bfe0bfcde5d48 data/insaneae/advancements/recipes/misc
 aca6707088d3ea1029eecee4fe6ff07469d9d90a data/insaneae/advancements/recipes/misc/singularity_energy_cell.json
 ebdd916af9cc97753f455f54eb3ac889195749f4 data/insaneae/advancements/recipes/misc/solar_panel.json
 7e599450cb913a5dab265069cd2206fb509dad24 data/insaneae/advancements/recipes/misc/supernova_energy_cell.json
+4c92e01ce4d2a3e66907a1de711a2457e0c468a2 data/insaneae/advancements/recipes/misc/task_fusion_card.json
 d42970d26069de1cfef2f4de93c0f0bd8d73f4b1 data/insaneae/advancements/recipes/misc/turbo_card.json
 8bec4aef7b29258488c59dc4ab0c22aaac049183 data/insaneae/advancements/recipes/misc/ultimate_solar_panel.json
 6b2de0b5975a63c90eaa32e41509f9f216158d83 data/insaneae/advancements/recipes/misc/ultradense_energy_cell.json
@@ -365,6 +366,7 @@ e5d6b620158879e09a8d57b1ca31a3bba1a1f604 data/insaneae/recipes/quasar_energy_cel
 753ead28667625021bc5e62f7b5e7c31deb035b7 data/insaneae/recipes/singularity_energy_cell.json
 9c759c79f8e16d0ffa02ec88725cecc361ffd1e6 data/insaneae/recipes/solar_panel.json
 7dfb4bbd2ab3c63d4a773a169c4a7d371f0abe83 data/insaneae/recipes/supernova_energy_cell.json
+68445083ef13eab5cc049fe2bb71ddfa149ccf18 data/insaneae/recipes/task_fusion_card.json
 27046f8e2b2904724badb191d2cf538f2b788596 data/insaneae/recipes/turbo_card.json
 d375312cc45a7dc8c73ebed927c7856cbe8d693b data/insaneae/recipes/ultimate_solar_panel.json
 33ccf0e634f493ef8f803a9f1a7dac38659b20b4 data/insaneae/recipes/ultradense_energy_cell.json

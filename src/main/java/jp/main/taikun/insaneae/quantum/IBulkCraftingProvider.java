@@ -34,4 +34,15 @@ public interface IBulkCraftingProvider extends ICraftingProvider {
      * @return 実際に処理した回数。0 なら何も起きなかったものとして扱われる。
      */
     long pushPatternBulk(IPatternDetails details, KeyCounter[] inputHolder, long times);
+
+    /**
+     * まとめ 1 回 (1 パターン × N クラフト) を、クラフト CPU の 1 tick 予算の
+     * <b>1 操作</b>として数えてよいか (タスク統合カード)。
+     *
+     * <p>false (既定) ならクラフト回数ぶんを予算から引く。true のときの回数上限は
+     * {@link #getBulkCapacity} だけになるので、実装側が自分の予算で頭打ちにすること。</p>
+     */
+    default boolean fusesOperations() {
+        return false;
+    }
 }

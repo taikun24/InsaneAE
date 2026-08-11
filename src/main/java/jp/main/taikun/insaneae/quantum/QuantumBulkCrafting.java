@@ -39,7 +39,9 @@ public final class QuantumBulkCrafting {
     /**
      * @param view どの Mod のクラフト CPU かを問わないジョブの窓口 ({@link CraftingJobView})。
      *             null なら何もしない。
-     * @return まとめ処理したクラフト回数。0 なら CPU 本来の処理を続行させること。
+     * @return まとめ処理で消費した<b>操作数</b>。通常はクラフト回数と同じだが、
+     *         タスク統合 ({@link IBulkCraftingProvider#fusesOperations}) 中のプロバイダは
+     *         何回まとめても 1 と数える。0 なら CPU 本来の処理を続行させること。
      */
     public static int execute(CraftingJobView view, int maxPatterns,
             CraftingService craftingService, IEnergyService energyService, Level level) {
@@ -63,14 +65,21 @@ public final class QuantumBulkCrafting {
             if (provider == null) {
                 continue;
             }
-            long limit = Math.min(Math.min(remaining, provider.getBulkCapacity(details)), maxPatterns - pushed);
+            // タスク統合 (fusesOperations): まとめ 1 回を CPU 予算の 1 操作として数える。
+            // このとき回数は CPU 予算 (maxPatterns) で縛らず、プロバイダ自身の予算に任せる。
+            boolean fused = provider.fusesOperations();
+            long limit = Math.min(remaining, provider.getBulkCapacity(details));
+            if (!fused) {
+                limit = Math.min(limit, maxPatterns - pushed);
+            }
+            limit = clampForOutputs(details, limit);
             if (limit <= 0) {
                 continue;
             }
 
             long done = pushBulk(view, details, provider, limit, energyService, level);
             if (done > 0) {
-                pushed += (int) done;
+                pushed += fused ? 1 : (int) done;
                 long left = remaining - done;
                 cursor.setRemaining(left);
                 if (left <= 0) {
@@ -81,6 +90,23 @@ public final class QuantumBulkCrafting {
         }
 
         return pushed;
+    }
+
+    /**
+     * 完成品の計上 ({@code 出力数 × done}) が long からあふれない回数まで絞る。
+     *
+     * <p>統合会計では 1 回の {@code done} が Quantum CPU の予算 (最大 922京) まで育つので、
+     * 出力が 2 個以上のレシピは素朴に掛けると必ずあふれる。飽和させると
+     * {@code waitingFor} の帳簿と実際の完成品数がずれるため、<b>あふれない回数しか組まない</b>。</p>
+     */
+    private static long clampForOutputs(IPatternDetails details, long limit) {
+        for (GenericStack output : details.getOutputs()) {
+            long amount = output.amount();
+            if (amount > 1) {
+                limit = Math.min(limit, Long.MAX_VALUE / amount);
+            }
+        }
+        return limit;
     }
 
     /** 材料の取り出しから帳簿の更新まで。処理できた回数を返す。 */

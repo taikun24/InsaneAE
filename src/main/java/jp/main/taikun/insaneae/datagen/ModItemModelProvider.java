@@ -89,6 +89,7 @@ public class ModItemModelProvider extends ItemModelProvider {
             simple(card.id());
         }
         simple("quantum_acceleration_card");
+        simple("task_fusion_card");
 
         getBuilder("quantum_cpu").parent(new ModelFile.UncheckedModelFile(
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/quantum_cpu")));

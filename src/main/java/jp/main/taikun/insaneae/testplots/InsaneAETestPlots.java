@@ -26,6 +26,7 @@ import jp.main.taikun.insaneae.quantum.CraftingJobView;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModCells;
+import jp.main.taikun.insaneae.registries.ModUpgrades;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.world.item.ItemStack;
@@ -626,6 +627,75 @@ public final class InsaneAETestPlots {
                 helper.check(planks == (long) logsInStock * planksPerCraft,
                         "完成待ちの数が材料と釣り合っていない: " + planks + " 枚 (材料は "
                                 + logsInStock + " 本 = " + logsInStock * planksPerCraft + " 枚ぶん)");
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    /**
+     * タスク統合カード: まとめ 1 回がクラスタ予算を <b>1 操作</b>しか消費しないことを確かめる。
+     *
+     * <p>クラスタ予算 3 に対して 1000 回の要求を流す。カード無しなら 3 回で頭打ちになるところが、
+     * カード有りなら 1000 回まるごと 1 tick で通り、消費した操作数は 1 と報告される
+     * (回数の上限はクラスタではなく Quantum CPU 自身の予算 = 加速カード 1 枚で 65536/tick)。</p>
+     */
+    @TestPlot("insaneae_task_fusion_card")
+    public static void taskFusionCard(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,2] 0 0");
+        plot.blockState("2 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        final long requested = 1000;
+        final int clusterBudget = 3;
+        final int planksPerCraft = 4;
+
+        plot.test(helper -> {
+            var state = new Object() {
+                FakeJobView view;
+                int ops;
+            };
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_LOG)));
+                cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.TASK_FUSION_CARD.get()));
+                cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
+            });
+
+            // パターンの読み直しとクラフト索引の更新待ち (bulk_conservation と同じ)。
+            sequence.thenIdle(5);
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
+                helper.check(cpu.isTaskFusionInstalled(), "タスク統合カードが認識されていない");
+                var patterns = cpu.getLogic().getAvailablePatterns();
+                helper.check(patterns.size() == 1,
+                        "Quantum CPU がパターンを 1 枚だけ持っている状態にならなかった: " + patterns.size());
+
+                var grid = helper.getGrid(BlockPos.ZERO);
+                state.view = new FakeJobView(patterns.get(0), requested);
+                state.view.inventory.insert(AEItemKey.of(Items.OAK_LOG), requested,
+                        appeng.api.config.Actionable.MODULATE);
+
+                state.ops = jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.execute(
+                        state.view, clusterBudget,
+                        (appeng.me.service.CraftingService) grid.getCraftingService(),
+                        grid.getEnergyService(), grid.getPivot().getLevel());
+            });
+
+            sequence.thenExecute(() -> {
+                helper.check(state.ops == 1,
+                        "まとめ 1 回が 1 操作として数えられていない: " + state.ops);
+                helper.check(state.view.remaining == 0,
+                        "予算 " + clusterBudget + " でも全" + requested + "回通るはずが残り "
+                                + state.view.remaining);
+                long planks = state.view.waitingFor.list.get(AEItemKey.of(Items.OAK_PLANKS));
+                helper.check(planks == requested * planksPerCraft,
+                        "完成待ちの数が要求と釣り合っていない: " + planks);
             });
 
             sequence.thenSucceed();
