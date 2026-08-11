@@ -18,10 +18,11 @@ import java.util.function.Supplier;
  * <p>容量は 1 段ごとに 4 倍 (2 ビットシフト)。最上段の {@link #STORAGE_8E} だけは
  * {@code long} の上限 ({@code 2^63-1} = 8 EiB より 1 バイト少ない) で頭打ちになる。</p>
  *
- * <p><b>オーバーフロー注意:</b> {@code CraftingCPUCluster.storage} は {@code long} で、
- * 各ブロックの storageBytes を単純加算 (乗算なし) するだけ。つまり 1 CPU の合計が
- * {@code Long.MAX_VALUE} を超えると負値になり CPU が壊れる。
- * {@link #STORAGE_8E} は 1 CPU に 1 個、{@link #STORAGE_4E} は 1 CPU に 2 個までが上限。</p>
+ * <p><b>long上限:</b> AE2の {@code CraftingCPUCluster.storage} は {@code long} なので、
+ * 1 CPU の合計が {@code Long.MAX_VALUE} を超える場合は InsaneAE が
+ * {@code Long.MAX_VALUE} へ飽和させる。これにより {@link #STORAGE_4E} を2個以上、
+ * または {@link #STORAGE_8E} と他のストレージを接続しても負値へ折り返さない。
+ * 8EはBigInteger容量ではなく、AE2のlong容量上限として扱う。</p>
  *
  * <p>見た目は AE2 の 256k テクスチャ／モデルを全階層で流用中 ({@link #PLACEHOLDER_LOOK})。
  * 専用アートを用意するまでの暫定だが、機能面は完全に動作する。</p>
