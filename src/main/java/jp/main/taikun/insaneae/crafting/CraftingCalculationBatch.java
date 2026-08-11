@@ -93,7 +93,8 @@ public final class CraftingCalculationBatch {
         long done = 0;
         for (int step = steps.size() - 1; step >= 0 && done < times; step--) {
             long size = 1L << step;
-            while (done + size <= times && tryApply(steps.get(step), total)) {
+            // done + size はlong境界で折り返すため、差分比較で上限を判定する。
+            while (size <= times - done && tryApply(steps.get(step), total)) {
                 done += size;
             }
         }

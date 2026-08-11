@@ -9,6 +9,7 @@ import appeng.crafting.CraftingTreeProcess;
 import appeng.crafting.inv.CraftingSimulationState;
 import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.crafting.CraftingCalculationBatch;
+import jp.main.taikun.insaneae.integration.aco.AcoCalculationIntegration;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -98,6 +99,7 @@ public abstract class CraftingTreeNodeMixin {
         }
 
         if (times != 1 || insaneae$batchExhausted || insaneae$remainingItems <= 0
+                || AcoCalculationIntegration.shouldDeferCalculationBatch()
                 || !InsaneAEConfig.batchCraftingCalculation()) {
             invoker.insaneae$request(target, times);
             return;

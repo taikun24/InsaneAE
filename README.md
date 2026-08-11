@@ -32,7 +32,14 @@ AE2 が [GuideME](https://github.com/AppliedEnergistics/GuideME) を必須依存
 AE2 Crafting Optimizer は必須ではありません。導入されていて BigInteger バックエンドが有効な場合、
 Quantum CPU の完成品待ち台帳を ACO の公開 API へ接続します。無い場合や無効な場合は
 InsaneAE 内蔵の同じ BigInteger 台帳を使います (保存形式はどちらでも共通)。
-なお 1.5.11 現在、ACO の配布物は Forge 1.20.1 向けのみです。
+
+### ACO連携 (任意)
+
+[AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) 1.21.1版が導入されている場合、
+Quantum CPUはACOのBigInteger計画を受け取り、long範囲の実行ウィンドウへ分割して処理できます。
+ACOが無い場合、または連携プロファイルが無効な場合は、通常のAE2計算・実行経路へ戻ります。
+
+この連携はACOを必須依存にしません。両Modのバージョンと対応するNeoForge版を揃えてください。
 
 AE2 の内部 (`BasicCellInventory`、`CraftingCPUCluster`、ツールチップ描画など) に Mixin で踏み込んでいるため、
 AE2 のバージョン範囲は実際に検証した `[19.2.17,20)` に固定しています。
