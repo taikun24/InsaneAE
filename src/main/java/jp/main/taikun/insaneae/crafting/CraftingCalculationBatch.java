@@ -74,9 +74,12 @@ public final class CraftingCalculationBatch {
         }
 
         // 1, 2, 4, 8 … 回ぶんの差分を作る。作れなくなったらそこで打ち切り。
+        // <b>times を超える大きさの差分は作らない</b>。2 進数の積み上げには times 以下の段だけで
+        // 足りるし、times 超の段は「呼び出し側が保証した安全域 (times × 材料数 ≤ long)」の
+        // 外に出るので、重ね合わせの途中で桁あふれしうる。
         List<CraftingSimulationState> steps = new ArrayList<>();
         steps.add(single);
-        while ((1L << (steps.size() - 1)) < times && steps.size() < Long.SIZE - 1) {
+        while (steps.size() < Long.SIZE - 1 && (1L << steps.size()) <= times) {
             CraftingSimulationState previous = steps.get(steps.size() - 1);
             ChildCraftingSimulationState doubled = new ChildCraftingSimulationState(target);
             if (!tryApply(previous, doubled) || !tryApply(previous, doubled)) {
