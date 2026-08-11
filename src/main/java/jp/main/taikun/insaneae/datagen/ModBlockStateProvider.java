@@ -86,8 +86,8 @@ public class ModBlockStateProvider extends BlockStateProvider {
             simpleBlock(ModBlocks.SOLAR_PANELS.get(tier).get(), handwritten(tier.id()));
         }
         simpleBlock(ModBlocks.QUANTUM_CPU.get(), handwritten("quantum_cpu"));
-        // BigInteger CPU は通常 Quantum CPU の完成済みモデルとテクスチャを流用する。
-        simpleBlock(ModBlocks.BIG_INTEGER_CPU.get(), handwritten("quantum_cpu"));
+        // 専用の継承モデルを経由し、空モデルや欠損モデルとして解決されないようにする。
+        simpleBlock(ModBlocks.BIG_INTEGER_CPU.get(), handwritten("big_integer_cpu"));
         simpleBlock(ModBlocks.IMPROVED_CHARGER.get(), handwritten("improved_charger"));
 
         // 超特大インターフェイスはただのキューブ。テクスチャは AE2 の ME インターフェイスの
