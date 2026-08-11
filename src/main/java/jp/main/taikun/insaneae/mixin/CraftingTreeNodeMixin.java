@@ -8,6 +8,7 @@ import appeng.crafting.CraftingTreeProcess;
 import appeng.crafting.inv.CraftingSimulationState;
 import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.crafting.CraftingCalculationBatch;
+import jp.main.taikun.insaneae.integration.aco.AcoCalculationIntegration;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -83,6 +84,7 @@ public abstract class CraftingTreeNodeMixin {
         CraftingTreeProcessInvoker invoker = (CraftingTreeProcessInvoker) process;
 
         if (times != 1 || insaneae$batchExhausted || insaneae$remainingItems <= 0
+                || AcoCalculationIntegration.shouldDeferCalculationBatch()
                 || !InsaneAEConfig.batchCraftingCalculation()) {
             invoker.insaneae$request(target, times);
             return;
@@ -94,7 +96,13 @@ public abstract class CraftingTreeNodeMixin {
             return;
         }
 
-        long needed = (insaneae$remainingItems + perCraft - 1) / perCraft;
+        // 加算してから切り上げる式は、Long.MAX_VALUE付近でオーバーフローする。
+        // 商と余りで切り上げると、必要数がlong範囲内である限り加算を使わずに済む。
+        long needed = insaneae$remainingItems / perCraft;
+        if (insaneae$remainingItems % perCraft != 0L) {
+            // perCraftは正数なので、商がLong.MAX_VALUEになるケースは発生しない。
+            needed++;
+        }
         if (needed < InsaneAEConfig.craftingBatchThreshold()) {
             invoker.insaneae$request(target, times);
             return;

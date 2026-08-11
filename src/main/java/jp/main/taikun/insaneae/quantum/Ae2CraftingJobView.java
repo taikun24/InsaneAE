@@ -3,6 +3,9 @@ package jp.main.taikun.insaneae.quantum;
 import appeng.crafting.execution.ElapsedTimeTracker;
 import appeng.crafting.execution.ExecutingCraftingJob;
 import appeng.crafting.inv.ListCraftingInventory;
+import appeng.api.storage.MEStorage;
+import java.util.Optional;
+import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import jp.main.taikun.insaneae.mixin.ExecutingCraftingJobAccessor;
 import jp.main.taikun.insaneae.mixin.TaskProgressAccessor;
@@ -16,12 +19,14 @@ import jp.main.taikun.insaneae.mixin.TaskProgressAccessor;
 public final class Ae2CraftingJobView implements CraftingJobView {
 
     private final ExecutingCraftingJobAccessor job;
+    private final appeng.crafting.execution.ExecutingCraftingJob exactJob;
     private final ListCraftingInventory inventory;
     private final CraftingCPUCluster cluster;
 
     private Ae2CraftingJobView(ExecutingCraftingJob job, ListCraftingInventory inventory,
             CraftingCPUCluster cluster) {
         this.job = (ExecutingCraftingJobAccessor) job;
+        this.exactJob = job;
         this.inventory = inventory;
         this.cluster = cluster;
     }
@@ -50,6 +55,23 @@ public final class Ae2CraftingJobView implements CraftingJobView {
     @Override
     public void markDirty() {
         cluster.markDirty();
+    }
+
+    @Override
+    public Optional<AcoBigIntegerJobRegistry.CraftingCursor> exactTasks() {
+        return AcoBigIntegerJobRegistry.find(exactJob)
+                .map(exact -> exact.cursor(pattern -> job.insaneae$getTasks().remove(pattern)));
+    }
+
+    @Override
+    public MEStorage getNetworkStorage() {
+        var grid = cluster.getGrid();
+        return grid == null ? null : grid.getStorageService().getInventory();
+    }
+
+    @Override
+    public appeng.api.networking.security.IActionSource getActionSource() {
+        return cluster.getSrc();
     }
 
     @Override

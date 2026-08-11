@@ -216,13 +216,16 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
             return 0;
         }
 
+        KeyCounter[] originalInputs = copyInputHolder(inputHolder);
         fillGrid(pattern, inputHolder, Leftovers.KEEP);
 
         Assembly assembly = resolveAssembly(details, pattern, level);
         if (assembly == null) {
-            // 組めなかった。グリッドに載せた 1 回ぶんはネットワークへ返し、
-            // 残りは inputHolder に残したまま返す (呼び出し側が CPU の在庫へ戻す)。
-            returnGridToNetwork();
+            // 組立失敗時はpushPatternBulkの外側が材料を戻すため、ここでは
+            // inputHolderを呼出し前の状態へ戻し、グリッドを空にする。
+            // 一部だけをネットワークへ返すと、外側のRollbackと二重計上になる。
+            restoreInputHolder(inputHolder, originalInputs);
+            clearCraftingGrid();
             return 0;
         }
 
@@ -386,6 +389,31 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
                 }
                 craftingInv.setItem(slot, ItemStack.EMPTY);
             }
+        }
+    }
+
+    /** まとめ処理失敗時に、fillCraftingGrid前の入力所有量を複製する。 */
+    private static KeyCounter[] copyInputHolder(KeyCounter[] inputHolder) {
+        KeyCounter[] copy = new KeyCounter[inputHolder.length];
+        for (int index = 0; index < inputHolder.length; index++) {
+            copy[index] = new KeyCounter();
+            copy[index].addAll(inputHolder[index]);
+        }
+        return copy;
+    }
+
+    /** 呼出し前の入力へ戻し、BulkCraftingHook側のRollbackへ所有権を返す。 */
+    private static void restoreInputHolder(KeyCounter[] inputHolder, KeyCounter[] originalInputs) {
+        for (int index = 0; index < inputHolder.length; index++) {
+            inputHolder[index].reset();
+            inputHolder[index].addAll(originalInputs[index]);
+        }
+    }
+
+    /** 組立失敗後に、次のPatternへ残った材料を誤流用しない。 */
+    private void clearCraftingGrid() {
+        for (int slot = 0; slot < GRID_SLOTS; slot++) {
+            craftingInv.setItem(slot, ItemStack.EMPTY);
         }
     }
 }
