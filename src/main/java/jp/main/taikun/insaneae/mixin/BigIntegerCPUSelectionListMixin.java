@@ -3,6 +3,7 @@ package jp.main.taikun.insaneae.mixin;
 import appeng.client.Point;
 import appeng.client.gui.Tooltip;
 import appeng.client.gui.widgets.CPUSelectionList;
+import appeng.core.localization.GuiText;
 import appeng.menu.me.crafting.CraftingStatusMenu.CraftingCpuListEntry;
 import java.util.ArrayList;
 import jp.main.taikun.insaneae.crafting.BigIntegerCapacityDisplayMarker;
@@ -18,6 +19,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class BigIntegerCPUSelectionListMixin {
     @Invoker("hitTestCpu")
     protected abstract CraftingCpuListEntry insaneae$hitTestCpu(Point point);
+
+    @Inject(method = "getCpuName", at = @At("HEAD"), cancellable = true, require = 0)
+    private void insaneae$restoreDefaultSequentialName(
+            CraftingCpuListEntry entry,
+            CallbackInfoReturnable<Component> cir) {
+        Component name = entry.name();
+        // 通常CPUと、プレイヤーが明示的に名付けたCPUの表示はAE2へ任せる。
+        if (name == null
+                || BigIntegerCapacityDisplayMarker.read(name).isEmpty()
+                || !name.getString().isEmpty()) {
+            return;
+        }
+
+        // 不可視マーカーだけを持つ未命名CPUは、AE2本来の「クラフトCPU #番号」に戻す。
+        cir.setReturnValue(GuiText.CPUs.text().append(String.format(" #%d", entry.serial())));
+    }
 
     @Inject(method = "formatStorage", at = @At("HEAD"), cancellable = true, require = 0)
     private void insaneae$formatExactCapacity(

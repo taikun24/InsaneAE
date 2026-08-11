@@ -30,8 +30,9 @@ public abstract class CraftingCPUNameMixin {
         }
 
         Component name = cir.getReturnValue();
+        // 未命名CPUには表示名を付けず、クライアントでAE2標準の連番名を復元できるようにする。
         if (name == null) {
-            name = Component.translatable("gui.insaneae.big_integer_cpu");
+            name = Component.empty();
         }
         cir.setReturnValue(BigIntegerCapacityDisplayMarker.mark(name, exact));
     }

@@ -56,7 +56,7 @@ public class ModBlocks {
     public static final DeferredHolder<Block, QuantumCpuBlock> QUANTUM_CPU =
             BLOCKS.register("quantum_cpu", QuantumCpuBlock::new);
 
-    /** ACO の BigInteger 計画を試す実験用 CPU。専用テクスチャは持たない。 */
+    /** ACOのBigInteger計画用CPU。通常Quantum CPUのモデルを流用し、空モデルにはしない。 */
     public static final RegistryObject<BigIntegerCpuBlock> BIG_INTEGER_CPU =
             BLOCKS.register("big_integer_cpu", BigIntegerCpuBlock::new);
 
