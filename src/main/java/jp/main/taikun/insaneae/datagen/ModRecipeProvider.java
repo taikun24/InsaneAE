@@ -217,6 +217,12 @@ public class ModRecipeProvider extends RecipeProvider {
         ItemLike topSpeedCard = cards[cards.length - 1].item();
         shapeless(consumer, ModUpgrades.QUANTUM_ACCELERATION_CARD.get(), topSpeedCard,
                 b -> b.requires(topSpeedCard, 4).requires(SINGULARITY));
+
+        // タスク統合カード: 加速カード ×2 + 特異点 ×2 (タスクを 1 つに融合するイメージ)。
+        shapeless(consumer, ModUpgrades.TASK_FUSION_CARD.get(),
+                ModUpgrades.QUANTUM_ACCELERATION_CARD.get(),
+                b -> b.requires(ModUpgrades.QUANTUM_ACCELERATION_CARD.get(), 2)
+                        .requires(SINGULARITY, 2));
     }
 
     private static void portable(ShapelessRecipeBuilder builder, ItemLike component, ItemLike housing) {

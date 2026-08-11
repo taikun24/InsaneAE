@@ -249,6 +249,11 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
         }
     }
 
+    @Override
+    public boolean fusesOperations() {
+        return host.isTaskFusionInstalled();
+    }
+
     /**
      * 加工パターンの押し出し待ちが残っているか、この tick の組み立て回数を使い切っていれば忙しい。
      * CPU 側はここで true を見ると他のプロバイダに回るので、無駄な {@code pushPattern} が減る。

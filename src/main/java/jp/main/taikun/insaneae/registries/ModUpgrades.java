@@ -11,6 +11,7 @@ import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import jp.main.taikun.insaneae.upgrade.InsaneSpeedCardItem;
 import jp.main.taikun.insaneae.upgrade.InsaneSpeedCardType;
 import jp.main.taikun.insaneae.upgrade.QuantumAccelerationCardItem;
+import jp.main.taikun.insaneae.upgrade.TaskFusionCardItem;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -53,6 +54,11 @@ public class ModUpgrades {
             ITEMS.register("quantum_acceleration_card",
                     () -> new QuantumAccelerationCardItem(new Item.Properties()));
 
+    /** Quantum CPU 専用のタスク統合カード。まとめ 1 回をクラスタ予算の 1 操作として数えさせる。 */
+    public static final DeferredHolder<Item, Item> TASK_FUSION_CARD =
+            ITEMS.register("task_fusion_card",
+                    () -> new TaskFusionCardItem(new Item.Properties()));
+
     static {
         for (InsaneSpeedCardType type : InsaneSpeedCardType.values()) {
             DeferredHolder<Item, Item> card = ITEMS.register(type.id(),
@@ -75,6 +81,7 @@ public class ModUpgrades {
         }
         Upgrades.add(QUANTUM_ACCELERATION_CARD.get(), ModBlocks.QUANTUM_CPU.get(),
                 QuantumCpuBlockEntity.MAX_ACCELERATION_CARDS);
+        Upgrades.add(TASK_FUSION_CARD.get(), ModBlocks.QUANTUM_CPU.get(), 1);
 
         registerCellUpgrades();
         registerCompatMachines();

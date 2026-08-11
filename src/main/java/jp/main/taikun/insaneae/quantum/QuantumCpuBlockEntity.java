@@ -72,6 +72,8 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
     public static final int MULTIPLIER_PER_CARD = 256;
     /** 加速カードの取り付け上限。256 * 256^7 で long が飽和する。 */
     public static final int MAX_ACCELERATION_CARDS = 7;
+    /** アップグレード枠の総数。加速カード 7 + タスク統合カード 1。 */
+    public static final int UPGRADE_SLOTS = MAX_ACCELERATION_CARDS + 1;
     /** パターンスロットの 1 ページぶんの列数。 */
     public static final int PATTERN_COLUMNS = 9;
     /** パターンスロットの 1 ページぶんの行数。 */
@@ -98,7 +100,7 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
 
     private final QuantumCpuLogic logic = new QuantumCpuLogic(getMainNode(), this);
     private final IUpgradeInventory upgrades = UpgradeInventories.forMachine(
-            ModBlocks.QUANTUM_CPU.get(), MAX_ACCELERATION_CARDS, this::saveChanges);
+            ModBlocks.QUANTUM_CPU.get(), UPGRADE_SLOTS, this::saveChanges);
     private final IActionSource actionSource = new MachineSource(getMainNode()::getNode);
 
     /**
@@ -127,6 +129,11 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
             speed = SpeedBoost.saturatingMultiply(speed, MULTIPLIER_PER_CARD);
         }
         return speed;
+    }
+
+    /** タスク統合カードが挿さっているか。まとめ 1 回をクラスタ予算の 1 操作として数えてよいか。 */
+    public boolean isTaskFusionInstalled() {
+        return upgrades.getInstalledUpgrades(ModUpgrades.TASK_FUSION_CARD.get()) > 0;
     }
 
     // ------------------------------------------------------- 完成品の受け渡し

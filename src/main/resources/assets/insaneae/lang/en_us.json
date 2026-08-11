@@ -22,6 +22,8 @@
   "gui.insaneae.quantum_cpu.return_inventory": "Return Inventory (items handed back to the network)",
   "item.insaneae.quantum_acceleration_card": "Quantum CPU Acceleration Card",
   "item.insaneae.quantum_acceleration_card.tooltip": "Quantum CPU crafting speed ×%s",
+  "item.insaneae.task_fusion_card": "Task Fusion Card",
+  "item.insaneae.task_fusion_card.tooltip": "One bulk craft counts as a single co-processor operation",
   "block.insaneae.hyperdense_energy_cell": "Hyperdense Energy Cell",
   "block.insaneae.ultradense_energy_cell": "Ultradense Energy Cell",
   "block.insaneae.neutron_energy_cell": "Neutron Energy Cell",
