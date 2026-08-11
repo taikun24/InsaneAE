@@ -15,14 +15,14 @@ import java.util.function.Supplier;
  * InsaneAE の階層と同一の CPU クラスタに合流する。よって重複を避け、InsaneAE は
  * その上 (1G〜) だけを担当する。</p>
  *
- * <p>容量は 1 段ごとに 4 倍 (2 ビットシフト)。最上段の {@link #STORAGE_8E} だけは
- * {@code long} の上限 ({@code 2^63-1} = 8 EiB より 1 バイト少ない) で頭打ちになる。</p>
+ * <p>容量は 1 段ごとに 4 倍 (2 ビットシフト)。最上段の {@link #STORAGE_8E} は
+ * AE2の単体long境界として{@code Long.MAX_VALUE}を持つ。複数ブロックの合計は
+ * InsaneAEのクラスタMixinがBigIntegerで計算するため、4Eを複数接続しても容量計算を失わない。</p>
  *
- * <p><b>long上限:</b> AE2の {@code CraftingCPUCluster.storage} は {@code long} なので、
- * 1 CPU の合計が {@code Long.MAX_VALUE} を超える場合は InsaneAE が
- * {@code Long.MAX_VALUE} へ飽和させる。これにより {@link #STORAGE_4E} を2個以上、
- * または {@link #STORAGE_8E} と他のストレージを接続しても負値へ折り返さない。
- * 8EはBigInteger容量ではなく、AE2のlong容量上限として扱う。</p>
+ * <p><b>long境界:</b> AE2の {@code CraftingCPUCluster.storage} は {@code long} だが、
+ * InsaneAEは別に正確なBigInteger容量を保持する。AE2互換のlong getterへ返すときだけ
+ * {@code Long.MAX_VALUE}へ飽和させるので、4Eを2個以上、または8Eと他ストレージを
+ * 接続しても負値へ折り返さない。連携Modは {@code IBigCraftingCapacity} を使って正確値を読む。</p>
  *
  * <p>見た目は AE2 の 256k テクスチャ／モデルを全階層で流用中 ({@link #PLACEHOLDER_LOOK})。
  * 専用アートを用意するまでの暫定だが、機能面は完全に動作する。</p>
