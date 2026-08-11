@@ -82,9 +82,8 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
             Class<?> type = Class.forName(LEDGER_CLASS);
             return java.util.Optional.of(new AcoBigIntegerOutputLedger(
                     ledger,
-                    // ジェネリックの消去後シグネチャに合わせて Object.class で引く (クラス Javadoc 参照)。
-                    type.getMethod("add", Object.class, BigInteger.class),
-                    type.getMethod("drain", Object.class, long.class),
+                    findKeyAmountMethod(type, "add", BigInteger.class),
+                    findKeyAmountMethod(type, "drain", long.class),
                     type.getMethod("snapshot"),
                     type.getMethod("isEmpty"),
                     type.getMethod("clear")));
@@ -103,6 +102,36 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
             }
         }
         throw new NoSuchMethodException(owner.getName() + "." + name + " (" + parameterCount + " args)");
+    }
+
+    /**
+     * ジェネリックなKは実行時にObjectへ型消去されるため、AEKey固定の厳密検索を避ける。
+     * 第1引数へAEKeyを渡せて、第2引数の量型が一致する公開メソッドだけを採用する。
+     */
+    private static Method findKeyAmountMethod(Class<?> type, String name, Class<?> amountType)
+            throws NoSuchMethodException {
+        for (Method method : type.getMethods()) {
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            // 対象メソッド名以外は候補から除外する。
+            if (!method.getName().equals(name)) {
+                continue;
+            }
+            // キーと量の2引数でないメソッドは対象外にする。
+            if (parameterTypes.length != 2) {
+                continue;
+            }
+            // 型消去後のObject、またはAEKey互換型だけを受け入れる。
+            if (!parameterTypes[0].isAssignableFrom(AEKey.class)) {
+                continue;
+            }
+            // BigInteger加算とlong搬出を取り違えないよう量型を一致させる。
+            if (!parameterTypes[1].equals(amountType)) {
+                continue;
+            }
+            return method;
+        }
+        throw new NoSuchMethodException(
+                type.getName() + "." + name + "(AEKey," + amountType.getTypeName() + ")");
     }
 
     @Override
