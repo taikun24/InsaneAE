@@ -78,8 +78,8 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
             Class<?> type = Class.forName(LEDGER_CLASS);
             return java.util.Optional.of(new AcoBigIntegerOutputLedger(
                     ledger,
-                    type.getMethod("add", AEKey.class, BigInteger.class),
-                    type.getMethod("drain", AEKey.class, long.class),
+                    findKeyAmountMethod(type, "add", BigInteger.class),
+                    findKeyAmountMethod(type, "drain", long.class),
                     type.getMethod("snapshot"),
                     type.getMethod("isEmpty"),
                     type.getMethod("save"),
@@ -89,6 +89,36 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
             LOGGER.warn("InsaneAE: ACO BigInteger API is unavailable; using local ledger", failure);
             return java.util.Optional.empty();
         }
+    }
+
+    /**
+     * ジェネリックなKは実行時にObjectへ型消去されるため、AEKey固定の厳密検索を避ける。
+     * 第1引数へAEKeyを渡せて、第2引数の量型が一致する公開メソッドだけを採用する。
+     */
+    private static Method findKeyAmountMethod(Class<?> type, String name, Class<?> amountType)
+            throws NoSuchMethodException {
+        for (Method method : type.getMethods()) {
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            // 対象メソッド名以外は候補から除外する。
+            if (!method.getName().equals(name)) {
+                continue;
+            }
+            // キーと量の2引数でないメソッドは対象外にする。
+            if (parameterTypes.length != 2) {
+                continue;
+            }
+            // 型消去後のObject、またはAEKey互換型だけを受け入れる。
+            if (!parameterTypes[0].isAssignableFrom(AEKey.class)) {
+                continue;
+            }
+            // BigInteger加算とlong搬出を取り違えないよう量型を一致させる。
+            if (!parameterTypes[1].equals(amountType)) {
+                continue;
+            }
+            return method;
+        }
+        throw new NoSuchMethodException(
+                type.getName() + "." + name + "(AEKey," + amountType.getTypeName() + ")");
     }
 
     @Override
