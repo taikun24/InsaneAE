@@ -1,9 +1,17 @@
 package jp.main.taikun.insaneae.mixin;
 
 import appeng.blockentity.crafting.CraftingBlockEntity;
+import appeng.api.networking.IGrid;
+import appeng.api.networking.crafting.ICraftingPlan;
+import appeng.api.networking.crafting.ICraftingRequester;
+import appeng.api.networking.crafting.ICraftingSubmitResult;
+import appeng.api.networking.security.IActionSource;
+import appeng.crafting.execution.CraftingSubmitResult;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import jp.main.taikun.insaneae.crafting.IBigCraftingCapacity;
 import jp.main.taikun.insaneae.crafting.ICoProcessorCount;
+import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerPlanBridge;
+import jp.main.taikun.insaneae.integration.aco.ExactCraftingCapacityPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Final;
@@ -180,6 +188,35 @@ public abstract class CraftingCPUClusterMixin
     @Override
     public BigInteger insaneae$exactStorageCapacity() {
         return insaneae$recountStorage();
+    }
+
+    /**
+     * ACOの正確なBigInteger計画だけを、InsaneAE自身の正確なCPU容量と比較する。
+     *
+     * <p>容量内なら戻り値を設定せず、CPU使用中判定・ジョブ作成・リンク登録・
+     * セキュリティ処理をAE2本来の{@code submitJob}経路へそのまま任せる。
+     * AQE向けの複数ジョブHost台帳は使用しないため、1 CPUにつき1ジョブという
+     * InsaneAE本来の制限も変わらない。</p>
+     */
+    @Inject(method = "submitJob", at = @At("HEAD"), cancellable = true, require = 0)
+    private void insaneae$validateExactPlanCapacity(
+            IGrid grid,
+            ICraftingPlan plan,
+            IActionSource source,
+            ICraftingRequester requester,
+            CallbackInfoReturnable<ICraftingSubmitResult> cir) {
+        var exactPlan = AcoBigIntegerPlanBridge.inspect(plan);
+        // ACOのBigInteger計画でなければ、通常AE2の容量判定へ完全に委譲する。
+        if (exactPlan.isEmpty()) {
+            return;
+        }
+
+        BigInteger required = exactPlan.get().exactBytes();
+        BigInteger capacity = insaneae$recountStorage();
+        // 正確な必要量が正確な容量を超える場合だけ、AE2標準の失敗結果を返す。
+        if (!ExactCraftingCapacityPolicy.fits(required, capacity)) {
+            cir.setReturnValue(CraftingSubmitResult.CPU_TOO_SMALL);
+        }
     }
 
     /**
