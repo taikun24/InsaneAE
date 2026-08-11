@@ -82,6 +82,9 @@ public class ModUpgrades {
         Upgrades.add(QUANTUM_ACCELERATION_CARD.get(), ModBlocks.QUANTUM_CPU.get(),
                 QuantumCpuBlockEntity.MAX_ACCELERATION_CARDS);
         Upgrades.add(TASK_FUSION_CARD.get(), ModBlocks.QUANTUM_CPU.get(), 1);
+        // BigInteger CPU も Quantum CPU と同じ速度カードを受け付ける。
+        Upgrades.add(QUANTUM_ACCELERATION_CARD.get(), ModBlocks.BIG_INTEGER_CPU.get(),
+                QuantumCpuBlockEntity.MAX_ACCELERATION_CARDS);
 
         registerCellUpgrades();
         registerCompatMachines();
