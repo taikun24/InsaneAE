@@ -634,6 +634,36 @@ public final class InsaneAETestPlots {
     }
 
     /**
+     * 超特大インターフェイスの画面が開くこと (「開けない」報告の再現テスト)。
+     *
+     * <p>FakePlayer はパケットを捨てるだけの接続を持つので、サーバ側の
+     * メニュー構築 ({@code NetworkHooks.openScreen} → コンストラクタでの
+     * スロット構築まで) をヘッドレスで検証できる。クライアント側 (画面クラスと
+     * スタイル JSON) はここでは検証できない。</p>
+     */
+    @TestPlot("insaneae_interface_menu_opens")
+    public static void interfaceMenuOpens(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("0 0 0");
+        plot.blockState("1 0 0", ModBlocks.INSANE_INTERFACE.get().defaultBlockState());
+
+        plot.test(helper -> helper.startSequence()
+                .thenIdle(2)
+                .thenExecute(() -> {
+                    var be = (InsaneInterfaceBlockEntity) helper.getBlockEntity(new BlockPos(1, 0, 0));
+                    var player = net.minecraftforge.common.util.FakePlayerFactory
+                            .getMinecraft(helper.getLevel());
+                    be.openMenu(player, appeng.menu.locator.MenuLocators.forBlockEntity(be));
+                    helper.check(
+                            player.containerMenu instanceof jp.main.taikun.insaneae.menu.InsaneInterfaceMenu,
+                            "画面が開かなかった: containerMenu = "
+                                    + player.containerMenu.getClass().getName());
+                    player.closeContainer();
+                })
+                .thenSucceed());
+    }
+
+    /**
      * long あふれの門番: 材料合計が long で表現できない要求が、<b>黙って負の量を流さず</b>
      * 綺麗に失敗する (craft 可能な計画に化けない) ことを確かめる。
      *
