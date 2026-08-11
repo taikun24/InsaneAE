@@ -19,6 +19,7 @@
   "block.insaneae.quantum_cpu": "クァンタムCPU",
   "block.insaneae.big_integer_cpu": "BigIntegerクラフトCPU",
   "block.insaneae.big_integer_cpu.desc": "実験用BigIntegerクラフトCPU。既存のInsaneAE・ACO実行経路を使用します。",
+  "gui.insaneae.big_integer_cpu": "BigIntegerクラフトCPU",
   "gui.insaneae.quantum_cpu.previous_page": "前のページ",
   "gui.insaneae.quantum_cpu.next_page": "次のページ",
   "gui.insaneae.quantum_cpu.return_inventory": "返却インベントリ (ネットワークに戻すアイテム)",
