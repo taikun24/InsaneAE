@@ -15,6 +15,7 @@ import jp.main.taikun.insaneae.provider.InsanePatternProviderBlock;
 import jp.main.taikun.insaneae.energy.InsaneEnergyCellTier;
 import jp.main.taikun.insaneae.energy.SolarPanelBlock;
 import jp.main.taikun.insaneae.energy.SolarPanelTier;
+import jp.main.taikun.insaneae.quantum.BigIntegerCpuBlock;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlock;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -54,6 +55,10 @@ public class ModBlocks {
     /** パターンプロバイダ + 分子組立装置を合体させた自己完結型のクラフト機。 */
     public static final RegistryObject<QuantumCpuBlock> QUANTUM_CPU =
             BLOCKS.register("quantum_cpu", QuantumCpuBlock::new);
+
+    /** ACO の BigInteger 計画を試す実験用 CPU。専用テクスチャは持たない。 */
+    public static final RegistryObject<BigIntegerCpuBlock> BIG_INTEGER_CPU =
+            BLOCKS.register("big_integer_cpu", BigIntegerCpuBlock::new);
 
     /** AE2 のチャージャーの限界突破版。 */
     public static final RegistryObject<ImprovedChargerBlock> IMPROVED_CHARGER =
@@ -103,6 +108,8 @@ public class ModBlocks {
             SOLAR_PANELS.put(tier, block);
         }
         BLOCK_ITEMS.register("quantum_cpu", () -> new BlockItem(QUANTUM_CPU.get(), new Item.Properties()));
+        // レシピは追加せず、クリエイティブタブから実験用ブロックを取得できるようにする。
+        BLOCK_ITEMS.register("big_integer_cpu", () -> new BlockItem(BIG_INTEGER_CPU.get(), new Item.Properties()));
         BLOCK_ITEMS.register("improved_charger",
                 () -> new BlockItem(IMPROVED_CHARGER.get(), new Item.Properties()));
         BLOCK_ITEMS.register("insane_interface",

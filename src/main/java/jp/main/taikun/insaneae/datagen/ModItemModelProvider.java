@@ -92,6 +92,9 @@ public class ModItemModelProvider extends ItemModelProvider {
 
         getBuilder("quantum_cpu").parent(new ModelFile.UncheckedModelFile(
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/quantum_cpu")));
+        // 専用テクスチャを作らず、ブロック側の空モデルをそのままアイテム表示へ使う。
+        getBuilder("big_integer_cpu").parent(new ModelFile.UncheckedModelFile(
+                ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/big_integer_cpu")));
         getBuilder("improved_charger").parent(new ModelFile.UncheckedModelFile(
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/improved_charger")));
         getBuilder("insane_interface").parent(new ModelFile.UncheckedModelFile(
