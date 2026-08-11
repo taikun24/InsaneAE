@@ -32,10 +32,10 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String API_CLASS =
             "com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi";
-    private static final String CODEC_CLASS =
-            "com.syaru.ae2craftingoptimizer.api.big.AeKeyBigCraftingCodec";
     private static final String LEDGER_CLASS =
             "com.syaru.ae2craftingoptimizer.api.big.BigIntegerAmountLedger";
+    /** ACO 1.5.12で追加された、内部codec型を要求しないAEKey台帳API。 */
+    private static final int REQUIRED_LEDGER_API_VERSION = 2;
 
     private final Object delegate;
     private final Method add;
@@ -65,7 +65,7 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
             Class<?> api = Class.forName(API_CLASS);
             int apiVersion = api.getField("API_VERSION").getInt(null);
             int ledgerVersion = api.getField("AMOUNT_LEDGER_API_VERSION").getInt(null);
-            if (apiVersion < 3 || ledgerVersion < 1) {
+            if (apiVersion < 3 || ledgerVersion < REQUIRED_LEDGER_API_VERSION) {
                 LOGGER.warn(
                         "InsaneAE: ACO BigInteger API v{} / amount ledger v{} is too old; using local ledger",
                         apiVersion,
@@ -77,8 +77,7 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
                 return java.util.Optional.empty();
             }
 
-            Object codec = Class.forName(CODEC_CLASS).getField("INSTANCE").get(null);
-            Object ledger = findByName(api, "createAmountLedger", 1).invoke(null, codec);
+            Object ledger = api.getMethod("createAeKeyAmountLedger").invoke(null);
             Class<?> type = Class.forName(LEDGER_CLASS);
             return java.util.Optional.of(new AcoBigIntegerOutputLedger(
                     ledger,
@@ -91,17 +90,6 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
             LOGGER.warn("InsaneAE: ACO BigInteger API is unavailable; using local ledger", failure);
             return java.util.Optional.empty();
         }
-    }
-
-    /** 引数の型を名指しせずに public メソッドを名前と引数の数で探す。 */
-    private static Method findByName(Class<?> owner, String name, int parameterCount)
-            throws NoSuchMethodException {
-        for (Method method : owner.getMethods()) {
-            if (method.getName().equals(name) && method.getParameterCount() == parameterCount) {
-                return method;
-            }
-        }
-        throw new NoSuchMethodException(owner.getName() + "." + name + " (" + parameterCount + " args)");
     }
 
     /**

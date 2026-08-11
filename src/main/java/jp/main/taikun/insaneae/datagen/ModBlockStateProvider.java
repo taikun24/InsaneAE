@@ -86,7 +86,7 @@ public class ModBlockStateProvider extends BlockStateProvider {
             simpleBlock(ModBlocks.SOLAR_PANELS.get(tier).get(), handwritten(tier.id()));
         }
         simpleBlock(ModBlocks.QUANTUM_CPU.get(), handwritten("quantum_cpu"));
-        // 実験用CPUは、欠損ファイルではなく実在する空モデルへ明示的に割り当てる。
+        // 実験用CPUは、標準missing-textureを貼る専用モデルへ明示的に割り当てる。
         simpleBlock(ModBlocks.BIG_INTEGER_CPU.get(), handwritten("big_integer_cpu"));
         simpleBlock(ModBlocks.IMPROVED_CHARGER.get(), handwritten("improved_charger"));
 
