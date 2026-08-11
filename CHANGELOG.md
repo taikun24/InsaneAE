@@ -40,6 +40,8 @@
 - BigInteger容量の不可視同期マーカーが、未命名CPUを独自名へ変更していた問題を修正しました。
   未命名CPUはAE2標準の`クラフトCPU #番号`表示を維持します。
 - BigInteger CPUアイテムへ、ACOが許可する理論クラフト容量を`10^16384 - 1 B`形式で表示します。
+- BigInteger CPUをQuantum CPU派生からAE2標準のクラフトストレージへ修正しました。
+  通常のクラフトCPUマルチブロックへ組み込まれ、独自GUI・ticker・Quantum加速カードは持ちません。
 - `big_integer_cpu`は、実験用ブロックとしてMinecraft標準の
   `minecraft:missingno`（紫黒のmissing texture）を意図的に表示します。
 - ACOのBigInteger計画を提出するとき、必要容量とInsaneAE CPUの正確なBigInteger容量を

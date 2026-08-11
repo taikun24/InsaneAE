@@ -50,8 +50,10 @@ AE2の厳密なBigInteger計算境界をACOへ委譲します。InsaneAEの計�
   `IBigCraftingCapacity#insaneae$exactStorageCapacity()`から正確な容量を取得できます。
 - **クラフト協調処理ユニット** — 16x 〜 2G。AE2 の 16 スレッド上限を外し、1 ブロックで多数の並列クラフトを担当します。
 - **Quantum CPU** — 大量クラフトを一括処理するための専用 CPU。専用の GUI 付き。
-- **BigInteger クラフト CPU** — ACO の BigInteger 計画を試す実験用 CPU。既存 Quantum CPU と同じ
-  InsaneAE 実行経路を使い、専用テクスチャとサバイバルレシピは持ちません。
+- **BigInteger クラフト CPU** — AE2標準クラフトCPU構造へ組み込む、理論上限容量の
+  クラフトストレージです。Quantum CPU派生ではなく、専用GUI・ticker・並列性能を持ちません。
+  ACO導入時は公開APIの上限を正確な容量として使い、未導入時はlong上限へ戻ります。
+  専用テクスチャとサバイバルレシピは持ちません。
 - **エネルギーセル** — Superdense の上に 13 階層 (Hyperdense 〜 Cosmic、最上段 約 703 京 AE)。
 - **ソーラーパネル** — 4 階層。
 - **改良型チャージャー** — 上位エネルギーセル / ポータブルセルを現実的な時間で充電できます。

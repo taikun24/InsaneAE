@@ -86,8 +86,8 @@ mandatory = false
 versionRange = "[1.4,)"
 ordering = "AFTER"
 side = "BOTH"
-# AE2 Crafting Optimizer - 任意。導入時は公開BigInteger量会計APIをQuantum CPUの
-# 完成品待ち台帳へ使用する。ACOが無くても内蔵の同一規則へフォールバックする。
+# AE2 Crafting Optimizer - 任意。導入時は公開BigInteger APIを通常クラフトCPUの
+# 正確な容量とQuantum CPUの完成品待ち台帳へ接続する。未導入時はlong容量と内蔵台帳へ戻る。
 [[dependencies."${mod_id}"]]
 modId = "ae2_crafting_optimizer"
 mandatory = false

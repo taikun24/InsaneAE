@@ -86,8 +86,8 @@ public class ModBlockStateProvider extends BlockStateProvider {
             simpleBlock(ModBlocks.SOLAR_PANELS.get(tier).get(), handwritten(tier.id()));
         }
         simpleBlock(ModBlocks.QUANTUM_CPU.get(), handwritten("quantum_cpu"));
-        // 実験用CPUは、標準missing-textureを貼る専用モデルへ明示的に割り当てる。
-        simpleBlock(ModBlocks.BIG_INTEGER_CPU.get(), handwritten("big_integer_cpu"));
+        // 通常クラフトストレージとしてformed状態を持つが、両状態とも意図的にmissing-textureを使う。
+        craftingUnitWithSingleModel(ModBlocks.BIG_INTEGER_CPU.get(), handwritten("big_integer_cpu"));
         simpleBlock(ModBlocks.IMPROVED_CHARGER.get(), handwritten("improved_charger"));
 
         // 超特大インターフェイスはただのキューブ。テクスチャは AE2 の ME インターフェイスの
@@ -133,6 +133,15 @@ public class ModBlockStateProvider extends BlockStateProvider {
                 .modelForState().modelFile(unformed).addModel()
                 .partialState().with(AbstractCraftingUnitBlock.FORMED, true)
                 .modelForState().modelFile(new ModelFile.UncheckedModelFile(formedModel)).addModel();
+    }
+
+    /** formedの前後で同じモデルを使う、通常クラフトユニット用のblockstateを生成する。 */
+    private void craftingUnitWithSingleModel(net.minecraft.world.level.block.Block block, ModelFile model) {
+        getVariantBuilder(block)
+                .partialState().with(AbstractCraftingUnitBlock.FORMED, false)
+                .modelForState().modelFile(model).addModel()
+                .partialState().with(AbstractCraftingUnitBlock.FORMED, true)
+                .modelForState().modelFile(model).addModel();
     }
 
     /** 残量 0〜4 の 5 状態を持つエネルギーセル 1 種ぶんを出す。 */

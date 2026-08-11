@@ -235,21 +235,12 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
 
     @Override
     public AEItemKey getTerminalIcon() {
-        return AEItemKey.of(cpuBlock());
+        return AEItemKey.of(ModBlocks.QUANTUM_CPU.get());
     }
 
     @Override
     public ItemStack getMainMenuIcon() {
-        return new ItemStack(cpuBlock());
-    }
-
-    /** 現在設置されている CPU の種類に合わせて端末・GUIのアイコンを選ぶ。 */
-    private net.minecraft.world.level.block.Block cpuBlock() {
-        // BigInteger CPUだけを専用名で表示し、既存Quantum CPUの表示は変えない。
-        if (getBlockState().is(ModBlocks.BIG_INTEGER_CPU.get())) {
-            return ModBlocks.BIG_INTEGER_CPU.get();
-        }
-        return ModBlocks.QUANTUM_CPU.get();
+        return new ItemStack(ModBlocks.QUANTUM_CPU.get());
     }
 
     /**
