@@ -2,11 +2,9 @@ package jp.main.taikun.insaneae.menu;
 
 import appeng.helpers.InterfaceLogicHost;
 import appeng.menu.MenuOpener;
-import appeng.menu.guisync.GuiSync;
 import appeng.menu.implementations.InterfaceMenu;
 import appeng.menu.locator.MenuLocator;
 import appeng.menu.locator.MenuLocators;
-import jp.main.taikun.insaneae.iface.InsaneInterfaceBlockEntity;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -46,39 +44,8 @@ public class InsaneInterfaceMenu extends InterfaceMenu {
         MenuOpener.addOpener(TYPE, InsaneInterfaceMenu::open);
     }
 
-    private static final String ACTION_TOGGLE_PULL_MODE = "insaneae$togglePullMode";
-
-    private final InterfaceLogicHost host;
-
-    /** 吸い込みモードの表示用ミラー。サーバ側の {@link #broadcastChanges()} が毎 tick 同期する。 */
-    @GuiSync(200)
-    public boolean pullMode;
-
     public InsaneInterfaceMenu(int id, Inventory playerInventory, InterfaceLogicHost host) {
         super(TYPE, id, playerInventory, host);
-        this.host = host;
-        registerClientAction(ACTION_TOGGLE_PULL_MODE, this::togglePullMode);
-    }
-
-    /** 吸い込みモード (隣接インベントリの中身を毎 tick ME へ移す) の切り替え。 */
-    public void togglePullMode() {
-        if (isClientSide()) {
-            sendClientAction(ACTION_TOGGLE_PULL_MODE);
-        } else if (host instanceof InsaneInterfaceBlockEntity be) {
-            be.setPullMode(!be.isPullMode());
-        }
-    }
-
-    public boolean isPullMode() {
-        return pullMode;
-    }
-
-    @Override
-    public void broadcastChanges() {
-        if (isServerSide() && host instanceof InsaneInterfaceBlockEntity be) {
-            pullMode = be.isPullMode();
-        }
-        super.broadcastChanges();
     }
 
     private static InsaneInterfaceMenu fromNetwork(int containerId, Inventory playerInventory,

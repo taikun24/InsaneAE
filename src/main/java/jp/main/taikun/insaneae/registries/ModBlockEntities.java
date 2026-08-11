@@ -145,11 +145,9 @@ public class ModBlockEntities {
         ModBlocks.IMPROVED_CHARGER.get().setBlockEntity(
                 ImprovedChargerBlockEntity.class, IMPROVED_CHARGER.get(), null, null);
         // 超特大インターフェイスの補充処理は InterfaceLogic の Ticker (IGridTickable) が
-        // グリッド側から呼ぶ。ブロックの ticker は吸い込みモード専用
-        // (グリッドのティックマネージャは 1 ノード 1 ティッカーで、InterfaceLogic が使用済み)。
+        // グリッド側から呼ぶので、ブロックの ticker は不要。
         ModBlocks.INSANE_INTERFACE.get().setBlockEntity(
-                InsaneInterfaceBlockEntity.class, INSANE_INTERFACE.get(), null,
-                (level, pos, state, be) -> be.serverTick());
+                InsaneInterfaceBlockEntity.class, INSANE_INTERFACE.get(), null, null);
 
         // 特大パターンプロバイダーは、まとめてあるパターン更新を流すために毎 tick 動く。
         ModBlocks.INSANE_PATTERN_PROVIDER.get().setBlockEntity(
