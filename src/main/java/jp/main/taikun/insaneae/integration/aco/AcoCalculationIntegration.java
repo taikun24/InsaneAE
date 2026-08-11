@@ -3,7 +3,7 @@ package jp.main.taikun.insaneae.integration.aco;
 import com.mojang.logging.LogUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
 import org.slf4j.Logger;
 
 /**
