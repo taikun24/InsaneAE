@@ -1,4 +1,4 @@
-// 1.21.1	2026-08-10T12:28:31.6033456	Block States: insaneae
+// 1.21.1	2026-08-12T03:35:30.1102251	Block States: insaneae
 1217691b26d186472c5298a7a2b69b4980135da4 assets/insaneae/blockstates/16g_crafting_storage.json
 983215dd2cea3593fb796af5e30db33b185fa849 assets/insaneae/blockstates/16k_crafting_accelerator.json
 7e04398b23cf24c4ae4612140bc2c3ecc5d2bb9e assets/insaneae/blockstates/16m_crafting_accelerator.json
@@ -33,6 +33,7 @@ bfbfb65485b84edcdc2f6605ee1c86a67caaa191 assets/insaneae/blockstates/64t_craftin
 b31fb6761948fc6b8613d62e5ebd8185c7ab88eb assets/insaneae/blockstates/64x_crafting_accelerator.json
 8fd349bde1d66c0f00f822fa88dd1c4b796bd85a assets/insaneae/blockstates/8e_crafting_storage.json
 9d13afea365d2853a74e3d59ac00d52f94d6e7a7 assets/insaneae/blockstates/advanced_solar_panel.json
+ea1e47e3b02e8f1cbe86e10dbd1692b98f5cf357 assets/insaneae/blockstates/big_integer_cpu.json
 ae9df8af61e1ca66d164634a1ac1b5ad2947274c assets/insaneae/blockstates/collapsar_energy_cell.json
 a8b4942eb58cb90c37ed301f7579cc0f59fe8ec7 assets/insaneae/blockstates/cosmic_energy_cell.json
 ad325049d9cd17a7a68005d22182d3c75ba85ec2 assets/insaneae/blockstates/degenerate_energy_cell.json
