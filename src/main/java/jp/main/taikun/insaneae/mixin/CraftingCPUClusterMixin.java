@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 
@@ -64,8 +65,16 @@ public abstract class CraftingCPUClusterMixin implements ICoProcessorCount {
     @Unique
     private static final int INT_CAP = Integer.MAX_VALUE - 1;
 
+    /** AE2のクラフトCPU容量として公開できるlongの上限。 */
+    @Unique
+    private static final long STORAGE_CAP = Long.MAX_VALUE;
+
     @Shadow
     private int accelerator;
+
+    /** AE2本体のクラフトストレージ合計。longの範囲を超えた時だけ上限へ飽和させる。 */
+    @Shadow
+    private long storage;
 
     /** このクラスタを構成するブロック。AE2 はここへ足すだけで、抜くときはクラスタごと作り直す。 */
     @Shadow
@@ -124,6 +133,31 @@ public abstract class CraftingCPUClusterMixin implements ICoProcessorCount {
         // 1 回の加算でのラップは高々 1 周ぶん。
         if (accelerator < 0 || accelerator > INT_CAP) {
             accelerator = INT_CAP;
+        }
+    }
+
+    /**
+     * 4E以上のストレージを複数接続した合計をlongの正数範囲へ収める。
+     *
+     * <p>AE2本体は正の容量同士を通常加算するため、4Eを2個接続すると
+     * {@code 2^62 + 2^62} が {@code Long.MIN_VALUE} へ折り返す。
+     * 8E相当以上はAE2の容量API自体がlongなので、最大値を超えた分は
+     * {@link Long#MAX_VALUE} として扱う。</p>
+     */
+    @Inject(method = "addBlockEntity", at = @At("RETURN"), require = 0)
+    private void insaneae$saturateStorage(CraftingBlockEntity blockEntity, CallbackInfo ci) {
+        // 正の容量の加算で負値になった場合だけ、longの上限へ戻す。
+        if (storage < 0L) {
+            storage = STORAGE_CAP;
+        }
+    }
+
+    /** 他Modの加算順序で負値が一時的に残っても、AE2へは正のlong上限だけを返す。 */
+    @Inject(method = "getAvailableStorage", at = @At("RETURN"), cancellable = true, require = 0)
+    private void insaneae$saturateAvailableStorage(CallbackInfoReturnable<Long> cir) {
+        // UI・CPU選択・容量予約へ負の容量を流さない。
+        if (cir.getReturnValue() < 0L) {
+            cir.setReturnValue(STORAGE_CAP);
         }
     }
 
