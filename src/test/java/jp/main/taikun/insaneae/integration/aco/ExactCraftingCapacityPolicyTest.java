@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Test;
 class ExactCraftingCapacityPolicyTest {
     /** 4 EiBを2台つないだ正確な合計。longの正数上限より1大きい。 */
     private static final BigInteger TWO_TIMES_FOUR_EIB = BigInteger.ONE.shiftLeft(63);
+    /** 8 EiBを2台つないだ正確な16 EiB容量。 */
+    private static final BigInteger TWO_TIMES_EIGHT_EIB = BigInteger.ONE.shiftLeft(64);
 
     @Test
     void acceptsOrderEqualToTwoFourEStorageBlocks() {
@@ -22,6 +24,20 @@ class ExactCraftingCapacityPolicyTest {
         assertFalse(ExactCraftingCapacityPolicy.fits(
                 TWO_TIMES_FOUR_EIB.add(BigInteger.ONE),
                 TWO_TIMES_FOUR_EIB));
+    }
+
+    @Test
+    void acceptsSixteenEibOrderWithTwoEightEStorageBlocks() {
+        assertTrue(ExactCraftingCapacityPolicy.fits(
+                TWO_TIMES_EIGHT_EIB,
+                TWO_TIMES_EIGHT_EIB));
+    }
+
+    @Test
+    void rejectsOnlyAfterExceedingTheFullSixteenEibCapacity() {
+        assertFalse(ExactCraftingCapacityPolicy.fits(
+                TWO_TIMES_EIGHT_EIB.add(BigInteger.ONE),
+                TWO_TIMES_EIGHT_EIB));
     }
 
     @Test

@@ -5,6 +5,7 @@ import appeng.block.crafting.ICraftingUnitType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 
+import java.math.BigInteger;
 import java.util.function.Supplier;
 
 /**
@@ -16,8 +17,9 @@ import java.util.function.Supplier;
  * その上 (1G〜) だけを担当する。</p>
  *
  * <p>容量は 1 段ごとに 4 倍 (2 ビットシフト)。最上段の {@link #STORAGE_8E} は
- * AE2の単体long境界として{@code Long.MAX_VALUE}を持つ。複数ブロックの合計は
- * InsaneAEのクラスタMixinがBigIntegerで計算するため、4Eを複数接続しても容量計算を失わない。</p>
+ * AE2へ返す単体long互換値だけ{@code Long.MAX_VALUE}へ飽和させ、正本は
+ * {@code 2^63 B = 8 EiB}として保持する。複数ブロックの合計はInsaneAEの
+ * クラスタMixinがBigIntegerで計算するため、8Eを2個接続すれば正確に16Eになる。</p>
  *
  * <p><b>long境界:</b> AE2の {@code CraftingCPUCluster.storage} は {@code long} だが、
  * InsaneAEは別に正確なBigInteger容量を保持する。AE2互換のlong getterへ返すときだけ
@@ -45,21 +47,27 @@ public enum InsaneCraftingUnitType implements ICraftingUnitType {
     STORAGE_256P("256p", 1L << 58),
     STORAGE_1E("1e", 1L << 60),
     STORAGE_4E("4e", 1L << 62),
-    /** long の上限 (2^63-1 バイト ≒ 8 EiB)。1 CPU に 1 個のみ運用可 (複数だと加算オーバーフロー)。 */
-    STORAGE_8E("8e", Long.MAX_VALUE);
+    /** AE2互換値はlong上限、BigInteger正本は2^63バイトの正確な8 EiB。 */
+    STORAGE_8E("8e", Long.MAX_VALUE, BigInteger.ONE.shiftLeft(63));
 
     /** 全階層で流用している AE2 の見た目 (専用アート未用意のため)。 */
     public static final CraftingUnitType PLACEHOLDER_LOOK = CraftingUnitType.STORAGE_256K;
 
     private final String id;
     private final long storageBytes;
+    private final BigInteger exactStorageBytes;
 
     /** 登録後に {@code ModBlocks} が設定する、この階層に対応する BlockItem のサプライヤ。 */
     private Supplier<Item> item = () -> Items.AIR;
 
     InsaneCraftingUnitType(String id, long storageBytes) {
+        this(id, storageBytes, BigInteger.valueOf(storageBytes));
+    }
+
+    InsaneCraftingUnitType(String id, long storageBytes, BigInteger exactStorageBytes) {
         this.id = id;
         this.storageBytes = storageBytes;
+        this.exactStorageBytes = exactStorageBytes;
     }
 
     /** 階層 ID。例: "1g"。 */
@@ -98,6 +106,11 @@ public enum InsaneCraftingUnitType implements ICraftingUnitType {
     @Override
     public long getStorageBytes() {
         return storageBytes;
+    }
+
+    /** long互換境界へ丸める前の、このストレージブロック一個ぶんの正確な容量。 */
+    public BigInteger exactStorageBytes() {
+        return exactStorageBytes;
     }
 
     @Override
