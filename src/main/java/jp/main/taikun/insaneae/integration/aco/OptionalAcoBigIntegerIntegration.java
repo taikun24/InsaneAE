@@ -1,7 +1,7 @@
 package jp.main.taikun.insaneae.integration.aco;
 
 import com.mojang.logging.LogUtils;
-import net.neoforged.fml.ModList;
+import net.minecraftforge.fml.ModList;
 import org.slf4j.Logger;
 
 /** ACOが導入・有効な場合だけ公開BigInteger APIを選ぶ入口。 */
