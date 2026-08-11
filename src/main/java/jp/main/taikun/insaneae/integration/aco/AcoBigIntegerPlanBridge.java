@@ -24,7 +24,7 @@ public final class AcoBigIntegerPlanBridge {
     private static final String ACO_API_CLASS =
             "com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi";
     private static final AtomicReference<Methods> METHODS = new AtomicReference<>();
-    private static final Methods UNAVAILABLE = new Methods(null, null, null);
+    private static final Methods UNAVAILABLE = new Methods(null, null, null, null);
 
     private AcoBigIntegerPlanBridge() {
     }
@@ -44,11 +44,12 @@ public final class AcoBigIntegerPlanBridge {
                 return Optional.empty();
             }
             Object view = result.get();
+            BigInteger exactBytes = (BigInteger) methods.exactBytes().invoke(view);
             @SuppressWarnings("unchecked")
             Map<IPatternDetails, BigInteger> patternTimes =
                     (Map<IPatternDetails, BigInteger>) methods.patternTimes().invoke(view);
             boolean simulation = (boolean) methods.simulation().invoke(view);
-            return Optional.of(new Plan(simulation, Map.copyOf(patternTimes)));
+            return Optional.of(new Plan(exactBytes, simulation, Map.copyOf(patternTimes)));
         } catch (IllegalAccessException | InvocationTargetException | RuntimeException failure) {
             return Optional.empty();
         }
@@ -114,6 +115,7 @@ public final class AcoBigIntegerPlanBridge {
             resolved = new Methods(
                     api.getMethod("inspectBigIntegerPlan", ICraftingPlan.class),
                     null,
+                    null,
                     null);
             Class<?> viewType = Class.forName(
                     "com.syaru.ae2craftingoptimizer.api.big.BigIntegerCraftingPlanView",
@@ -121,6 +123,7 @@ public final class AcoBigIntegerPlanBridge {
                     AcoBigIntegerPlanBridge.class.getClassLoader());
             resolved = new Methods(
                     resolved.inspectPlan(),
+                    viewType.getMethod("exactBytes"),
                     viewType.getMethod("patternTimes"),
                     viewType.getMethod("simulation"));
         } catch (ReflectiveOperationException | LinkageError failure) {
@@ -131,14 +134,21 @@ public final class AcoBigIntegerPlanBridge {
     }
 
     /** Publicly immutable subset used by InsaneAE's job bridge. */
-    public record Plan(boolean simulation, Map<IPatternDetails, BigInteger> patternTimes) {
+    public record Plan(
+            BigInteger exactBytes,
+            boolean simulation,
+            Map<IPatternDetails, BigInteger> patternTimes) {
         public Plan {
+            if (exactBytes == null || exactBytes.signum() < 0) {
+                throw new IllegalArgumentException("exactBytes must not be negative");
+            }
             patternTimes = Map.copyOf(patternTimes);
         }
     }
 
     private record Methods(
             Method inspectPlan,
+            Method exactBytes,
             Method patternTimes,
             Method simulation) {
     }

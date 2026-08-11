@@ -37,6 +37,9 @@
   カウンタの型を問わない呼び方に変えています。
 - **超高密度エナジーセルの日本語名を「極超高密度エナジーセル」に変更しました**
   (Issue #1)。MEGA Cells の Superdense Energy Cell の日本語名と同名になっていました。
+- ACOのBigInteger計画を提出するとき、必要容量とInsaneAE CPUの正確なBigInteger容量を
+  比較するようにしました。容量内ならAE2本来の1 CPU 1ジョブ経路へそのまま渡し、
+  容量を超える注文だけを`CPU_TOO_SMALL`として拒否します。
 
 ## 1.0.4
 

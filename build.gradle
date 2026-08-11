@@ -117,6 +117,12 @@ dependencies {
 
     // テスト用
     localRuntime "curse.maven:jei-238222:${jei_file}"
+    testImplementation platform("org.junit:junit-bom:5.10.2")
+    testImplementation "org.junit.jupiter:junit-jupiter"
+}
+
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
 }
 
 // src/main/templates 内の ${} を gradle.properties の値で置換する。
