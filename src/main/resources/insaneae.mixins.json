@@ -9,6 +9,7 @@
     "BasicCellInventoryMixin",
     "ConfigInventoryAccessor",
     "CraftingCPUClusterMixin",
+    "CraftingCPUNameMixin",
     "CraftingCpuLogicMixin",
     "CraftingUnitThreadLimitMixin",
     "ElapsedTimeTrackerInvoker",
@@ -18,7 +19,9 @@
     "TaskProgressAccessor",
     "TooltipsMixin"
   ],
-  "client": [],
+  "client": [
+    "BigIntegerCPUSelectionListMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   },

@@ -19,6 +19,7 @@
   "block.insaneae.quantum_cpu": "Quantum CPU",
   "block.insaneae.big_integer_cpu": "BigInteger Crafting CPU",
   "block.insaneae.big_integer_cpu.desc": "Experimental BigInteger crafting CPU. Uses the existing InsaneAE and ACO execution path.",
+  "gui.insaneae.big_integer_cpu": "BigInteger Crafting CPU",
   "gui.insaneae.quantum_cpu.previous_page": "Previous page",
   "gui.insaneae.quantum_cpu.next_page": "Next page",
   "gui.insaneae.quantum_cpu.return_inventory": "Return Inventory (items handed back to the network)",
