@@ -43,6 +43,8 @@
   "gui.insaneae.insane_interface.previous_page": "前のページ",
   "gui.insaneae.insane_interface.next_page": "次のページ",
   "gui.insaneae.insane_interface.set_amount_mode": "ストック数を設定 (押してから設定枠をクリック)",
+  "gui.insaneae.insane_interface.pull_mode_on": "吸い込みモード: 有効\n隣接インベントリの中身を毎tick MEネットワークへ移す\n(押し込みと違いスタックサイズ/tickの上限が無い)",
+  "gui.insaneae.insane_interface.pull_mode_off": "吸い込みモード: 無効",
   "block.insaneae.insane_pattern_provider": "特大パターンプロバイダー",
   "block.insaneae.insane_pattern_provider.desc": "パターンを1620個 (30ページ) 登録できるパターンプロバイダ\n加工パターンはこちらへ (Quantum CPUは受け付けなくなった)",
   "block.insaneae.solar_panel": "AEソーラーパネル",

@@ -43,6 +43,8 @@
   "gui.insaneae.insane_interface.previous_page": "Previous page",
   "gui.insaneae.insane_interface.next_page": "Next page",
   "gui.insaneae.insane_interface.set_amount_mode": "Set amount to stock (enable, then click a config slot)",
+  "gui.insaneae.insane_interface.pull_mode_on": "Pull mode: enabled\nMoves the contents of adjacent inventories into the ME network every tick\n(unlike pushing, not limited to one stack per tick)",
+  "gui.insaneae.insane_interface.pull_mode_off": "Pull mode: disabled",
   "block.insaneae.insane_pattern_provider": "Insane Pattern Provider",
   "block.insaneae.insane_pattern_provider.desc": "A pattern provider with 1620 pattern slots (30 pages).\nPut processing patterns here — the Quantum CPU no longer accepts them.",
   "block.insaneae.solar_panel": "AE Solar Panel",
