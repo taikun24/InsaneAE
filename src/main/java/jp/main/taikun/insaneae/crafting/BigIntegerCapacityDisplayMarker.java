@@ -21,8 +21,12 @@ public final class BigIntegerCapacityDisplayMarker {
     private static final int MAX_COMPONENTS_TO_SCAN = 64;
     /** 科学表記へ使う有効数字の数。 */
     private static final int SCIENTIFIC_SIGNIFICANT_DIGITS = 4;
-    /** マーカーへ載せる先頭桁数。これ以上は指数表示に不要。 */
-    private static final int LEADING_DIGITS = 19;
+    /** 16Eなど通常のクラスタ容量を正確な二進単位へ戻せるよう保持する最大桁数。 */
+    private static final int LEADING_DIGITS = 64;
+    /** 1 EiBを表すバイト数。 */
+    private static final BigInteger EIB_BYTES = BigInteger.ONE.shiftLeft(60);
+    /** UI幅を守りつつ整数E表記を使える最大桁数。 */
+    private static final int MAX_EIB_INTEGER_DIGITS = 6;
 
     private BigIntegerCapacityDisplayMarker() {
     }
@@ -76,6 +80,12 @@ public final class BigIntegerCapacityDisplayMarker {
 
     /** マーカーの値をCPU一覧・ツールチップへ表示する。 */
     public static String format(DisplayValue value) {
+        String exactEib = formatExactEib(value);
+        // 正確なEiB整数へ戻せる容量は、16Eのような短いカタログ表記を優先する。
+        if (exactEib != null) {
+            return exactEib;
+        }
+
         String leading = value.leadingDigits();
         int significant = Math.min(SCIENTIFIC_SIGNIFICANT_DIGITS, leading.length());
         String fraction = leading.substring(1, significant);
@@ -87,6 +97,26 @@ public final class BigIntegerCapacityDisplayMarker {
                 ? leading.substring(0, 1)
                 : leading.substring(0, 1) + "." + fraction;
         return mantissa + " × 10^" + (value.decimalDigits() - 1) + " B";
+    }
+
+    /** 全桁を同期できた値がEiBの整数倍なら、短いE表記へ変換する。 */
+    private static String formatExactEib(DisplayValue value) {
+        // 先頭桁しか持たない巨大値を、正確な容量だと推測しない。
+        if (value.leadingDigits().length() != value.decimalDigits()) {
+            return null;
+        }
+        BigInteger exact = new BigInteger(value.leadingDigits());
+        BigInteger[] quotientAndRemainder = exact.divideAndRemainder(EIB_BYTES);
+        // EiBの整数倍でなければ、従来の科学表記へ戻す。
+        if (quotientAndRemainder[1].signum() != 0) {
+            return null;
+        }
+        String eib = quotientAndRemainder[0].toString();
+        // 長い整数をそのままGUIへ出さず、幅を超える場合は科学表記へ戻す。
+        if (eib.length() > MAX_EIB_INTEGER_DIGITS) {
+            return null;
+        }
+        return eib + "E";
     }
 
     private static boolean isMarker(Component component) {
