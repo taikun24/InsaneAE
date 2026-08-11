@@ -12,6 +12,7 @@ import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.KeyCounter;
 import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import appeng.core.definitions.AEBlocks;
+import appeng.core.definitions.AEParts;
 import appeng.items.storage.CreativeCellItem;
 import appeng.me.helpers.MachineSource;
 import appeng.server.testplots.CraftingPatternHelper;
@@ -29,6 +30,7 @@ import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModCells;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
+import jp.main.taikun.insaneae.upgrade.InsaneSpeedCardType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.world.item.ItemStack;
@@ -491,49 +493,45 @@ public final class InsaneAETestPlots {
     }
 
     /**
-     * 超特大インターフェイスの吸い込みモード。
+     * インポートバス + 限界突破加速カードで「1 tick 1 スタック」の壁が無いことの検証。
      *
-     * <p>押し込み ({@code IItemHandler#insertItem}) は送り手が 1 tick に 1 スタックずつしか
-     * 渡してこないため、スタックサイズが搬入速度の上限になる。吸い込みモードは受け手側から
-     * 1 tick に何度も取り出すので、<b>複数スタックを 1 度にまとめて</b> ME へ移せる。
-     * ここでは 10 スタックが 2 tick 以内に全部移ることを見る (押し込みなら 10 tick かかる量)。
-     * 既定 (無効) では吸わないことも見る。</p>
+     * <p>AE2 のインポートバスは {@code ExternalStorageFacade} 経由で隣接インベントリの
+     * <b>全スロットを long 量でまとめて</b>抜くので、パイプの押し込みと違い
+     * スタックサイズが速度の天井にならない。1 活性化あたりの移動量は
+     * {@code getOperationsPerTick} で、そこにうちの加速カードの倍率が掛かる
+     * ({@code IOBusPartMixin})。WARP カード 1 枚 (4096 倍) で 20 スタックが
+     * まとめて動くことを見る (素のバスは 1 活性化 1 個なので、カード無しでは
+     * この時間内に数個しか動かない)。</p>
      */
-    @TestPlot("insaneae_interface_pull_mode")
-    public static void insaneInterfacePullMode(PlotBuilder plot) {
+    @TestPlot("insaneae_import_bus_speed_card")
+    public static void importBusSpeedCard(PlotBuilder plot) {
         plot.creativeEnergyCell("0 -1 0");
-        plot.cable("[0,2] 0 0");
+        plot.cable("0 0 0");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> drive.getInternalInventory().addItems(
                 new ItemStack(ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_1G).get())));
-        plot.blockState("2 0 0", ModBlocks.INSANE_INTERFACE.get().defaultBlockState());
+        plot.part("0 0 0", net.minecraft.core.Direction.UP, AEParts.IMPORT_BUS,
+                bus -> bus.getUpgrades().addItems(new ItemStack(
+                        ModUpgrades.SPEED_CARDS.get(InsaneSpeedCardType.WARP).get())));
 
-        final int stacks = 10;
+        final int stacks = 20;
         final long total = stacks * 64L;
         ItemStack[] chestContents = new ItemStack[stacks];
         for (int i = 0; i < stacks; i++) {
             chestContents[i] = new ItemStack(Items.IRON_INGOT, 64);
         }
-        plot.chest("2 1 0", chestContents);
+        plot.chest("0 1 0", chestContents);
 
         plot.test(helper -> {
-            var pos = new BlockPos(2, 0, 0);
+            var pos = new BlockPos(0, 0, 0);
             var sequence = helper.startSequence();
 
-            // グリッドの起動 (チャネル割り当てまで) を待つ。
-            sequence.thenIdle(10);
-
-            sequence.thenExecute(() -> {
-                helper.check(countInNetwork(helper, Items.IRON_INGOT) == 0,
-                        "吸い込みモードが無効なのに吸っている", pos);
-                ((InsaneInterfaceBlockEntity) helper.getBlockEntity(pos)).setPullMode(true);
-            });
-
-            sequence.thenIdle(2);
+            // グリッドの起動 + バスの活性化 (最短 5 tick 間隔) を 2〜3 回ぶん待つ。
+            sequence.thenIdle(30);
             sequence.thenExecute(() -> {
                 long inNetwork = countInNetwork(helper, Items.IRON_INGOT);
                 helper.check(inNetwork == total,
-                        "2 tick で " + stacks + " スタック全部が移っていない: " + inNetwork + " / " + total
-                                + " (1 tick 1 スタックの壁を超えられていない)", pos);
+                        stacks + " スタックがまとめて動いていない: " + inNetwork + " / " + total
+                                + " (加速カードの倍率がインポートバスに効いていない)", pos);
             });
 
             sequence.thenSucceed();

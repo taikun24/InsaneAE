@@ -75,11 +75,6 @@
       "left": 8,
       "top": 158
     },
-    "togglePullMode": {
-      "$comment": "吸い込みモード。隣接インベントリの中身を毎 tick ME へ移す。",
-      "left": 26,
-      "top": 158
-    },
     "prevPage": {
       "left": 104,
       "top": 158

@@ -3,14 +3,11 @@ package jp.main.taikun.insaneae.iface;
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.security.IActionSource;
-import appeng.api.stacks.AEItemKey;
-import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.AEKeyTypes;
 import appeng.api.stacks.GenericStack;
 import appeng.api.storage.MEStorage;
 import appeng.api.storage.StorageHelper;
-import appeng.blockentity.ServerTickingBlockEntity;
 import appeng.blockentity.misc.InterfaceBlockEntity;
 import appeng.helpers.InterfaceLogic;
 import appeng.menu.ISubMenu;
@@ -21,16 +18,11 @@ import jp.main.taikun.insaneae.menu.InsaneInterfaceMenu;
 import jp.main.taikun.insaneae.mixin.ConfigInventoryAccessor;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.items.IItemHandler;
 
 import java.util.List;
 
@@ -62,7 +54,7 @@ import java.util.List;
  * <b>未設定の枠に来たぶんは ME ネットワークへ直接入れる</b>
  * → {@link InterfaceOverflowInventory}。</p>
  */
-public class InsaneInterfaceBlockEntity extends InterfaceBlockEntity implements ServerTickingBlockEntity {
+public class InsaneInterfaceBlockEntity extends InterfaceBlockEntity {
 
     /** 枠の横並び数。画面のレイアウトもこの値に合わせてある。 */
     public static final int COLUMNS = 9;
@@ -85,25 +77,12 @@ public class InsaneInterfaceBlockEntity extends InterfaceBlockEntity implements 
     public static final long MAX_PER_SLOT = Integer.MAX_VALUE;
 
     /**
-     * 吸い込みモードが 1 tick に呼ぶ取り出し回数の上限。
-     *
-     * <p>アイテムの受け渡しは {@link IItemHandler#extractItem} が 1 回に 1 スタックまでしか
-     * 返さないので、大量に動かすには呼び出しを繰り返すしかない。無制限に繰り返すと
-     * 巨大な倉庫が隣にあるとき 1 tick が終わらなくなるため、回数で頭を打つ
-     * (1024 回 × 1 スタックが 1 tick の上限。残りは次の tick に続きから吸う)。</p>
-     */
-    private static final int PULL_CALL_BUDGET = 1024;
-
-    /**
      * 外に見せるインベントリ。溢れたぶんを ME ネットワークへ直接流す。
      *
      * <p>super のコンストラクタ (= {@link #createLogic()}) より後に初期化されるので、
      * ここでは {@code getInterfaceLogic()} を安全に触れる。</p>
      */
     private final InterfaceOverflowInventory exposedInventory = new InterfaceOverflowInventory(this);
-
-    /** 吸い込みモード。有効な間、隣接インベントリの中身を毎 tick ME ネットワークへ移す。 */
-    private boolean pullMode;
 
     public InsaneInterfaceBlockEntity(BlockEntityType<?> blockEntityType, BlockPos pos, BlockState blockState) {
         super(blockEntityType, pos, blockState);
@@ -146,114 +125,6 @@ public class InsaneInterfaceBlockEntity extends InterfaceBlockEntity implements 
     /** 他 Mod のアダプタに見せるインベントリ ({@code GENERIC_INTERNAL_INV})。 */
     public InterfaceOverflowInventory getExposedInventory() {
         return exposedInventory;
-    }
-
-    // ---------------------------------------------------------------- 吸い込みモード
-
-    public boolean isPullMode() {
-        return pullMode;
-    }
-
-    public void setPullMode(boolean pullMode) {
-        if (this.pullMode != pullMode) {
-            this.pullMode = pullMode;
-            saveChanges();
-        }
-    }
-
-    @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
-        super.saveAdditional(data, registries);
-        data.putBoolean("pullMode", pullMode);
-    }
-
-    @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
-        pullMode = data.getBoolean("pullMode");
-    }
-
-    /**
-     * 吸い込みモード: 隣接インベントリの中身を ME ネットワークへ直接移す。
-     *
-     * <p>押し込み ({@code IItemHandler#insertItem}) は<b>送り手が 1 tick に 1 スタックずつ</b>
-     * しか渡してこないため、スタックサイズがそのまま搬入速度の上限になってしまう
-     * (BiggerStacks 等でスタックが 65536 でも 65536 個/t 止まり)。受け手側から
-     * <b>1 tick に何度も取り出せば</b>この上限を超えられる。上限は
-     * {@link #PULL_CALL_BUDGET} 回 × スタックサイズ / tick。</p>
-     *
-     * <p>電力はネットワーク在庫への搬入と同じ規約 ({@code poweredInsert}) で消費する。
-     * 電力が足りないぶんは移動しない (取りこぼしは起きない: 先に受け入れ可能量を
-     * シミュレートしてから、その量だけ取り出して入れる)。</p>
-     */
-    @Override
-    public void serverTick() {
-        if (!pullMode || !getMainNode().isActive()) {
-            return;
-        }
-        IGrid grid = getMainNode().getGrid();
-        if (grid == null) {
-            return;
-        }
-        MEStorage networkInv = grid.getStorageService().getInventory();
-        IActionSource source = IActionSource.ofMachine(getInterfaceLogic());
-
-        int calls = PULL_CALL_BUDGET;
-        for (Direction side : Direction.values()) {
-            IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK,
-                    worldPosition.relative(side), side.getOpposite());
-            if (handler == null) {
-                continue;
-            }
-            calls = pullFrom(handler, grid, networkInv, source, calls);
-            if (calls <= 0) {
-                return;
-            }
-        }
-    }
-
-    /** 1 つのインベントリから吸えるだけ吸う。残りの呼び出し回数を返す。 */
-    private int pullFrom(IItemHandler handler, IGrid grid, MEStorage networkInv, IActionSource source,
-            int calls) {
-        for (int slot = 0; slot < handler.getSlots() && calls > 0; slot++) {
-            while (calls > 0) {
-                calls--;
-                ItemStack available = handler.extractItem(slot, Integer.MAX_VALUE, true);
-                if (available.isEmpty()) {
-                    break;
-                }
-                AEItemKey what = AEItemKey.of(available);
-                long accepted = StorageHelper.poweredInsert(grid.getEnergyService(), networkInv,
-                        what, available.getCount(), source, Actionable.SIMULATE);
-                if (accepted <= 0) {
-                    // ネットワークが満杯か電力切れ。このアイテムはこれ以上入らない。
-                    break;
-                }
-                ItemStack extracted = handler.extractItem(slot, (int) accepted, false);
-                if (extracted.isEmpty()) {
-                    break;
-                }
-                long inserted = StorageHelper.poweredInsert(grid.getEnergyService(), networkInv,
-                        AEItemKey.of(extracted), extracted.getCount(), source, Actionable.MODULATE);
-                if (inserted < extracted.getCount()) {
-                    // シミュレートと実行の間で状況が変わった場合の保険。取り出してしまった
-                    // ぶんは在庫枠に置き、次の tick に InterfaceLogic が押し出す。
-                    stashLeftover(AEItemKey.of(extracted), extracted.getCount() - inserted);
-                    return 0;
-                }
-                // extractItem はスタック単位で頭打ちになる相手が多いので、
-                // 同じ枠が空になるまで続けて吸う (ループ先頭のシミュレートで空を検知して抜ける)。
-            }
-        }
-        return calls;
-    }
-
-    /** ネットワークに入り切らなかったぶんを在庫枠へ退避する (消滅させないための保険)。 */
-    private void stashLeftover(AEKey what, long amount) {
-        ConfigInventory storage = getInterfaceLogic().getStorage();
-        for (int slot = 0; slot < storage.size() && amount > 0; slot++) {
-            amount -= storage.insert(slot, what, amount, Actionable.MODULATE);
-        }
     }
 
     /**
