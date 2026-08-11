@@ -86,8 +86,8 @@ public class ModBlockStateProvider extends BlockStateProvider {
             simpleBlock(ModBlocks.SOLAR_PANELS.get(tier).get(), handwritten(tier.id()));
         }
         simpleBlock(ModBlocks.QUANTUM_CPU.get(), handwritten("quantum_cpu"));
-        // BigInteger CPU は実験用のため画像を持たせず、空モデルだけを生成する。
-        simpleBlock(ModBlocks.BIG_INTEGER_CPU.get(), textureless("big_integer_cpu"));
+        // BigInteger CPU は通常 Quantum CPU の完成済みモデルとテクスチャを流用する。
+        simpleBlock(ModBlocks.BIG_INTEGER_CPU.get(), handwritten("quantum_cpu"));
         simpleBlock(ModBlocks.IMPROVED_CHARGER.get(), handwritten("improved_charger"));
 
         // 超特大インターフェイスはただのキューブ。テクスチャは AE2 の ME インターフェイスの
@@ -116,11 +116,6 @@ public class ModBlockStateProvider extends BlockStateProvider {
      */
     private ModelFile handwritten(String id) {
         return models().getExistingFile(ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/" + id));
-    }
-
-    /** テクスチャを参照しない空のブロックモデルを生成する。 */
-    private ModelFile textureless(String id) {
-        return models().withExistingParent(id, "block/block");
     }
 
     /**
