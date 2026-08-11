@@ -42,7 +42,7 @@ public class ModBlockEntities {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<QuantumCpuBlockEntity>> QUANTUM_CPU =
             BLOCK_ENTITY_TYPES.register("quantum_cpu", () -> BlockEntityType.Builder
                     .of((pos, state) -> new QuantumCpuBlockEntity(quantumCpuType(), pos, state),
-                            ModBlocks.QUANTUM_CPU.get(), ModBlocks.BIG_INTEGER_CPU.get())
+                            ModBlocks.QUANTUM_CPU.get())
                     .build(null));
 
     /**
@@ -143,9 +143,6 @@ public class ModBlockEntities {
 
         // Quantum CPU は完成品をまとめて ME に戻すために毎 tick 動く必要がある。
         ModBlocks.QUANTUM_CPU.get().setBlockEntity(QuantumCpuBlockEntity.class, QUANTUM_CPU.get(), null,
-                (level, pos, state, be) -> be.serverTick());
-        // BigInteger CPU も同じ実行経路を使うため、別の台帳や ticker を複製しない。
-        ModBlocks.BIG_INTEGER_CPU.get().setBlockEntity(QuantumCpuBlockEntity.class, QUANTUM_CPU.get(), null,
                 (level, pos, state, be) -> be.serverTick());
 
         // エネルギーセルは IGridTickable なのでグリッド側から呼ばれる (ブロックの ticker は不要)。

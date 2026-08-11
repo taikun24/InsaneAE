@@ -18,7 +18,7 @@
   "insaneae.upgrade_group.advanced_ae": "AdvancedAE Machines",
   "block.insaneae.quantum_cpu": "Quantum CPU",
   "block.insaneae.big_integer_cpu": "BigInteger Crafting CPU",
-  "block.insaneae.big_integer_cpu.desc": "Experimental BigInteger crafting CPU. Uses the existing InsaneAE and ACO execution path.",
+  "block.insaneae.big_integer_cpu.desc": "A theoretical-capacity crafting storage block for standard AE2 crafting CPU structures.",
   "block.insaneae.big_integer_cpu.capacity": "ACO theoretical crafting capacity: %s",
   "gui.insaneae.big_integer_cpu": "BigInteger Crafting CPU",
   "gui.insaneae.quantum_cpu.previous_page": "Previous page",

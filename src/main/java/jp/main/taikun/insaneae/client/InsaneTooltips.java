@@ -68,7 +68,7 @@ public final class InsaneTooltips {
             }
         }
 
-        // BigInteger CPUだけは、ACO側の計算・保存上限をカタログ容量として表示する。
+        // BigIntegerクラフトストレージだけは、ACO側の計算・保存上限をカタログ容量として表示する。
         if (item != ModBlocks.BIG_INTEGER_CPU.get().asItem()) {
             return;
         }

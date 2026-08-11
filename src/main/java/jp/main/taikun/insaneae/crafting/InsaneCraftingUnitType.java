@@ -29,7 +29,7 @@ import java.util.function.Supplier;
  * <p>見た目は AE2 の 256k テクスチャ／モデルを全階層で流用中 ({@link #PLACEHOLDER_LOOK})。
  * 専用アートを用意するまでの暫定だが、機能面は完全に動作する。</p>
  */
-public enum InsaneCraftingUnitType implements ICraftingUnitType {
+public enum InsaneCraftingUnitType implements ExactCraftingUnitType {
     STORAGE_1G("1g", 1L << 30),
     STORAGE_4G("4g", 1L << 32),
     STORAGE_16G("16g", 1L << 34),

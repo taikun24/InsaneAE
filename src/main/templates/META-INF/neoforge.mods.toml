@@ -61,8 +61,8 @@ versionRange = "[1.6,)"
 ordering = "AFTER"
 side = "BOTH"
 
-# AE2 Crafting Optimizer - 任意。導入時は公開BigInteger量会計APIを使用し、
-# 未導入時はInsaneAEのlong互換経路へ戻る。
+# AE2 Crafting Optimizer - 任意。導入時は公開BigInteger APIを通常クラフトCPUの
+# 正確な容量とQuantum CPUの完成品待ち台帳へ接続し、未導入時はlong互換経路へ戻る。
 [[dependencies."${mod_id}"]]
 modId = "ae2_crafting_optimizer"
 type = "optional"

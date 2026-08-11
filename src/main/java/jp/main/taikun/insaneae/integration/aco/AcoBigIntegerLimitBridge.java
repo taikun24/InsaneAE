@@ -5,7 +5,7 @@ import java.math.BigInteger;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** ACOを必須依存にせず、公開されているBigInteger実装上限だけを表示へ渡す。 */
+/** ACOを必須依存にせず、公開されているBigInteger実装上限を容量計算と表示へ渡す。 */
 public final class AcoBigIntegerLimitBridge {
     private static final String ACO_API_CLASS =
             "com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi";

@@ -10,7 +10,7 @@ import appeng.crafting.execution.CraftingSubmitResult;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import jp.main.taikun.insaneae.crafting.IBigCraftingCapacity;
 import jp.main.taikun.insaneae.crafting.ICoProcessorCount;
-import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
+import jp.main.taikun.insaneae.crafting.ExactCraftingUnitType;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerPlanBridge;
 import jp.main.taikun.insaneae.integration.aco.ExactCraftingCapacityPolicy;
 import org.slf4j.Logger;
@@ -275,9 +275,9 @@ public abstract class CraftingCPUClusterMixin
         BigInteger total = STORAGE_ZERO;
         for (CraftingBlockEntity blockEntity : blockEntities) {
             var unitType = blockEntity.getUnitBlock().type;
-            // InsaneAEの8EはAE2互換longと正確なBigInteger容量が異なるため、正本を加算する。
-            if (unitType instanceof InsaneCraftingUnitType insaneType) {
-                total = total.add(insaneType.exactStorageBytes());
+            // long互換値と正確値が異なるユニットは、型が公開するBigInteger正本を加算する。
+            if (unitType instanceof ExactCraftingUnitType exactType) {
+                total = total.add(exactType.exactStorageBytes());
                 continue;
             }
             long perBlock = blockEntity.getStorageBytes();
