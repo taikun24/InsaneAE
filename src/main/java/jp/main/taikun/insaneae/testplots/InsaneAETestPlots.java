@@ -801,16 +801,17 @@ public final class InsaneAETestPlots {
      * (報告: @syarukasu さん)。門番は {@code CraftBranchFailure} で枝を落とすため、
      * 計算は「失敗またはシミュレーション」で終わり、負の量が計画に載ることは無い。</p>
      *
-     * <p>2 経路を両方踏む: 単一パターンの一括計算 (times が一度に来る) と、
-     * コンテナアイテム持ちパターンの 1 回ずつループ (まとめ処理側の門番)。</p>
+     * <p>検証するのは<b>単一パターンの一括計算</b> (times が一度に来る) — 8^21 の入れ子が
+     * 実際に踏む経路。もう一方の 1 回ずつループ側の門番 (10^18 超の直接発注が必要) は、
+     * シミュレーションが AE2 素の「終わらない 1 回ずつ計算」に落ちる仕様のため
+     * ここでは待てない (実行パスの保護は同じ throw で効いている)。</p>
      */
     @TestPlot("insaneae_calc_overflow_guard")
     public static void calcOverflowGuard(PlotBuilder plot) {
         plot.creativeEnergyCell("0 -1 0");
         plot.cable("[0,2] 0 0");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
-            drive.getInternalInventory().addItems(CreativeCellItem.ofItems(
-                    Items.MILK_BUCKET, Items.SUGAR, Items.EGG, Items.WHEAT, Items.OAK_LOG));
+            drive.getInternalInventory().addItems(CreativeCellItem.ofItems(Items.OAK_LOG));
         });
         plot.block("2 0 0", AEBlocks.PATTERN_PROVIDER);
 
@@ -821,38 +822,30 @@ public final class InsaneAETestPlots {
             var sequence = helper.startSequence();
 
             sequence.thenExecute(() -> {
-                var level = helper.getLevel();
                 var provider = (PatternProviderBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
                 // 丸太 9 → ダイヤ 1 (加工パターン): 単一パターンの一括計算経路。
                 provider.getLogic().getPatternInv().addItems(
                         processingPattern(Items.OAK_LOG, 9, Items.DIAMOND, 1));
-                // ケーキ (コンテナアイテム持ち): 1 回ずつループ = まとめ処理側の経路。
-                provider.getLogic().getPatternInv().addItems(
-                        CraftingPatternHelper.encodeShapelessCraftingRecipe(level,
-                                new ItemStack(Items.MILK_BUCKET), new ItemStack(Items.MILK_BUCKET),
-                                new ItemStack(Items.MILK_BUCKET),
-                                new ItemStack(Items.SUGAR), new ItemStack(Items.EGG), new ItemStack(Items.SUGAR),
-                                new ItemStack(Items.WHEAT), new ItemStack(Items.WHEAT),
-                                new ItemStack(Items.WHEAT)));
             });
 
-            // 1) ダイヤ × (Long.MAX/4): 材料は × 9 なので合計が long を超える。
+            // ダイヤ × (Long.MAX/4): 材料は × 9 なので合計が long を超える。
             sequence.thenExecuteAfter(1, () -> state.pending = beginCalculation(helper,
                     AEItemKey.of(Items.DIAMOND), Long.MAX_VALUE / 4));
             sequence.thenWaitUntil(() -> checkOverflowRejected(helper, state.pending, "ダイヤ"));
-
-            // 2) ケーキ × (Long.MAX/2): 牛乳バケツ × 3 で合計が long を超える。
-            sequence.thenExecute(() -> {
-                InsaneAEConfig.setBatchCraftingCalculation(true);
-                state.pending = beginCalculation(helper, AEItemKey.of(Items.CAKE), Long.MAX_VALUE / 2);
-            });
-            sequence.thenWaitUntil(() -> checkOverflowRejected(helper, state.pending, "ケーキ"));
 
             sequence.thenSucceed();
         });
     }
 
-    /** 溢れる要求の正解は「失敗」か「シミュレーション」。craft 可能な計画に化けたら不合格。 */
+    /**
+     * 溢れる要求の正解は「作成不可のシミュレーション計画」ただ一つ。
+     *
+     * <ul>
+     *   <li>craft 可能な計画 → 不合格 (負の量が載っている可能性)</li>
+     *   <li>null や例外 → 不合格 (プランが null だと提出側の
+     *       {@code result.simulation()} が NPE になる。実機で発生した回帰)</li>
+     * </ul>
+     */
     private static void checkOverflowRejected(appeng.server.testworld.PlotTestHelper helper,
             Future<ICraftingPlan> pending, String label) {
         if (!pending.isDone()) {
@@ -860,10 +853,12 @@ public final class InsaneAETestPlots {
         }
         try {
             ICraftingPlan plan = pending.get();
-            helper.check(plan == null || plan.simulation(),
+            helper.check(plan != null,
+                    label + ": 計画が null (提出画面が NPE になる)");
+            helper.check(plan.simulation(),
                     label + ": 溢れる要求が craft 可能な計画になった (負の量が載っている可能性)");
-        } catch (ExecutionException rejected) {
-            // 例外で終わるのも正解 (握り潰されて負の量が流れるのが不正解)。
+        } catch (ExecutionException e) {
+            throw new GameTestAssertException(label + " の計算が例外で終わった: " + e.getCause());
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
