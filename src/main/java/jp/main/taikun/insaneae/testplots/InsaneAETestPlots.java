@@ -11,6 +11,7 @@ import appeng.api.stacks.KeyCounter;
 import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import appeng.capabilities.Capabilities;
 import appeng.core.definitions.AEBlocks;
+import appeng.core.definitions.AEParts;
 import appeng.items.storage.CreativeCellItem;
 import appeng.me.helpers.MachineSource;
 import appeng.server.testplots.CraftingPatternHelper;
@@ -27,6 +28,7 @@ import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModCells;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
+import jp.main.taikun.insaneae.upgrade.InsaneSpeedCardType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.world.item.ItemStack;
@@ -1060,6 +1062,52 @@ public final class InsaneAETestPlots {
                 helper.check(inNetwork == total,
                         "2 tick で " + stacks + " スタック全部が移っていない: " + inNetwork + " / " + total
                                 + " (1 tick 1 スタックの壁を超えられていない)", pos);
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    /**
+     * インポートバス + 限界突破加速カードで「1 tick 1 スタック」の壁が無いことの検証。
+     *
+     * <p>AE2 のインポートバスは {@code ExternalStorageFacade} 経由で隣接インベントリの
+     * <b>全スロットを long 量でまとめて</b>抜くので、パイプの押し込みと違い
+     * スタックサイズが速度の天井にならない。1 活性化あたりの移動量は
+     * {@code getOperationsPerTick} で、そこにうちの加速カードの倍率が掛かる
+     * ({@code IOBusPartMixin})。WARP カード 1 枚 (4096 倍) で 20 スタックが
+     * まとめて動くことを見る (素のバスは 1 活性化 1 個なので、カード無しでは
+     * この時間内に数個しか動かない)。</p>
+     */
+    @TestPlot("insaneae_import_bus_speed_card")
+    public static void importBusSpeedCard(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("0 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> drive.getInternalInventory().addItems(
+                new ItemStack(ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_1G).get())));
+        plot.part("0 0 0", net.minecraft.core.Direction.UP, AEParts.IMPORT_BUS,
+                bus -> bus.getUpgrades().addItems(new ItemStack(
+                        ModUpgrades.SPEED_CARDS.get(InsaneSpeedCardType.WARP).get())));
+
+        final int stacks = 20;
+        final long total = stacks * 64L;
+        ItemStack[] chestContents = new ItemStack[stacks];
+        for (int i = 0; i < stacks; i++) {
+            chestContents[i] = new ItemStack(Items.IRON_INGOT, 64);
+        }
+        plot.chest("0 1 0", chestContents);
+
+        plot.test(helper -> {
+            var pos = new BlockPos(0, 0, 0);
+            var sequence = helper.startSequence();
+
+            // グリッドの起動 + バスの活性化 (最短 5 tick 間隔) を 2〜3 回ぶん待つ。
+            sequence.thenIdle(30);
+            sequence.thenExecute(() -> {
+                long inNetwork = countInNetwork(helper, Items.IRON_INGOT);
+                helper.check(inNetwork == total,
+                        stacks + " スタックがまとめて動いていない: " + inNetwork + " / " + total
+                                + " (加速カードの倍率がインポートバスに効いていない)", pos);
             });
 
             sequence.thenSucceed();
