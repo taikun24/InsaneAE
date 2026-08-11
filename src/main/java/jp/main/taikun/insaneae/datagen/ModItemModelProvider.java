@@ -115,7 +115,7 @@ public class ModItemModelProvider extends ItemModelProvider {
 
         getBuilder("quantum_cpu").parent(new ModelFile.UncheckedModelFile(
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/quantum_cpu")));
-        // 専用モデルJSONから通常Quantum CPUを継承し、IDに対応する実モデルを必ず持たせる。
+        // 実験用CPUは、欠損参照ではなく実在する空モデルをアイテム側でも共有する。
         getBuilder("big_integer_cpu").parent(new ModelFile.UncheckedModelFile(
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/big_integer_cpu")));
         getBuilder("improved_charger").parent(new ModelFile.UncheckedModelFile(
