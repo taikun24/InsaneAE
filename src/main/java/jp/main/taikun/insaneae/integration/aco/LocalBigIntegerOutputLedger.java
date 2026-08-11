@@ -14,6 +14,7 @@ final class LocalBigIntegerOutputLedger implements PendingOutputLedger {
     private static final int SCHEMA_VERSION = 1;
     /** ACOの既定上限と同じ値。巨大な壊れたNBTを無制限に展開しないための固定値。 */
     private static final int MAXIMUM_BITS = 1_048_576;
+    /** 保存データのエントリ数上限。NBT破損時のメモリ使用量を制限する。 */
     private static final int MAX_ENTRIES = 1_048_576;
     private final Map<AEKey, BigInteger> amounts = new LinkedHashMap<>();
 

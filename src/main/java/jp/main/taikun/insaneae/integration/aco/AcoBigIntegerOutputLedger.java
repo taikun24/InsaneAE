@@ -11,7 +11,7 @@ import net.minecraft.nbt.CompoundTag;
 import org.slf4j.Logger;
 
 /**
- * ACO 4以上の公開APIだけを呼ぶ任意連携アダプター。
+ * ACO 3以上の公開BigInteger Amount Ledger APIだけを呼ぶ任意連携アダプター。
  *
  * <p>ACOは任意依存なので、このクラスだけが外部APIを名前で解決する。InsaneAE本体の
  * Quantum CPU処理はACOのクラスを直接参照せず、古いACOやACOなしでもロードできる。</p>
