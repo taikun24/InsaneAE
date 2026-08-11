@@ -1,6 +1,7 @@
 package jp.main.taikun.insaneae.mixin;
 
 import appeng.api.stacks.AEKey;
+import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
 import appeng.crafting.CraftBranchFailure;
 import appeng.crafting.CraftingTreeNode;
@@ -82,6 +83,18 @@ public abstract class CraftingTreeNodeMixin {
             throws CraftBranchFailure, InterruptedException {
         CraftingTreeProcessInvoker invoker = (CraftingTreeProcessInvoker) process;
 
+        // ---- long あふれの門番 --------------------------------------------------
+        // request() の中は「材料数 × times」「出力数 × times」を<b>ガード無しの生の long</b> で掛ける。
+        // 素の AE2 はそこに届く前に計算時間で死ぬが、まとめ計算が 8^20 級を現実に計算可能に
+        // したので、この掛け算が最初に溢れる (8^21 = 2^63 でちょうど long を超える)。
+        // 溢れる要求は ME に置くことも計画に載せることもできないので、負の量を黙って流す
+        // 代わりに CraftBranchFailure で枝を落とす。この例外は AE2 の runCraftAttempt が
+        // 受け止める正規の失敗経路で、計算スレッドは壊れない。
+        long safeTimes = Long.MAX_VALUE / insaneae$maxUnitAmount(invoker);
+        if (times > safeTimes) {
+            throw new CraftBranchFailure(what, times);
+        }
+
         if (times != 1 || insaneae$batchExhausted || insaneae$remainingItems <= 0
                 || !InsaneAEConfig.batchCraftingCalculation()) {
             invoker.insaneae$request(target, times);
@@ -94,10 +107,16 @@ public abstract class CraftingTreeNodeMixin {
             return;
         }
 
-        long needed = (insaneae$remainingItems + perCraft - 1) / perCraft;
+        // 足し算で切り上げると remainingItems が上限付近のとき溢れるので、割り算だけで組む。
+        long needed = insaneae$remainingItems / perCraft
+                + (insaneae$remainingItems % perCraft == 0 ? 0 : 1);
         if (needed < InsaneAEConfig.craftingBatchThreshold()) {
             invoker.insaneae$request(target, times);
             return;
+        }
+        if (needed > safeTimes) {
+            // まとめた合計が long で表現できない。上と同じ門番 (こちらは times=1 ループ側)。
+            throw new CraftBranchFailure(what, insaneae$remainingItems);
         }
 
         long done = CraftingCalculationBatch.apply(process, target, needed);
@@ -105,5 +124,21 @@ public abstract class CraftingTreeNodeMixin {
             // 材料が尽きた。残りは AE2 のループがそのまま面倒を見る。
             insaneae$batchExhausted = true;
         }
+    }
+
+    /**
+     * この枝の 1 クラフトあたりの最大アイテム数 (材料・完成品の両方)。
+     * {@code times} との積が long に収まるかの判定に使う。
+     */
+    @Unique
+    private static long insaneae$maxUnitAmount(CraftingTreeProcessInvoker invoker) {
+        long max = 1;
+        for (Long amount : invoker.insaneae$getNodes().values()) {
+            max = Math.max(max, amount);
+        }
+        for (GenericStack output : invoker.insaneae$getDetails().getOutputs()) {
+            max = Math.max(max, output.amount());
+        }
+        return max;
     }
 }

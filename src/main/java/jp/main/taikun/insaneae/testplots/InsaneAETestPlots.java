@@ -792,6 +792,84 @@ public final class InsaneAETestPlots {
     }
 
     /**
+     * long あふれの門番: 材料合計が long で表現できない要求が、<b>黙って負の量を流さず</b>
+     * 綺麗に失敗する (craft 可能な計画に化けない) ことを確かめる。
+     *
+     * <p>入れ子 8^21 = 2^63 がちょうど long を超える。AE2 の
+     * {@code CraftingTreeProcess.request} は「材料数 × times」をガード無しで掛けるので、
+     * まとめ計算がこの規模を現実に計算可能にした結果、そこが最初に溢れる
+     * (報告: @syarukasu さん)。門番は {@code CraftBranchFailure} で枝を落とすため、
+     * 計算は「失敗またはシミュレーション」で終わり、負の量が計画に載ることは無い。</p>
+     *
+     * <p>2 経路を両方踏む: 単一パターンの一括計算 (times が一度に来る) と、
+     * コンテナアイテム持ちパターンの 1 回ずつループ (まとめ処理側の門番)。</p>
+     */
+    @TestPlot("insaneae_calc_overflow_guard")
+    public static void calcOverflowGuard(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,2] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
+            drive.getInternalInventory().addItems(CreativeCellItem.ofItems(
+                    Items.MILK_BUCKET, Items.SUGAR, Items.EGG, Items.WHEAT, Items.OAK_LOG));
+        });
+        plot.block("2 0 0", AEBlocks.PATTERN_PROVIDER);
+
+        plot.test(helper -> {
+            var state = new Object() {
+                Future<ICraftingPlan> pending;
+            };
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var level = helper.getLevel();
+                var provider = (PatternProviderBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
+                // 丸太 9 → ダイヤ 1 (加工パターン): 単一パターンの一括計算経路。
+                provider.getLogic().getPatternInv().addItems(
+                        processingPattern(Items.OAK_LOG, 9, Items.DIAMOND, 1));
+                // ケーキ (コンテナアイテム持ち): 1 回ずつループ = まとめ処理側の経路。
+                provider.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(level,
+                                new ItemStack(Items.MILK_BUCKET), new ItemStack(Items.MILK_BUCKET),
+                                new ItemStack(Items.MILK_BUCKET),
+                                new ItemStack(Items.SUGAR), new ItemStack(Items.EGG), new ItemStack(Items.SUGAR),
+                                new ItemStack(Items.WHEAT), new ItemStack(Items.WHEAT),
+                                new ItemStack(Items.WHEAT)));
+            });
+
+            // 1) ダイヤ × (Long.MAX/4): 材料は × 9 なので合計が long を超える。
+            sequence.thenExecuteAfter(1, () -> state.pending = beginCalculation(helper,
+                    AEItemKey.of(Items.DIAMOND), Long.MAX_VALUE / 4));
+            sequence.thenWaitUntil(() -> checkOverflowRejected(helper, state.pending, "ダイヤ"));
+
+            // 2) ケーキ × (Long.MAX/2): 牛乳バケツ × 3 で合計が long を超える。
+            sequence.thenExecute(() -> {
+                InsaneAEConfig.setBatchCraftingCalculation(true);
+                state.pending = beginCalculation(helper, AEItemKey.of(Items.CAKE), Long.MAX_VALUE / 2);
+            });
+            sequence.thenWaitUntil(() -> checkOverflowRejected(helper, state.pending, "ケーキ"));
+
+            sequence.thenSucceed();
+        });
+    }
+
+    /** 溢れる要求の正解は「失敗」か「シミュレーション」。craft 可能な計画に化けたら不合格。 */
+    private static void checkOverflowRejected(appeng.server.testworld.PlotTestHelper helper,
+            Future<ICraftingPlan> pending, String label) {
+        if (!pending.isDone()) {
+            throw new GameTestAssertException(label + " の計算がまだ終わっていない");
+        }
+        try {
+            ICraftingPlan plan = pending.get();
+            helper.check(plan == null || plan.simulation(),
+                    label + ": 溢れる要求が craft 可能な計画になった (負の量が載っている可能性)");
+        } catch (ExecutionException rejected) {
+            // 例外で終わるのも正解 (握り潰されて負の量が流れるのが不正解)。
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * タスク統合カード: まとめ 1 回がクラスタ予算を <b>1 操作</b>しか消費しないことを確かめる。
      *
      * <p>クラスタ予算 3 に対して 1000 回の要求を流す。カード無しなら 3 回で頭打ちになるところが、
