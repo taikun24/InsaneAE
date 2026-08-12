@@ -25,23 +25,35 @@ Minecraft のバージョンごとにブランチを分けています。**不�
 | [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) | 15.2.16 以上 (必須) |
 | [MEGA Cells](https://github.com/62832/MEGACells) | 2.4.6 以上 (必須) |
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) | 1.4 以上 (任意 / 化学物質セル用) |
-| [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) | 1.5.11 以上 (任意 / BigInteger量会計用) |
+| [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) | 1.5.12 以上 (任意 / BigInteger量会計・厳密計算連携用) |
 
 AE2 の内部 (`BasicCellInventory`、`CraftingCPUCluster`、ツールチップ描画など) に Mixin で踏み込んでいるため、
 AE2 のバージョン範囲は実際に検証した `[15.2.16,16)` に固定しています。
 
 AE2 Crafting Optimizer は必須ではありません。導入されていてBigIntegerバックエンドが有効な場合、
-Quantum CPUの完成品待ち台帳をACO公開APIへ接続します。ACOが無い場合や設定で無効な場合は、
-InsaneAE内蔵の同じBigInteger台帳へ戻ります。AE2へ搬入する一回分だけを安全なlong窓へ変換し、
-計算中の `times * outputCount` をlongへクランプしません。
+Quantum CPUの完成品待ち台帳と厳密な計算計画をACO公開APIへ接続します。ACOが無い場合や設定で
+無効な場合は、InsaneAE内蔵の同じBigInteger台帳へ戻ります。AE2へ搬入する一回分だけを安全な
+long窓へ変換し、計算中の `times * outputCount` をlongへクランプしません。
+
+ACOの計算プロファイルAPIが利用可能で、`enableInsaneAeBigCraftingProfile` が有効なとき、
+AE2の厳密なBigInteger計算境界をACOへ委譲します。InsaneAEの計算用バッチは同じ計算へ
+重ねて介入せず、通常のQuantum CPU実行バッチはそのまま使用します。ACOのAPIは任意依存
+なので、未導入・旧版・設定無効時は従来どおりInsaneAE内蔵経路へ戻ります。
 
 ## 追加されるもの
 
 - **ストレージセル** — アイテム / 液体 / 化学物質 (Applied Mekanistics 導入時) の 1G 〜 8E セル。
   同階層のポータブルセル、クリエイティブセルもあります。
 - **クラフトストレージ** — 1G 〜 8E。AE2 のバイト表示が 32bit で溢れる問題を Mixin で回避しています。
+  同じCPUに複数の4E以上を接続した合計は、longへ丸める前にBigIntegerで再計算します。
+  AE2互換のlong getterはLong.MAX_VALUEへ飽和しますが、連携Modは
+  `IBigCraftingCapacity#insaneae$exactStorageCapacity()`から正確な容量を取得できます。
 - **クラフト協調処理ユニット** — 16x 〜 2G。AE2 の 16 スレッド上限を外し、1 ブロックで多数の並列クラフトを担当します。
 - **Quantum CPU** — 大量クラフトを一括処理するための専用 CPU。専用の GUI 付き。
+- **BigInteger クラフト CPU** — AE2標準クラフトCPU構造へ組み込む、理論上限容量の
+  クラフトストレージです。Quantum CPU派生ではなく、専用GUI・ticker・並列性能を持ちません。
+  ACO導入時は公開APIの上限を正確な容量として使い、未導入時はlong上限へ戻ります。
+  専用テクスチャとサバイバルレシピは持ちません。
 - **エネルギーセル** — Superdense の上に 13 階層 (Hyperdense 〜 Cosmic、最上段 約 703 京 AE)。
 - **ソーラーパネル** — 4 階層。
 - **改良型チャージャー** — 上位エネルギーセル / ポータブルセルを現実的な時間で充電できます。

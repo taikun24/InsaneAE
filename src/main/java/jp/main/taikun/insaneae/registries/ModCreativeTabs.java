@@ -22,6 +22,7 @@ public class ModCreativeTabs {
                 ModBlocks.CRAFTING_STORAGE.values().forEach(block -> output.accept(block.get()));
                 ModBlocks.CRAFTING_ACCELERATOR.values().forEach(block -> output.accept(block.get()));
                 output.accept(ModBlocks.QUANTUM_CPU.get());
+                output.accept(ModBlocks.BIG_INTEGER_CPU.get());
                 output.accept(ModBlocks.INSANE_PATTERN_PROVIDER.get());
                 output.accept(ModUpgrades.QUANTUM_ACCELERATION_CARD.get());
                 output.accept(ModUpgrades.TASK_FUSION_CARD.get());

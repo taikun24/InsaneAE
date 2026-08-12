@@ -5,6 +5,7 @@ import appeng.block.crafting.ICraftingUnitType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 
+import java.math.BigInteger;
 import java.util.function.Supplier;
 
 /**
@@ -15,18 +16,20 @@ import java.util.function.Supplier;
  * InsaneAE の階層と同一の CPU クラスタに合流する。よって重複を避け、InsaneAE は
  * その上 (1G〜) だけを担当する。</p>
  *
- * <p>容量は 1 段ごとに 4 倍 (2 ビットシフト)。最上段の {@link #STORAGE_8E} だけは
- * {@code long} の上限 ({@code 2^63-1} = 8 EiB より 1 バイト少ない) で頭打ちになる。</p>
+ * <p>容量は 1 段ごとに 4 倍 (2 ビットシフト)。最上段の {@link #STORAGE_8E} は
+ * AE2へ返す単体long互換値だけ{@code Long.MAX_VALUE}へ飽和させ、正本は
+ * {@code 2^63 B = 8 EiB}として保持する。複数ブロックの合計はInsaneAEの
+ * クラスタMixinがBigIntegerで計算するため、8Eを2個接続すれば正確に16Eになる。</p>
  *
- * <p><b>オーバーフロー注意:</b> {@code CraftingCPUCluster.storage} は {@code long} で、
- * 各ブロックの storageBytes を単純加算 (乗算なし) するだけ。つまり 1 CPU の合計が
- * {@code Long.MAX_VALUE} を超えると負値になり CPU が壊れる。
- * {@link #STORAGE_8E} は 1 CPU に 1 個、{@link #STORAGE_4E} は 1 CPU に 2 個までが上限。</p>
+ * <p><b>long境界:</b> AE2の {@code CraftingCPUCluster.storage} は {@code long} だが、
+ * InsaneAEは別に正確なBigInteger容量を保持する。AE2互換のlong getterへ返すときだけ
+ * {@code Long.MAX_VALUE}へ飽和させるので、4Eを2個以上、または8Eと他ストレージを
+ * 接続しても負値へ折り返さない。連携Modは {@code IBigCraftingCapacity} を使って正確値を読む。</p>
  *
  * <p>見た目は AE2 の 256k テクスチャ／モデルを全階層で流用中 ({@link #PLACEHOLDER_LOOK})。
  * 専用アートを用意するまでの暫定だが、機能面は完全に動作する。</p>
  */
-public enum InsaneCraftingUnitType implements ICraftingUnitType {
+public enum InsaneCraftingUnitType implements ExactCraftingUnitType {
     STORAGE_1G("1g", 1L << 30),
     STORAGE_4G("4g", 1L << 32),
     STORAGE_16G("16g", 1L << 34),
@@ -44,21 +47,27 @@ public enum InsaneCraftingUnitType implements ICraftingUnitType {
     STORAGE_256P("256p", 1L << 58),
     STORAGE_1E("1e", 1L << 60),
     STORAGE_4E("4e", 1L << 62),
-    /** long の上限 (2^63-1 バイト ≒ 8 EiB)。1 CPU に 1 個のみ運用可 (複数だと加算オーバーフロー)。 */
-    STORAGE_8E("8e", Long.MAX_VALUE);
+    /** AE2互換値はlong上限、BigInteger正本は2^63バイトの正確な8 EiB。 */
+    STORAGE_8E("8e", Long.MAX_VALUE, BigInteger.ONE.shiftLeft(63));
 
     /** 全階層で流用している AE2 の見た目 (専用アート未用意のため)。 */
     public static final CraftingUnitType PLACEHOLDER_LOOK = CraftingUnitType.STORAGE_256K;
 
     private final String id;
     private final long storageBytes;
+    private final BigInteger exactStorageBytes;
 
     /** 登録後に {@code ModBlocks} が設定する、この階層に対応する BlockItem のサプライヤ。 */
     private Supplier<Item> item = () -> Items.AIR;
 
     InsaneCraftingUnitType(String id, long storageBytes) {
+        this(id, storageBytes, BigInteger.valueOf(storageBytes));
+    }
+
+    InsaneCraftingUnitType(String id, long storageBytes, BigInteger exactStorageBytes) {
         this.id = id;
         this.storageBytes = storageBytes;
+        this.exactStorageBytes = exactStorageBytes;
     }
 
     /** 階層 ID。例: "1g"。 */
@@ -97,6 +106,11 @@ public enum InsaneCraftingUnitType implements ICraftingUnitType {
     @Override
     public long getStorageBytes() {
         return storageBytes;
+    }
+
+    /** long互換境界へ丸める前の、このストレージブロック一個ぶんの正確な容量。 */
+    public BigInteger exactStorageBytes() {
+        return exactStorageBytes;
     }
 
     @Override

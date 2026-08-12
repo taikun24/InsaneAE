@@ -1,6 +1,7 @@
 package jp.main.taikun.insaneae.client;
 
 import jp.main.taikun.insaneae.energy.SolarPanelTier;
+import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerLimitBridge;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import net.minecraft.ChatFormatting;
 import net.minecraft.locale.Language;
@@ -37,6 +38,8 @@ public final class InsaneTooltips {
 
     private static final String SUFFIX = ".desc";
     private static final String SOLAR_PANEL = "insaneae.desc.solar_panel";
+    private static final String BIG_INTEGER_CPU_CAPACITY =
+            "block.insaneae.big_integer_cpu.capacity";
 
     /** 説明のキーと、そこに流し込む書式引数。 */
     private record Description(String key, Object... args) {
@@ -54,15 +57,24 @@ public final class InsaneTooltips {
     }
 
     private static void onTooltip(ItemTooltipEvent event) {
-        Description description = descriptionFor(event.getItemStack().getItem());
-        if (description == null) {
+        Item item = event.getItemStack().getItem();
+        Description description = descriptionFor(item);
+        // 説明キーがあるアイテムだけ、翻訳済みの複数行説明を追加する。
+        if (description != null) {
+            String text = Component.translatable(description.key(), description.args()).getString();
+            // lang内の改行を、Minecraftの独立したTooltip行へ変換する。
+            for (String line : text.split("\\R")) {
+                event.getToolTip().add(Component.literal(line).withStyle(ChatFormatting.GRAY));
+            }
+        }
+
+        // BigIntegerクラフトストレージだけは、ACO側の計算・保存上限をカタログ容量として表示する。
+        if (item != ModBlocks.BIG_INTEGER_CPU.get().asItem()) {
             return;
         }
-        // 書式を当ててから改行で割る (Component.translatable に任せると 1 行扱いになるため)。
-        String text = Component.translatable(description.key(), description.args()).getString();
-        for (String line : text.split("\\R")) {
-            event.getToolTip().add(Component.literal(line).withStyle(ChatFormatting.GRAY));
-        }
+        AcoBigIntegerLimitBridge.theoreticalMaximumDisplay().ifPresent(capacity ->
+                event.getToolTip().add(Component.translatable(
+                        BIG_INTEGER_CPU_CAPACITY, capacity).withStyle(ChatFormatting.AQUA)));
     }
 
     /** そのアイテムに出す説明。個別 → 階層共通 の順で探す。無ければ null。 */

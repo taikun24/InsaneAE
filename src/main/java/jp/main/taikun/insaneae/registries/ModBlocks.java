@@ -5,6 +5,7 @@ import appeng.block.networking.EnergyCellBlock;
 import appeng.block.networking.EnergyCellBlockItem;
 import jp.main.taikun.insaneae.InsaneAE;
 import jp.main.taikun.insaneae.crafting.InsaneAcceleratorType;
+import jp.main.taikun.insaneae.crafting.BigIntegerCraftingUnitType;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitBlock;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.util.TieredBlockItem;
@@ -55,6 +56,11 @@ public class ModBlocks {
     public static final RegistryObject<QuantumCpuBlock> QUANTUM_CPU =
             BLOCKS.register("quantum_cpu", QuantumCpuBlock::new);
 
+    /** ACOの理論上限容量を持つ、通常AE2クラフトCPU用のストレージブロック。 */
+    public static final RegistryObject<CraftingUnitBlock> BIG_INTEGER_CPU =
+            BLOCKS.register("big_integer_cpu",
+                    () -> new CraftingUnitBlock(BigIntegerCraftingUnitType.INSTANCE));
+
     /** AE2 のチャージャーの限界突破版。 */
     public static final RegistryObject<ImprovedChargerBlock> IMPROVED_CHARGER =
             BLOCKS.register("improved_charger", ImprovedChargerBlock::new);
@@ -103,6 +109,9 @@ public class ModBlocks {
             SOLAR_PANELS.put(tier, block);
         }
         BLOCK_ITEMS.register("quantum_cpu", () -> new BlockItem(QUANTUM_CPU.get(), new Item.Properties()));
+        // サバイバルレシピは追加せず、クリエイティブタブから検証用ストレージを取得できるようにする。
+        BLOCK_ITEMS.register("big_integer_cpu", () -> new BlockItem(BIG_INTEGER_CPU.get(), new Item.Properties()));
+        BigIntegerCraftingUnitType.INSTANCE.setItem(() -> BIG_INTEGER_CPU.get().asItem());
         BLOCK_ITEMS.register("improved_charger",
                 () -> new BlockItem(IMPROVED_CHARGER.get(), new Item.Properties()));
         BLOCK_ITEMS.register("insane_interface",
@@ -113,7 +122,9 @@ public class ModBlocks {
 
     /** ストレージ + アクセラレータの全ブロック (BlockEntityType やドロップ生成用)。 */
     public static List<CraftingUnitBlock> allCraftingBlocks() {
-        return Stream.concat(CRAFTING_STORAGE.values().stream(), CRAFTING_ACCELERATOR.values().stream())
+        return Stream.concat(
+                        Stream.concat(CRAFTING_STORAGE.values().stream(), CRAFTING_ACCELERATOR.values().stream()),
+                        Stream.of(BIG_INTEGER_CPU))
                 .map(RegistryObject::get)
                 .toList();
     }

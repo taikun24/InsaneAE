@@ -32,10 +32,10 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String API_CLASS =
             "com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi";
-    private static final String CODEC_CLASS =
-            "com.syaru.ae2craftingoptimizer.api.big.AeKeyBigCraftingCodec";
     private static final String LEDGER_CLASS =
             "com.syaru.ae2craftingoptimizer.api.big.BigIntegerAmountLedger";
+    /** ACO 1.5.12で追加された、内部codec型を要求しないAEKey台帳API。 */
+    private static final int REQUIRED_LEDGER_API_VERSION = 2;
 
     private final Object delegate;
     private final Method add;
@@ -65,7 +65,7 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
             Class<?> api = Class.forName(API_CLASS);
             int apiVersion = api.getField("API_VERSION").getInt(null);
             int ledgerVersion = api.getField("AMOUNT_LEDGER_API_VERSION").getInt(null);
-            if (apiVersion < 3 || ledgerVersion < 1) {
+            if (apiVersion < 3 || ledgerVersion < REQUIRED_LEDGER_API_VERSION) {
                 LOGGER.warn(
                         "InsaneAE: ACO BigInteger API v{} / amount ledger v{} is too old; using local ledger",
                         apiVersion,
@@ -77,14 +77,12 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
                 return java.util.Optional.empty();
             }
 
-            Object codec = Class.forName(CODEC_CLASS).getField("INSTANCE").get(null);
-            Object ledger = findByName(api, "createAmountLedger", 1).invoke(null, codec);
+            Object ledger = api.getMethod("createAeKeyAmountLedger").invoke(null);
             Class<?> type = Class.forName(LEDGER_CLASS);
             return java.util.Optional.of(new AcoBigIntegerOutputLedger(
                     ledger,
-                    // ジェネリックの消去後シグネチャに合わせて Object.class で引く (クラス Javadoc 参照)。
-                    type.getMethod("add", Object.class, BigInteger.class),
-                    type.getMethod("drain", Object.class, long.class),
+                    findKeyAmountMethod(type, "add", BigInteger.class),
+                    findKeyAmountMethod(type, "drain", long.class),
                     type.getMethod("snapshot"),
                     type.getMethod("isEmpty"),
                     type.getMethod("clear")));
@@ -94,15 +92,34 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
         }
     }
 
-    /** 引数の型を名指しせずに public メソッドを名前と引数の数で探す。 */
-    private static Method findByName(Class<?> owner, String name, int parameterCount)
+    /**
+     * ジェネリックなKは実行時にObjectへ型消去されるため、AEKey固定の厳密検索を避ける。
+     * 第1引数へAEKeyを渡せて、第2引数の量型が一致する公開メソッドだけを採用する。
+     */
+    private static Method findKeyAmountMethod(Class<?> type, String name, Class<?> amountType)
             throws NoSuchMethodException {
-        for (Method method : owner.getMethods()) {
-            if (method.getName().equals(name) && method.getParameterCount() == parameterCount) {
-                return method;
+        for (Method method : type.getMethods()) {
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            // 対象メソッド名以外は候補から除外する。
+            if (!method.getName().equals(name)) {
+                continue;
             }
+            // キーと量の2引数でないメソッドは対象外にする。
+            if (parameterTypes.length != 2) {
+                continue;
+            }
+            // 型消去後のObject、またはAEKey互換型だけを受け入れる。
+            if (!parameterTypes[0].isAssignableFrom(AEKey.class)) {
+                continue;
+            }
+            // BigInteger加算とlong搬出を取り違えないよう量型を一致させる。
+            if (!parameterTypes[1].equals(amountType)) {
+                continue;
+            }
+            return method;
         }
-        throw new NoSuchMethodException(owner.getName() + "." + name + " (" + parameterCount + " args)");
+        throw new NoSuchMethodException(
+                type.getName() + "." + name + "(AEKey," + amountType.getTypeName() + ")");
     }
 
     @Override
