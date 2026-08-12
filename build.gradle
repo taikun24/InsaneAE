@@ -149,9 +149,10 @@ repositories {
 
     // If you have mod jar dependencies in ./libs, you can declare them as a repository like so.
     // See https://docs.gradle.org/current/userguide/declaring_repositories.html#sub:flat_dir_resolver
-    // flatDir {
-    //     dir 'libs'
-    // }
+    flatDir {
+        // ローカル jar 用 (ACO の実機テストなど)。libs/ は gitignore 済み。
+        dir 'libs'
+    }
     maven {
         url "https://cursemaven.com"
     }
@@ -201,6 +202,15 @@ dependencies {
         runtimeOnly fg.deobf("curse.maven:applied-mekanistics-574300:7244744")
     }
     runtimeOnly fg.deobf("curse.maven:guideme-1173950:8204776")
+    // AE2 Crafting Optimizer — ACO 連携 (integration/aco) の実機テスト用【任意・オプトイン】。
+    // GitHub Releases (syarukasu/ae2-crafting-optimizer) の aco<ver>_1.20.1.jar を
+    // ./libs/aco-<ver>.jar の名前で置き、-PwithAco=true を付けると dev 実行に載る。
+    // 配布 jar は SRG 名なので fg.deobf が必須 (そのまま run/mods に置くと dev では落ちる)。
+    // 既定でオフなのは、ACO が AE2 の挙動自体を変える (実行バッチの乗っ取り・プロバイダ結合等) ため
+    // ACO 前提でないゲームテストが複数落ちるから。回すときは落ちる前提で読むこと。
+    if (project.findProperty('withAco') == 'true' && file('libs/aco-1.5.12.jar').exists()) {
+        runtimeOnly fg.deobf("blank:aco:1.5.12")
+    }
     // テスト用
     runtimeOnly fg.deobf("curse.maven:jei-238222:8500005")
     testImplementation platform("org.junit:junit-bom:5.10.2")
