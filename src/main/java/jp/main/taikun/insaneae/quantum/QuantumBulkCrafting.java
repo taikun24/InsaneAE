@@ -289,52 +289,65 @@ public final class QuantumBulkCrafting {
         }
 
         // 2) 実際に取り出す
+        // <b>代替候補は入力1つにつき1種類だけ。</b>まとめ処理は「1回分の組立結果 × N回」で
+        // 出力を計上するため、1つの窓に複数の代替素材を混ぜると組立結果と食い違いうる。
+        // 候補は 1) と同じ規則 (CPU在庫 + Exact窓ならME在庫の合算) で選び直す。
         KeyCounter[] holder = new KeyCounter[inputs.length];
         try {
             for (int x = 0; x < inputs.length; x++) {
                 KeyCounter list = holder[x] = new KeyCounter();
                 long needed = Math.multiplyExact(inputs[x].getMultiplier(), times);
+                InputTemplate chosen = null;
                 for (InputTemplate template : getValidTemplates(inventory, inputs[x], level, exactWindow)) {
-                long extracted = CraftingCpuHelper.extractTemplates(inventory, template, needed);
-                if (extracted <= 0) {
-                    if (networkStorage == null || actionSource == null || template.amount() <= 0L) {
+                    if (template.amount() <= 0L) {
                         continue;
                     }
-                } else {
-                    addExact(list, template.key(), Math.multiplyExact(extracted, template.amount()));
-                    AEKey containerItem = inputs[x].getRemainingKey(template.key());
+                    long available = inventory.extract(template.key(), Long.MAX_VALUE, Actionable.SIMULATE);
+                    if (networkStorage != null && actionSource != null) {
+                        available = saturatedAdd(available, networkStorage.extract(
+                                template.key(), Long.MAX_VALUE, Actionable.SIMULATE, actionSource));
+                    }
+                    if (available / template.amount() > 0) {
+                        chosen = template;
+                        break;
+                    }
+                }
+                if (chosen == null) {
+                    // 1) の見積もりと食い違った: 何も無かったことにして通常経路に任せる。
+                    LOGGER.warn("InsaneAE: bulk crafting could not gather ingredients for {}, falling back.",
+                            details.getDefinition());
+                    rollbackInputs(view, holder, networkInputs);
+                    return null;
+                }
+                long extracted = CraftingCpuHelper.extractTemplates(inventory, chosen, needed);
+                if (extracted > 0) {
+                    addExact(list, chosen.key(), Math.multiplyExact(extracted, chosen.amount()));
+                    AEKey containerItem = inputs[x].getRemainingKey(chosen.key());
                     if (containerItem != null) {
                         addExact(containerItems, containerItem, extracted);
                     }
                     needed -= extracted;
                 }
-                if (needed <= 0L) {
-                    break;
-                }
-                if (networkStorage == null || actionSource == null || template.amount() <= 0L) {
-                    continue;
-                }
-                long networkAmount = Math.multiplyExact(needed, template.amount());
-                long networkExtracted = networkStorage.extract(
-                        template.key(), networkAmount, Actionable.MODULATE, actionSource);
-                if (networkExtracted > 0L) {
-                    addExact(networkInputs, template.key(), networkExtracted);
-                    if (networkExtracted % template.amount() != 0L) {
-                        // 部分単位の入力は同じパターンへ安全に載せられないため、消費を戻して失敗扱いにする。
-                        rollbackInputs(view, holder, networkInputs);
-                        return null;
+                // Exact JobはCPU在庫で足りないぶんを、この窓だけMEから直接補充できる。
+                if (needed > 0L && networkStorage != null && actionSource != null) {
+                    long networkAmount = Math.multiplyExact(needed, chosen.amount());
+                    long networkExtracted = networkStorage.extract(
+                            chosen.key(), networkAmount, Actionable.MODULATE, actionSource);
+                    if (networkExtracted > 0L) {
+                        addExact(networkInputs, chosen.key(), networkExtracted);
+                        if (networkExtracted % chosen.amount() != 0L) {
+                            // 部分単位の入力は同じパターンへ安全に載せられないため、消費を戻して失敗扱いにする。
+                            rollbackInputs(view, holder, networkInputs);
+                            return null;
+                        }
+                        long networkUnits = networkExtracted / chosen.amount();
+                        addExact(list, chosen.key(), networkExtracted);
+                        AEKey containerItem = inputs[x].getRemainingKey(chosen.key());
+                        if (containerItem != null) {
+                            addExact(containerItems, containerItem, networkUnits);
+                        }
+                        needed -= networkUnits;
                     }
-                    long networkUnits = networkExtracted / template.amount();
-                    addExact(list, template.key(), networkExtracted);
-                    AEKey containerItem = inputs[x].getRemainingKey(template.key());
-                    if (containerItem != null) {
-                        addExact(containerItems, containerItem, networkUnits);
-                    }
-                    needed -= networkUnits;
-                }
-                if (needed <= 0L) {
-                    break; // 代替候補は1種類だけ (材料の種類を混ぜない)
-                }
                 }
                 if (needed > 0) {
                     // 1) の見積もりと食い違った: 何も無かったことにして通常経路に任せる。
