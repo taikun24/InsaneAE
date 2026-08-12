@@ -1,10 +1,22 @@
 package jp.main.taikun.insaneae.mixin;
 
+import appeng.api.networking.IGrid;
+import appeng.api.networking.crafting.ICraftingPlan;
+import appeng.api.networking.crafting.ICraftingRequester;
+import appeng.api.networking.crafting.ICraftingSubmitResult;
+import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.energy.IEnergyService;
+import appeng.api.stacks.GenericStack;
+import appeng.crafting.execution.CraftingCpuHelper;
 import appeng.crafting.execution.CraftingCpuLogic;
+import appeng.crafting.execution.CraftingSubmitResult;
 import appeng.crafting.execution.ExecutingCraftingJob;
+import appeng.crafting.inv.ListCraftingInventory;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.me.service.CraftingService;
+import java.util.Optional;
+import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry;
+import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerPlanBridge;
 import jp.main.taikun.insaneae.quantum.Ae2CraftingJobView;
 import jp.main.taikun.insaneae.quantum.BulkCraftingHook;
 import net.minecraft.world.level.Level;
@@ -12,9 +24,11 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
@@ -55,6 +69,84 @@ public abstract class CraftingCpuLogicMixin {
             insaneae$hook = new BulkCraftingHook();
         }
         return insaneae$hook;
+    }
+
+    /**
+     * ACOのBigInteger計画を、飽和したAE2 long計画として通常実行しない。
+     * 対応できない加工Patternは、このCPUへ曖昧に渡さずAE2の明示的な失敗へ戻す。
+     */
+    @Inject(method = "trySubmitJob", at = @At("HEAD"), cancellable = true)
+    private void insaneae$inspectAcoPlan(
+            IGrid grid,
+            ICraftingPlan plan,
+            IActionSource source,
+            ICraftingRequester requester,
+            CallbackInfoReturnable<ICraftingSubmitResult> cir) {
+        Optional<AcoBigIntegerPlanBridge.Plan> exact = AcoBigIntegerPlanBridge.inspect(plan);
+        if (exact.isEmpty()) {
+            return;
+        }
+        AcoBigIntegerPlanBridge.Plan candidate = exact.get();
+        if (!AcoBigIntegerPlanBridge.supportsQuantumCpu(candidate, grid)) {
+            // Quantum CPUが実行できるのは作業台Patternだけなので、混在Jobを推測実行しない。
+            cir.setReturnValue(CraftingSubmitResult.INCOMPLETE_PLAN);
+            return;
+        }
+    }
+
+    /**
+     * ACO Exact planだけはAE2のlong初期一括搬入を止める。
+     * 実行窓ごとのME取り出しはQuantumBulkCraftingが原子的に担当する。
+     */
+    @Redirect(
+            method = "trySubmitJob",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lappeng/crafting/execution/CraftingCpuHelper;tryExtractInitialItems(Lappeng/api/networking/crafting/ICraftingPlan;Lappeng/api/networking/IGrid;Lappeng/crafting/inv/ListCraftingInventory;Lappeng/api/networking/security/IActionSource;)Lappeng/api/stacks/GenericStack;"))
+    private GenericStack insaneae$skipAcoInitialItems(
+            ICraftingPlan plan,
+            IGrid grid,
+            ListCraftingInventory inventory,
+            IActionSource source) {
+        Optional<AcoBigIntegerPlanBridge.Plan> exact = AcoBigIntegerPlanBridge.inspect(plan);
+        if (exact.isPresent() && AcoBigIntegerPlanBridge.supportsQuantumCpu(exact.get(), grid)) {
+            return null;
+        }
+        return CraftingCpuHelper.tryExtractInitialItems(plan, grid, inventory, source);
+    }
+
+    /** 成功したAE2 JobとExact task台帳を同じオーナーへ結び付ける。 */
+    @Inject(method = "trySubmitJob", at = @At("RETURN"))
+    private void insaneae$installAcoPlan(
+            IGrid grid,
+            ICraftingPlan plan,
+            IActionSource source,
+            ICraftingRequester requester,
+            CallbackInfoReturnable<ICraftingSubmitResult> cir) {
+        Optional<AcoBigIntegerPlanBridge.Plan> exact = AcoBigIntegerPlanBridge.inspect(plan);
+        if (exact.isEmpty() || cir.getReturnValue() == null || !cir.getReturnValue().successful()
+                || job == null) {
+            return;
+        }
+        AcoBigIntegerJobRegistry.install(job, exact.get());
+    }
+
+    /** キャンセル時に、未完了のExact台帳を次のJobへ持ち越さない。 */
+    @Inject(method = "cancel", at = @At("HEAD"))
+    private void insaneae$removeAcoPlanOnCancel(CallbackInfo ci) {
+        if (job != null) {
+            // 既存Jobのキャンセルだけを対象にし、新しいJobが無い状態は何もしない。
+            AcoBigIntegerJobRegistry.remove(job);
+        }
+    }
+
+    /** 正常終了時も、カーソルが最後のTaskを消せなかった場合の残留台帳を掃除する。 */
+    @Inject(method = "finishJob", at = @At("HEAD"))
+    private void insaneae$removeAcoPlanOnFinish(boolean success, CallbackInfo ci) {
+        if (job != null) {
+            // 成功・失敗のどちらでもAE2がJob所有権を閉じるため、Exact台帳も同時に閉じる。
+            AcoBigIntegerJobRegistry.remove(job);
+        }
     }
 
     /**
@@ -104,4 +196,3 @@ public abstract class CraftingCpuLogicMixin {
         }
     }
 }
-

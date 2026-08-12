@@ -25,14 +25,21 @@ Minecraft のバージョンごとにブランチを分けています。**不�
 | [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) | 19.2.17 以上 (必須) |
 | [MEGA Cells](https://github.com/62832/MEGACells) | 4.11 以上 (必須) |
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) | 1.6 以上 (任意 / 化学物質セル用) |
-| [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) | 1.5.11 以上 (任意 / BigInteger量会計用) |
+| [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) | 1.5.12 以上 (任意 / BigInteger量会計・厳密計算連携用) |
 
 AE2 が [GuideME](https://github.com/AppliedEnergistics/GuideME) を必須依存として要求します (1.20.1 では AE2 に同梱されていました)。
 
 AE2 Crafting Optimizer は必須ではありません。導入されていて BigInteger バックエンドが有効な場合、
 Quantum CPU の完成品待ち台帳を ACO の公開 API へ接続します。無い場合や無効な場合は
 InsaneAE 内蔵の同じ BigInteger 台帳を使います (保存形式はどちらでも共通)。
-なお 1.5.11 現在、ACO の配布物は Forge 1.20.1 向けのみです。
+
+### ACO連携 (任意)
+
+[AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) 1.21.1版が導入されている場合、
+Quantum CPUはACOのBigInteger計画を受け取り、long範囲の実行ウィンドウへ分割して処理できます。
+ACOが無い場合、または連携プロファイルが無効な場合は、通常のAE2計算・実行経路へ戻ります。
+
+この連携はACOを必須依存にしません。両Modのバージョンと対応するNeoForge版を揃えてください。
 
 AE2 の内部 (`BasicCellInventory`、`CraftingCPUCluster`、ツールチップ描画など) に Mixin で踏み込んでいるため、
 AE2 のバージョン範囲は実際に検証した `[19.2.17,20)` に固定しています。
@@ -41,9 +48,16 @@ AE2 のバージョン範囲は実際に検証した `[19.2.17,20)` に固定し
 
 - **ストレージセル** — アイテム / 液体 / 化学物質 (Applied Mekanistics 導入時) の 1G 〜 8E セル。
   同階層のポータブルセル、クリエイティブセルもあります。
-- **クラフトストレージ** — 1G 〜 8E。AE2 のバイト表示が溢れる問題を Mixin で回避しています。
+- **クラフトストレージ** — 1G 〜 8E。AE2 のバイト表示が 32bit で溢れる問題を Mixin で回避しています。
+  同じCPUに複数の4E以上を接続した合計は、longへ丸める前にBigIntegerで再計算します。
+  AE2互換のlong getterはLong.MAX_VALUEへ飽和しますが、連携Modは
+  `IBigCraftingCapacity#insaneae$exactStorageCapacity()`から正確な容量を取得できます。
 - **クラフト協調処理ユニット** — 16x 〜 2G。AE2 の 16 スレッド上限を外し、1 ブロックで多数の並列クラフトを担当します。
 - **Quantum CPU** — 大量クラフトを一括処理するための専用 CPU。専用の GUI 付き。
+- **BigInteger クラフト CPU** — AE2標準クラフトCPU構造へ組み込む、理論上限容量の
+  クラフトストレージです。Quantum CPU派生ではなく、専用GUI・ticker・並列性能を持ちません。
+  ACO導入時は公開APIの上限を正確な容量として使い、未導入時はlong上限へ戻ります。
+  専用テクスチャとサバイバルレシピは持ちません。
 - **エネルギーセル** — Superdense の上に 13 階層 (Hyperdense 〜 Cosmic、最上段 約 703 京 AE)。
 - **ソーラーパネル** — 4 階層。
 - **改良型チャージャー** — 上位エネルギーセル / ポータブルセルを現実的な時間で充電できます。

@@ -115,6 +115,9 @@ public class ModItemModelProvider extends ItemModelProvider {
 
         getBuilder("quantum_cpu").parent(new ModelFile.UncheckedModelFile(
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/quantum_cpu")));
+        // 実験用CPUは、標準missing-textureモデルをアイテム側でも共有する。
+        getBuilder("big_integer_cpu").parent(new ModelFile.UncheckedModelFile(
+                ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/big_integer_cpu")));
         getBuilder("improved_charger").parent(new ModelFile.UncheckedModelFile(
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/improved_charger")));
         getBuilder("insane_interface").parent(new ModelFile.UncheckedModelFile(

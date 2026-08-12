@@ -1,7 +1,11 @@
 package jp.main.taikun.insaneae.quantum;
 
 import appeng.api.crafting.IPatternDetails;
+import appeng.api.networking.security.IActionSource;
+import appeng.api.storage.MEStorage;
 import appeng.crafting.inv.ListCraftingInventory;
+import java.util.Optional;
+import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry;
 
 /**
  * 実行中クラフトジョブのうち、まとめ処理 ({@link QuantumBulkCrafting}) が必要とする部分だけを
@@ -47,6 +51,26 @@ public interface CraftingJobView {
 
     /** 保存が必要になったことを CPU に伝える。 */
     void markDirty();
+
+    /** Exact task cursor for an optional ACO BigInteger job. */
+    default Optional<AcoBigIntegerJobRegistry.CraftingCursor> exactTasks() {
+        return Optional.empty();
+    }
+
+    /** Whether the native AE2 task loop must not run after the exact hook. */
+    default boolean hasExactCraftingPlan() {
+        return exactTasks().isPresent();
+    }
+
+    /** Network storage used to refill one bounded execution window. */
+    default MEStorage getNetworkStorage() {
+        return null;
+    }
+
+    /** Action source paired with {@link #getNetworkStorage()}. */
+    default IActionSource getActionSource() {
+        return null;
+    }
 
     /** 残っているタスク (パターン → 残り回数) をひとつずつ見ていく。 */
     TaskCursor tasks();

@@ -1,4 +1,4 @@
-// 1.21.1	2026-08-10T12:28:31.610336	Loot Tables
+// 1.21.1	2026-08-12T03:35:30.1150698	Loot Tables
 bcf8b361567e2e2b0152c1d32f1f1dc1c5359893 data/insaneae/loot_table/blocks/16g_crafting_storage.json
 e8b7d85e93a05285bfb588a5791407f25f6dcf9e data/insaneae/loot_table/blocks/16k_crafting_accelerator.json
 7b19fc266cc2173f6c1272d2c6c7c864c19844b5 data/insaneae/loot_table/blocks/16m_crafting_accelerator.json
@@ -33,6 +33,7 @@ ade3e6017426660ce8afb82e520d9f0a7b77ee87 data/insaneae/loot_table/blocks/64m_cra
 cb9cd02c6960e37c6a43aabbcb11061123bd467e data/insaneae/loot_table/blocks/64x_crafting_accelerator.json
 195ee0d91edb057d5160365a9d377965ac2a2da3 data/insaneae/loot_table/blocks/8e_crafting_storage.json
 4db163e598aa9d3b39d79a43d6b7ffe39e525db4 data/insaneae/loot_table/blocks/advanced_solar_panel.json
+758adcd0ece2d6742af6a91e751fd70c4b333397 data/insaneae/loot_table/blocks/big_integer_cpu.json
 d73c420fa49f45709c06e0ad41349ab1eae00baa data/insaneae/loot_table/blocks/collapsar_energy_cell.json
 7ed230a1a507af2b830a03750505609fcba0c48e data/insaneae/loot_table/blocks/cosmic_energy_cell.json
 40bb4cff398c0fb559c15401d4bed63859831731 data/insaneae/loot_table/blocks/degenerate_energy_cell.json

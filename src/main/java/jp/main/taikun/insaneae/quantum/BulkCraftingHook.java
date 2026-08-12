@@ -41,6 +41,12 @@ public final class BulkCraftingHook {
     public int begin(CraftingJobView view, int maxPatterns, CraftingService craftingService,
             IEnergyService energyService, Level level) {
         int done = QuantumBulkCrafting.execute(view, maxPatterns, craftingService, energyService, level);
+        // ACOのBigInteger正本をInsaneAEが所有するJobは、done=0でもAE2本来のlong taskへ
+        // 戻してはいけない。飽和したTaskProgressを実行すると、材料不足・二重計上・再注文の
+        // いずれかになるため、このtickは待機して次の窓で再試行する。
+        if (view != null && view.hasExactCraftingPlan()) {
+            return done;
+        }
         if (done <= 0) {
             return -1;
         }

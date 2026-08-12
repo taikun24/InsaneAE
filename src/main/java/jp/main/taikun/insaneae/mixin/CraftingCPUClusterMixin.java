@@ -1,8 +1,18 @@
 package jp.main.taikun.insaneae.mixin;
 
 import appeng.blockentity.crafting.CraftingBlockEntity;
+import appeng.api.networking.IGrid;
+import appeng.api.networking.crafting.ICraftingPlan;
+import appeng.api.networking.crafting.ICraftingRequester;
+import appeng.api.networking.crafting.ICraftingSubmitResult;
+import appeng.api.networking.security.IActionSource;
+import appeng.crafting.execution.CraftingSubmitResult;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
+import jp.main.taikun.insaneae.crafting.IBigCraftingCapacity;
 import jp.main.taikun.insaneae.crafting.ICoProcessorCount;
+import jp.main.taikun.insaneae.crafting.ExactCraftingUnitType;
+import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerPlanBridge;
+import jp.main.taikun.insaneae.integration.aco.ExactCraftingCapacityPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Final;
@@ -12,7 +22,9 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.math.BigInteger;
 import java.util.List;
 
 /**
@@ -55,7 +67,8 @@ import java.util.List;
  * <p>AE2 は自前 Mod なので難読化されておらず {@code remap = false}。</p>
  */
 @Mixin(value = CraftingCPUCluster.class, remap = false, priority = 1500)
-public abstract class CraftingCPUClusterMixin implements ICoProcessorCount {
+public abstract class CraftingCPUClusterMixin
+        implements ICoProcessorCount, IBigCraftingCapacity {
 
     @Unique
     private static final Logger INSANEAE$LOGGER = LoggerFactory.getLogger("InsaneAE");
@@ -64,13 +77,37 @@ public abstract class CraftingCPUClusterMixin implements ICoProcessorCount {
     @Unique
     private static final int INT_CAP = Integer.MAX_VALUE - 1;
 
+    /** AE2のクラフトCPU容量として公開できるlongの上限。 */
+    @Unique
+    private static final long STORAGE_CAP = Long.MAX_VALUE;
+
+    /** 正確な容量計算へ使うBigIntegerのゼロ値。 */
+    @Unique
+    private static final BigInteger STORAGE_ZERO = BigInteger.ZERO;
+
+    /** 正確な容量計算へ使うBigIntegerのlong上限。 */
+    @Unique
+    private static final BigInteger STORAGE_MAX = BigInteger.valueOf(Long.MAX_VALUE);
+
     @Shadow
     private int accelerator;
+
+    /** AE2本体のクラフトストレージ合計。正確値はinsaneae$exactStorageが保持する。 */
+    @Shadow
+    private long storage;
 
     /** このクラスタを構成するブロック。AE2 はここへ足すだけで、抜くときはクラスタごと作り直す。 */
     @Shadow
     @Final
     private List<CraftingBlockEntity> blockEntities;
+
+    /** longを超えた後も失わない、クラスタ全体の容量正本。 */
+    @Unique
+    private BigInteger insaneae$exactStorage = STORAGE_ZERO;
+
+    /** 容量を数えた時点の構成ブロック数。-1は未計算を表す。 */
+    @Unique
+    private int insaneae$countedStorageBlocks = -1;
 
     /** 数え直した合計スレッド数 (long)。こちらが 1 tick 予算の元になる。 */
     @Unique
@@ -128,6 +165,62 @@ public abstract class CraftingCPUClusterMixin implements ICoProcessorCount {
     }
 
     /**
+     * AE2のlong境界へ返す互換値を、正確なBigInteger容量から作り直す。
+     *
+     * <p>AE2本体の加算結果が負値へ折り返していても、ここではその値を参照しない。
+     * そのため4Eを2個以上接続した場合も、正確な合計を計算したうえでlong側だけを
+     * {@code Long.MAX_VALUE}へ飽和できる。</p>
+     */
+    @Inject(method = "getAvailableStorage", at = @At("HEAD"), cancellable = true, require = 0)
+    private void insaneae$exposeSaturatedStorage(CallbackInfoReturnable<Long> cir) {
+        // AE2のUI・CPU選択・既存ジョブへは、BigIntegerの正本から作った互換longだけを返す。
+        cir.setReturnValue(insaneae$saturatedStorage(insaneae$recountStorage()));
+    }
+
+    /** 構成が確定した直後にも数え直し、元のlongフィールドが負値のまま残らないようにする。 */
+    @Inject(method = "addBlockEntity", at = @At("RETURN"), require = 0)
+    private void insaneae$refreshExactStorage(CraftingBlockEntity blockEntity, CallbackInfo ci) {
+        // ブロック追加のたびにキャッシュを無効化し、次の容量参照で全構成を再計算する。
+        insaneae$countedStorageBlocks = -1;
+        insaneae$recountStorage();
+    }
+
+    /** 正確なBigInteger容量を任意の連携Modへ公開する。 */
+    @Override
+    public BigInteger insaneae$exactStorageCapacity() {
+        return insaneae$recountStorage();
+    }
+
+    /**
+     * ACOの正確なBigInteger計画だけを、InsaneAE自身の正確なCPU容量と比較する。
+     *
+     * <p>容量内なら戻り値を設定せず、CPU使用中判定・ジョブ作成・リンク登録・
+     * セキュリティ処理をAE2本来の{@code submitJob}経路へそのまま任せる。
+     * AQE向けの複数ジョブHost台帳は使用しないため、1 CPUにつき1ジョブという
+     * InsaneAE本来の制限も変わらない。</p>
+     */
+    @Inject(method = "submitJob", at = @At("HEAD"), cancellable = true, require = 0)
+    private void insaneae$validateExactPlanCapacity(
+            IGrid grid,
+            ICraftingPlan plan,
+            IActionSource source,
+            ICraftingRequester requester,
+            CallbackInfoReturnable<ICraftingSubmitResult> cir) {
+        var exactPlan = AcoBigIntegerPlanBridge.inspect(plan);
+        // ACOのBigInteger計画でなければ、通常AE2の容量判定へ完全に委譲する。
+        if (exactPlan.isEmpty()) {
+            return;
+        }
+
+        BigInteger required = exactPlan.get().exactBytes();
+        BigInteger capacity = insaneae$recountStorage();
+        // 正確な必要量が正確な容量を超える場合だけ、AE2標準の失敗結果を返す。
+        if (!ExactCraftingCapacityPolicy.fits(required, capacity)) {
+            cir.setReturnValue(CraftingSubmitResult.CPU_TOO_SMALL);
+        }
+    }
+
+    /**
      * クラスタのブロックから合計スレッド数を数え直す。
      *
      * <p>ブロック数が前回と同じなら何もしない。AE2 はクラスタにブロックを<b>足すだけ</b>で、
@@ -163,5 +256,51 @@ public abstract class CraftingCPUClusterMixin implements ICoProcessorCount {
         if (accelerator < 0 || accelerator > INT_CAP) {
             accelerator = (int) Math.min(threads, INT_CAP);
         }
+    }
+
+    /**
+     * 構成ブロックから容量をBigIntegerで一度だけ合計する。
+     *
+     * <p>AE2のクラスタは構成変更時にブロックを追加し、解体時はクラスタ自体を作り直す。
+     * そのためブロック数を世代代わりに使い、毎回のGUI参照でBigInteger加算を繰り返さない。</p>
+     */
+    @Unique
+    private BigInteger insaneae$recountStorage() {
+        int blocks = blockEntities.size();
+        // 構成ブロック数が変わっていなければ、同じ容量を再利用する。
+        if (blocks == insaneae$countedStorageBlocks) {
+            return insaneae$exactStorage;
+        }
+
+        BigInteger total = STORAGE_ZERO;
+        for (CraftingBlockEntity blockEntity : blockEntities) {
+            var unitType = blockEntity.getUnitBlock().type;
+            // long互換値と正確値が異なるユニットは、型が公開するBigInteger正本を加算する。
+            if (unitType instanceof ExactCraftingUnitType exactType) {
+                total = total.add(exactType.exactStorageBytes());
+                continue;
+            }
+            long perBlock = blockEntity.getStorageBytes();
+            // AE2の正のストレージ容量だけを合計し、特殊な負値を容量へ混ぜない。
+            if (perBlock > 0L) {
+                total = total.add(BigInteger.valueOf(perBlock));
+            }
+        }
+
+        insaneae$exactStorage = total;
+        insaneae$countedStorageBlocks = blocks;
+        // AE2本体のlongフィールドも常に正の互換値へ整え、他Modの直接参照を壊さない。
+        storage = insaneae$saturatedStorage(total);
+        return total;
+    }
+
+    /** BigInteger容量をAE2のlong境界へ変換する。正確値は呼び出し元で保持する。 */
+    @Unique
+    private static long insaneae$saturatedStorage(BigInteger exactStorage) {
+        // longの範囲内なら無損失で戻し、超過時だけAE2互換上限へ丸める。
+        if (exactStorage.compareTo(STORAGE_MAX) > 0) {
+            return STORAGE_CAP;
+        }
+        return exactStorage.longValueExact();
     }
 }

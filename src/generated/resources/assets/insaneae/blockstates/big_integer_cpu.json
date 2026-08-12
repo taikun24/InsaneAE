@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "formed=false": {
+      "model": "insaneae:block/big_integer_cpu"
+    },
+    "formed=true": {
+      "model": "insaneae:block/big_integer_cpu"
+    }
+  }
+}
