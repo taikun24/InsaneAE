@@ -6,6 +6,8 @@ import appeng.api.networking.crafting.ICraftingRequester;
 import appeng.api.networking.crafting.ICraftingSubmitResult;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.energy.IEnergyService;
+import appeng.api.crafting.IPatternDetails;
+import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.crafting.execution.CraftingCpuHelper;
 import appeng.crafting.execution.CraftingCpuLogic;
@@ -14,12 +16,21 @@ import appeng.crafting.execution.ExecutingCraftingJob;
 import appeng.crafting.inv.ListCraftingInventory;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.me.service.CraftingService;
+import com.mojang.logging.LogUtils;
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerPlanBridge;
 import jp.main.taikun.insaneae.quantum.Ae2CraftingJobView;
 import jp.main.taikun.insaneae.quantum.BulkCraftingHook;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.Level;
+import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -146,6 +157,80 @@ public abstract class CraftingCpuLogicMixin {
         if (job != null) {
             // 成功・失敗のどちらでもAE2がJob所有権を閉じるため、Exact台帳も同時に閉じる。
             AcoBigIntegerJobRegistry.remove(job);
+        }
+    }
+
+    @Unique
+    private static final Logger INSANEAE$EXACT_LOGGER = LogUtils.getLogger();
+
+    /** Exact台帳のBigInteger残数を保存するタグ名。 */
+    @Unique
+    private static final String INSANEAE$EXACT_TASKS_TAG = "insaneae_exact_tasks";
+
+    /**
+     * Exact台帳の残数をクラスタNBTへ相乗り保存する。
+     *
+     * <p>台帳はメモリ上のWeakHashMapにしか無いので、保存しないと再起動でここだけが消え、
+     * AE2側に残った飽和longタスクが素で実行されてしまう (材料不足・二重計上・再注文)。
+     * PatternはAE2のタスク保存と同じく定義アイテム (AEItemKey) で表す。</p>
+     */
+    @Inject(method = "writeToNBT", at = @At("RETURN"))
+    private void insaneae$saveExactTasks(CompoundTag tag, CallbackInfo ci) {
+        if (job == null) {
+            return;
+        }
+        AcoBigIntegerJobRegistry.snapshot(job).ifPresent(snapshot -> {
+            ListTag list = new ListTag();
+            snapshot.forEach((pattern, remaining) -> {
+                CompoundTag entry = new CompoundTag();
+                entry.put("pattern", pattern.getDefinition().toTag());
+                // longに収まらない値があるため、残数は10進文字列で保存する。
+                entry.putString("remaining", remaining.toString());
+                list.add(entry);
+            });
+            tag.put(INSANEAE$EXACT_TASKS_TAG, list);
+        });
+    }
+
+    /**
+     * 復元したJobへExact台帳を結び直す。
+     *
+     * <p>保存済みのPatternは、AE2が同じNBTから復元したタスクの定義アイテムと突き合わせて
+     * 同一のIPatternDetailsインスタンスへ解決する。タスク側に無いPattern (パターンが
+     * 消された等) は、AE2側の該当タスクも消えているので黙って捨ててよい。</p>
+     */
+    @Inject(method = "readFromNBT", at = @At("RETURN"))
+    private void insaneae$loadExactTasks(CompoundTag tag, CallbackInfo ci) {
+        if (job == null || !tag.contains(INSANEAE$EXACT_TASKS_TAG, Tag.TAG_LIST)) {
+            return;
+        }
+        Map<AEItemKey, IPatternDetails> byDefinition = new HashMap<>();
+        for (Object key : ((ExecutingCraftingJobAccessor) (Object) job).insaneae$getTasks().keySet()) {
+            if (key instanceof IPatternDetails details) {
+                byDefinition.put(details.getDefinition(), details);
+            }
+        }
+        Map<IPatternDetails, BigInteger> restored = new LinkedHashMap<>();
+        for (Tag element : tag.getList(INSANEAE$EXACT_TASKS_TAG, Tag.TAG_COMPOUND)) {
+            CompoundTag entry = (CompoundTag) element;
+            try {
+                AEItemKey definition = AEItemKey.fromTag(entry.getCompound("pattern"));
+                IPatternDetails details = definition == null ? null : byDefinition.get(definition);
+                if (details == null) {
+                    INSANEAE$EXACT_LOGGER.warn(
+                            "InsaneAE: dropping a saved exact crafting task whose pattern no longer exists: {}",
+                            entry.getCompound("pattern"));
+                    continue;
+                }
+                restored.put(details, new BigInteger(entry.getString("remaining")));
+            } catch (RuntimeException corrupt) {
+                // 壊れた保存データ1件でJob全体の復元を巻き込まない (パターン欠落・数値破損とも)。
+                INSANEAE$EXACT_LOGGER.warn(
+                        "InsaneAE: dropping a corrupt saved exact crafting task", corrupt);
+            }
+        }
+        if (!restored.isEmpty()) {
+            AcoBigIntegerJobRegistry.install(job, restored);
         }
     }
 
