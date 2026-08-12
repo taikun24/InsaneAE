@@ -712,6 +712,176 @@ public final class InsaneAETestPlots {
     }
 
     /**
+     * 一時診断 (コミットしない): ACO 同居時に、圧縮チェーン (バニラ作業台レシピ) の
+     * long 超え要求が ACO の BigInteger プランナーに昇格されるかを反射で観測する。
+     */
+    @TestPlot("insaneae_aco_diag")
+    public static void acoDiag(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,2] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive ->
+                drive.getInternalInventory().addItems(new ItemStack(
+                        ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_8E).get())));
+        plot.block("2 0 0", AEBlocks.PATTERN_PROVIDER);
+
+        // 素材 (鉄塊 8.6E) は long に収まるが、中間段の二重計上で合計バイトが long を超える境界。
+        // ACO が「作り切れると証明できる」注文だけを BigInteger 計画へ昇格するなら、これは昇格するはず。
+        final long nuggets = 8_600_000_000_000_000_000L;
+        final long blocks = 106_000_000_000_000_000L;
+
+        plot.test(helper -> {
+            var state = new Object() {
+                Future<ICraftingPlan> pending;
+            };
+            var sequence = helper.startSequence();
+            sequence.thenExecute(() -> {
+                var provider = (PatternProviderBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
+                provider.getLogic().getPatternInv().addItems(compressionPattern(
+                        helper, "iron_ingot_from_nuggets", Items.IRON_NUGGET, Items.IRON_INGOT));
+                provider.getLogic().getPatternInv().addItems(compressionPattern(
+                        helper, "iron_block", Items.IRON_INGOT, Items.IRON_BLOCK));
+            });
+            sequence.thenExecuteAfter(1, () -> {
+                var grid = helper.getGrid(BlockPos.ZERO);
+                long inserted = grid.getStorageService().getInventory().insert(
+                        AEItemKey.of(Items.IRON_NUGGET), nuggets,
+                        appeng.api.config.Actionable.MODULATE, new MachineSource(grid::getPivot));
+                com.mojang.logging.LogUtils.getLogger().warn("ACO-DIAG: inserted nuggets = {}", inserted);
+            });
+            sequence.thenExecuteAfter(5, () -> probeAcoGraph(helper, AEItemKey.of(Items.IRON_BLOCK), blocks));
+            sequence.thenExecuteAfter(1, () -> state.pending = beginCalculation(
+                    helper, AEItemKey.of(Items.IRON_BLOCK), blocks));
+            sequence.thenWaitUntil(() -> {
+                if (!state.pending.isDone()) {
+                    throw new GameTestAssertException("計算がまだ終わっていない");
+                }
+            });
+            sequence.thenExecute(() -> logAcoPlanOutcome(state.pending));
+            sequence.thenSucceed();
+        });
+    }
+
+    /** バニラの圧縮 (9→1) 作業台レシピを AE2 のクラフトパターンにエンコードする。 */
+    private static ItemStack compressionPattern(appeng.server.testworld.PlotTestHelper helper,
+            String recipeId, net.minecraft.world.item.Item input, net.minecraft.world.item.Item output) {
+        var recipe = (net.minecraft.world.item.crafting.CraftingRecipe) helper.getLevel().getRecipeManager()
+                .byKey(new net.minecraft.resources.ResourceLocation("minecraft", recipeId))
+                .orElseThrow(() -> new IllegalStateException("recipe missing: " + recipeId));
+        ItemStack[] sparse = new ItemStack[9];
+        for (int i = 0; i < 9; i++) {
+            sparse[i] = new ItemStack(input);
+        }
+        return appeng.api.crafting.PatternDetailsHelper.encodeCraftingPattern(
+                recipe, sparse, new ItemStack(output), false, false);
+    }
+
+    /** ACO のコンパイル済みグラフを反射で覗き、rootProgram の有無と理由の手掛かりをログへ出す。 */
+    private static void probeAcoGraph(appeng.server.testworld.PlotTestHelper helper, AEItemKey key, long amount) {
+        var log = com.mojang.logging.LogUtils.getLogger();
+        try {
+            var grid = helper.getGrid(BlockPos.ZERO);
+            Class<?> cache = Class.forName("com.syaru.ae2craftingoptimizer.engine.Ae2CompiledCraftingGraphCache");
+            var getOrCompile = cache.getMethod("getOrCompile",
+                    appeng.api.networking.IGrid.class, net.minecraft.world.level.Level.class);
+            getOrCompile.setAccessible(true);
+            Object snapshot = getOrCompile.invoke(null, grid, helper.getLevel());
+            log.warn("ACO-DIAG: snapshot = {}", snapshot);
+            if (snapshot == null) {
+                return;
+            }
+            var rootProgram = snapshot.getClass().getMethod("rootProgram", AEKey.class);
+            rootProgram.setAccessible(true);
+            Object rootOpt = rootProgram.invoke(snapshot, key);
+            log.warn("ACO-DIAG: rootProgram({}) = {}", key, rootOpt);
+            var graphMethod = snapshot.getClass().getMethod("graph");
+            graphMethod.setAccessible(true);
+            Object graph = graphMethod.invoke(snapshot);
+            var patternsFor = graph.getClass().getMethod("patternsFor", Object.class);
+            patternsFor.setAccessible(true);
+            var isCyclic = graph.getClass().getMethod("isCyclic", Object.class);
+            isCyclic.setAccessible(true);
+            log.warn("ACO-DIAG: patternsFor = {}, isCyclic = {}",
+                    patternsFor.invoke(graph, key), isCyclic.invoke(graph, key));
+
+            // 後段の工程を個別に踏んで、どこで断念しているかを特定する。
+            Object root = ((java.util.Optional<?>) rootOpt).orElseThrow();
+            Object topologyOpt = insaneae$invokeByName(snapshot, "strictTopology",
+                    helper.getLevel(), grid, root);
+            log.warn("ACO-DIAG: strictTopology = {}", topologyOpt);
+            if (topologyOpt instanceof java.util.Optional<?> to && to.isPresent()) {
+                Object topology = to.get();
+                var counter = new KeyCounter();
+                grid.getStorageService().getInventory().getAvailableStacks(counter);
+                log.warn("ACO-DIAG: acceptsInventory = {}",
+                        insaneae$invokeByName(topology, "acceptsInventory", counter));
+            }
+            var source = new MachineSource(grid::getPivot);
+            Object prepared = insaneae$invokeStaticByName(
+                    "com.syaru.ae2craftingoptimizer.engine.Ae2BigCraftingPlanFactory", "tryCreate",
+                    helper.getLevel(), grid, source, key, java.math.BigInteger.valueOf(amount));
+            log.warn("ACO-DIAG: BigPlanFactory.tryCreate = {}", prepared);
+
+            var counter2 = new KeyCounter();
+            grid.getStorageService().getInventory().getAvailableStacks(counter2);
+            Object cap = insaneae$invokeStaticByName(
+                    "com.syaru.ae2craftingoptimizer.engine.Ae2AuthoritativeCraftingPlanner", "capture",
+                    helper.getLevel(), grid, source, counter2);
+            Object planned = insaneae$invokeStaticByName(
+                    "com.syaru.ae2craftingoptimizer.engine.Ae2AuthoritativeCraftingPlanner", "tryPlan",
+                    cap, key, amount, CalculationStrategy.REPORT_MISSING_ITEMS);
+            log.warn("ACO-DIAG: tryPlan = {}", planned);
+        } catch (Throwable t) {
+            log.warn("ACO-DIAG: probe failed", t);
+        }
+    }
+
+    /** 名前と引数の数だけでインスタンスメソッドを呼ぶ (署名の揺れ・可視性に強い診断用)。 */
+    private static Object insaneae$invokeByName(Object target, String name, Object... args) throws Exception {
+        for (Class<?> type = target.getClass(); type != null; type = type.getSuperclass()) {
+            for (var method : type.getDeclaredMethods()) {
+                if (method.getName().equals(name) && method.getParameterCount() == args.length) {
+                    method.setAccessible(true);
+                    return method.invoke(target, args);
+                }
+            }
+        }
+        throw new NoSuchMethodException(target.getClass().getName() + "." + name + "/" + args.length);
+    }
+
+    /** 名前と引数の数だけで static メソッドを呼ぶ (署名の揺れ・可視性に強い診断用)。 */
+    private static Object insaneae$invokeStaticByName(String className, String name, Object... args)
+            throws Exception {
+        for (var method : Class.forName(className).getDeclaredMethods()) {
+            if (method.getName().equals(name) && method.getParameterCount() == args.length) {
+                method.setAccessible(true);
+                return method.invoke(null, args);
+            }
+        }
+        throw new NoSuchMethodException(className + "." + name + "/" + args.length);
+    }
+
+    /** 計算結果の種別と、ACO の BigInteger サイドカーが付いたかをログへ出す。 */
+    private static void logAcoPlanOutcome(Future<ICraftingPlan> pending) {
+        var log = com.mojang.logging.LogUtils.getLogger();
+        try {
+            ICraftingPlan plan = pending.get();
+            Object sidecar = null;
+            try {
+                sidecar = Class.forName("com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi")
+                        .getMethod("inspectBigIntegerPlan", ICraftingPlan.class).invoke(null, plan);
+            } catch (Throwable ignored) {
+            }
+            log.warn("ACO-DIAG: plan class={} simulation={} bytes={} sidecar={}",
+                    plan == null ? "null" : plan.getClass().getName(),
+                    plan == null ? "-" : plan.simulation(),
+                    plan == null ? "-" : plan.bytes(),
+                    sidecar);
+        } catch (Exception e) {
+            log.warn("ACO-DIAG: calculation ended exceptionally", e);
+        }
+    }
+
+    /**
      * 溢れる要求の正解は「作成不可のシミュレーション計画」ただ一つ。
      *
      * <ul>
