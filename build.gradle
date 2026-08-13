@@ -208,8 +208,8 @@ dependencies {
     // 配布 jar は SRG 名なので fg.deobf が必須 (そのまま run/mods に置くと dev では落ちる)。
     // 既定でオフなのは、ACO が AE2 の挙動自体を変える (実行バッチの乗っ取り・プロバイダ結合等) ため
     // ACO 前提でないゲームテストが複数落ちるから。回すときは落ちる前提で読むこと。
-    if (project.findProperty('withAco') == 'true' && file('libs/aco-1.5.12.jar').exists()) {
-        runtimeOnly fg.deobf("blank:aco:1.5.12")
+    if (project.findProperty('withAco') == 'true' && file('libs/aco-1.5.14.jar').exists()) {
+        runtimeOnly fg.deobf("blank:aco:1.5.14")
     }
     // テスト用
     runtimeOnly fg.deobf("curse.maven:jei-238222:8500005")
