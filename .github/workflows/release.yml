@@ -28,6 +28,10 @@ on:
         description: 'アップロードせずビルドと検証だけ行う'
         type: boolean
         default: false
+      prerelease:
+        description: 'GitHub Release を「プレリリース」として出す'
+        type: boolean
+        default: false
 
 env:
   CF_PROJECT_ID: '1627326'
@@ -274,8 +278,15 @@ jobs:
             echo "::error::タグ v${{ steps.meta.outputs.version }} の Release が既にあります"
             exit 1
           fi
+          # プレリリースのときは Latest を更新しないよう --prerelease を付ける
+          # (gh は --prerelease=false を受け付けないので、フラグごと出し分ける)。
+          pre=''
+          if [ "${{ inputs.prerelease }}" = 'true' ]; then
+            pre='--prerelease'
+          fi
           gh release create "v${{ steps.meta.outputs.version }}" \
             --title "v${{ steps.meta.outputs.version }}" \
             --notes-file changelog.md \
             --target main \
+            $pre \
             artifacts/*.jar
