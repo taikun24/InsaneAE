@@ -14,8 +14,15 @@ name: release
 on:
   workflow_dispatch:
     inputs:
+      publish_to:
+        # CurseForge はアップロードした<b>ファイルを API から削除できない</b> (作者ページで手動削除)。
+        # 取り消しが効かない側を既定にしないよう、既定は GitHub だけにしてある。
+        description: '公開先'
+        type: choice
+        options: ['GitHub だけ', 'GitHub と CurseForge']
+        default: 'GitHub だけ'
       release_type:
-        description: 'CurseForge のリリース種別'
+        description: 'CurseForge のリリース種別 (CurseForge に上げるときだけ使う)'
         type: choice
         options: [release, beta, alpha]
         default: release
@@ -150,7 +157,7 @@ jobs:
       # ゲームバージョンの数値 ID は API から引く。ハードコードすると
       # CurseForge 側の採番が変わったときに黙って壊れるため。
       - name: CurseForge のゲームバージョン ID を解決する
-        if: steps.want.outputs.want == 'yes' && !inputs.dry_run
+        if: steps.want.outputs.want == 'yes' && !inputs.dry_run && inputs.publish_to == 'GitHub と CurseForge'
         id: gv
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
@@ -187,7 +194,7 @@ jobs:
           echo "MC=${{ matrix.mc }}($mc) ローダー=${{ matrix.loader }}($loader) Java=${{ matrix.java }}($java) Client($client) Server($server)"
 
       - name: CurseForge にアップロード
-        if: steps.want.outputs.want == 'yes' && !inputs.dry_run
+        if: steps.want.outputs.want == 'yes' && !inputs.dry_run && inputs.publish_to == 'GitHub と CurseForge'
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: |
