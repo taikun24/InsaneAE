@@ -871,11 +871,19 @@ public final class InsaneAETestPlots {
                         .getMethod("inspectBigIntegerPlan", ICraftingPlan.class).invoke(null, plan);
             } catch (Throwable ignored) {
             }
-            log.warn("ACO-DIAG: plan class={} simulation={} bytes={} sidecar={}",
+            Object enabled = null;
+            Object profile = null;
+            try {
+                Class<?> api = Class.forName("com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi");
+                enabled = api.getMethod("isEnabled").invoke(null);
+                profile = api.getMethod("isCalculationProfileActive").invoke(null);
+            } catch (Throwable ignored) {
+            }
+            log.warn("ACO-DIAG: plan class={} simulation={} bytes={} sidecar={} (isEnabled={} profileActive={})",
                     plan == null ? "null" : plan.getClass().getName(),
                     plan == null ? "-" : plan.simulation(),
                     plan == null ? "-" : plan.bytes(),
-                    sidecar);
+                    sidecar, enabled, profile);
         } catch (Exception e) {
             log.warn("ACO-DIAG: calculation ended exceptionally", e);
         }
