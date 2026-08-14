@@ -117,13 +117,13 @@ dependencies {
 
     // AE2 Crafting Optimizer — ACO 連携 (integration/aco) の実機テスト用【任意・オプトイン】。
     // GitHub Releases (syarukasu/ae2-crafting-optimizer) の aco<ver>_1.21.1.jar を
-    // ./libs/aco-1.5.16.jar の名前で置き、-PwithAco=true を付けると dev 実行に載る。
+    // ./libs/aco-1.5.18.jar の名前で置き、-PwithAco=true を付けると dev 実行に載る。
     // 既定でオフなのは、(1) ACO は AE2 の挙動自体を変える (実行バッチの乗っ取り等) ため
     // ACO 前提でないゲームテストが落ちる、(2) ACO 1.5.12 の計算デデュープ Mixin が
     // AE2 のテスト基盤 (TestCraftingJob) で「beginCraftingCalculation is not cancellable」の
     // CancellationException を出しサーバーごと落ちるバグがあるため。ゲームテストとは併用しない。
-    if (project.findProperty('withAco') == 'true' && file('libs/aco-1.5.16.jar').exists()) {
-        localRuntime files('libs/aco-1.5.16.jar')
+    if (project.findProperty('withAco') == 'true' && file('libs/aco-1.5.18.jar').exists()) {
+        localRuntime files('libs/aco-1.5.18.jar')
     }
 
     // テスト用
