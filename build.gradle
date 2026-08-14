@@ -149,11 +149,16 @@ repositories {
 
     // If you have mod jar dependencies in ./libs, you can declare them as a repository like so.
     // See https://docs.gradle.org/current/userguide/declaring_repositories.html#sub:flat_dir_resolver
-    // flatDir {
-    //     dir 'libs'
-    // }
+    flatDir {
+        // ローカル jar 用 (ACO の実機テストなど)。libs/ は gitignore 済み。
+        dir 'libs'
+    }
     maven {
         url "https://cursemaven.com"
+    }
+    maven {
+        // AE2 は Modrinth の maven から取る (cursemaven は AE2 の新しいファイルが引けないことがある)
+        url "https://api.modrinth.com/maven"
     }
 }
 
@@ -181,7 +186,7 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-    implementation fg.deobf("curse.maven:applied-energistics-2-223794:7148487")
+    implementation fg.deobf("maven.modrinth:ae2:15.4.10")
     // MEGA Cells (megacells) — 1M〜256M のクラフトストレージはこちらに委譲するため必須依存。
     implementation fg.deobf("curse.maven:mega-cells-622112:6175008")
     // Cloth Config API — MEGA Cells が mandatory 依存として要求する (無いと FML の依存解決で落ちる)。
@@ -197,6 +202,54 @@ dependencies {
         runtimeOnly fg.deobf("curse.maven:applied-mekanistics-574300:7244744")
     }
     runtimeOnly fg.deobf("curse.maven:guideme-1173950:8204776")
+    // AE2 Crafting Optimizer — ACO 連携 (integration/aco) の実機テスト用【任意・オプトイン】。
+    // GitHub Releases (syarukasu/ae2-crafting-optimizer) の aco<ver>_1.20.1.jar を
+    // ./libs/aco-<ver>.jar の名前で置き、-PwithAco=true を付けると dev 実行に載る。
+    // 配布 jar は SRG 名なので fg.deobf が必須 (そのまま run/mods に置くと dev では落ちる)。
+    // 既定でオフなのは、ACO が AE2 の挙動自体を変える (実行バッチの乗っ取り・プロバイダ結合等) ため
+    // ACO 前提でないゲームテストが複数落ちるから。回すときは落ちる前提で読むこと。
+    if (project.findProperty('withAco') == 'true' && file('libs/aco-1.5.19.jar').exists()) {
+        runtimeOnly fg.deobf("blank:aco:1.5.19")
+    }
+    // Astral Mekanism & Energistics — 自動搬出をネットワークへ流す互換 Mixin
+    // (compat.AstralEjectorMixin) の実機テスト用【任意・オプトイン】。
+    // Mixin は @Pseudo + targets 指定なのでコンパイルには要らない (Mekanism の型だけ要る)。
+    // -PwithAstral=true で dev 実行に載る。既定でオフなのは、Astral が Mekanism の
+    // 機械を大量に足すぶん dev の起動が重くなるため。
+    // Astral は必須依存が 14 個ある (mods.toml が全部 mandatory=true)。
+    // バージョンの組み合わせは実際に遊んでいるモッドパックの manifest.json から取った。
+    if (project.findProperty('withAstral') == 'true') {
+        runtimeOnly fg.deobf("curse.maven:astral-mekanism-1415150:8601842")
+        runtimeOnly fg.deobf("curse.maven:mekanism-generators-268566:6552914")
+        runtimeOnly fg.deobf("curse.maven:mekanism-tools-268567:6552915")
+        runtimeOnly fg.deobf("curse.maven:evolved-mekanism-1230085:7599591")
+        runtimeOnly fg.deobf("curse.maven:mekanism-extras-1026040:8247562")
+        runtimeOnly fg.deobf("curse.maven:evolved-mekanism-extras-1268159:8294797")
+        runtimeOnly fg.deobf("curse.maven:compact-mekanism-machines-1161015:7388773")
+        runtimeOnly fg.deobf("curse.maven:mekanism-elements-1103224:6537553")
+        runtimeOnly fg.deobf("curse.maven:advancedae-1084104:7939754")
+        runtimeOnly fg.deobf("curse.maven:ae2addonlib-1366135:7668681")
+        runtimeOnly fg.deobf("curse.maven:applied-flux-965012:7651647")
+        runtimeOnly fg.deobf("curse.maven:botany-pots-353928:7612402")
+        runtimeOnly fg.deobf("curse.maven:bookshelf-228525:7612389")
+        runtimeOnly fg.deobf("curse.maven:stack-upgrade-integration-1510741:8298822")
+        // 上の 2 つが要求する図書館 Mod。
+        runtimeOnly fg.deobf("curse.maven:glodium-957920:5226922")
+        runtimeOnly fg.deobf("curse.maven:iglee-library-541199:6987117")
+        runtimeOnly fg.deobf("curse.maven:geckolib-388172:8285794")
+    }
+
+    // Advanced AE — 自前のクラフト CPU (AdvCraftingCPULogic) へ入れている compat Mixin
+    // (compat.AdvCraftingCpuLogicMixin / compat.AdvCraftingCpuBudgetMixin) の実機確認用
+    // 【任意・オプトイン】。-PwithAdvancedAe=true で dev 実行に載る (-PwithAstral=true にも含まれる)。
+    // 既定でオフなのは、Advanced AE 自身が AE2 の挙動を変えるためゲームテストの前提が変わるから。
+    if (project.findProperty('withAdvancedAe') == 'true') {
+        runtimeOnly fg.deobf("curse.maven:advancedae-1084104:7939754")
+        // Advanced AE の mandatory 依存。FML が止まってから分かる類なので明示しておく。
+        runtimeOnly fg.deobf("curse.maven:ae2addonlib-1366135:7668681")
+        runtimeOnly fg.deobf("curse.maven:geckolib-388172:8285794")
+    }
+
     // テスト用
     runtimeOnly fg.deobf("curse.maven:jei-238222:8500005")
     testImplementation platform("org.junit:junit-bom:5.10.2")

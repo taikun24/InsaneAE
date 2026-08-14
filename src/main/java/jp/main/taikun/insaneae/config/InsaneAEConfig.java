@@ -55,6 +55,11 @@ public final class InsaneAEConfig {
         return get(COMMON.logQuantumBulkDiagnostics, false);
     }
 
+    /** Astral Mekanism の自動搬出を、ME インターフェイス相手のときネットワークへまとめて流すか。 */
+    public static boolean astralNetworkEject() {
+        return get(COMMON.astralNetworkEject, true);
+    }
+
     /**
      * 設定ファイル読み込み前でも安全に読む。
      *
@@ -74,6 +79,7 @@ public final class InsaneAEConfig {
         private final ForgeConfigSpec.IntValue craftingBatchThreshold;
         private final ForgeConfigSpec.BooleanValue serverSidePatternPaging;
         private final ForgeConfigSpec.BooleanValue logQuantumBulkDiagnostics;
+        private final ForgeConfigSpec.BooleanValue astralNetworkEject;
 
         private Common(ForgeConfigSpec.Builder builder) {
             builder.comment("クラフト計算 (Calculating... の部分) の軽量化").push("crafting_calculation");
@@ -107,6 +113,18 @@ public final class InsaneAEConfig {
             logQuantumBulkDiagnostics = builder
                     .comment("Bulk処理が待機した理由をdebugログへ出す。通常はfalseのままにする。")
                     .define("logQuantumBulkDiagnostics", false);
+            builder.pop();
+
+            builder.comment("他 Mod との連携").push("compat");
+
+            astralNetworkEject = builder
+                    .comment("Astral Mekanism & Energistics の機械が ME インターフェイスへ自動搬出するとき、",
+                            "スタック数や搬出レート (fluidAutoEjectRate / chemicalAutoEjectRate) で刻まずに",
+                            "中身を全部ネットワークへ渡す。Astral の機械は 1 回の処理で long 級を作るので、",
+                            "Mekanism 本来の刻みでは搬出が追いつかないため。",
+                            "設定枠を入れてあるインターフェイス (在庫確保用) には効かない。",
+                             "false にすると Mekanism 本来の搬出だけになる。")
+                     .define("astralNetworkEject", true);
             builder.pop();
         }
     }

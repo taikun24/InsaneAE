@@ -11,6 +11,8 @@ import appeng.api.stacks.KeyCounter;
 import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import appeng.capabilities.Capabilities;
 import appeng.core.definitions.AEBlocks;
+import appeng.core.definitions.AEItems;
+import appeng.core.definitions.AEParts;
 import appeng.items.storage.CreativeCellItem;
 import appeng.me.helpers.MachineSource;
 import appeng.server.testplots.CraftingPatternHelper;
@@ -21,19 +23,25 @@ import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.crafting.CraftingCalculationBatch;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.iface.InsaneInterfaceBlockEntity;
+import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry;
+import jp.main.taikun.insaneae.integration.aco.AcoCalculationIntegration;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderBlockEntity;
 import jp.main.taikun.insaneae.quantum.CraftingJobView;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModCells;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
+import jp.main.taikun.insaneae.upgrade.InsaneSpeedCardType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -113,7 +121,7 @@ public final class InsaneAETestPlots {
             sequence.thenWaitUntil(() -> state.withBatching = awaitPlan(state.pending));
 
             sequence.thenExecute(() -> {
-                helper.check(CraftingCalculationBatch.batchedCrafts > state.batchedBefore,
+                helper.check(insaneBatchingRan(state.batchedBefore),
                         "まとめ処理が一度も働いていない (Mixin が適用されていない可能性)");
 
                 var expected = state.withoutBatching;
@@ -190,7 +198,7 @@ public final class InsaneAETestPlots {
                 var expected = state.withoutBatching;
                 var actual = state.withBatching;
 
-                helper.check(CraftingCalculationBatch.batchedCrafts > state.batchedBefore,
+                helper.check(insaneBatchingRan(state.batchedBefore),
                         "まとめ処理が一度も働いていない");
                 helper.check(!expected.simulation(),
                         "中間素材を作れず simulation になった: テストの前提が崩れている"
@@ -634,6 +642,36 @@ public final class InsaneAETestPlots {
     }
 
     /**
+     * 超特大インターフェイスの画面が開くこと (「開けない」報告の再現テスト)。
+     *
+     * <p>FakePlayer はパケットを捨てるだけの接続を持つので、サーバ側の
+     * メニュー構築 ({@code NetworkHooks.openScreen} → コンストラクタでの
+     * スロット構築まで) をヘッドレスで検証できる。クライアント側 (画面クラスと
+     * スタイル JSON) はここでは検証できない。</p>
+     */
+    @TestPlot("insaneae_interface_menu_opens")
+    public static void interfaceMenuOpens(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("0 0 0");
+        plot.blockState("1 0 0", ModBlocks.INSANE_INTERFACE.get().defaultBlockState());
+
+        plot.test(helper -> helper.startSequence()
+                .thenIdle(2)
+                .thenExecute(() -> {
+                    var be = (InsaneInterfaceBlockEntity) helper.getBlockEntity(new BlockPos(1, 0, 0));
+                    var player = net.minecraftforge.common.util.FakePlayerFactory
+                            .getMinecraft(helper.getLevel());
+                    be.openMenu(player, appeng.menu.locator.MenuLocators.forBlockEntity(be));
+                    helper.check(
+                            player.containerMenu instanceof jp.main.taikun.insaneae.menu.InsaneInterfaceMenu,
+                            "画面が開かなかった: containerMenu = "
+                                    + player.containerMenu.getClass().getName());
+                    player.closeContainer();
+                })
+                .thenSucceed());
+    }
+
+    /**
      * long あふれの門番: 材料合計が long で表現できない要求が、<b>黙って負の量を流さず</b>
      * 綺麗に失敗する (craft 可能な計画に化けない) ことを確かめる。
      *
@@ -776,6 +814,201 @@ public final class InsaneAETestPlots {
     }
 
     /**
+     * タスク統合カードが <b>BigInteger (Exact) 経路でも効く</b>ことを確かめる。
+     *
+     * <p>{@code insaneae_task_fusion_card} が見ているのは通常の long タスク経路だけで、
+     * ACO の正確な計画を受け取ったときに走る {@code executeExact} は別のループになっている。
+     * ここが統合を見ていないと、<b>922京級の注文ほどカードが効かない</b>という逆の症状になる
+     * (通常経路では効いているので気付きにくい)。</p>
+     */
+    @TestPlot("insaneae_task_fusion_exact")
+    public static void taskFusionCardExact(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,2] 0 0");
+        plot.blockState("2 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        final long requested = 1000;
+        final int clusterBudget = 3;
+        final int planksPerCraft = 4;
+
+        plot.test(helper -> {
+            var state = new Object() {
+                FakeJobView view;
+                int ops;
+            };
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_LOG)));
+                cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.TASK_FUSION_CARD.get()));
+                cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
+            });
+
+            sequence.thenIdle(5);
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
+                var patterns = cpu.getLogic().getAvailablePatterns();
+                helper.check(patterns.size() == 1,
+                        "Quantum CPU がパターンを 1 枚だけ持っている状態にならなかった: " + patterns.size());
+
+                var grid = helper.getGrid(BlockPos.ZERO);
+                state.view = new FakeJobView(patterns.get(0), requested);
+                state.view.inventory.insert(AEItemKey.of(Items.OAK_LOG), requested,
+                        appeng.api.config.Actionable.MODULATE);
+
+                // Exact 台帳は ExecutingCraftingJob をキーにするが、ここでは本物のジョブを
+                // 立てずに経路だけ試したいので null をキーに使う (WeakHashMap は null を許す)。
+                // このプロットしか null を使わないが、並列で走る他プロットに残さないよう最後に消す。
+                AcoBigIntegerJobRegistry.install(null,
+                        Map.of(patterns.get(0), java.math.BigInteger.valueOf(requested)));
+                state.view.exactCursor = AcoBigIntegerJobRegistry.find(null)
+                        .orElseThrow(() -> new GameTestAssertException("Exact 台帳を作れなかった"))
+                        .cursor(details -> {
+                        });
+
+                state.ops = jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.execute(
+                        state.view, clusterBudget,
+                        (appeng.me.service.CraftingService) grid.getCraftingService(),
+                        grid.getEnergyService(), grid.getPivot().getLevel());
+                AcoBigIntegerJobRegistry.remove(null);
+            });
+
+            sequence.thenExecute(() -> {
+                helper.check(state.ops == 1,
+                        "Exact 経路でまとめ 1 回が 1 操作として数えられていない: " + state.ops);
+                long planks = state.view.waitingFor.list.get(AEItemKey.of(Items.OAK_PLANKS));
+                helper.check(planks == requested * planksPerCraft,
+                        "Exact 経路で予算 " + clusterBudget + " が回数を縛っている (完成待ち "
+                                + planks + " / 期待 " + requested * planksPerCraft + ")");
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    /**
+     * Advanced AE のクラフト CPU へ入れている compat Mixin が<b>実際に当たっている</b>ことを確かめる。
+     *
+     * <p>{@code @Pseudo} + {@code targets} の名指しは、相手のクラス名が変わっても
+     * <b>エラーにならず黙って当たらなくなる</b> ({@code required=false} なので尚更)。
+     * 症状は「Advanced AE のクラフト CPU だけ遅い」「巨大な協調処理数だと途中で止まる」で、
+     * どちらもログに何も出ないため、当たっているかどうかはここで見張るしかない。</p>
+     *
+     * <p>Advanced AE が入っていない環境では<b>何も検査せずに成功する</b>
+     * (通常のゲームテストは Advanced AE 無しで回るため)。
+     * 相手のクラスは普段ロードされないので、{@code Class.forName} で明示的に読み込んで
+     * Mixin の変換を走らせてから、注入したメソッドが生えているかを見る。</p>
+     */
+    @TestPlot("insaneae_aae_cpu_mixins")
+    public static void advancedAeCpuMixins(PlotBuilder plot) {
+        // 中身は反射で見るだけだが、空のプロットは AE2 の Plot#getBounds が通らないので 1 つ置く。
+        plot.cable("0 0 0");
+        plot.test(helper -> helper.startSequence().thenExecute(() -> {
+            if (!net.minecraftforge.fml.ModList.get().isLoaded("advanced_ae")) {
+                return;
+            }
+            Class<?> logic;
+            try {
+                logic = Class.forName("net.pedroksl.advanced_ae.common.logic.AdvCraftingCPULogic");
+            } catch (ClassNotFoundException missing) {
+                throw new GameTestAssertException(
+                        "Advanced AE は居るのに AdvCraftingCPULogic が無い。"
+                                + "クラス名が変わったので compat Mixin の targets を直すこと: " + missing);
+            }
+            // Mixin は注入ハンドラを handler$<hash>$<元の名前> / redirect$... に改名して混ぜるので、
+            // 名前の一致ではなく<b>末尾</b>で見る。@Unique のメソッドだけは元の名前のまま入る。
+            Set<String> injected = new HashSet<>();
+            for (var method : logic.getDeclaredMethods()) {
+                if (method.getName().contains("insaneae$")) {
+                    injected.add(method.getName());
+                }
+            }
+            // まとめ処理 (AdvCraftingCpuLogicMixin) と 1 tick 予算の long 化 (AdvCraftingCpuBudgetMixin)。
+            for (String expected : List.of("insaneae$bulkCrafting", "insaneae$reduceBudget",
+                    "insaneae$addBulkToResult", "insaneae$tickBudget", "insaneae$rollUsedOps")) {
+                helper.check(injected.stream().anyMatch(name -> name.endsWith(expected)),
+                        "Advanced AE の CPU へ " + expected + " が注入されていない (当たったのは "
+                                + injected + ")");
+            }
+        }).thenSucceed());
+    }
+
+    /**
+     * <b>実際のジョブ</b>でまとめ処理が発火することを確かめる (同居 Mod に対する回帰テスト)。
+     *
+     * <p>他のまとめ処理テストは {@code QuantumBulkCrafting.execute} を直接呼んでいるので、
+     * <b>クラフト CPU の tick から本当に呼ばれているか</b>は見ていない。
+     * {@code executeCrafting} の先頭には打ち切り付きで注入している Mod が他にもいる
+     * (AE2 Crafting Optimizer がそう) ため、先を越されるとまとめ処理は<b>黙って</b>
+     * 素の 1 回ずつに戻る — 結果は同じで遅くなるだけなので、カウンタでしか気付けない。</p>
+     *
+     * <p>タスク統合カードを挿してあるので、まとめ処理が効いていれば
+     * {@code crafts} 回は数 tick で終わる。効いていなければクラスタ予算 (1 tick に数回) で
+     * 刻まれるため、待ち時間の側でも差が出る。</p>
+     */
+    @TestPlot("insaneae_bulk_execution_live")
+    public static void bulkExecutionLive(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,3] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
+            // 材料は無限、完成品の置き場に普通のセルを 1 枚。
+            drive.getInternalInventory().addItems(CreativeCellItem.ofItems(Items.OAK_LOG));
+            drive.getInternalInventory().addItems(AEItems.ITEM_CELL_64K.stack());
+        });
+        plot.block("2 0 0", AEBlocks.CRAFTING_STORAGE_64K);
+        plot.block("2 1 0", AEBlocks.CRAFTING_ACCELERATOR);
+        plot.blockState("3 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        final long crafts = 1000;
+        final int planksPerCraft = 4;
+
+        plot.test(helper -> {
+            var state = new Object() {
+                long windowsBefore;
+                appeng.server.testworld.TestCraftingJob job;
+            };
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(3, 0, 0));
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_LOG)));
+                cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.TASK_FUSION_CARD.get()));
+                cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
+            });
+
+            // パターンの読み直しとクラフト索引の更新待ち (他のまとめ処理テストと同じ)。
+            sequence.thenIdle(5);
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(3, 0, 0));
+                helper.check(cpu.getLogic().getAvailablePatterns().size() == 1,
+                        "Quantum CPU がパターンを 1 枚だけ持っている状態にならなかった");
+                state.windowsBefore = jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.bulkWindows;
+                state.job = new appeng.server.testworld.TestCraftingJob(helper, BlockPos.ZERO,
+                        AEItemKey.of(Items.OAK_PLANKS), crafts * planksPerCraft);
+            });
+
+            sequence.thenWaitUntil(() -> state.job.tickUntilStarted());
+            sequence.thenIdle(20);
+
+            sequence.thenExecute(() -> helper.check(
+                    jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.bulkWindows > state.windowsBefore,
+                    "実ジョブでまとめ処理が一度も走っていない"
+                            + " (executeCrafting への注入が他 Mod に先取りされている可能性)"));
+
+            sequence.thenWaitUntil(
+                    () -> helper.assertContains(helper.getGrid(BlockPos.ZERO), Items.OAK_PLANKS));
+            sequence.thenSucceed();
+        });
+    }
+
+    /**
      * {@link CraftingJobView} の最小の実装。タスクは 1 つだけ持つ。
      * 在庫をこちらで固定できるので、まとめ処理の入出力を直接検算できる。
      */
@@ -793,6 +1026,8 @@ public final class InsaneAETestPlots {
         final appeng.api.crafting.IPatternDetails details;
         long remaining;
         boolean removed;
+        /** null でなければ Exact (BigInteger) 経路を通す。 */
+        jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry.CraftingCursor exactCursor;
 
         FakeJobView(appeng.api.crafting.IPatternDetails details, long remaining) {
             this.details = details;
@@ -816,6 +1051,13 @@ public final class InsaneAETestPlots {
 
         @Override
         public void markDirty() {
+        }
+
+        @Override
+        public java.util.Optional<
+                jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry.CraftingCursor>
+                exactTasks() {
+            return java.util.Optional.ofNullable(exactCursor);
         }
 
         @Override
@@ -862,6 +1104,20 @@ public final class InsaneAETestPlots {
                         new appeng.api.stacks.GenericStack(AEItemKey.of(input), inputAmount) },
                 new appeng.api.stacks.GenericStack[] {
                         new appeng.api.stacks.GenericStack(AEItemKey.of(output), outputAmount) });
+    }
+
+    /**
+     * 計算のまとめ処理が働いたか。
+     *
+     * <p>ACO 同居中は<b>働かないのが正しい</b> — 厳密計算は ACO が所有し、こちらの計算バッチは
+     * {@code AcoCalculationIntegration} で譲るため。そのときは「結果が AE2 と一致すること」
+     * だけを見る (実行側のまとめ処理は譲らない — {@code insaneae_bulk_execution_live} が見ている)。</p>
+     */
+    private static boolean insaneBatchingRan(long before) {
+        if (AcoCalculationIntegration.shouldDeferCalculationBatch()) {
+            return true;
+        }
+        return CraftingCalculationBatch.batchedCrafts > before;
     }
 
     private static Future<ICraftingPlan> beginCalculation(appeng.server.testworld.PlotTestHelper helper) {
@@ -984,6 +1240,59 @@ public final class InsaneAETestPlots {
 
             sequence.thenSucceed();
         });
+    }
+
+    /**
+     * インポートバス + 限界突破加速カードで「1 tick 1 スタック」の壁が無いことの検証。
+     *
+     * <p>AE2 のインポートバスは {@code ExternalStorageFacade} 経由で隣接インベントリの
+     * <b>全スロットを long 量でまとめて</b>抜くので、パイプの押し込みと違い
+     * スタックサイズが速度の天井にならない。1 活性化あたりの移動量は
+     * {@code getOperationsPerTick} で、そこにうちの加速カードの倍率が掛かる
+     * ({@code IOBusPartMixin})。WARP カード 1 枚 (4096 倍) で 20 スタックが
+     * まとめて動くことを見る (素のバスは 1 活性化 1 個なので、カード無しでは
+     * この時間内に数個しか動かない)。</p>
+     */
+    @TestPlot("insaneae_import_bus_speed_card")
+    public static void importBusSpeedCard(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("0 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> drive.getInternalInventory().addItems(
+                new ItemStack(ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_1G).get())));
+        plot.part("0 0 0", net.minecraft.core.Direction.UP, AEParts.IMPORT_BUS,
+                bus -> bus.getUpgrades().addItems(new ItemStack(
+                        ModUpgrades.SPEED_CARDS.get(InsaneSpeedCardType.WARP).get())));
+
+        final int stacks = 20;
+        final long total = stacks * 64L;
+        ItemStack[] chestContents = new ItemStack[stacks];
+        for (int i = 0; i < stacks; i++) {
+            chestContents[i] = new ItemStack(Items.IRON_INGOT, 64);
+        }
+        plot.chest("0 1 0", chestContents);
+
+        plot.test(helper -> {
+            var pos = new BlockPos(0, 0, 0);
+            var sequence = helper.startSequence();
+
+            // グリッドの起動 + バスの活性化 (最短 5 tick 間隔) を 2〜3 回ぶん待つ。
+            sequence.thenIdle(30);
+            sequence.thenExecute(() -> {
+                long inNetwork = countInNetwork(helper, Items.IRON_INGOT);
+                helper.check(inNetwork == total,
+                        stacks + " スタックがまとめて動いていない: " + inNetwork + " / " + total
+                                + " (加速カードの倍率がインポートバスに効いていない)", pos);
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    private static long countInNetwork(appeng.server.testworld.PlotTestHelper helper,
+            net.minecraft.world.item.Item item) {
+        var counter = new KeyCounter();
+        helper.getGrid(BlockPos.ZERO).getStorageService().getInventory().getAvailableStacks(counter);
+        return counter.get(AEItemKey.of(item));
     }
 
     /** その位置の BlockEntity が公開している {@code GENERIC_INTERNAL_INV} (無ければ null)。 */

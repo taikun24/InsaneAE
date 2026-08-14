@@ -68,7 +68,7 @@ mandatory = true
 # AE2 の内部 (BasicCellInventory / CraftingCPUCluster / 画面スタイルの generatedBackground など) に
 # 深く踏み込んでいるので、実際にテストしたビルド以上を要求する。古い AE2 だと Mixin が外れたり
 # Quantum CPU の画面スタイルが読めなかったりするが、ここで弾けば分かりやすい依存エラーになる。
-versionRange = "[15.2.16,16)"
+versionRange = "[15.4.10,16)"
 ordering = "AFTER"
 side = "BOTH"
 # MEGA Cells - required. 1M〜256M のクラフトストレージは MEGA Cells 側が提供し、

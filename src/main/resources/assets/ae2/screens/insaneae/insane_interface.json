@@ -1,10 +1,10 @@
 {
   "$schema": "../schema.json",
   "$comment": "超特大インターフェイスの画面。StyleManager が ae2 名前空間固定で読むので assets/ae2 に置いている。CONFIG / STORAGE の座標は InsaneInterfaceScreen の定数と揃えること (実際の配置は 1 ページぶんだけ画面側が上書きする)。9x3 ずつを 3 ページに分けているので、ページ送り (prevPage/nextPage/page) と歯車 (setAmountMode) は在庫枠の下 top=158 の 1 行にまとめてある。プレイヤーインベントリは bottom=84 = top 191 から。",
+  "$comment_includes": "toolbox.json をここに書いてはいけない (1.21.1 ブランチとの意図的な差分)。AE2 15.x の common.json は既に toolbox.json を include しており、二重に書くと StyleManager が「Recursive style includes」で読み込みに失敗し、画面が開く瞬間の例外は Forge のパケット処理に黙って飲まれるため、無反応・無ログで画面が開けなくなる。19.x は common.json が toolbox を含まないので、1.21.1 側では明示 include が必要。",
   "includes": [
     "../common/common.json",
-    "../common/player_inventory.json",
-    "../common/toolbox.json"
+    "../common/player_inventory.json"
   ],
   "generatedBackground": {
     "width": 176,
