@@ -905,8 +905,10 @@ public final class InsaneAETestPlots {
      */
     @TestPlot("insaneae_aae_cpu_mixins")
     public static void advancedAeCpuMixins(PlotBuilder plot) {
+        // 中身は反射で見るだけだが、空のプロットは AE2 の Plot#getBounds が通らないので 1 つ置く。
+        plot.cable("0 0 0");
         plot.test(helper -> helper.startSequence().thenExecute(() -> {
-            if (!net.neoforged.fml.ModList.get().isLoaded("advanced_ae")) {
+            if (!net.minecraftforge.fml.ModList.get().isLoaded("advanced_ae")) {
                 return;
             }
             Class<?> logic;
