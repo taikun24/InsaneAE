@@ -25,7 +25,7 @@ Minecraft のバージョンごとにブランチを分けています。**不�
 | [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) | 19.2.17 以上 (必須) |
 | [MEGA Cells](https://github.com/62832/MEGACells) | 4.11 以上 (必須) |
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) | 1.6 以上 (任意 / 化学物質セル用) |
-| [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) | 1.5.12 以上 (任意 / BigInteger量会計・厳密計算連携用) |
+| [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) | 1.5.12 以上、**1.5.16 以上を推奨** (任意 / BigInteger量会計・厳密計算連携用) |
 
 AE2 が [GuideME](https://github.com/AppliedEnergistics/GuideME) を必須依存として要求します (1.20.1 では AE2 に同梱されていました)。
 
