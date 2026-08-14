@@ -211,6 +211,33 @@ dependencies {
     if (project.findProperty('withAco') == 'true' && file('libs/aco-1.5.16.jar').exists()) {
         runtimeOnly fg.deobf("blank:aco:1.5.16")
     }
+    // Astral Mekanism & Energistics — 自動搬出をネットワークへ流す互換 Mixin
+    // (compat.AstralEjectorMixin) の実機テスト用【任意・オプトイン】。
+    // Mixin は @Pseudo + targets 指定なのでコンパイルには要らない (Mekanism の型だけ要る)。
+    // -PwithAstral=true で dev 実行に載る。既定でオフなのは、Astral が Mekanism の
+    // 機械を大量に足すぶん dev の起動が重くなるため。
+    // Astral は必須依存が 14 個ある (mods.toml が全部 mandatory=true)。
+    // バージョンの組み合わせは実際に遊んでいるモッドパックの manifest.json から取った。
+    if (project.findProperty('withAstral') == 'true') {
+        runtimeOnly fg.deobf("curse.maven:astral-mekanism-1415150:8601842")
+        runtimeOnly fg.deobf("curse.maven:mekanism-generators-268566:6552914")
+        runtimeOnly fg.deobf("curse.maven:mekanism-tools-268567:6552915")
+        runtimeOnly fg.deobf("curse.maven:evolved-mekanism-1230085:7599591")
+        runtimeOnly fg.deobf("curse.maven:mekanism-extras-1026040:8247562")
+        runtimeOnly fg.deobf("curse.maven:evolved-mekanism-extras-1268159:8294797")
+        runtimeOnly fg.deobf("curse.maven:compact-mekanism-machines-1161015:7388773")
+        runtimeOnly fg.deobf("curse.maven:mekanism-elements-1103224:6537553")
+        runtimeOnly fg.deobf("curse.maven:advancedae-1084104:7939754")
+        runtimeOnly fg.deobf("curse.maven:ae2addonlib-1366135:7668681")
+        runtimeOnly fg.deobf("curse.maven:applied-flux-965012:7651647")
+        runtimeOnly fg.deobf("curse.maven:botany-pots-353928:7612402")
+        runtimeOnly fg.deobf("curse.maven:bookshelf-228525:7612389")
+        runtimeOnly fg.deobf("curse.maven:stack-upgrade-integration-1510741:8298822")
+        // 上の 2 つが要求する図書館 Mod。
+        runtimeOnly fg.deobf("curse.maven:glodium-957920:5226922")
+        runtimeOnly fg.deobf("curse.maven:iglee-library-541199:6987117")
+        runtimeOnly fg.deobf("curse.maven:geckolib-388172:8285794")
+    }
     // テスト用
     runtimeOnly fg.deobf("curse.maven:jei-238222:8500005")
     testImplementation platform("org.junit:junit-bom:5.10.2")

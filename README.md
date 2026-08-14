@@ -26,6 +26,7 @@ Minecraft のバージョンごとにブランチを分けています。**不�
 | [MEGA Cells](https://github.com/62832/MEGACells) | 2.4.6 以上 (必須) |
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) | 1.4 以上 (任意 / 化学物質セル用) |
 | [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) | 1.5.12 以上、**1.5.16 以上を推奨** (任意 / BigInteger量会計・厳密計算連携用) |
+| [Astral Mekanism & Energistics](https://www.curseforge.com/minecraft/mc-mods/astral-mekanism) | 1.8 以上 (任意 / ME インターフェイスへの自動搬出をまとめる連携用) |
 
 AE2 の内部 (`BasicCellInventory`、`CraftingCPUCluster`、ツールチップ描画など) に Mixin で踏み込んでいるため、
 AE2 のバージョン範囲は実際に検証した `[15.2.16,16)` に固定しています。

@@ -16,6 +16,7 @@
     "MolecularAssemblerBlockEntityMixin",
     "PatternProviderMenuMixin",
     "compat.AAEQuantumCrafterMixin",
+    "compat.AstralEjectorMixin",
     "compat.AAEReactionChamberMixin",
     "compat.AdvCraftingCpuLogicMixin",
     "compat.ExCircuitCutterMixin",
