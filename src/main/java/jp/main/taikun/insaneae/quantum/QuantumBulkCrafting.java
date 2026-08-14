@@ -154,10 +154,16 @@ public final class QuantumBulkCrafting {
                 // 親Patternの材料がまだMEへ戻っていなくても、同じ窓の別Patternは進められる。
                 continue;
             }
+            // タスク統合 (fusesOperations): 通常経路と同じく、まとめ 1 回を CPU 予算の
+            // 1 操作として数え、回数はプロバイダ自身の予算に任せる。
+            // BigInteger 経路こそ 1 窓が大きいので、ここを飛ばすと統合カードが効かない。
+            boolean fused = provider.fusesOperations();
             long boundedRemaining = remaining.min(BigInteger.valueOf(Long.MAX_VALUE)).longValueExact();
-            long limit = Math.min(
-                    Math.min(boundedRemaining, provider.getBulkCapacity(details)),
-                    maxPatterns - pushed);
+            long limit = Math.min(boundedRemaining, provider.getBulkCapacity(details));
+            if (!fused) {
+                limit = Math.min(limit, maxPatterns - pushed);
+            }
+            limit = clampForOutputs(details, limit);
             if (limit <= 0L) {
                 // このプロバイダのtick予算が尽きた場合は、次の窓で同じTaskを再試行する。
                 continue;
@@ -168,7 +174,8 @@ public final class QuantumBulkCrafting {
                 continue;
             }
             cursor.setRemaining(remaining.subtract(BigInteger.valueOf(done)));
-            pushed += Math.toIntExact(done);
+            // 統合中は done が int を超えうるので、toIntExact に渡さないこと。
+            pushed += fused ? 1 : Math.toIntExact(done);
             if (cursor.remaining().signum() <= 0) {
                 cursor.remove();
             }

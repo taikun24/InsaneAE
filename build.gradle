@@ -238,6 +238,18 @@ dependencies {
         runtimeOnly fg.deobf("curse.maven:iglee-library-541199:6987117")
         runtimeOnly fg.deobf("curse.maven:geckolib-388172:8285794")
     }
+
+    // Advanced AE — 自前のクラフト CPU (AdvCraftingCPULogic) へ入れている compat Mixin
+    // (compat.AdvCraftingCpuLogicMixin / compat.AdvCraftingCpuBudgetMixin) の実機確認用
+    // 【任意・オプトイン】。-PwithAdvancedAe=true で dev 実行に載る (-PwithAstral=true にも含まれる)。
+    // 既定でオフなのは、Advanced AE 自身が AE2 の挙動を変えるためゲームテストの前提が変わるから。
+    if (project.findProperty('withAdvancedAe') == 'true') {
+        runtimeOnly fg.deobf("curse.maven:advancedae-1084104:7939754")
+        // Advanced AE の mandatory 依存。FML が止まってから分かる類なので明示しておく。
+        runtimeOnly fg.deobf("curse.maven:ae2addonlib-1366135:7668681")
+        runtimeOnly fg.deobf("curse.maven:geckolib-388172:8285794")
+    }
+
     // テスト用
     runtimeOnly fg.deobf("curse.maven:jei-238222:8500005")
     testImplementation platform("org.junit:junit-bom:5.10.2")
