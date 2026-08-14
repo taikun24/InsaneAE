@@ -27,6 +27,14 @@ import java.util.Set;
  * <p>遅れは最大 1 tick。ホストの {@code serverTick()} が毎 tick 流すほか、
  * パターンを実際に参照する経路 ({@link #getAvailablePatterns()} / {@link #hasPattern}) が
  * 必ず先に流すので、古い一覧が見えることはない。</p>
+ *
+ * <p><b>ただしグリッドのクラフト索引だけは自分で見に来てくれない。</b>
+ * 索引の再構築は {@code super.updatePatterns()} の中で予約されるので、こちらが溜めている間は
+ * 索引も古いままになる。AE2 本体のクラフト計算は非同期に走るので 1 tick の遅れを吸収するが、
+ * <b>発注の時点で索引を写し取る Mod</b> (AE2 Crafting Optimizer) と同居すると
+ * 「入れたばかりのパターンが使われない」として表に出る (ゲームテストで確認)。
+ * そこで<b>その tick で最初の 1 回だけは即座に流す</b> — まとめ処理の狙いは
+ * 「1 tick に何十回も再構築しない」ことなので、1 tick あたりの再構築回数は変わらない。</p>
  */
 public class InsanePatternProviderLogic extends PatternProviderLogic {
 
@@ -39,14 +47,27 @@ public class InsanePatternProviderLogic extends PatternProviderLogic {
     /** パターンの再読み込みが必要か。{@link #flushPatternUpdate()} でまとめて処理する。 */
     private boolean patternsDirty = true;
 
+    /** ホスト (現在の tick を引くのに使う)。 */
+    private final PatternProviderLogicHost patternHost;
+
+    /** 最後に再読み込みした tick。同じ tick の 2 回目以降だけをまとめる。 */
+    private long lastFlushTick = Long.MIN_VALUE;
+
     public InsanePatternProviderLogic(IManagedGridNode mainNode, PatternProviderLogicHost host, int slots) {
         super(mainNode, host, slots);
+        this.patternHost = host;
     }
 
-    /** AE2 が 1 枚出し入れするたびに呼ぶ再読み込み。印だけ付けて後でまとめて処理する。 */
+    /**
+     * AE2 が 1 枚出し入れするたびに呼ぶ再読み込み。
+     * その tick の最初の 1 回は<b>すぐに</b>流し、2 回目以降だけを溜める。
+     */
     @Override
     public void updatePatterns() {
         patternsDirty = true;
+        if (currentTick() != lastFlushTick) {
+            flushPatternUpdate();
+        }
     }
 
     /** 溜めていたパターン更新を実行する。何度呼んでも安全。 */
@@ -55,10 +76,24 @@ public class InsanePatternProviderLogic extends PatternProviderLogic {
             return;
         }
         patternsDirty = false;
+        // 先に印を進めること。super.updatePatterns() の中から戻ってきても、
+        // 同じ tick なら溜めるだけになって再帰しない。
+        lastFlushTick = currentTick();
         super.updatePatterns();
         patternSet.clear();
         patternSet.addAll(super.getAvailablePatterns());
         onPatternsFlushed();
+    }
+
+    /**
+     * 現在の tick。ワールドに乗る前 (NBT 読み込み中など) は
+     * {@link Long#MIN_VALUE} を返して<b>即時の流し込みをしない</b>
+     * (初期値と同じ値なので「同じ tick」扱いになる)。
+     */
+    private long currentTick() {
+        var blockEntity = patternHost.getBlockEntity();
+        var level = blockEntity == null ? null : blockEntity.getLevel();
+        return level == null ? Long.MIN_VALUE : level.getGameTime();
     }
 
     /** パターン一覧が実際に更新されたときの追加処理 (Quantum CPU が組み立てキャッシュを捨てるのに使う)。 */

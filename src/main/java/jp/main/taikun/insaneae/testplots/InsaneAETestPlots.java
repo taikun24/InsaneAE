@@ -11,6 +11,7 @@ import appeng.api.stacks.KeyCounter;
 import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import appeng.capabilities.Capabilities;
 import appeng.core.definitions.AEBlocks;
+import appeng.core.definitions.AEItems;
 import appeng.core.definitions.AEParts;
 import appeng.items.storage.CreativeCellItem;
 import appeng.me.helpers.MachineSource;
@@ -22,6 +23,7 @@ import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.crafting.CraftingCalculationBatch;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.iface.InsaneInterfaceBlockEntity;
+import jp.main.taikun.insaneae.integration.aco.AcoCalculationIntegration;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderBlockEntity;
 import jp.main.taikun.insaneae.quantum.CraftingJobView;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
@@ -115,7 +117,7 @@ public final class InsaneAETestPlots {
             sequence.thenWaitUntil(() -> state.withBatching = awaitPlan(state.pending));
 
             sequence.thenExecute(() -> {
-                helper.check(CraftingCalculationBatch.batchedCrafts > state.batchedBefore,
+                helper.check(insaneBatchingRan(state.batchedBefore),
                         "まとめ処理が一度も働いていない (Mixin が適用されていない可能性)");
 
                 var expected = state.withoutBatching;
@@ -192,7 +194,7 @@ public final class InsaneAETestPlots {
                 var expected = state.withoutBatching;
                 var actual = state.withBatching;
 
-                helper.check(CraftingCalculationBatch.batchedCrafts > state.batchedBefore,
+                helper.check(insaneBatchingRan(state.batchedBefore),
                         "まとめ処理が一度も働いていない");
                 helper.check(!expected.simulation(),
                         "中間素材を作れず simulation になった: テストの前提が崩れている"
@@ -808,6 +810,77 @@ public final class InsaneAETestPlots {
     }
 
     /**
+     * <b>実際のジョブ</b>でまとめ処理が発火することを確かめる (同居 Mod に対する回帰テスト)。
+     *
+     * <p>他のまとめ処理テストは {@code QuantumBulkCrafting.execute} を直接呼んでいるので、
+     * <b>クラフト CPU の tick から本当に呼ばれているか</b>は見ていない。
+     * {@code executeCrafting} の先頭には打ち切り付きで注入している Mod が他にもいる
+     * (AE2 Crafting Optimizer がそう) ため、先を越されるとまとめ処理は<b>黙って</b>
+     * 素の 1 回ずつに戻る — 結果は同じで遅くなるだけなので、カウンタでしか気付けない。</p>
+     *
+     * <p>タスク統合カードを挿してあるので、まとめ処理が効いていれば
+     * {@code crafts} 回は数 tick で終わる。効いていなければクラスタ予算 (1 tick に数回) で
+     * 刻まれるため、待ち時間の側でも差が出る。</p>
+     */
+    @TestPlot("insaneae_bulk_execution_live")
+    public static void bulkExecutionLive(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,3] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
+            // 材料は無限、完成品の置き場に普通のセルを 1 枚。
+            drive.getInternalInventory().addItems(CreativeCellItem.ofItems(Items.OAK_LOG));
+            drive.getInternalInventory().addItems(AEItems.ITEM_CELL_64K.stack());
+        });
+        plot.block("2 0 0", AEBlocks.CRAFTING_STORAGE_64K);
+        plot.block("2 1 0", AEBlocks.CRAFTING_ACCELERATOR);
+        plot.blockState("3 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        final long crafts = 1000;
+        final int planksPerCraft = 4;
+
+        plot.test(helper -> {
+            var state = new Object() {
+                long windowsBefore;
+                appeng.server.testworld.TestCraftingJob job;
+            };
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(3, 0, 0));
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_LOG)));
+                cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.TASK_FUSION_CARD.get()));
+                cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
+            });
+
+            // パターンの読み直しとクラフト索引の更新待ち (他のまとめ処理テストと同じ)。
+            sequence.thenIdle(5);
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(3, 0, 0));
+                helper.check(cpu.getLogic().getAvailablePatterns().size() == 1,
+                        "Quantum CPU がパターンを 1 枚だけ持っている状態にならなかった");
+                state.windowsBefore = jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.bulkWindows;
+                state.job = new appeng.server.testworld.TestCraftingJob(helper, BlockPos.ZERO,
+                        AEItemKey.of(Items.OAK_PLANKS), crafts * planksPerCraft);
+            });
+
+            sequence.thenWaitUntil(() -> state.job.tickUntilStarted());
+            sequence.thenIdle(20);
+
+            sequence.thenExecute(() -> helper.check(
+                    jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.bulkWindows > state.windowsBefore,
+                    "実ジョブでまとめ処理が一度も走っていない"
+                            + " (executeCrafting への注入が他 Mod に先取りされている可能性)"));
+
+            sequence.thenWaitUntil(
+                    () -> helper.assertContains(helper.getGrid(BlockPos.ZERO), Items.OAK_PLANKS));
+            sequence.thenSucceed();
+        });
+    }
+
+    /**
      * {@link CraftingJobView} の最小の実装。タスクは 1 つだけ持つ。
      * 在庫をこちらで固定できるので、まとめ処理の入出力を直接検算できる。
      */
@@ -894,6 +967,20 @@ public final class InsaneAETestPlots {
                         new appeng.api.stacks.GenericStack(AEItemKey.of(input), inputAmount) },
                 new appeng.api.stacks.GenericStack[] {
                         new appeng.api.stacks.GenericStack(AEItemKey.of(output), outputAmount) });
+    }
+
+    /**
+     * 計算のまとめ処理が働いたか。
+     *
+     * <p>ACO 同居中は<b>働かないのが正しい</b> — 厳密計算は ACO が所有し、こちらの計算バッチは
+     * {@code AcoCalculationIntegration} で譲るため。そのときは「結果が AE2 と一致すること」
+     * だけを見る (実行側のまとめ処理は譲らない — {@code insaneae_bulk_execution_live} が見ている)。</p>
+     */
+    private static boolean insaneBatchingRan(long before) {
+        if (AcoCalculationIntegration.shouldDeferCalculationBatch()) {
+            return true;
+        }
+        return CraftingCalculationBatch.batchedCrafts > before;
     }
 
     private static Future<ICraftingPlan> beginCalculation(appeng.server.testworld.PlotTestHelper helper) {
