@@ -12,6 +12,8 @@ import java.math.BigInteger;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
 
 /**
  * ACOの正確なBigInteger計画をInsaneAEのQuantum CPUへ渡す任意連携。
@@ -21,10 +23,12 @@ import java.util.concurrent.atomic.AtomicReference;
  * BigInteger扱いしない。</p>
  */
 public final class AcoBigIntegerPlanBridge {
+    private static final Logger LOGGER = LogUtils.getLogger();
     private static final String ACO_API_CLASS =
             "com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi";
     private static final AtomicReference<Methods> METHODS = new AtomicReference<>();
     private static final Methods UNAVAILABLE = new Methods(null, null, null, null);
+    private static volatile boolean externalConsumerRegistered;
 
     private AcoBigIntegerPlanBridge() {
     }
@@ -52,6 +56,29 @@ public final class AcoBigIntegerPlanBridge {
             return Optional.of(new Plan(exactBytes, simulation, Map.copyOf(patternTimes)));
         } catch (IllegalAccessException | InvocationTargetException | RuntimeException failure) {
             return Optional.empty();
+        }
+    }
+
+    /** ACOへInsaneAEが実行責務を所有することだけを登録する。 */
+    public static void registerExternalPlanConsumer() {
+        if (externalConsumerRegistered) {
+            return;
+        }
+        try {
+            Class<?> api = Class.forName(
+                    ACO_API_CLASS,
+                    false,
+                    AcoBigIntegerPlanBridge.class.getClassLoader());
+            int version = api.getField("EXTERNAL_CONSUMER_API_VERSION").getInt(null);
+            if (version < 1) {
+                return;
+            }
+            api.getMethod("registerExternalBigIntegerPlanConsumer").invoke(null);
+            externalConsumerRegistered = true;
+            LOGGER.info("InsaneAE: ACO BigInteger external plan consumer registered");
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError failure) {
+            // ACO未導入・旧版では標準AE2経路へ戻し、起動を止めない。
+            LOGGER.debug("InsaneAE: ACO BigInteger external consumer is unavailable", failure);
         }
     }
 

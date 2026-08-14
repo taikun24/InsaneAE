@@ -1,7 +1,6 @@
 package jp.main.taikun.insaneae.integration.aco;
 
 import appeng.api.crafting.IPatternDetails;
-import appeng.crafting.execution.ExecutingCraftingJob;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
@@ -19,19 +18,20 @@ import java.util.function.Consumer;
  * windows, so a task never needs to be represented by one overflowing long.</p>
  */
 public final class AcoBigIntegerJobRegistry {
-    private static final Map<ExecutingCraftingJob, Job> JOBS = new IdentityHashMap<>();
+    /** AE2本体・Advanced AE複製CPUのどちらでも同じ寿命規則を使う。 */
+    private static final Map<Object, Job> JOBS = new IdentityHashMap<>();
 
     private AcoBigIntegerJobRegistry() {
     }
 
     public static synchronized void install(
-            ExecutingCraftingJob job,
+            Object job,
             AcoBigIntegerPlanBridge.Plan plan) {
         // 同一Jobへの再通知は状態を上書きせず、二重のExact台帳を作らない。
         JOBS.putIfAbsent(job, new Job(job, plan.patternTimes()));
     }
 
-    public static synchronized Optional<Job> find(ExecutingCraftingJob job) {
+    public static synchronized Optional<Job> find(Object job) {
         Job exact = JOBS.get(job);
         if (exact != null && exact.isEmpty()) {
             JOBS.remove(job);
@@ -40,16 +40,16 @@ public final class AcoBigIntegerJobRegistry {
         return Optional.ofNullable(exact);
     }
 
-    public static synchronized void remove(ExecutingCraftingJob job) {
+    public static synchronized void remove(Object job) {
         JOBS.remove(job);
     }
 
     /** Exact task state for one ordinary AE2 job. */
     public static final class Job {
-        private final ExecutingCraftingJob owner;
+        private final Object owner;
         private final Map<IPatternDetails, BigInteger> remaining;
 
-        private Job(ExecutingCraftingJob owner, Map<IPatternDetails, BigInteger> patternTimes) {
+        private Job(Object owner, Map<IPatternDetails, BigInteger> patternTimes) {
             this.owner = owner;
             this.remaining = new LinkedHashMap<>();
             patternTimes.forEach((pattern, amount) -> {
@@ -84,7 +84,7 @@ public final class AcoBigIntegerJobRegistry {
             remaining.remove(pattern);
         }
 
-        private ExecutingCraftingJob owner() {
+        private Object owner() {
             return owner;
         }
 
