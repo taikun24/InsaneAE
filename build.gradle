@@ -115,6 +115,27 @@ dependencies {
         localRuntime "curse.maven:mekanism-generators-268566:${mekanism_generators_file}"
     }
 
+    // AE2 Crafting Optimizer — ACO 連携 (integration/aco) の実機テスト用【任意・オプトイン】。
+    // GitHub Releases (syarukasu/ae2-crafting-optimizer) の aco<ver>_1.21.1.jar を
+    // ./libs/aco-1.5.19.jar の名前で置き、-PwithAco=true を付けると dev 実行に載る。
+    // 既定でオフなのは、(1) ACO は AE2 の挙動自体を変える (実行バッチの乗っ取り等) ため
+    // ACO 前提でないゲームテストが落ちる、(2) ACO 1.5.12 の計算デデュープ Mixin が
+    // AE2 のテスト基盤 (TestCraftingJob) で「beginCraftingCalculation is not cancellable」の
+    // CancellationException を出しサーバーごと落ちるバグがあるため。ゲームテストとは併用しない。
+    if (project.findProperty('withAco') == 'true' && file('libs/aco-1.5.19.jar').exists()) {
+        localRuntime files('libs/aco-1.5.19.jar')
+    }
+
+    // Advanced AE — 自前のクラフト CPU (AdvCraftingCPULogic) へ入れている compat Mixin
+    // (compat.AdvCraftingCpuLogicMixin / compat.AdvCraftingCpuBudgetMixin) の実機確認用
+    // 【任意・オプトイン】。-PwithAdvancedAe=true で dev 実行に載る。
+    // 既定でオフなのは、Advanced AE 自身が AE2 の挙動を変えるためゲームテストの前提が変わるから。
+    if (project.findProperty('withAdvancedAe') == 'true') {
+        localRuntime "curse.maven:advancedae-1084104:8564177"
+        // Advanced AE の mandatory 依存。FML が止まってから分かる類なので明示しておく。
+        localRuntime "curse.maven:geckolib-388172:8350073"
+    }
+
     // テスト用
     localRuntime "curse.maven:jei-238222:${jei_file}"
     testImplementation platform("org.junit:junit-bom:5.10.2")

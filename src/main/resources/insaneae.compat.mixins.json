@@ -16,6 +16,7 @@
     "PatternProviderMenuMixin",
     "compat.AAEQuantumCrafterMixin",
     "compat.AAEReactionChamberMixin",
+    "compat.AdvCraftingCpuBudgetMixin",
     "compat.AdvCraftingCpuLogicMixin",
     "compat.ExCircuitCutterMixin",
     "compat.ExCraftingThreadMixin",

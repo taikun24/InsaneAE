@@ -1,13 +1,14 @@
 package jp.main.taikun.insaneae.integration.aco;
 
 import appeng.api.crafting.IPatternDetails;
+import appeng.crafting.execution.ExecutingCraftingJob;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.WeakHashMap;
 import java.util.function.Consumer;
 
 /**
@@ -18,8 +19,13 @@ import java.util.function.Consumer;
  * windows, so a task never needs to be represented by one overflowing long.</p>
  */
 public final class AcoBigIntegerJobRegistry {
-    /** AE2本体・Advanced AE複製CPUのどちらでも同じ寿命規則を使う。 */
-    private static final Map<Object, Job> JOBS = new IdentityHashMap<>();
+    /**
+     * finish/cancel を通らず消えた Job (ワールドアンロード等) を弱参照で回収する。
+     * AE2とAdvanced AEの実行Jobはいずれもequalsを持たないため、WeakHashMapでも
+     * 同一性比較になる。実行中のJobは各Crafting CPUが強参照する。
+     * 実行中の Job は CraftingCpuLogic が強参照しているので、途中で回収されることはない。
+     */
+    private static final Map<Object, Job> JOBS = new WeakHashMap<>();
 
     private AcoBigIntegerJobRegistry() {
     }
@@ -27,8 +33,25 @@ public final class AcoBigIntegerJobRegistry {
     public static synchronized void install(
             Object job,
             AcoBigIntegerPlanBridge.Plan plan) {
+        install(job, plan.patternTimes());
+    }
+
+    /** NBT からの復元にも使う入口。残数 0 以下の Pattern は載せない。 */
+    public static synchronized void install(
+            Object job,
+            Map<IPatternDetails, BigInteger> patternTimes) {
         // 同一Jobへの再通知は状態を上書きせず、二重のExact台帳を作らない。
-        JOBS.putIfAbsent(job, new Job(job, plan.patternTimes()));
+        JOBS.putIfAbsent(job, new Job(job, patternTimes));
+    }
+
+    /** クラスタ NBT へ保存するための現在残数。台帳が無い/空なら empty。 */
+    public static synchronized Optional<Map<IPatternDetails, BigInteger>> snapshot(
+            ExecutingCraftingJob job) {
+        Job exact = JOBS.get(job);
+        if (exact == null || exact.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(exact.snapshotRemaining());
     }
 
     public static synchronized Optional<Job> find(Object job) {
@@ -90,6 +113,10 @@ public final class AcoBigIntegerJobRegistry {
 
         private synchronized ArrayList<IPatternDetails> snapshotKeys() {
             return new ArrayList<>(remaining.keySet());
+        }
+
+        private synchronized Map<IPatternDetails, BigInteger> snapshotRemaining() {
+            return new LinkedHashMap<>(remaining);
         }
     }
 
