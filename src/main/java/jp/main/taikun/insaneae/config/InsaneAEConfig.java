@@ -50,6 +50,11 @@ public final class InsaneAEConfig {
         return get(COMMON.serverSidePatternPaging, true);
     }
 
+    /** BigInteger Bulkの待機理由をdebugログへ出すか。既定はログスパムを避けて無効。 */
+    public static boolean logQuantumBulkDiagnostics() {
+        return get(COMMON.logQuantumBulkDiagnostics, false);
+    }
+
     /**
      * 設定ファイル読み込み前でも安全に読む。
      *
@@ -68,6 +73,7 @@ public final class InsaneAEConfig {
         private final ForgeConfigSpec.BooleanValue batchCraftingCalculation;
         private final ForgeConfigSpec.IntValue craftingBatchThreshold;
         private final ForgeConfigSpec.BooleanValue serverSidePatternPaging;
+        private final ForgeConfigSpec.BooleanValue logQuantumBulkDiagnostics;
 
         private Common(ForgeConfigSpec.Builder builder) {
             builder.comment("クラフト計算 (Calculating... の部分) の軽量化").push("crafting_calculation");
@@ -96,6 +102,11 @@ public final class InsaneAEConfig {
                             "false にすると全枠を並べる代わりに、ページ送りがクライアント内で完結して速くなる。")
                     .define("serverSidePatternPaging", true);
 
+            builder.pop();
+            builder.comment("Quantum CPUのBigInteger Bulk診断").push("quantum_cpu_diagnostics");
+            logQuantumBulkDiagnostics = builder
+                    .comment("Bulk処理が待機した理由をdebugログへ出す。通常はfalseのままにする。")
+                    .define("logQuantumBulkDiagnostics", false);
             builder.pop();
         }
     }

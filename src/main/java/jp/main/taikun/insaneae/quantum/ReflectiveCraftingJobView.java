@@ -1,13 +1,16 @@
 package jp.main.taikun.insaneae.quantum;
 
+import appeng.api.crafting.IPatternDetails;
 import appeng.crafting.inv.ListCraftingInventory;
 import com.mojang.logging.LogUtils;
+import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry;
 import org.slf4j.Logger;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -72,6 +75,22 @@ public final class ReflectiveCraftingJobView implements CraftingJobView {
         }
     }
 
+    /** 複製CPUのprivate jobを、ACO exact台帳の同一性キーとして取得する。 */
+    public static Object jobOwner(Object logic) {
+        if (logic == null) {
+            return null;
+        }
+        Layout layout = LAYOUTS.computeIfAbsent(logic.getClass(), Layout::resolve);
+        if (layout == UNSUPPORTED) {
+            return null;
+        }
+        try {
+            return layout.job.get(logic);
+        } catch (ReflectiveOperationException | RuntimeException failure) {
+            return null;
+        }
+    }
+
     @Override
     public ListCraftingInventory getInventory() {
         return read(layout.inventory, logic);
@@ -97,6 +116,16 @@ public final class ReflectiveCraftingJobView implements CraftingJobView {
         } catch (ReflectiveOperationException | RuntimeException e) {
             throw new IllegalStateException("markDirty failed", e);
         }
+    }
+
+    @Override
+    public Optional<AcoBigIntegerJobRegistry.CraftingCursor> exactTasks() {
+        return AcoBigIntegerJobRegistry.find(job)
+                .map(exact -> exact.cursor(pattern -> {
+                    @SuppressWarnings("unchecked")
+                    Map<IPatternDetails, Object> tasks = (Map<IPatternDetails, Object>) read(layout.tasks, job);
+                    tasks.remove(pattern);
+                }));
     }
 
     @Override

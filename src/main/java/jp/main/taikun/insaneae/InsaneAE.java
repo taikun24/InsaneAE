@@ -23,6 +23,7 @@ import jp.main.taikun.insaneae.registries.ModCreativeTabs;
 import jp.main.taikun.insaneae.registries.ModItems;
 import jp.main.taikun.insaneae.registries.ModMenus;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
+import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerPlanBridge;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModList;
@@ -92,6 +93,8 @@ public class InsaneAE {
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
+        // ACOへ実行者として登録するだけで、ACO側のCPU tickやPattern投入は呼び出さない。
+        event.enqueueWork(AcoBigIntegerPlanBridge::registerExternalPlanConsumer);
         // ブロックと BlockEntityType が揃った後で結びつける。
         event.enqueueWork(ModBlockEntities::bindBlockEntities);
         // 強化クリエイティブセルを ME ドライブ等に認識させる。
