@@ -126,6 +126,16 @@ dependencies {
         localRuntime files('libs/aco-1.5.18.jar')
     }
 
+    // Advanced AE — 自前のクラフト CPU (AdvCraftingCPULogic) へ入れている compat Mixin
+    // (compat.AdvCraftingCpuLogicMixin / compat.AdvCraftingCpuBudgetMixin) の実機確認用
+    // 【任意・オプトイン】。-PwithAdvancedAe=true で dev 実行に載る。
+    // 既定でオフなのは、Advanced AE 自身が AE2 の挙動を変えるためゲームテストの前提が変わるから。
+    if (project.findProperty('withAdvancedAe') == 'true') {
+        localRuntime "curse.maven:advancedae-1084104:8564177"
+        // Advanced AE の mandatory 依存。FML が止まってから分かる類なので明示しておく。
+        localRuntime "curse.maven:geckolib-388172:8350073"
+    }
+
     // テスト用
     localRuntime "curse.maven:jei-238222:${jei_file}"
     testImplementation platform("org.junit:junit-bom:5.10.2")

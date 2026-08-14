@@ -25,6 +25,7 @@ import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.crafting.CraftingCalculationBatch;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.iface.InsaneInterfaceBlockEntity;
+import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry;
 import jp.main.taikun.insaneae.integration.aco.AcoCalculationIntegration;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderBlockEntity;
 import jp.main.taikun.insaneae.quantum.CraftingJobView;
@@ -39,7 +40,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -990,6 +994,128 @@ public final class InsaneAETestPlots {
     }
 
     /**
+     * タスク統合カードが <b>BigInteger (Exact) 経路でも効く</b>ことを確かめる。
+     *
+     * <p>{@code insaneae_task_fusion_card} が見ているのは通常の long タスク経路だけで、
+     * ACO の正確な計画を受け取ったときに走る {@code executeExact} は別のループになっている。
+     * ここが統合を見ていないと、<b>922京級の注文ほどカードが効かない</b>という逆の症状になる
+     * (通常経路では効いているので気付きにくい)。</p>
+     */
+    @TestPlot("insaneae_task_fusion_exact")
+    public static void taskFusionCardExact(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,2] 0 0");
+        plot.blockState("2 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        final long requested = 1000;
+        final int clusterBudget = 3;
+        final int planksPerCraft = 4;
+
+        plot.test(helper -> {
+            var state = new Object() {
+                FakeJobView view;
+                int ops;
+            };
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_LOG)));
+                cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.TASK_FUSION_CARD.get()));
+                cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
+            });
+
+            sequence.thenIdle(5);
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
+                var patterns = cpu.getLogic().getAvailablePatterns();
+                helper.check(patterns.size() == 1,
+                        "Quantum CPU がパターンを 1 枚だけ持っている状態にならなかった: " + patterns.size());
+
+                var grid = helper.getGrid(BlockPos.ZERO);
+                state.view = new FakeJobView(patterns.get(0), requested);
+                state.view.inventory.insert(AEItemKey.of(Items.OAK_LOG), requested,
+                        appeng.api.config.Actionable.MODULATE);
+
+                // Exact 台帳は ExecutingCraftingJob をキーにするが、ここでは本物のジョブを
+                // 立てずに経路だけ試したいので null をキーに使う (WeakHashMap は null を許す)。
+                // このプロットしか null を使わないが、並列で走る他プロットに残さないよう最後に消す。
+                AcoBigIntegerJobRegistry.install(null,
+                        Map.of(patterns.get(0), java.math.BigInteger.valueOf(requested)));
+                state.view.exactCursor = AcoBigIntegerJobRegistry.find(null)
+                        .orElseThrow(() -> new GameTestAssertException("Exact 台帳を作れなかった"))
+                        .cursor(details -> {
+                        });
+
+                state.ops = jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.execute(
+                        state.view, clusterBudget,
+                        (appeng.me.service.CraftingService) grid.getCraftingService(),
+                        grid.getEnergyService(), grid.getPivot().getLevel());
+                AcoBigIntegerJobRegistry.remove(null);
+            });
+
+            sequence.thenExecute(() -> {
+                helper.check(state.ops == 1,
+                        "Exact 経路でまとめ 1 回が 1 操作として数えられていない: " + state.ops);
+                long planks = state.view.waitingFor.list.get(AEItemKey.of(Items.OAK_PLANKS));
+                helper.check(planks == requested * planksPerCraft,
+                        "Exact 経路で予算 " + clusterBudget + " が回数を縛っている (完成待ち "
+                                + planks + " / 期待 " + requested * planksPerCraft + ")");
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    /**
+     * Advanced AE のクラフト CPU へ入れている compat Mixin が<b>実際に当たっている</b>ことを確かめる。
+     *
+     * <p>{@code @Pseudo} + {@code targets} の名指しは、相手のクラス名が変わっても
+     * <b>エラーにならず黙って当たらなくなる</b> ({@code required=false} なので尚更)。
+     * 症状は「Advanced AE のクラフト CPU だけ遅い」「巨大な協調処理数だと途中で止まる」で、
+     * どちらもログに何も出ないため、当たっているかどうかはここで見張るしかない。</p>
+     *
+     * <p>Advanced AE が入っていない環境では<b>何も検査せずに成功する</b>
+     * (通常のゲームテストは Advanced AE 無しで回るため)。
+     * 相手のクラスは普段ロードされないので、{@code Class.forName} で明示的に読み込んで
+     * Mixin の変換を走らせてから、注入したメソッドが生えているかを見る。</p>
+     */
+    @TestPlot("insaneae_aae_cpu_mixins")
+    public static void advancedAeCpuMixins(PlotBuilder plot) {
+        plot.test(helper -> helper.startSequence().thenExecute(() -> {
+            if (!net.neoforged.fml.ModList.get().isLoaded("advanced_ae")) {
+                return;
+            }
+            Class<?> logic;
+            try {
+                logic = Class.forName("net.pedroksl.advanced_ae.common.logic.AdvCraftingCPULogic");
+            } catch (ClassNotFoundException missing) {
+                throw new GameTestAssertException(
+                        "Advanced AE は居るのに AdvCraftingCPULogic が無い。"
+                                + "クラス名が変わったので compat Mixin の targets を直すこと: " + missing);
+            }
+            // Mixin は注入ハンドラを handler$<hash>$<元の名前> / redirect$... に改名して混ぜるので、
+            // 名前の一致ではなく<b>末尾</b>で見る。@Unique のメソッドだけは元の名前のまま入る。
+            Set<String> injected = new HashSet<>();
+            for (var method : logic.getDeclaredMethods()) {
+                if (method.getName().contains("insaneae$")) {
+                    injected.add(method.getName());
+                }
+            }
+            // まとめ処理 (AdvCraftingCpuLogicMixin) と 1 tick 予算の long 化 (AdvCraftingCpuBudgetMixin)。
+            for (String expected : List.of("insaneae$bulkCrafting", "insaneae$reduceBudget",
+                    "insaneae$addBulkToResult", "insaneae$tickBudget", "insaneae$rollUsedOps")) {
+                helper.check(injected.stream().anyMatch(name -> name.endsWith(expected)),
+                        "Advanced AE の CPU へ " + expected + " が注入されていない (当たったのは "
+                                + injected + ")");
+            }
+        }).thenSucceed());
+    }
+
+    /**
      * <b>実際のジョブ</b>でまとめ処理が発火することを確かめる (同居 Mod に対する回帰テスト)。
      *
      * <p>他のまとめ処理テストは {@code QuantumBulkCrafting.execute} を直接呼んでいるので、
@@ -1078,6 +1204,8 @@ public final class InsaneAETestPlots {
         final appeng.api.crafting.IPatternDetails details;
         long remaining;
         boolean removed;
+        /** null でなければ Exact (BigInteger) 経路を通す。 */
+        jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry.CraftingCursor exactCursor;
 
         FakeJobView(appeng.api.crafting.IPatternDetails details, long remaining) {
             this.details = details;
@@ -1101,6 +1229,13 @@ public final class InsaneAETestPlots {
 
         @Override
         public void markDirty() {
+        }
+
+        @Override
+        public java.util.Optional<
+                jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry.CraftingCursor>
+                exactTasks() {
+            return java.util.Optional.ofNullable(exactCursor);
         }
 
         @Override
