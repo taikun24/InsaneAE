@@ -39,6 +39,16 @@ public final class QuantumBulkCrafting {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /**
+     * まとめ処理が実際に走った回数 (窓の数)。<b>観測用のカウンタで、動作には使わない。</b>
+     *
+     * <p>まとめ処理は「速いだけで結果は同じ」なので、結果を見ても働いたか分からない。
+     * 他 Mod が {@code executeCrafting} を先に打ち切ると<b>黙って素の 1 回ずつに戻る</b>ため、
+     * 実際のジョブで発火しているかをゲームテストから見るための唯一の手掛かりになる
+     * ({@code insaneae_bulk_execution_live})。</p>
+     */
+    public static volatile long bulkWindows;
+
     private QuantumBulkCrafting() {
     }
 
@@ -211,6 +221,7 @@ public final class QuantumBulkCrafting {
                 return 0;
             }
 
+            bulkWindows++;
             ListCraftingInventory waitingFor = view.getWaitingFor();
             for (GenericStack output : details.getOutputs()) {
                 // getSafeOutputWindowで検査済みだが、境界をコード上でも再確認してwrapを防ぐ。
