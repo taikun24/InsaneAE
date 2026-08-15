@@ -1244,6 +1244,240 @@ public final class InsaneAETestPlots {
      * {@code crafts} 回は数 tick で終わる。効いていなければクラスタ予算 (1 tick に数回) で
      * 刻まれるため、待ち時間の側でも差が出る。</p>
      */
+    /**
+     * <b>クリエイティブセルから材料を供給したクラフトが、最後まで終わるか。</b>
+     *
+     * <p>「クラフトは進行中のままタスクが空になり、いつまでも完了しない」という症状を
+     * 追うためのテスト。クリエイティブセル (強化・超強化・AE2 本家とも同じ) は</p>
+     *
+     * <pre>
+     * insert(what, amount)        → 設定済みの種類は<b>無限に飲み込む</b> (= 実質ボイド)
+     * isPreferredStorageFor(what) → 設定済みの種類は<b>優先搬入先を名乗る</b>
+     * </pre>
+     *
+     * <p>なので、<b>クラフトの完成品がセルに設定されていると、完成品がクラフト CPU の
+     * 完成待ちに返る前に吸い込まれて消える</b>おそれがある。そうなると完成待ちが永遠に
+     * 減らず、タスクだけ空になってジョブが終わらない。</p>
+     *
+     * <p>ここでは 2 つの並びを両方とも「完了すること」で検査する:</p>
+     * <ol>
+     *   <li>セルには<b>材料だけ</b> — 想定どおりの使い方</li>
+     *   <li>セルに<b>材料と完成品の両方</b> — 上の懸念そのままの並び</li>
+     * </ol>
+     *
+     * <p>2 が落ちるならセルが完成品を飲んでいる。1 が落ちるなら供給側の問題。
+     * どちらも通るなら、完了しない原因はここではない。</p>
+     */
+    @TestPlot("insaneae_craft_from_creative_cell")
+    public static void craftFromCreativeCell(PlotBuilder plot) {
+        insaneae$craftCompletionPlot(plot, false);
+    }
+
+    /** {@link #craftFromCreativeCell} の並び 2 — 完成品もセルに設定してある場合。 */
+    @TestPlot("insaneae_craft_output_also_in_cell")
+    public static void craftOutputAlsoInCell(PlotBuilder plot) {
+        insaneae$craftCompletionPlot(plot, true);
+    }
+
+    /**
+     * <b>Advanced AE のクラフト CPU に載せたジョブが、Quantum CPU 経由で最後まで終わるか。</b>
+     *
+     * <p>{@link #craftFromCreativeCell} と同じ内容を、クラフト CPU だけ
+     * Advanced AE の量子コンピュータに差し替えたもの。報告されている
+     * 「進行中のままタスクが空で終わらない」は<b>この並び</b>で起きている。</p>
+     *
+     * <p>Advanced AE が入っていない環境では<b>何も検査せずに成功する</b>
+     * ({@code ./gradlew runGameTestServer -PwithAdvancedAe=true -PwithAco} で有効になる)。</p>
+     */
+    @TestPlot("insaneae_craft_on_advanced_ae_cpu")
+    public static void craftOnAdvancedAeCpu(PlotBuilder plot) {
+        var core = insaneae$aaeBlock("quantum_core");
+        var unit = insaneae$aaeBlock("quantum_storage_256");
+        var shell = insaneae$aaeBlock("quantum_structure");
+        if (core == null || unit == null || shell == null) {
+            // 空のプロットは AE2 の Plot#getBounds が通らないので 1 つ置く。
+            plot.cable("0 0 0");
+            plot.test(helper -> helper.startSequence().thenSucceed());
+            return;
+        }
+
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,4] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
+            drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
+            drive.getInternalInventory().addItems(AEItems.ITEM_CELL_64K.stack());
+        });
+        plot.blockState("3 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        // Advanced AE の量子コンピュータは<b>中空の箱</b>で、外殻が quantum_structure、
+        // 中身が機能ブロックという構造 (AdvCraftingCPUCalculator#verifyInternalStructure)。
+        // 5..7 x 0..3 x 0..2 の箱にすると、内側はちょうど (6,1,1) と (6,2,1) の 2 マス。
+        plot.blockState("[5,7] [0,3] [0,2]", shell.defaultBlockState());
+        plot.blockState("6 1 1", core.defaultBlockState());
+        plot.blockState("6 2 1", unit.defaultBlockState());
+
+        final long requested = 64;
+
+        plot.test(helper -> {
+            var state = new Object() {
+                appeng.server.testworld.TestCraftingJob job;
+            };
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(3, 0, 0));
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_LOG)));
+            });
+            // 多ブロック構造が組み上がるまで少し待つ。
+            sequence.thenIdle(20);
+
+            // 先に CPU が組めているか見る。組めていないと「failed to submit job」としか出ず、
+            // 構造の問題なのか実行の問題なのか区別がつかない。
+            sequence.thenExecute(() -> {
+                int cpus = 0;
+                for (var ignored : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
+                    cpus++;
+                }
+                helper.check(cpus > 0, "Advanced AE の量子コンピュータが組み上がっていない "
+                        + "(外殻・中身の並びか、必要ブロックが変わった可能性)");
+            });
+
+            sequence.thenExecute(() -> state.job = new appeng.server.testworld.TestCraftingJob(
+                    helper, BlockPos.ZERO, AEItemKey.of(Items.OAK_PLANKS), requested));
+            sequence.thenWaitUntil(() -> state.job.tickUntilStarted());
+
+            sequence.thenWaitUntil(() -> {
+                long stored = insaneae$storedAmount(helper, Items.OAK_PLANKS);
+                if (stored < requested) {
+                    throw new GameTestAssertException("Advanced AE の CPU で板材が "
+                            + stored + "/" + requested + " しか揃わない");
+                }
+            });
+            sequence.thenWaitUntil(() -> {
+                for (var cpu : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
+                    if (cpu.isBusy()) {
+                        throw new GameTestAssertException(
+                                "完成品は揃ったのに Advanced AE の CPU がジョブを抱えたまま "
+                                        + "(完成待ちが減っていない)");
+                    }
+                }
+            });
+
+            // compat Mixin が<b>実際に走った</b>こと。名前が生えているかを見る検査では
+            // 足りない (Mixin はメソッドを混ぜてから injector を配線するので、
+            // 配線に失敗してもメソッドだけは生える)。
+            sequence.thenExecute(() -> {
+                helper.check(jp.main.taikun.insaneae.compat.AaeCompatCounters
+                                .storageSaturations > 0,
+                        "AdvCraftingCpuStorageMixin が一度も走っていない "
+                                + "(@Redirect の配線に失敗している可能性 — ログの "
+                                + "InvalidInjectionException を確認すること)");
+                helper.check(jp.main.taikun.insaneae.compat.AaeCompatCounters
+                                .budgetCalculations > 0,
+                        "AdvCraftingCpuBudgetMixin が一度も走っていない (同上)");
+            });
+            sequence.thenSucceed();
+        });
+    }
+
+    /** Advanced AE のブロック。入っていなければ null。 */
+    @Nullable
+    private static net.minecraft.world.level.block.Block insaneae$aaeBlock(String id) {
+        var key = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("advanced_ae", id);
+        if (!net.minecraft.core.registries.BuiltInRegistries.BLOCK.containsKey(key)) {
+            return null;
+        }
+        var block = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(key);
+        return block == net.minecraft.world.level.block.Blocks.AIR ? null : block;
+    }
+
+    /**
+     * @param configureOutputToo クリエイティブセルに完成品 (板材) も設定するか
+     */
+    private static void insaneae$craftCompletionPlot(PlotBuilder plot, boolean configureOutputToo) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,3] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
+            // 材料は超強化クリエイティブセルから。完成品の置き場に普通のセルを 1 枚。
+            drive.getInternalInventory().addItems(configureOutputToo
+                    ? insaneae$ultraCreativeCell(Items.OAK_LOG, Items.OAK_PLANKS)
+                    : insaneae$ultraCreativeCell(Items.OAK_LOG));
+            drive.getInternalInventory().addItems(AEItems.ITEM_CELL_64K.stack());
+        });
+        plot.block("2 0 0", AEBlocks.CRAFTING_STORAGE_64K);
+        plot.block("2 1 0", AEBlocks.CRAFTING_ACCELERATOR);
+        plot.blockState("3 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        // 少量にしてあるのは「速いか」ではなく「終わるか」を見るテストだから。
+        final long requested = 64;
+
+        plot.test(helper -> {
+            var state = new Object() {
+                appeng.server.testworld.TestCraftingJob job;
+            };
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(3, 0, 0));
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_LOG)));
+            });
+            sequence.thenIdle(5);
+
+            sequence.thenExecute(() -> state.job = new appeng.server.testworld.TestCraftingJob(
+                    helper, BlockPos.ZERO, AEItemKey.of(Items.OAK_PLANKS), requested));
+            sequence.thenWaitUntil(() -> state.job.tickUntilStarted());
+
+            // 完成待ちが減って<b>要求量がまるごとネットワークに載る</b>まで待つ。
+            // 途中で消えていると、ここで時間切れになって落ちる (= 症状の再現)。
+            sequence.thenWaitUntil(() -> {
+                long stored = insaneae$storedAmount(helper, Items.OAK_PLANKS);
+                if (stored < requested) {
+                    throw new GameTestAssertException("板材が " + stored + "/" + requested
+                            + " しかネットワークに無い"
+                            + (configureOutputToo
+                                    ? " (完成品もクリエイティブセルに設定してある並び"
+                                            + " — セルが完成品を飲んでいる疑い)"
+                                    : ""));
+                }
+            });
+
+            // クラフト CPU が仕事を抱えたままになっていないこと。
+            // タスクだけ空になって「進行中」のまま止まる症状は、ここで捕まる。
+            sequence.thenWaitUntil(() -> {
+                for (var cpu : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
+                    if (cpu.isBusy()) {
+                        throw new GameTestAssertException(
+                                "完成品は揃ったのにクラフト CPU がジョブを抱えたまま "
+                                        + "(完成待ちが減っていない)");
+                    }
+                }
+            });
+            sequence.thenSucceed();
+        });
+    }
+
+    /** 中身を設定した超強化クリエイティブセルを 1 枚作る。 */
+    private static ItemStack insaneae$ultraCreativeCell(net.minecraft.world.level.ItemLike... contents) {
+        ItemStack cell = new ItemStack(ModCells.ULTRA_CREATIVE_CELL.get());
+        var config = appeng.items.contents.CellConfig.create(cell);
+        for (int i = 0; i < contents.length; i++) {
+            config.setStack(i, new appeng.api.stacks.GenericStack(
+                    AEItemKey.of(contents[i].asItem()), 1));
+        }
+        return cell;
+    }
+
+    /** ネットワーク全体に載っているアイテム数。 */
+    private static long insaneae$storedAmount(appeng.server.testworld.PlotTestHelper helper,
+            net.minecraft.world.level.ItemLike item) {
+        return helper.getGrid(BlockPos.ZERO).getStorageService().getInventory()
+                .getAvailableStacks().get(AEItemKey.of(item.asItem()));
+    }
+
     @TestPlot("insaneae_bulk_execution_live")
     public static void bulkExecutionLive(PlotBuilder plot) {
         plot.creativeEnergyCell("0 -1 0");
