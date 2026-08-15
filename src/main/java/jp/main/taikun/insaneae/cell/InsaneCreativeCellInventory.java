@@ -25,7 +25,7 @@ import java.util.Set;
 public class InsaneCreativeCellInventory implements StorageCell {
 
     /** セルワークベンチで設定された中身。 */
-    private final Set<AEKey> configured;
+    protected final Set<AEKey> configured;
     private final ItemStack stack;
 
     public InsaneCreativeCellInventory(ItemStack stack) {

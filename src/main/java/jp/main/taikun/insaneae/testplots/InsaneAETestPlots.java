@@ -932,6 +932,18 @@ public final class InsaneAETestPlots {
                     "Quantum CPU に CraftingTableBatchTarget が生えていない");
             helper.check(providerType.isInstance(cpu.getQuantumLogic()),
                     "Quantum CPU のロジックに ProviderOwnedPatternBatchTarget が生えていない");
+
+            // 超強化クリエイティブセルの BigInteger 在庫。ACO 内部の access に乗っているので、
+            // 向こうの名前が変わると<b>黙って効かなくなる</b> — ここで気付けるようにする。
+            Class<?> exactStorage = optionalClass("com.syaru.ae2craftingoptimizer.access"
+                    + ".ExtendedAePlusBigIntegerCellInventoryAccess");
+            helper.check(exactStorage != null,
+                    "ACO の ExtendedAePlusBigIntegerCellInventoryAccess が無い "
+                            + "(公開フックへ移行できるかもしれない → ACO #101)");
+            var cell = new jp.main.taikun.insaneae.cell.InsaneUltraCreativeCellInventory(
+                    new ItemStack(ModCells.ULTRA_CREATIVE_CELL.get()));
+            helper.check(exactStorage != null && exactStorage.isInstance(cell),
+                    "超強化クリエイティブセルに BigInteger 在庫の窓口が生えていない");
         }).thenSucceed());
     }
 

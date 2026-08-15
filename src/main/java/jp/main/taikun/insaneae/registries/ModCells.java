@@ -7,6 +7,7 @@ import gripe._90.megacells.definition.MEGAItems;
 import jp.main.taikun.insaneae.InsaneAE;
 import jp.main.taikun.insaneae.cell.InsanePortableCellItem;
 import jp.main.taikun.insaneae.cell.InsaneCreativeCellItem;
+import jp.main.taikun.insaneae.cell.InsaneUltraCreativeCellItem;
 import jp.main.taikun.insaneae.cell.InsaneStorageCellItem;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.util.TieredNames;
@@ -63,6 +64,17 @@ public class ModCells {
      */
     public static final RegistryObject<Item> CREATIVE_CELL =
             register("creative_cell", () -> new InsaneCreativeCellItem(new Item.Properties()));
+
+    /**
+     * 超強化クリエイティブセル。報告する在庫量が BigInteger になる。
+     *
+     * <p>AE2 から見える量は強化クリエイティブセルと同じ 922 京のまま
+     * ({@code KeyCounter} が long なので、そこは上げようがない)。差が出るのは
+     * <b>ACO の正確な計算経路だけ</b>で、922京を超える材料を要求する BigInteger クラフトを
+     * 作成可能にするためのもの。ACO が無ければ強化クリエイティブセルと同じ。</p>
+     */
+    public static final DeferredHolder<Item, Item> ULTRA_CREATIVE_CELL =
+            register("ultra_creative_cell", () -> new InsaneUltraCreativeCellItem(new Item.Properties()));
 
     static {
         InsaneCraftingUnitType[] tiers = InsaneCraftingUnitType.values();

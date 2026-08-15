@@ -27,6 +27,12 @@ public final class InsaneCreativeCellHandler implements ICellHandler {
     @Nullable
     @Override
     public StorageCell getCellInventory(ItemStack is, @Nullable ISaveProvider host) {
-        return isCell(is) ? new InsaneCreativeCellInventory(is) : null;
+        if (!isCell(is)) {
+            return null;
+        }
+        // 超強化セルは BigInteger 在庫を名乗る別の中身を持つ。
+        return is.getItem() instanceof InsaneUltraCreativeCellItem
+                ? new InsaneUltraCreativeCellInventory(is)
+                : new InsaneCreativeCellInventory(is);
     }
 }

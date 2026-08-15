@@ -38,6 +38,7 @@ public class ModCreativeTabs {
                 ModCells.PORTABLE_ITEM_CELLS.values().forEach(cell -> output.accept(cell.get()));
                 ModCells.PORTABLE_FLUID_CELLS.values().forEach(cell -> output.accept(cell.get()));
                 output.accept(ModCells.CREATIVE_CELL.get());
+                output.accept(ModCells.ULTRA_CREATIVE_CELL.get());
                 if (ModList.get().isLoaded(InsaneAE.APPMEK_MODID)) {
                     jp.main.taikun.insaneae.integration.appmek.AppMekCells.addToCreativeTab(output::accept);
                 }
