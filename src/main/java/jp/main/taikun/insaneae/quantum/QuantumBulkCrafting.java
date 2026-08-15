@@ -14,6 +14,7 @@ import appeng.crafting.execution.InputTemplate;
 import appeng.crafting.inv.ListCraftingInventory;
 import appeng.me.service.CraftingService;
 import com.mojang.logging.LogUtils;
+import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +49,9 @@ public final class QuantumBulkCrafting {
      * ({@code insaneae_bulk_execution_live})。</p>
      */
     public static volatile long bulkWindows;
+
+    /** 窓 1 枚の long 上限。BigInteger の残りをこの単位へ切り出す。 */
+    private static final BigInteger LONG_MAX = BigInteger.valueOf(Long.MAX_VALUE);
 
     private QuantumBulkCrafting() {
     }
@@ -158,7 +162,7 @@ public final class QuantumBulkCrafting {
             // 1 操作として数え、回数はプロバイダ自身の予算に任せる。
             // BigInteger 経路こそ 1 窓が大きいので、ここを飛ばすと統合カードが効かない。
             boolean fused = provider.fusesOperations();
-            long boundedRemaining = remaining.min(BigInteger.valueOf(Long.MAX_VALUE)).longValueExact();
+            long boundedRemaining = remaining.min(LONG_MAX).longValueExact();
             long limit = Math.min(boundedRemaining, provider.getBulkCapacity(details));
             if (!fused) {
                 limit = Math.min(limit, maxPatterns - pushed);
@@ -173,7 +177,9 @@ public final class QuantumBulkCrafting {
                 // 材料搬入待ちのTaskで全Exact Jobを止めず、依存元Patternを先に進める。
                 continue;
             }
-            cursor.setRemaining(remaining.subtract(BigInteger.valueOf(done)));
+            BigInteger left = remaining.subtract(BigInteger.valueOf(done));
+            left = repeatWindows(view, details, provider, fused, left, energyService, level);
+            cursor.setRemaining(left);
             // 統合中は done が int を超えうるので、toIntExact に渡さないこと。
             pushed += fused ? 1 : Math.toIntExact(done);
             if (cursor.remaining().signum() <= 0) {
@@ -182,6 +188,51 @@ public final class QuantumBulkCrafting {
             view.markDirty();
         }
         return pushed;
+    }
+
+    /**
+     * 加速カード満載のとき、同じパターンの窓を 1 tick のうちに重ねて残りを削る。
+     *
+     * <p>1 窓に組める回数は long の会計で頭打ちになる (完成品は
+     * {@code Long.MAX_VALUE / 出力数}、材料の取り出しも同様) ので、BigInteger 級の残りは
+     * 1 窓では終わらない。窓と窓の間で {@link IBulkCraftingProvider#settleCompletedOutputs()} を
+     * 呼び、組み上がった完成品をネットワークへ流して<b>クラフト CPU の完成待ちを清算する</b>。
+     * こうするとどの瞬間の帳簿も long に収まったまま、1 tick の合計だけが long を超えられる。</p>
+     *
+     * <p><b>タスク統合カードが要る。</b>統合していないと 1 クラフト = 1 操作なので、
+     * 窓を重ねた瞬間にクラスタの 1 tick 予算 (int) を踏み越えてしまう。</p>
+     *
+     * <p>窓の数は {@code maxCraftingWindowsPerTick} で頭打ちにする。ここが無いと
+     * 「終わるまで回す」= <b>サーバが 1 tick から戻ってこない</b>になりうる。
+     * 途中で完成品が入らなくなった (電力・在庫・ジョブ完了) ときも打ち切る。</p>
+     *
+     * @return 削り切れずに残った回数
+     */
+    private static BigInteger repeatWindows(CraftingJobView view, IPatternDetails details,
+            IBulkCraftingProvider provider, boolean fused, BigInteger remaining,
+            IEnergyService energyService, Level level) {
+        if (!fused || !provider.repeatsWindowsWithinTick()) {
+            return remaining;
+        }
+        int maxWindows = InsaneAEConfig.maxCraftingWindowsPerTick();
+        for (int window = 1; window < maxWindows && remaining.signum() > 0; window++) {
+            // 先に清算する。これをしないと完成待ちが積み上がって long を溢れさせる。
+            provider.settleCompletedOutputs();
+
+            long bounded = remaining.min(LONG_MAX).longValueExact();
+            long limit = Math.min(bounded, provider.getBulkCapacity(details));
+            limit = clampForOutputs(details, limit);
+            if (limit <= 0L) {
+                break;
+            }
+            long done = pushBulk(view, details, provider, limit, energyService, level);
+            if (done <= 0L) {
+                // 材料切れ・電力切れ・ジョブ完了。次の tick に持ち越す。
+                break;
+            }
+            remaining = remaining.subtract(BigInteger.valueOf(done));
+        }
+        return remaining;
     }
 
     /** 材料の取り出しから帳簿の更新まで。処理できた回数を返す。 */

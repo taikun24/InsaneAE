@@ -45,4 +45,28 @@ public interface IBulkCraftingProvider extends ICraftingProvider {
     default boolean fusesOperations() {
         return false;
     }
+
+    /**
+     * 1 tick のうちに<b>同じパターンの窓を何度でも回してよいか</b> (加速カード満載時)。
+     *
+     * <p>1 窓に組める回数は long の会計に縛られる — 完成品は
+     * {@code Long.MAX_VALUE / 出力数} まで、材料の取り出しも同様。
+     * BigInteger 級の注文はこの窓を何枚も重ねないと終わらないが、
+     * 窓の間で {@link #settleCompletedOutputs()} を呼んで完成待ちを清算すれば、
+     * <b>1 tick の合計は long を超えられる</b> (どの瞬間の値も long に収まったまま)。</p>
+     *
+     * <p>false (既定) なら従来どおり 1 パターン 1 tick に 1 窓。</p>
+     */
+    default boolean repeatsWindowsWithinTick() {
+        return false;
+    }
+
+    /**
+     * 組み上がった完成品をネットワークへ流し、クラフト CPU の完成待ちを清算する。
+     *
+     * <p>{@link #repeatsWindowsWithinTick()} が true のとき、窓と窓の間で呼ばれる。
+     * これをしないと完成待ちが 1 tick ぶん積み上がって long を溢れさせる。</p>
+     */
+    default void settleCompletedOutputs() {
+    }
 }

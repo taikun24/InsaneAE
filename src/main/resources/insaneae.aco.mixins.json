@@ -1,0 +1,15 @@
+{
+  "_comment": "AE2 Crafting Optimizer の公開連携境界に乗るための Mixin。うちのクラスに ACO のインターフェイスを実装させるだけで、他 Mod のクラスには一切触らない。ACO が無い環境では plugin (AcoMixinPlugin) が丸ごと適用を止める — 存在しないインターフェイスを実装したクラスは検証に失敗し、Quantum CPU がロードできなくなるため。",
+  "required": false,
+  "minVersion": "0.8",
+  "package": "jp.main.taikun.insaneae.mixin.aco",
+  "plugin": "jp.main.taikun.insaneae.mixin.aco.AcoMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "QuantumCpuBatchTargetMixin",
+    "QuantumCpuProviderTargetMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

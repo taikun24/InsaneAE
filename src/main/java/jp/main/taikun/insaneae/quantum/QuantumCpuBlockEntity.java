@@ -27,6 +27,7 @@ import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
 import jp.main.taikun.insaneae.menu.QuantumCpuMenu;
+import jp.main.taikun.insaneae.quantum.batch.QuantumBatchReceipts;
 import jp.main.taikun.insaneae.integration.aco.OptionalAcoBigIntegerIntegration;
 import jp.main.taikun.insaneae.integration.aco.PendingOutputLedger;
 import jp.main.taikun.insaneae.integration.aco.PendingOutputNbt;
@@ -109,6 +110,15 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
      */
     private final PendingOutputLedger pendingOutputs = OptionalAcoBigIntegerIntegration.createOutputLedger();
 
+    /**
+     * ACO の craftingtable batch レシート台帳。
+     *
+     * <p>ACO 未導入でも<b>ただの入れ物として存在する</b> (ACO の型に触れないクラスなので、
+     * ここに持っても未導入環境のクラスロードに影響しない)。中身を触るのは
+     * ACO 連携の Mixin だけ。</p>
+     */
+    private final QuantumBatchReceipts batchReceipts = new QuantumBatchReceipts();
+
     /** 直近の保存時点で {@link #pendingOutputs} が空でなかったか。 */
     private boolean pendingWasSaved;
     /** 詰まっている状態を最後に保存してからの tick 数。 */
@@ -136,6 +146,19 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
         return upgrades.getInstalledUpgrades(ModUpgrades.TASK_FUSION_CARD.get()) > 0;
     }
 
+    /**
+     * 加速カードが満載か。1 tick のうちに同じパターンの窓を何度でも回してよい。
+     *
+     * <p>満載だと {@link #getCraftsPerTick()} は long の上限に張り付くので、
+     * <b>予算はもう制約になっていない</b>。実際に効いているのは 1 窓あたりの long 会計
+     * (完成品 {@code Long.MAX_VALUE / 出力数}、材料の取り出し) のほうなので、
+     * 窓を重ねられるようにしないと BigInteger 級の注文が終わらない。</p>
+     */
+    public boolean isWindowRepeatEnabled() {
+        return upgrades.getInstalledUpgrades(ModUpgrades.QUANTUM_ACCELERATION_CARD.get())
+                >= MAX_ACCELERATION_CARDS;
+    }
+
     // ------------------------------------------------------- 完成品の受け渡し
 
     /**
@@ -161,6 +184,16 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
         pendingOutputs.add(what, amount);
     }
 
+    /** 型の付いたロジック。{@link #getLogic()} は AE2 の基底型しか返さない。 */
+    public QuantumCpuLogic getQuantumLogic() {
+        return logic;
+    }
+
+    /** ACO 連携用のレシート台帳。 */
+    public QuantumBatchReceipts getBatchReceipts() {
+        return batchReceipts;
+    }
+
     /** 完成品待ちの現在の中身 (コピー)。ゲームテスト用。 */
     public Map<AEKey, BigInteger> getPendingOutputs() {
         return pendingOutputs.snapshot();
@@ -171,12 +204,28 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
         // 溜めておいたパターン更新をここで流す (遅れは最大 1 tick)。
         logic.flushPatternUpdate();
 
+        if (flushPendingOutputs()) {
+            savePendingIfNeeded();
+        }
+    }
+
+    /**
+     * 溜まっている完成品をネットワークへ流す。
+     *
+     * <p>毎 tick の {@link #serverTick()} からだけでなく、加速カード満載時は
+     * <b>まとめ処理の窓と窓の間</b>からも呼ばれる ({@code QuantumBulkCrafting})。
+     * ネットワークへ入れた瞬間にクラフト CPU が完成待ちから差し引くので、
+     * これを挟むと 1 tick の合計が long を超えても帳簿が溢れない。</p>
+     *
+     * @return 流すものがあったか (無ければ保存も要らない)
+     */
+    public boolean flushPendingOutputs() {
         if (pendingOutputs.isEmpty()) {
-            return;
+            return false;
         }
         IGrid grid = getMainNode().getGrid();
         if (grid == null || !getMainNode().isActive()) {
-            return;
+            return false;
         }
 
         MEStorage storage = grid.getStorageService().getInventory();
@@ -192,7 +241,7 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
                 pendingOutputs.add(entry.getKey(), BigInteger.valueOf(amount - inserted));
             }
         }
-        savePendingIfNeeded();
+        return true;
     }
 
     /**
@@ -311,6 +360,9 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
         // BigInteger は byte[] として保存する。旧 ListTag は loadTag 側で移行する。
         // 形式は台帳の実装 (ACO / 内蔵) に任せず、常に InsaneAE 側で固定する。
         data.put(NBT_PENDING_BIG, PendingOutputNbt.save(pendingOutputs, registries));
+        // ACO の craftingtable batch レシート。ACO 未導入でも読み書きするだけなので、
+        // 一度連携で使ったワールドから ACO を抜いてもレシートは消えない。
+        batchReceipts.save(data, registries);
     }
 
     @Override
@@ -318,6 +370,8 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
         super.loadTag(data, registries);
         logic.readFromNBT(data, registries);
         upgrades.readFromNBT(data, NBT_UPGRADES, registries);
+
+        batchReceipts.load(data, registries);
 
         pendingOutputs.clear();
         if (data.contains(NBT_PENDING_BIG, Tag.TAG_COMPOUND)) {

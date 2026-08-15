@@ -19,6 +19,10 @@ config = "${mod_id}.mixins.json"
 [[mixins]]
 config = "${mod_id}.compat.mixins.json"
 
+# ACO の公開連携境界に乗るぶん。ACO が無ければ AcoMixinPlugin が適用を止める。
+[[mixins]]
+config = "${mod_id}.aco.mixins.json"
+
 [[dependencies."${mod_id}"]]
 modId = "neoforge"
 type = "required"
