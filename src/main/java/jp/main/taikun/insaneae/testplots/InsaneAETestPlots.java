@@ -1429,10 +1429,22 @@ public final class InsaneAETestPlots {
      * 外部インベントリへ押し出すものではないため)。
      * 不完全なパターンに触れる木は {@code rootProgram} が空になる。</p>
      *
-     * <p>つまり<b>クラフトテーブルのパターンで組んだ木は、ACO の wide plan に載らない</b>
-     * 可能性が高い。だから ACO には別途 {@code CraftingTableBatchTarget} という
-     * 専用の経路がある — そちらは Advanced AE のクラスタからしか駆動されない
-     * (memory: aco-addon-integration-boundary)。</p>
+     * <p><b>この見立ては対照実験 ({@link #craftPastLongProcessing}) で否定された。</b>
+     * 同じ木を加工パターンで組んでも、まったく同じ {@code NO_COMPILED_PROGRAM} で断られる。
+     * パターンの種類は関係ない。</p>
+     *
+     * <p>さらに {@link #insaneae$acoGraphProbe} で ACO の compiled graph を直接覗くと、
+     * 木は<b>完全に健全</b>だった:</p>
+     *
+     * <pre>
+     * oak_button: patterns=1 oneFullyCompiled=true incomplete=false cyclic=false rootProgram=true
+     * oak_planks: patterns=1 oneFullyCompiled=true incomplete=false cyclic=false rootProgram=true
+     * </pre>
+     *
+     * <p>断り文句は {@code getOrCompile(grid, level).rootProgram(what).isEmpty()} が
+     * 真だったという意味なのに、<b>同じ呼び出しをこちらでやると present が返る</b>。
+     * つまり<b>ACO 自身の判断と ACO 自身の graph が食い違っている</b>。
+     * ここから先は ACO 側の問題で、InsaneAE のパターンや在庫の出し方の話ではない。</p>
      *
      * <p><b>注意: ACO を載せるには {@code -PwithAco=true} と書くこと。</b>
      * {@code -PwithAco} だけだと値が空文字になり、build.gradle の {@code == 'true'} が
@@ -1474,7 +1486,8 @@ public final class InsaneAETestPlots {
                 }
                 cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.TASK_FUSION_CARD.get()));
             });
-            sequence.thenIdle(20);
+            // ACO の compiled graph と generation が落ち着くまで待つ。
+            sequence.thenIdle(60);
 
             // TestCraftingJob は失敗理由を「failed to submit job」としか言わないので、
             // ここは自分で計算 → 投入して<b>断られた理由</b>を出す。
@@ -1511,7 +1524,9 @@ public final class InsaneAETestPlots {
                         "long を超える要求の投入が断られた: errorCode=" + result.errorCode()
                                 + " 必要bytes=" + plan.bytes()
                                 + " CPU=" + cpuSizes
-                                + " ACOの判断=" + insaneae$acoPlanDiagnostics());
+                                + " ACOの判断=" + insaneae$acoPlanDiagnostics()
+                                + " graph=" + insaneae$acoGraphProbe(helper,
+                                        Items.OAK_BUTTON, Items.OAK_PLANKS, Items.OAK_LOG));
             });
 
             // 走り出しているか。
@@ -1536,6 +1551,86 @@ public final class InsaneAETestPlots {
     }
 
     /**
+     * <b>{@link #craftPastLong} と同じ規模を「加工パターン」で組んだ対照実験。</b>
+     *
+     * <p>{@link #craftPastLong} は同じ木をクラフトテーブル用パターンで組んでいて、
+     * ACO が {@code NO_COMPILED_PROGRAM} で wide plan を作れずに落ちる。
+     * 原因の見立ては「{@code Ae2CompiledPatternFactory} がパターンの完全さを
+     * {@code IPatternDetails.supportsPushInputsToExternalInventory()} で決めていて、
+     * クラフトパターンはこれが false だから」。</p>
+     *
+     * <p>加工パターンならこれが true になる。<b>こちらが通れば見立ては当たり</b>で、
+     * 「クラフトテーブルの連鎖は ACO の wide plan に載らない」が確定する。
+     * こちらも同じ理由で落ちるなら、原因は別にある。</p>
+     *
+     * <p>実行は見ない (加工先の機械を置いていないので進まない)。
+     * <b>計画が立って投入が通るところまで</b>が検査対象。</p>
+     */
+    @TestPlot("insaneae_craft_past_long_processing")
+    public static void craftPastLongProcessing(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,3] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
+            drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
+            drive.getInternalInventory().addItems(AEItems.ITEM_CELL_64K.stack());
+        });
+        plot.blockState("2 0 0", ModBlocks.BIG_INTEGER_CPU.get().defaultBlockState());
+        plot.block("2 1 0", AEBlocks.CRAFTING_ACCELERATOR);
+        plot.block("3 0 0", AEBlocks.PATTERN_PROVIDER);
+
+        plot.test(helper -> {
+            var state = new Object() {
+                appeng.me.helpers.MachineSource source;
+                java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan> plan;
+            };
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var provider = (appeng.blockentity.crafting.PatternProviderBlockEntity)
+                        helper.getBlockEntity(new BlockPos(3, 0, 0));
+                var patterns = provider.getLogic().getPatternInv();
+                // craftPastLong と同じ 2 段: 原木 -> 板材 -> ボタン。
+                patterns.addItems(processingPattern(Items.OAK_LOG, 1, Items.OAK_PLANKS, 4));
+                patterns.addItems(processingPattern(Items.OAK_PLANKS, 1, Items.OAK_BUTTON, 1));
+            });
+            // ACO の compiled graph と generation が落ち着くまで待つ。
+            sequence.thenIdle(60);
+
+            sequence.thenExecute(() -> {
+                var grid = helper.getGrid(BlockPos.ZERO);
+                state.source = new appeng.me.helpers.MachineSource(
+                        (appeng.api.networking.security.IActionHost)
+                                helper.getBlockEntity(new BlockPos(3, 0, 0)));
+                state.plan = grid.getCraftingService().beginCraftingCalculation(
+                        helper.getLevel(), () -> state.source,
+                        AEItemKey.of(Items.OAK_BUTTON), Long.MAX_VALUE,
+                        appeng.api.networking.crafting.CalculationStrategy.REPORT_MISSING_ITEMS);
+            });
+            sequence.thenWaitUntil(() -> helper.check(state.plan.isDone(), "計算が終わらない"));
+            sequence.thenExecute(() -> {
+                appeng.api.networking.crafting.ICraftingPlan plan;
+                try {
+                    plan = state.plan.get();
+                } catch (Exception failure) {
+                    throw new GameTestAssertException("計算が例外で終わった: " + failure);
+                }
+                helper.check(!plan.simulation(),
+                        "加工パターンでも計算がシミュレーション止まり。ACO の判断: "
+                                + insaneae$acoPlanDiagnostics());
+                var result = helper.getGrid(BlockPos.ZERO).getCraftingService()
+                        .submitJob(plan, null, null, false, state.source);
+                helper.check(result.successful(),
+                        "加工パターンでも投入が断られた: errorCode=" + result.errorCode()
+                                + " 必要bytes=" + plan.bytes()
+                                + " ACOの判断=" + insaneae$acoPlanDiagnostics()
+                                + " graph=" + insaneae$acoGraphProbe(helper,
+                                        Items.OAK_BUTTON, Items.OAK_PLANKS, Items.OAK_LOG));
+            });
+            sequence.thenSucceed();
+        });
+    }
+
+    /**
      * ACO が BigInteger 計画を断った理由。{@code /aco stats} に出るのと同じ内容。
      *
      * <p>反射なのは、この検査クラスが ACO 無しの環境でも読まれるため。</p>
@@ -1549,6 +1644,49 @@ public final class InsaneAETestPlots {
             return String.valueOf(lines);
         } catch (ReflectiveOperationException | LinkageError | RuntimeException unavailable) {
             return "(ACO の診断を読めない: " + unavailable + ")";
+        }
+    }
+
+    /**
+     * ACO の compiled graph が、その木をどう見ているかを覗く。
+     *
+     * <p>{@code NO_COMPILED_PROGRAM} は「{@code CompiledRootProgram} が組めなかった」としか
+     * 言わないので、組めない条件 (パターンが 1 つでない / 循環 / 不完全) のどれなのかを
+     * ここで直接聞く。全部 ACO の public メソッドだが、ACO 無しでも読めるよう反射で呼ぶ。</p>
+     */
+    private static String insaneae$acoGraphProbe(appeng.server.testworld.PlotTestHelper helper,
+            net.minecraft.world.level.ItemLike... keys) {
+        try {
+            Class<?> cache = Class.forName(
+                    "com.syaru.ae2craftingoptimizer.engine.Ae2CompiledCraftingGraphCache",
+                    false, InsaneAETestPlots.class.getClassLoader());
+            Object snapshot = cache.getMethod("getOrCompile",
+                            appeng.api.networking.IGrid.class, net.minecraft.world.level.Level.class)
+                    .invoke(null, helper.getGrid(BlockPos.ZERO), helper.getLevel());
+            Class<?> snapType = snapshot.getClass();
+            var count = snapType.getMethod("registeredPatternCount", AEKey.class);
+            var oneFull = snapType.getMethod("hasExactlyOneFullyCompiledPattern", AEKey.class);
+            var incomplete = snapType.getMethod("isIncompletelyCompiled", AEKey.class);
+            var root = snapType.getMethod("rootProgram", AEKey.class);
+            var craftables = snapType.getMethod("craftables");
+            var graph = snapType.getMethod("graph").invoke(snapshot);
+            var cyclic = graph.getClass().getMethod("isCyclic", Object.class);
+
+            var report = new StringBuilder();
+            report.append("craftables=").append(((java.util.Set<?>) craftables.invoke(snapshot)).size());
+            for (var item : keys) {
+                AEKey key = AEItemKey.of(item.asItem());
+                report.append(" | ").append(item.asItem())
+                        .append(": patterns=").append(count.invoke(snapshot, key))
+                        .append(" oneFullyCompiled=").append(oneFull.invoke(snapshot, key))
+                        .append(" incomplete=").append(incomplete.invoke(snapshot, key))
+                        .append(" cyclic=").append(cyclic.invoke(graph, key))
+                        .append(" rootProgram=")
+                        .append(((java.util.Optional<?>) root.invoke(snapshot, key)).isPresent());
+            }
+            return report.toString();
+        } catch (ReflectiveOperationException | LinkageError | RuntimeException unavailable) {
+            return "(ACO の compiled graph を覗けない: " + unavailable + ")";
         }
     }
 
