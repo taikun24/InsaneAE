@@ -37,10 +37,10 @@ Quantum CPUの完成品待ち台帳と厳密な計算計画をACO公開APIへ接
 long窓へ変換し、計算中の `times * outputCount` をlongへクランプしません。
 
 ACOの公開BigInteger計画APIが利用可能で、ACOの外部コンシューマ受付が有効なとき、
-InsaneAEは自分自身をACOへ外部計画コンシューマとして登録します。ACOは正確な計画と
-sidecarだけを提供し、InsaneAEのQuantum CPU実行・Bulk処理・進捗・完了会計はInsaneAEが
-所有します。ACOのAPIは任意依存なので、未導入・旧版・設定無効時は従来どおり
-InsaneAE内蔵計画・台帳経路へ戻ります。
+InsaneAEは既存BigIntegerクラフトCPUの受け入れ能力だけを登録します。ACOから受け取るのは
+正確な計画とsidecarだけで、CPU実行・進捗・完了会計は既存のInsaneAE実装が所有します。
+容量、Pattern投入数、他ModのCPU実装をACO向けに固定しません。ACOは任意依存なので、
+未導入・旧版・設定無効時は従来どおりInsaneAE内蔵計画・台帳経路へ戻ります。
 
 ## 追加されるもの
 

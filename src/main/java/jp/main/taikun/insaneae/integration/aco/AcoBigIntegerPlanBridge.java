@@ -33,7 +33,7 @@ public final class AcoBigIntegerPlanBridge {
     private AcoBigIntegerPlanBridge() {
     }
 
-    /** ACOの汎用提出境界へ、InsaneAEがexact計画の実行者であることだけを登録する。 */
+    /** ACOの公開提出境界へ、既存BigIntegerクラフトCPUの受け入れ能力だけを登録する。 */
     public static synchronized void registerExternalPlanConsumer() {
         // 起動中に何度もAPI反射を行わず、Mod構築時の一回だけ登録する。
         if (consumerRegistrationAttempted) {
@@ -49,7 +49,7 @@ public final class AcoBigIntegerPlanBridge {
                 return;
             }
             api.getMethod("registerExternalBigIntegerPlanConsumer").invoke(null);
-            LOGGER.info("InsaneAE: registered as an external ACO BigInteger plan consumer");
+            LOGGER.info("InsaneAE: registered its BigInteger crafting CPU as an ACO plan consumer");
         } catch (ReflectiveOperationException | LinkageError | RuntimeException failure) {
             LOGGER.debug("InsaneAE: ACO external BigInteger plan-consumer API is unavailable", failure);
         }

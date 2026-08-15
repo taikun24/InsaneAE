@@ -49,8 +49,8 @@
   1.5.17 以前は、**完成品 1 個あたりの下位パターン実行回数が 2^63 を超える注文**
   (8 倍圧縮 21 段など) が `WidePlanUnavailableException` で失敗しました。素材が
   足りないうちは「作成不可」で静かに終わり、素材を揃えた瞬間に落ちるようになる
-  という症状です。1.5.18 で修正されました。1.5.19では外部Quantum CPUが
-  exact計画を所有する登録境界も追加されています
+  という症状です。1.5.18 で修正されました。1.5.19では外部BigIntegerクラフトCPUが
+  exact計画を受け取る公開登録境界も追加されています
   ([ACO #79](https://github.com/syarukasu/ae2-crafting-optimizer/issues/79))。
   この階層の計画は ACO 自身の実行経路では扱えず、Quantum CPU が引き受けます。
 - **クラフト CPU の容量を BigInteger で正確に合算するようにしました** (同 PR)。

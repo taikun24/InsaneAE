@@ -93,7 +93,7 @@ public class InsaneAE {
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-        // ACOへ実行者として登録するだけで、ACO側のCPU tickやPattern投入は呼び出さない。
+        // ACO公開APIへ、既存BigIntegerクラフトCPUがexact計画を受け取れることだけを登録する。
         event.enqueueWork(AcoBigIntegerPlanBridge::registerExternalPlanConsumer);
         // ブロックと BlockEntityType が揃った後で結びつける。
         event.enqueueWork(ModBlockEntities::bindBlockEntities);

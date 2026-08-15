@@ -21,24 +21,23 @@ import java.util.function.Consumer;
 public final class AcoBigIntegerJobRegistry {
     /**
      * finish/cancel を通らず消えた Job (ワールドアンロード等) を弱参照で回収する。
-     * AE2とAdvanced AEの実行Jobはいずれもequalsを持たないため、WeakHashMapでも
-     * 同一性比較になる。実行中のJobは各Crafting CPUが強参照する。
+     * ExecutingCraftingJob は equals を持たないため、WeakHashMap でも同一性比較になる。
      * 実行中の Job は CraftingCpuLogic が強参照しているので、途中で回収されることはない。
      */
-    private static final Map<Object, Job> JOBS = new WeakHashMap<>();
+    private static final Map<ExecutingCraftingJob, Job> JOBS = new WeakHashMap<>();
 
     private AcoBigIntegerJobRegistry() {
     }
 
     public static synchronized void install(
-            Object job,
+            ExecutingCraftingJob job,
             AcoBigIntegerPlanBridge.Plan plan) {
         install(job, plan.patternTimes());
     }
 
     /** NBT からの復元にも使う入口。残数 0 以下の Pattern は載せない。 */
     public static synchronized void install(
-            Object job,
+            ExecutingCraftingJob job,
             Map<IPatternDetails, BigInteger> patternTimes) {
         // 同一Jobへの再通知は状態を上書きせず、二重のExact台帳を作らない。
         JOBS.putIfAbsent(job, new Job(job, patternTimes));
@@ -54,7 +53,7 @@ public final class AcoBigIntegerJobRegistry {
         return Optional.of(exact.snapshotRemaining());
     }
 
-    public static synchronized Optional<Job> find(Object job) {
+    public static synchronized Optional<Job> find(ExecutingCraftingJob job) {
         Job exact = JOBS.get(job);
         if (exact != null && exact.isEmpty()) {
             JOBS.remove(job);
@@ -63,16 +62,16 @@ public final class AcoBigIntegerJobRegistry {
         return Optional.ofNullable(exact);
     }
 
-    public static synchronized void remove(Object job) {
+    public static synchronized void remove(ExecutingCraftingJob job) {
         JOBS.remove(job);
     }
 
     /** Exact task state for one ordinary AE2 job. */
     public static final class Job {
-        private final Object owner;
+        private final ExecutingCraftingJob owner;
         private final Map<IPatternDetails, BigInteger> remaining;
 
-        private Job(Object owner, Map<IPatternDetails, BigInteger> patternTimes) {
+        private Job(ExecutingCraftingJob owner, Map<IPatternDetails, BigInteger> patternTimes) {
             this.owner = owner;
             this.remaining = new LinkedHashMap<>();
             patternTimes.forEach((pattern, amount) -> {
@@ -107,7 +106,7 @@ public final class AcoBigIntegerJobRegistry {
             remaining.remove(pattern);
         }
 
-        private Object owner() {
+        private ExecutingCraftingJob owner() {
             return owner;
         }
 
