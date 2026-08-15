@@ -25,6 +25,7 @@ import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.iface.InsaneInterfaceBlockEntity;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry;
 import jp.main.taikun.insaneae.integration.aco.AcoCalculationIntegration;
+import jp.main.taikun.insaneae.integration.aco.AcoExactLimits;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderBlockEntity;
 import jp.main.taikun.insaneae.quantum.CraftingJobView;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
@@ -944,6 +945,22 @@ public final class InsaneAETestPlots {
                     new ItemStack(ModCells.ULTRA_CREATIVE_CELL.get()));
             helper.check(exactStorage != null && exactStorage.isInstance(cell),
                     "超強化クリエイティブセルに BigInteger 在庫の窓口が生えていない");
+
+            // 名乗る量が ACO の計画エンジンの天井を越えていないこと。
+            // 越えると BigCountMath.requireMaximumBits が投げ、
+            // <b>このセルを入れただけであらゆるクラフトが WidePlanUnavailable になる</b>。
+            // 上限は api.contract.ExactCountLimits (1,048,576 bit) ではなく
+            // ACOConfig.bigIntegerMaximumBits (最大 54,427 bit) なので取り違えないこと。
+            int ceiling = AcoExactLimits.gameplayMaximumBits();
+            int advertised = jp.main.taikun.insaneae.cell.InsaneUltraCreativeCellInventory
+                    .exactAmount().bitLength();
+            helper.check(advertised < ceiling,
+                    "超強化クリエイティブセルが名乗る量 (" + advertised + " bit) が "
+                            + "ACO の上限 (" + ceiling + " bit) を越えている");
+            // 種類数を掛けた合計や複数セルの合算にも余地が要る。
+            helper.check(advertised <= ceiling / 2,
+                    "名乗る量 (" + advertised + " bit) に足し算の余地が無い "
+                            + "(ACO の上限 " + ceiling + " bit の半分までにすること)");
         }).thenSucceed());
     }
 
