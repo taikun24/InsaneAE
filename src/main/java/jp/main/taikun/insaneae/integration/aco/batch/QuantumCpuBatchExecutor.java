@@ -51,6 +51,14 @@ public final class QuantumCpuBatchExecutor {
     /** これ未満の craftingtable API では受けない。 */
     private static final int REQUIRED_CRAFTING_TABLE_API = 1;
 
+    /** 一度 WARN で出した拒否理由。同じものを繰り返さないため。 */
+    private static final java.util.Set<String> LOGGED_REFUSALS =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /** 最初の 1 件を受理したときだけ INFO を出す。連携が生きている証拠になる。 */
+    private static final java.util.concurrent.atomic.AtomicBoolean FIRST_ACCEPT =
+            new java.util.concurrent.atomic.AtomicBoolean();
+
     private QuantumCpuBatchExecutor() {
     }
 
@@ -63,11 +71,20 @@ public final class QuantumCpuBatchExecutor {
     }
 
     public static boolean accept(QuantumCpuBlockEntity host, CraftingTableBatchRequest request) {
-        if (!isSupported() || host.getLevel() == null || host.getLevel().isClientSide()) {
+        // 断る理由は<b>必ず残す</b>。ここで黙って false を返すと、ACO は別のターゲットを探し、
+        // 見つからなければ long 窓の経路へ落ちる。使う側からは「速くならない」としか見えず、
+        // 拒否したのか呼ばれてすらいないのかが区別できなくなる。
+        if (!isSupported()) {
+            return refuse(host, "ACO の craftingtable API バージョンが足りない");
+        }
+        if (host.getLevel() == null || host.getLevel().isClientSide()) {
             return false;
         }
         QuantumBatchReceipts receipts = host.getBatchReceipts();
-        if (receipts.isFull() || receipts.get(request.transactionId(), request.payloadDigest()) != null) {
+        if (receipts.isFull()) {
+            return refuse(host, "レシート台帳が満杯 (未清算の取引が溜まっている)");
+        }
+        if (receipts.get(request.transactionId(), request.payloadDigest()) != null) {
             // 重複取引は上書きせず拒否する (ACO は拒否を期待している)。
             return false;
         }
@@ -75,20 +92,21 @@ public final class QuantumCpuBatchExecutor {
         QuantumCpuLogic.OneCraft craft =
                 host.getQuantumLogic().assembleOnce(request.pattern(), request.inputsPerExecution());
         if (craft == null) {
-            return false;
+            return refuse(host, "1 回ぶんの組み立てができなかった "
+                    + "(Molecular Assembler 用のパターンでない / 材料が揃っていない): "
+                    + request.pattern().getPrimaryOutput());
         }
         // 実際に出たものが Pattern の宣言と食い違っていたら受けない。
         // ここを飛ばすと「1 回の結果に係数を掛ける」の前提が崩れる。
         if (!matchesDeclaration(craft, request.outputsPerExecution(), request.remainingPerExecution())) {
-            LOGGER.warn("InsaneAE: Quantum CPU refused an ACO batch at {}; the real assemble did not "
-                    + "match the encoded pattern declaration.", host.getBlockPos());
-            return false;
+            return refuse(host, "実際の組み立て結果が Pattern の宣言と違う: 実際=" + perCraft(craft)
+                    + " 宣言=" + declaredTotals(request));
         }
         Map<AEKey, BigInteger> scaled = scale(craft, request.executions());
         if (!scaled.equals(request.aggregateExpectedOutputs())) {
-            LOGGER.warn("InsaneAE: Quantum CPU refused an ACO batch at {}; one-craft x executions did "
-                    + "not equal ACO's aggregate expected outputs.", host.getBlockPos());
-            return false;
+            return refuse(host, "1 回ぶん × 実行回数 が ACO の集計と一致しない: 回数="
+                    + request.executions() + " こちら=" + scaled
+                    + " ACO=" + request.aggregateExpectedOutputs());
         }
 
         // Quantum CPU は物理的な進行を持たない (加速カードで即時)。
@@ -97,6 +115,12 @@ public final class QuantumCpuBatchExecutor {
                 request.payloadDigest(), QuantumBatchReceipts.State.OUTPUT_READY, scaled));
         if (stored) {
             host.saveChanges();
+            if (FIRST_ACCEPT.compareAndSet(false, true)) {
+                // 「呼ばれてすらいない」と「断っている」を切り分けるための 1 行。
+                LOGGER.info("InsaneAE: Quantum CPU at {} accepted its first ACO batch "
+                        + "({} mode, {} executions in one assemble)",
+                        host.getBlockPos(), request.mode(), request.executions());
+            }
         }
         return stored;
     }
@@ -140,6 +164,37 @@ public final class QuantumCpuBatchExecutor {
             host.saveChanges();
         }
         return cancelled;
+    }
+
+    /**
+     * 断った理由をログに残して {@code false} を返す。
+     *
+     * <p>同じ理由は<b>最初の 1 回だけ WARN</b>。ACO は {@code bigIntegerRetryBackoffTicks}
+     * ごとに何度でも聞きに来るので、そのまま出すとログが埋まる。</p>
+     */
+    private static boolean refuse(QuantumCpuBlockEntity host, String reason) {
+        if (LOGGED_REFUSALS.add(reason)) {
+            LOGGER.warn("InsaneAE: Quantum CPU at {} refused an ACO batch: {}", host.getBlockPos(), reason);
+        } else {
+            LOGGER.debug("InsaneAE: Quantum CPU at {} refused an ACO batch: {}", host.getBlockPos(), reason);
+        }
+        return false;
+    }
+
+    private static Map<AEKey, BigInteger> perCraft(QuantumCpuLogic.OneCraft craft) {
+        Map<AEKey, BigInteger> totals = new LinkedHashMap<>();
+        addStack(totals, craft.output());
+        for (ItemStack remainder : craft.remainders()) {
+            addStack(totals, remainder);
+        }
+        return totals;
+    }
+
+    private static Map<AEKey, BigInteger> declaredTotals(CraftingTableBatchRequest request) {
+        Map<AEKey, BigInteger> declared = new LinkedHashMap<>();
+        addDeclared(declared, request.outputsPerExecution());
+        addDeclared(declared, request.remainingPerExecution());
+        return declared;
     }
 
     /** 実際の組み立て結果が Pattern の宣言どおりか。 */
