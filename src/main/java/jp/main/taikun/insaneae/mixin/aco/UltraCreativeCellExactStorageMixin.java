@@ -2,7 +2,6 @@ package jp.main.taikun.insaneae.mixin.aco;
 
 import appeng.api.stacks.AEKey;
 import com.syaru.ae2craftingoptimizer.access.ExtendedAePlusBigIntegerCellInventoryAccess;
-import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import java.math.BigInteger;
 import java.util.UUID;
@@ -37,9 +36,15 @@ public abstract class UltraCreativeCellExactStorageMixin
     @Unique
     private UUID insaneae$exactStorageUuid;
 
+    /**
+     * <b>毎回同じインスタンスを返すこと。</b>ACO はシミュレーションとコミットで
+     * このマップを {@code ==} で突き合わせ、<b>直接書き換えて</b>在庫を減らす。
+     * コピーを返すと {@code exact cell storage map changed between simulation and commit} で
+     * 取引ごと巻き戻される。
+     */
     @Override
     public Object2ObjectMap<AEKey, BigInteger> aco$getExactStoredAmounts() {
-        return new Object2ObjectLinkedOpenHashMap<>(insaneae$self().insaneae$exactAmounts());
+        return insaneae$self().insaneae$exactAmounts();
     }
 
     @Override
@@ -49,7 +54,8 @@ public abstract class UltraCreativeCellExactStorageMixin
 
     @Override
     public void aco$setExactStoredTypeCount(int typeCount) {
-        // クリエイティブなので外から数は変えられない。
+        // 書かれた値は覚えておく (次の取引で beforeTypes と突き合わされる)。
+        insaneae$self().insaneae$setExactTypeCount(typeCount);
     }
 
     @Override
@@ -59,7 +65,7 @@ public abstract class UltraCreativeCellExactStorageMixin
 
     @Override
     public void aco$setExactStoredTotal(BigInteger total) {
-        // 同上。
+        insaneae$self().insaneae$setExactTotal(total);
     }
 
     @Override
