@@ -57,8 +57,7 @@
   "block.insaneae.quantum_cpu.desc": "Can hold 1620 recipes and crafts up to 9223 quadrillion per tick.\nOnly accepts patterns it can craft itself — put processing patterns in the Insane Pattern Provider.",
   "block.insaneae.improved_charger.desc": "Charges and transforms up to 64 items at once, in a single tick.",
   "item.insaneae.creative_cell": "Enhanced Creative ME Storage Cell",
-  "item.insaneae.creative_cell.desc": "Provides an endless supply of whatever it is configured with.\nReports 9,223,372,036,854,775,807 of each - a Creative Cell only reports 2,147,483,647."
+  "item.insaneae.creative_cell.desc": "Provides an endless supply of whatever it is configured with.\nReports 9,223,372,036,854,775,807 of each - a Creative Cell only reports 2,147,483,647.",
   "item.insaneae.ultra_creative_cell": "Ultra Creative ME Storage Cell",
-  "item.insaneae.ultra_creative_cell.desc": "Provides an endless supply of whatever it is configured with.
-Reports an exact BigInteger amount (2^1048575 of each) to AE2 Crafting Optimizer, so BigInteger-scale crafts see it as a sufficient source. AE2 itself still sees 9,223,372,036,854,775,807 - its stock counters are 64-bit.",
+  "item.insaneae.ultra_creative_cell.desc": "Provides an endless supply of whatever it is configured with.\nReports an exact BigInteger amount to AE2 Crafting Optimizer, so BigInteger-scale crafts see it as a sufficient source.\nAE2 itself still sees 9,223,372,036,854,775,807 - its stock counters are 64-bit."
 }

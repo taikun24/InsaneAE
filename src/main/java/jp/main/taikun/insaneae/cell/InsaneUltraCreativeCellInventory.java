@@ -4,6 +4,7 @@ import appeng.api.stacks.AEKey;
 import java.math.BigInteger;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import jp.main.taikun.insaneae.integration.aco.AcoExactLimits;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -13,30 +14,44 @@ import net.minecraft.world.item.ItemStack;
  * これ以上は表現できない)。<b>BigInteger の在庫を名乗る窓口</b>は ACO が居るときだけ
  * Mixin で生える ({@code mixin/aco/UltraCreativeCellExactStorageMixin})。</p>
  *
- * <p>量を上限そのものではなく<b>半分</b>にしてあるのは、ACO の
- * {@code ExactCountLimits} が「受け付ける最大値」と「保存できる正準バイト数」を
- * <b>ちょうど揃えて</b>あるため。上限いっぱいを名乗ると、計算の途中で少しでも足された
- * 瞬間に境界を越えて弾かれる。半分なら足し算の余地が残る。</p>
+ * <p>量は {@link AcoExactLimits#advertisableBits()} から決める。
+ * <b>固定値にしてはいけない</b> — ACO の計画エンジンが扱える桁は
+ * {@code ACOConfig.bigIntegerMaximumBits} (上限 54,427 bit) で、
+ * {@code api.contract.ExactCountLimits} の 1,048,576 bit とは<b>別物</b>。
+ * 大きすぎる在庫を名乗ると計算が例外で終わり、このセルを入れただけで
+ * あらゆるクラフトが {@code WidePlanUnavailableException} になる。</p>
  */
 public class InsaneUltraCreativeCellInventory extends InsaneCreativeCellInventory {
 
-    /**
-     * 1 種あたりの在庫量。ACO の上限 (2^1048576 - 1) の半分 = 2^1048575。
-     *
-     * <p>10 進で 31 万桁ほどある。数としては巨大だが、正準形は 131,072 バイトで
-     * ACO の {@code maximumCanonicalCountBytes} にちょうど収まる。</p>
-     */
-    public static final BigInteger EXACT_AMOUNT = BigInteger.ONE.shiftLeft(1_048_575);
+    /** 直前に使ったビット数と、その値。設定は実行中に変えられるので対で持つ。 */
+    private static volatile int cachedBits = -1;
+    private static volatile BigInteger cachedAmount = BigInteger.ZERO;
 
     public InsaneUltraCreativeCellInventory(ItemStack stack) {
         super(stack);
     }
 
+    /**
+     * 1 種あたりの在庫量。ACO が扱える桁の<b>半分</b>を使う。
+     *
+     * <p>既定 (54,427 bit) なら 2^27213 — 10 進で 8,192 桁ほど。
+     * 922 京 (19 桁) とは比べものにならない大きさで、なお上限まで同じだけ余地がある。</p>
+     */
+    public static BigInteger exactAmount() {
+        int bits = AcoExactLimits.advertisableBits();
+        if (bits != cachedBits) {
+            cachedAmount = BigInteger.ONE.shiftLeft(bits);
+            cachedBits = bits;
+        }
+        return cachedAmount;
+    }
+
     /** ACO 連携の Mixin から呼ぶ。設定済みの種類ぶんの BigInteger 在庫。 */
     public Map<AEKey, BigInteger> insaneae$exactAmounts() {
+        BigInteger amount = exactAmount();
         Map<AEKey, BigInteger> amounts = new LinkedHashMap<>();
         for (AEKey key : configured) {
-            amounts.put(key, EXACT_AMOUNT);
+            amounts.put(key, amount);
         }
         return amounts;
     }
@@ -48,6 +63,6 @@ public class InsaneUltraCreativeCellInventory extends InsaneCreativeCellInventor
 
     /** 全種類の合計。 */
     public BigInteger insaneae$exactTotal() {
-        return EXACT_AMOUNT.multiply(BigInteger.valueOf(configured.size()));
+        return exactAmount().multiply(BigInteger.valueOf(configured.size()));
     }
 }
