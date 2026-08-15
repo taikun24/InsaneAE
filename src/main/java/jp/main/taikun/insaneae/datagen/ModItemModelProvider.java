@@ -106,6 +106,9 @@ public class ModItemModelProvider extends ItemModelProvider {
         }
 
         simple("creative_cell");
+        // 超強化セルは専用のテクスチャを持たず、強化セルの絵を借りる。
+        withExistingParent("ultra_creative_cell", mcLoc("item/generated"))
+                .texture("layer0", modLoc("item/creative_cell"));
 
         for (InsaneSpeedCardType card : InsaneSpeedCardType.values()) {
             simple(card.id());
