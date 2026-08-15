@@ -50,11 +50,6 @@ public final class InsaneAEConfig {
         return get(COMMON.serverSidePatternPaging, true);
     }
 
-    /** Quantum CPUのExact窓の辞退理由を集計ログへ出すか。 */
-    public static boolean logQuantumBulkDiagnostics() {
-        return get(COMMON.logQuantumBulkDiagnostics, false);
-    }
-
     /**
      * 設定ファイル読み込み前でも安全に読む。
      *
@@ -73,7 +68,6 @@ public final class InsaneAEConfig {
         private final ModConfigSpec.BooleanValue batchCraftingCalculation;
         private final ModConfigSpec.IntValue craftingBatchThreshold;
         private final ModConfigSpec.BooleanValue serverSidePatternPaging;
-        private final ModConfigSpec.BooleanValue logQuantumBulkDiagnostics;
 
         private Common(ModConfigSpec.Builder builder) {
             builder.comment("クラフト計算 (Calculating... の部分) の軽量化").push("crafting_calculation");
@@ -102,11 +96,6 @@ public final class InsaneAEConfig {
                             "false にすると全枠を並べる代わりに、ページ送りがクライアント内で完結して速くなる。")
                     .define("serverSidePatternPaging", true);
 
-            builder.pop();
-            builder.comment("Quantum CPU Exact BigInteger診断").push("quantum_cpu_diagnostics");
-            logQuantumBulkDiagnostics = builder
-                    .comment("Exact窓の受理・辞退理由を集計する。通常は無効。")
-                    .define("logQuantumBulkDiagnostics", false);
             builder.pop();
         }
     }

@@ -140,9 +140,8 @@ public final class QuantumBulkCrafting {
             int maxPatterns,
             CraftingService craftingService,
             IEnergyService energyService,
-        Level level) {
+            Level level) {
         int pushed = 0;
-        // Exact taskはAE2の通常操作数ではなく、Quantum CPUのBulk呼び出し一回を一操作として走査する。
         while (pushed < maxPatterns && cursor.next()) {
             BigInteger remaining = cursor.remaining();
             if (remaining.signum() <= 0) {
@@ -152,30 +151,31 @@ public final class QuantumBulkCrafting {
             IPatternDetails details = cursor.details();
             IBulkCraftingProvider provider = findBulkProvider(craftingService, details);
             if (provider == null) {
-                QuantumBulkDiagnostics.record(QuantumBulkDiagnostics.Reason.EXACT_PROVIDER_MISSING);
                 // 親Patternの材料がまだMEへ戻っていなくても、同じ窓の別Patternは進められる。
                 continue;
             }
-            long limit = BulkExecutionWindow.forExactTask(
-                    remaining,
-                    provider.getBulkCapacity(details));
-            // exact台帳ではBulk呼び出し一回を一操作として所有するが、AE2のlong出力会計は守る。
+            // タスク統合 (fusesOperations): 通常経路と同じく、まとめ 1 回を CPU 予算の
+            // 1 操作として数え、回数はプロバイダ自身の予算に任せる。
+            // BigInteger 経路こそ 1 窓が大きいので、ここを飛ばすと統合カードが効かない。
+            boolean fused = provider.fusesOperations();
+            long boundedRemaining = remaining.min(BigInteger.valueOf(Long.MAX_VALUE)).longValueExact();
+            long limit = Math.min(boundedRemaining, provider.getBulkCapacity(details));
+            if (!fused) {
+                limit = Math.min(limit, maxPatterns - pushed);
+            }
             limit = clampForOutputs(details, limit);
             if (limit <= 0L) {
-                QuantumBulkDiagnostics.record(QuantumBulkDiagnostics.Reason.EXACT_PROVIDER_CAPACITY_ZERO);
                 // このプロバイダのtick予算が尽きた場合は、次の窓で同じTaskを再試行する。
                 continue;
             }
             long done = pushBulk(view, details, provider, limit, energyService, level);
             if (done <= 0L) {
-                QuantumBulkDiagnostics.record(QuantumBulkDiagnostics.Reason.EXACT_INPUTS_UNAVAILABLE);
                 // 材料搬入待ちのTaskで全Exact Jobを止めず、依存元Patternを先に進める。
                 continue;
             }
             cursor.setRemaining(remaining.subtract(BigInteger.valueOf(done)));
-            // Exact窓の実際の受理回数だけ残量を減らし、Bulk呼出し一回だけAE2操作数へ戻す。
-            pushed += BulkExecutionWindow.consumedExactOperation(done);
-            QuantumBulkDiagnostics.record(QuantumBulkDiagnostics.Reason.EXACT_BULK_ACCEPTED);
+            // 統合中は done が int を超えうるので、toIntExact に渡さないこと。
+            pushed += fused ? 1 : Math.toIntExact(done);
             if (cursor.remaining().signum() <= 0) {
                 cursor.remove();
             }

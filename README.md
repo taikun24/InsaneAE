@@ -30,14 +30,15 @@ Minecraft のバージョンごとにブランチを分けています。**不�
 AE2 が [GuideME](https://github.com/AppliedEnergistics/GuideME) を必須依存として要求します (1.20.1 では AE2 に同梱されていました)。
 
 AE2 Crafting Optimizer は必須ではありません。導入されていて BigInteger バックエンドが有効な場合、
-Quantum CPU の完成品待ち台帳を ACO の公開 API へ接続します。ACOは正確な計画と
-sidecarだけを提供し、Quantum CPUの実行・Bulk処理・進捗・完了会計はInsaneAEが所有します。
+InsaneAEは既存BigIntegerクラフトCPUの受け入れ能力だけをACO公開APIへ登録します。
+ACOから受け取るのは正確な計画とsidecarだけで、CPU実行・進捗・完了会計は既存の
+InsaneAE実装が所有します。容量、Pattern投入数、他ModのCPU実装をACO向けに固定しません。
 ACOが無い場合や無効な場合はInsaneAE内蔵の同じBigInteger台帳を使います (保存形式は共通)。
 
 ### ACO連携 (任意)
 
 [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) 1.21.1版が導入されている場合、
-Quantum CPUはACOのBigInteger計画を受け取り、InsaneAE自身がlong範囲の実行ウィンドウへ分割して処理できます。
+BigIntegerクラフトCPUはACOのBigInteger計画を受け取り、既存の実行経路で処理できます。
 ACOが無い場合、または連携プロファイルが無効な場合は、通常のAE2計算・実行経路へ戻ります。
 
 この連携はACOを必須依存にしません。両Modのバージョンと対応するNeoForge版を揃えてください。
