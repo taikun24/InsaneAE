@@ -100,6 +100,10 @@ public class InsaneAE {
                 jp.main.taikun.insaneae.cell.InsaneCreativeCellHandler.INSTANCE));
         // 加速カードを AE2 の対応機械に登録する。
         event.enqueueWork(ModUpgrades::registerUpgrades);
+        // ACO へ「BigInteger 計画を受け取る外部 CPU アドオン」として名乗る。
+        event.enqueueWork(
+                jp.main.taikun.insaneae.integration.aco.OptionalAcoBigIntegerIntegration
+                        ::registerBigIntegerPlanConsumer);
         // 検証用のテストプロット。AE2 のテスト基盤が有効なときだけ載せる
         // (`./gradlew runGameTestServer`)。通常のプレイでは何も登録されない。
         if (Boolean.getBoolean("appeng.tests")) {
