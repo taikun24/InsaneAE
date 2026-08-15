@@ -112,6 +112,10 @@ public class InsaneAE {
                 jp.main.taikun.insaneae.cell.InsaneCreativeCellHandler.INSTANCE));
         // 加速カードを AE2 の対応機械に登録する。
         event.enqueueWork(ModUpgrades::registerUpgrades);
+        // ACO へ「BigInteger 計画を受け取る外部 CPU アドオン」として名乗る。
+        event.enqueueWork(
+                jp.main.taikun.insaneae.integration.aco.OptionalAcoBigIntegerIntegration
+                        ::registerBigIntegerPlanConsumer);
         // 検証用のテストプロット (`./gradlew runGameTestServer`) は
         // @TestPlotClass 経由で AE2 が自動的に拾うので、ここでの登録は不要になった。
         LOGGER.info("InsaneAE: {} crafting storage tiers registered.", ModBlocks.CRAFTING_STORAGE.size());

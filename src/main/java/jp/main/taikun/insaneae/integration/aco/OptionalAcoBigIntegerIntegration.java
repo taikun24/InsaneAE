@@ -15,6 +15,31 @@ public final class OptionalAcoBigIntegerIntegration {
     private OptionalAcoBigIntegerIntegration() {
     }
 
+    /**
+     * <b>BigInteger 計画の外部コンシューマとして名乗る。</b>
+     *
+     * <p>ACO の設定 {@code enableExternalBigCraftingProfile} の説明どおり
+     * 「アドオン側が公開 API で明示的に登録する」必要がある。名乗っていないと
+     * {@code CraftingCpuClusterBigCapacityGuardMixin} が wide plan の投入を蹴るため、
+     * 標準の AE2 クラフト CPU 経由で 922京超の注文を出したときに<b>理由の分からない失敗</b>になる。</p>
+     *
+     * <p>反射で呼ぶのは、ACO が無い環境でこのクラスが読めなくならないようにするため
+     * (このクラスは Quantum CPU の生成時に必ず通る)。呼べなければ黙って何もしない。</p>
+     */
+    public static void registerBigIntegerPlanConsumer() {
+        if (!ModList.get().isLoaded(ACO_MOD_ID)) {
+            return;
+        }
+        try {
+            Class<?> api = Class.forName("com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi",
+                    false, OptionalAcoBigIntegerIntegration.class.getClassLoader());
+            api.getMethod("registerExternalBigIntegerPlanConsumer").invoke(null);
+            LOGGER.info("InsaneAE: registered as an ACO external BigInteger plan consumer");
+        } catch (ReflectiveOperationException | LinkageError | RuntimeException unavailable) {
+            LOGGER.debug("InsaneAE: ACO external BigInteger plan consumer API is unavailable", unavailable);
+        }
+    }
+
     public static PendingOutputLedger createOutputLedger() {
         // ACOが無い場合は同じ正確会計の内蔵実装へ戻し、通常のInsaneAE導入を壊さない。
         if (!ModList.get().isLoaded(ACO_MOD_ID)) {
