@@ -1213,6 +1213,115 @@ public final class InsaneAETestPlots {
         });
     }
 
+    /**
+     * <b>long を超える要求が BigInteger 経路で実際に走り出すか。</b>
+     *
+     * <p>{@link #craftFromCreativeCell} は long に収まる規模なので、AE2 本来の経路しか
+     * 通らない。報告されている症状は<b>そこを超えた規模でだけ</b>出るので、
+     * こちらは要求を {@code Long.MAX_VALUE} にして ACO の exact 経路を必ず踏ませる。</p>
+     *
+     * <p>2 段のツリー (ボタン &lt;- 板材 &lt;- 原木) なので、パターン実行回数の合計は
+     * 要求量の 1.25 倍ほどになり、<b>合計が long に収まらない</b>。
+     * ACO はここで {@code hasAggregatePastLong()} を見て wide plan へ切り替える。</p>
+     *
+     * <h2>何を検査するか</h2>
+     * <p>この規模は<b>完了しなくて当たり前</b>なので、完了は見ない。見るのは</p>
+     * <ol>
+     *   <li>投入が通ること (「failed to submit job」にならない)</li>
+     *   <li><b>実際に完成品が増え続けること</b> — 「進行中のまま何も起きない」を捕まえる</li>
+     * </ol>
+     *
+     * <p>クラフト CPU は InsaneAE の BigInteger クラフト CPU (理論上限容量)。
+     * 普通のクラフトストレージだと、この規模は容量不足で投入前に弾かれてしまう。</p>
+     */
+    @TestPlot("insaneae_craft_past_long")
+    public static void craftPastLong(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,3] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
+            drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
+            drive.getInternalInventory().addItems(AEItems.ITEM_CELL_64K.stack());
+        });
+        // 理論上限容量の BigInteger クラフト CPU。普通のクラフトストレージだと
+        // この規模は「容量が足りない」で投入前に弾かれる。
+        plot.blockState("2 0 0", ModBlocks.BIG_INTEGER_CPU.get().defaultBlockState());
+        plot.block("2 1 0", AEBlocks.CRAFTING_ACCELERATOR);
+        plot.blockState("3 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        plot.test(helper -> {
+            var state = new Object() {
+                appeng.me.helpers.MachineSource source;
+                java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan> plan;
+                long firstSample;
+            };
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(3, 0, 0));
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_LOG)));
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_PLANKS)));
+                for (int i = 0; i < QuantumCpuBlockEntity.MAX_ACCELERATION_CARDS; i++) {
+                    cpu.getUpgrades().addItems(
+                            new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
+                }
+                cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.TASK_FUSION_CARD.get()));
+            });
+            sequence.thenIdle(20);
+
+            // TestCraftingJob は失敗理由を「failed to submit job」としか言わないので、
+            // ここは自分で計算 → 投入して<b>断られた理由</b>を出す。
+            sequence.thenExecute(() -> {
+                var grid = helper.getGrid(BlockPos.ZERO);
+                state.source = new appeng.me.helpers.MachineSource(
+                        (appeng.api.networking.security.IActionHost)
+                                helper.getBlockEntity(new BlockPos(3, 0, 0)));
+                state.plan = grid.getCraftingService().beginCraftingCalculation(
+                        helper.getLevel(), () -> state.source,
+                        AEItemKey.of(Items.OAK_BUTTON), Long.MAX_VALUE,
+                        appeng.api.networking.crafting.CalculationStrategy.REPORT_MISSING_ITEMS);
+            });
+            sequence.thenWaitUntil(() -> helper.check(state.plan.isDone(), "計算が終わらない"));
+            sequence.thenExecute(() -> {
+                appeng.api.networking.crafting.ICraftingPlan plan;
+                try {
+                    plan = state.plan.get();
+                } catch (Exception failure) {
+                    throw new GameTestAssertException("計算が例外で終わった: " + failure);
+                }
+                helper.check(!plan.simulation(),
+                        "計算がシミュレーション止まり (素材不足扱い)。missing=" + plan.missingItems());
+                var result = helper.getGrid(BlockPos.ZERO).getCraftingService()
+                        .submitJob(plan, null, null, false, state.source);
+                helper.check(result.successful(),
+                        "long を超える要求の投入が断られた: errorCode=" + result.errorCode()
+                                + " (bytes=" + plan.bytes() + ")");
+            });
+
+            // 走り出しているか。
+            sequence.thenIdle(20);
+            sequence.thenExecute(() -> {
+                state.firstSample = insaneae$storedAmount(helper, Items.OAK_BUTTON);
+                helper.check(state.firstSample > 0,
+                        "long を超える要求で完成品が 1 つも出てこない "
+                                + "(投入は通ったのに実行が始まっていない)");
+            });
+
+            // 止まっていないか。ここが「進行中のまま何も起きない」を捕まえる。
+            sequence.thenIdle(40);
+            sequence.thenExecute(() -> {
+                long second = insaneae$storedAmount(helper, Items.OAK_BUTTON);
+                helper.check(second > state.firstSample,
+                        "long を超える要求が途中で止まっている (" + state.firstSample
+                                + " から 40 tick 経っても " + second + " のまま)");
+            });
+            sequence.thenSucceed();
+        });
+    }
+
     /** Advanced AE のブロック。入っていなければ null。 */
     @Nullable
     private static net.minecraft.world.level.block.Block insaneae$aaeBlock(String id) {
