@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -65,7 +66,8 @@ public abstract class AdvCraftingCpuBudgetMixin {
                     target = "Lnet/pedroksl/advanced_ae/common/cluster/AdvCraftingCPU;"
                             + "getCoProcessors()I"),
             require = 0)
-    private int insaneae$tickBudget(Object cluster) {
+    private int insaneae$tickBudget(@Coerce Object cluster) {
+        jp.main.taikun.insaneae.compat.AaeCompatCounters.budgetCalculations++;
         insaneae$budgeted = true;
 
         long coProcessors = insaneae$coProcessors(cluster);

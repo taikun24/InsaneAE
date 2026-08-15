@@ -5,6 +5,7 @@ import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 /**
@@ -64,7 +65,8 @@ public abstract class AdvCraftingCpuStorageMixin {
                     target = "Lnet/pedroksl/advanced_ae/common/entities/AdvCraftingBlockEntity;"
                             + "getStorageBytes()J"),
             require = 0)
-    private long insaneae$saturateStorageBytes(Object blockEntity) {
+    private long insaneae$saturateStorageBytes(@Coerce Object blockEntity) {
+        jp.main.taikun.insaneae.compat.AaeCompatCounters.storageSaturations++;
         long bytes = insaneae$storageBytes(blockEntity);
         if (bytes <= 0) {
             return bytes;
@@ -86,7 +88,7 @@ public abstract class AdvCraftingCpuStorageMixin {
                             + "storageMultiplier:J",
                     opcode = org.objectweb.asm.Opcodes.GETFIELD),
             require = 0)
-    private long insaneae$saturateStorageMultiplier(Object cluster) {
+    private long insaneae$saturateStorageMultiplier(@Coerce Object cluster) {
         long multiplier = storageMultiplier;
         if (multiplier <= 1 || storage <= 0) {
             return multiplier;
