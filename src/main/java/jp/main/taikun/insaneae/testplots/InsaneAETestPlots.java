@@ -1326,9 +1326,20 @@ public final class InsaneAETestPlots {
 
             sequence.thenExecute(() -> {
                 var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(3, 0, 0));
+                // 2 段のツリー: ボタン <- 板材 <- 原木。実環境の 8^N 連鎖に形を寄せてある
+                // (在庫にあるのは原木だけなので、途中段も必ずクラフトされる)。
                 cpu.getLogic().getPatternInv().addItems(
                         CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
                                 new ItemStack(Items.OAK_LOG)));
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_PLANKS)));
+                // 実環境と同じカード構成 (加速 7 + タスク統合 1)。
+                for (int i = 0; i < QuantumCpuBlockEntity.MAX_ACCELERATION_CARDS; i++) {
+                    cpu.getUpgrades().addItems(
+                            new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
+                }
+                cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.TASK_FUSION_CARD.get()));
             });
             // 多ブロック構造が組み上がるまで少し待つ。
             sequence.thenIdle(20);
@@ -1345,14 +1356,14 @@ public final class InsaneAETestPlots {
             });
 
             sequence.thenExecute(() -> state.job = new appeng.server.testworld.TestCraftingJob(
-                    helper, BlockPos.ZERO, AEItemKey.of(Items.OAK_PLANKS), requested));
+                    helper, BlockPos.ZERO, AEItemKey.of(Items.OAK_BUTTON), requested));
             sequence.thenWaitUntil(() -> state.job.tickUntilStarted());
 
             sequence.thenWaitUntil(() -> {
-                long stored = insaneae$storedAmount(helper, Items.OAK_PLANKS);
+                long stored = insaneae$storedAmount(helper, Items.OAK_BUTTON);
                 if (stored < requested) {
-                    throw new GameTestAssertException("Advanced AE の CPU で板材が "
-                            + stored + "/" + requested + " しか揃わない");
+                    throw new GameTestAssertException("Advanced AE の CPU で 2 段クラフトが "
+                            + stored + "/" + requested + " しか進まない");
                 }
             });
             sequence.thenWaitUntil(() -> {
