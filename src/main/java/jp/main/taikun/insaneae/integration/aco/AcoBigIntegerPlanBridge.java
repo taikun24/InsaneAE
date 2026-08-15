@@ -12,6 +12,8 @@ import java.math.BigInteger;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
 
 /**
  * ACOの正確なBigInteger計画をInsaneAEのQuantum CPUへ渡す任意連携。
@@ -21,12 +23,36 @@ import java.util.concurrent.atomic.AtomicReference;
  * BigInteger扱いしない。</p>
  */
 public final class AcoBigIntegerPlanBridge {
+    private static final Logger LOGGER = LogUtils.getLogger();
     private static final String ACO_API_CLASS =
             "com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi";
     private static final AtomicReference<Methods> METHODS = new AtomicReference<>();
     private static final Methods UNAVAILABLE = new Methods(null, null, null, null);
+    private static volatile boolean consumerRegistrationAttempted;
 
     private AcoBigIntegerPlanBridge() {
+    }
+
+    /** ACOの公開提出境界へ、既存BigIntegerクラフトCPUの受け入れ能力だけを登録する。 */
+    public static synchronized void registerExternalPlanConsumer() {
+        // 起動中に何度もAPI反射を行わず、Mod構築時の一回だけ登録する。
+        if (consumerRegistrationAttempted) {
+            return;
+        }
+        consumerRegistrationAttempted = true;
+        try {
+            Class<?> api = Class.forName(ACO_API_CLASS, false,
+                    AcoBigIntegerPlanBridge.class.getClassLoader());
+            int apiVersion = api.getField("EXTERNAL_CONSUMER_API_VERSION").getInt(null);
+            // API世代が古い場合は標準CPUの安全な拒否境界を維持する。
+            if (apiVersion < 1) {
+                return;
+            }
+            api.getMethod("registerExternalBigIntegerPlanConsumer").invoke(null);
+            LOGGER.info("InsaneAE: registered its BigInteger crafting CPU as an ACO plan consumer");
+        } catch (ReflectiveOperationException | LinkageError | RuntimeException failure) {
+            LOGGER.debug("InsaneAE: ACO external BigInteger plan-consumer API is unavailable", failure);
+        }
     }
 
     /** ACOが作ったBigInteger計画なら、正確なPattern回数を返す。 */
