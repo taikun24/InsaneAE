@@ -19,6 +19,7 @@
     "compat.AstralEjectorMixin",
     "compat.AAEReactionChamberMixin",
     "compat.AdvCraftingCpuBudgetMixin",
+    "compat.AdvCraftingCpuStorageMixin",
     "compat.AdvCraftingCpuLogicMixin",
     "compat.ExCircuitCutterMixin",
     "compat.ExCraftingThreadMixin",
