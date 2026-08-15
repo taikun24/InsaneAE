@@ -1205,6 +1205,29 @@ public final class InsaneAETestPlots {
                         "Advanced AE の CPU へ " + expected + " が注入されていない (当たったのは "
                                 + injected + ")");
             }
+
+            // クラスタ側の容量の飽和 (AdvCraftingCpuStorageMixin)。当たっていないと
+            // InsaneAE のクラフトストレージを数個積んだだけで容量が負に折り返す。
+            Class<?> cluster;
+            try {
+                cluster = Class.forName("net.pedroksl.advanced_ae.common.cluster.AdvCraftingCPUCluster");
+            } catch (ClassNotFoundException missing) {
+                throw new GameTestAssertException(
+                        "Advanced AE は居るのに AdvCraftingCPUCluster が無い。"
+                                + "クラス名が変わったので compat Mixin の targets を直すこと: " + missing);
+            }
+            Set<String> clusterInjected = new HashSet<>();
+            for (var method : cluster.getDeclaredMethods()) {
+                if (method.getName().contains("insaneae$")) {
+                    clusterInjected.add(method.getName());
+                }
+            }
+            for (String expected : List.of("insaneae$saturateStorageBytes",
+                    "insaneae$saturateStorageMultiplier")) {
+                helper.check(clusterInjected.stream().anyMatch(name -> name.endsWith(expected)),
+                        "Advanced AE のクラスタへ " + expected + " が注入されていない (当たったのは "
+                                + clusterInjected + ")");
+            }
         }).thenSucceed());
     }
 
