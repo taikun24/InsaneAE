@@ -52,9 +52,28 @@ abstract class MapTaskCursor implements CraftingJobView.TaskCursor {
         write(current.getValue(), value);
     }
 
+    /**
+     * 「このタスクは終わった」を伝える。<b>表からは抜かない。</b>
+     *
+     * <h2>抜いてはいけない理由</h2>
+     * <p>タスクの表は CPU 本体のもので、<b>誰が抜いたかを見ている第三者がいる</b>。
+     * ACO は BigInteger の正確な台帳を別に持っており、コミットのたびに
+     * 「ジョブに入っているパターンの集合」が自分の台帳と一致するかを
+     * {@code Set.equals} で検査する ({@code AdvancedAeExecutingCraftingJobTransactionAccessMixin})。
+     * こちらが表から直接抜くと、ACO の台帳からは<b>消えたことが見えない</b>ので集合が食い違い、</p>
+     *
+     * <pre>
+     * IllegalStateException: exact task definitions do not match the Advanced AE job
+     * → Quarantined Advanced AE exact CPU ...
+     * </pre>
+     *
+     * <p>でジョブごと隔離される。残り 0 のタスクを抜くのは元々 CPU 本体のループが
+     * 各 tick の先頭でやっていることなので、<b>そちらに任せれば台帳も一緒に更新される</b>。
+     * こちらは残りを 0 にするところまでで止める。</p>
+     */
     @Override
     public void remove() {
-        iterator.remove();
+        write(current.getValue(), 0L);
         current = null;
     }
 }
