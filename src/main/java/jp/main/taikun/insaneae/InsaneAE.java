@@ -3,6 +3,7 @@ package jp.main.taikun.insaneae;
 import com.mojang.logging.LogUtils;
 import jp.main.taikun.insaneae.client.InsaneAEClient;
 import jp.main.taikun.insaneae.config.InsaneAEConfig;
+import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerPlanBridge;
 import jp.main.taikun.insaneae.datagen.ModBlockLootProvider;
 import jp.main.taikun.insaneae.datagen.ModBlockStateProvider;
 import jp.main.taikun.insaneae.datagen.ModItemModelProvider;
@@ -112,6 +113,8 @@ public class InsaneAE {
                 jp.main.taikun.insaneae.cell.InsaneCreativeCellHandler.INSTANCE));
         // 加速カードを AE2 の対応機械に登録する。
         event.enqueueWork(ModUpgrades::registerUpgrades);
+        // ACO公開APIへ、既存BigIntegerクラフトCPUがexact計画を受け取れることだけを登録する。
+        event.enqueueWork(AcoBigIntegerPlanBridge::registerExternalPlanConsumer);
         // 検証用のテストプロット (`./gradlew runGameTestServer`) は
         // @TestPlotClass 経由で AE2 が自動的に拾うので、ここでの登録は不要になった。
         LOGGER.info("InsaneAE: {} crafting storage tiers registered.", ModBlocks.CRAFTING_STORAGE.size());
