@@ -1233,6 +1233,30 @@ public final class InsaneAETestPlots {
      *
      * <p>クラフト CPU は InsaneAE の BigInteger クラフト CPU (理論上限容量)。
      * 普通のクラフトストレージだと、この規模は容量不足で投入前に弾かれてしまう。</p>
+     *
+     * <h2>2026-08-15 時点の結果と、分かったこと</h2>
+     * <p><b>このテストは失敗する。</b>投入が {@code CPU_TOO_SMALL} で断られるが、
+     * <b>容量の問題ではない</b> — 必要 bytes も CPU の空きも同じ {@code Long.MAX_VALUE} で、
+     * AE2 自身の判定 ({@code available >= bytes}) は通っている。
+     * 返しているのは ACO の {@code CraftingCpuClusterBigCapacityGuardMixin} で、
+     * 「wide plan なのに BigInteger の裏付けが無い」ときに <b>CPU_TOO_SMALL を騙る</b>。</p>
+     *
+     * <p>裏付けが無い理由は ACO の診断が教えてくれる: <b>{@code NO_COMPILED_PROGRAM}</b>。
+     * {@code CompiledRootProgram} が組めていない。
+     * {@code Ae2CompiledPatternFactory} は各パターンの「完全さ」を
+     * {@code IPatternDetails.supportsPushInputsToExternalInventory()} で決めており、
+     * <b>クラフトテーブル用パターンはこれが false</b> (組み立てるものであって
+     * 外部インベントリへ押し出すものではないため)。
+     * 不完全なパターンに触れる木は {@code rootProgram} が空になる。</p>
+     *
+     * <p>つまり<b>クラフトテーブルのパターンで組んだ木は、ACO の wide plan に載らない</b>
+     * 可能性が高い。だから ACO には別途 {@code CraftingTableBatchTarget} という
+     * 専用の経路がある — そちらは Advanced AE のクラスタからしか駆動されない
+     * (memory: aco-addon-integration-boundary)。</p>
+     *
+     * <p><b>注意: ACO を載せるには {@code -PwithAco=true} と書くこと。</b>
+     * {@code -PwithAco} だけだと値が空文字になり、build.gradle の {@code == 'true'} が
+     * 偽になって<b>黙って ACO 無しで走る</b> (テストは通ってしまう)。</p>
      */
     @TestPlot("insaneae_craft_past_long")
     public static void craftPastLong(PlotBuilder plot) {
@@ -1293,12 +1317,21 @@ public final class InsaneAETestPlots {
                     throw new GameTestAssertException("計算が例外で終わった: " + failure);
                 }
                 helper.check(!plan.simulation(),
-                        "計算がシミュレーション止まり (素材不足扱い)。missing=" + plan.missingItems());
+                        "計算がシミュレーション止まり (素材不足扱い)。"
+                                + "ACO の判断: " + insaneae$acoPlanDiagnostics());
                 var result = helper.getGrid(BlockPos.ZERO).getCraftingService()
                         .submitJob(plan, null, null, false, state.source);
+                var cpuSizes = new StringBuilder();
+                for (var cpu : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
+                    cpuSizes.append(" [available=").append(cpu.getAvailableStorage())
+                            .append(" total=").append(cpu.getAvailableStorage())
+                            .append(" busy=").append(cpu.isBusy()).append(']');
+                }
                 helper.check(result.successful(),
                         "long を超える要求の投入が断られた: errorCode=" + result.errorCode()
-                                + " (bytes=" + plan.bytes() + ")");
+                                + " 必要bytes=" + plan.bytes()
+                                + " CPU=" + cpuSizes
+                                + " ACOの判断=" + insaneae$acoPlanDiagnostics());
             });
 
             // 走り出しているか。
@@ -1320,6 +1353,23 @@ public final class InsaneAETestPlots {
             });
             sequence.thenSucceed();
         });
+    }
+
+    /**
+     * ACO が BigInteger 計画を断った理由。{@code /aco stats} に出るのと同じ内容。
+     *
+     * <p>反射なのは、この検査クラスが ACO 無しの環境でも読まれるため。</p>
+     */
+    private static String insaneae$acoPlanDiagnostics() {
+        try {
+            Class<?> diagnostics = Class.forName(
+                    "com.syaru.ae2craftingoptimizer.optimization.BigIntegerPlanDiagnostics",
+                    false, InsaneAETestPlots.class.getClassLoader());
+            Object lines = diagnostics.getMethod("summaryLines").invoke(null);
+            return String.valueOf(lines);
+        } catch (ReflectiveOperationException | LinkageError | RuntimeException unavailable) {
+            return "(ACO の診断を読めない: " + unavailable + ")";
+        }
     }
 
     /** Advanced AE のブロック。入っていなければ null。 */
