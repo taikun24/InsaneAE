@@ -1126,6 +1126,13 @@ public final class InsaneAETestPlots {
             helper.check(exactStorage != null && exactStorage.isInstance(cell),
                     "超強化クリエイティブセルに BigInteger 在庫の窓口が生えていない");
 
+            // 在庫のマップは<b>毎回まったく同じインスタンス</b>であること。
+            // ACO はシミュレーションとコミットで == で突き合わせ、直接書き換えて在庫を減らす。
+            // コピーを返すと取引ごと巻き戻され、クラフトが進まないまま警告だけ出続ける。
+            helper.check(cell.insaneae$exactAmounts() == cell.insaneae$exactAmounts(),
+                    "超強化クリエイティブセルが在庫マップのコピーを返している "
+                            + "(ACO の同一性検査に落ちて取引が巻き戻される)");
+
             // 名乗る量が ACO の計画エンジンの天井を越えていないこと。
             // 越えると BigCountMath.requireMaximumBits が投げ、
             // <b>このセルを入れただけであらゆるクラフトが WidePlanUnavailable になる</b>。
