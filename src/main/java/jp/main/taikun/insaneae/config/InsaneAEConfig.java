@@ -41,6 +41,10 @@ public final class InsaneAEConfig {
     }
 
     /** 何クラフト以上をまとめて処理するか。これ未満は AE2 本来の 1 回ずつに任せる。 */
+    public static int maxCraftingWindowsPerTick() {
+        return get(COMMON.maxCraftingWindowsPerTick, 1024);
+    }
+
     public static int craftingBatchThreshold() {
         return get(COMMON.craftingBatchThreshold, 16);
     }
@@ -73,6 +77,7 @@ public final class InsaneAEConfig {
         private final ForgeConfigSpec.BooleanValue batchCraftingCalculation;
         private final ForgeConfigSpec.IntValue craftingBatchThreshold;
         private final ForgeConfigSpec.BooleanValue serverSidePatternPaging;
+        private final ForgeConfigSpec.IntValue maxCraftingWindowsPerTick;
         private final ForgeConfigSpec.BooleanValue astralNetworkEject;
 
         private Common(ForgeConfigSpec.Builder builder) {
@@ -101,6 +106,15 @@ public final class InsaneAEConfig {
                             "毎 tick 1620 枠ぶんの中身比較がサーバで走るため。",
                             "false にすると全枠を並べる代わりに、ページ送りがクライアント内で完結して速くなる。")
                     .define("serverSidePatternPaging", true);
+
+            maxCraftingWindowsPerTick = builder
+                    .comment("加速カードを満載 (7 枚) + タスク統合カードにしたとき、",
+                            "1 tick のうちに同じパターンを何窓まで回すか。",
+                            "1 窓に組める回数は long の会計 (完成品 Long.MAX / 出力数) で頭打ちになるため、",
+                            "BigInteger 級の注文は窓を重ねないと終わらない。窓の間で完成品を",
+                            "ネットワークへ流して完成待ちを清算するので、1 tick の合計は long を超えられる。",
+                            "サーバが 1 tick に使う時間はこの値に比例するので、上げすぎると重くなる。")
+                    .defineInRange("maxCraftingWindowsPerTick", 1024, 1, Integer.MAX_VALUE);
 
             builder.pop();
             builder.comment("他 Mod との連携").push("compat");

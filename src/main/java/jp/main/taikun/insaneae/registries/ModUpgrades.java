@@ -5,6 +5,7 @@ import appeng.core.definitions.AEBlocks;
 import appeng.core.definitions.AEItems;
 import appeng.core.definitions.AEParts;
 import appeng.core.localization.GuiText;
+import gripe._90.megacells.definition.MEGAItems;
 import jp.main.taikun.insaneae.InsaneAE;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import jp.main.taikun.insaneae.upgrade.InsaneSpeedCardItem;
@@ -159,11 +160,11 @@ public class ModUpgrades {
         }
         for (RegistryObject<Item> cell : ModCells.PORTABLE_ITEM_CELLS.values()) {
             addItemCellCards(cell.get(), portables);
-            Upgrades.add(AEItems.ENERGY_CARD, cell.get(), 2, portables);
+            addPortableEnergyCards(cell.get(), portables);
         }
         for (RegistryObject<Item> cell : ModCells.PORTABLE_FLUID_CELLS.values()) {
             addFluidCellCards(cell.get(), portables);
-            Upgrades.add(AEItems.ENERGY_CARD, cell.get(), 2, portables);
+            addPortableEnergyCards(cell.get(), portables);
         }
         // 化学物質セル (Applied Mekanistics 導入時のみ)。appmek が自分のセルにしている登録と同じ。
         if (net.minecraftforge.fml.ModList.get().isLoaded(InsaneAE.APPMEK_MODID)) {
@@ -174,10 +175,23 @@ public class ModUpgrades {
             for (RegistryObject<Item> cell :
                     jp.main.taikun.insaneae.integration.appmek.AppMekCells.PORTABLE_CHEMICAL_CELLS.values()) {
                 addFluidCellCards(cell.get(), portables);
-                Upgrades.add(AEItems.ENERGY_CARD, cell.get(), 2, portables);
+                addPortableEnergyCards(cell.get(), portables);
             }
         }
         // 強化クリエイティブセルは AE2 のクリエイティブセルと同じくカード無し。
+    }
+
+    /**
+     * ポータブルセルの電力カード。AE2 のエネルギーカードに加えて
+     * <b>MEGA Cells の Greater Energy Card</b> も受ける。
+     *
+     * <p>枚数 (2) もツールチップのまとめ先も MEGA が自分のポータブルセルにしている登録と同じ。
+     * 効き目は AE2 の {@code PortableCellItem} 側が面倒を見るので、
+     * <b>挿せるようにするだけで容量が増える</b> (MEGA Cells は必須依存なので分岐は要らない)。</p>
+     */
+    private static void addPortableEnergyCards(ItemLike cell, String tooltipGroup) {
+        Upgrades.add(AEItems.ENERGY_CARD, cell, 2, tooltipGroup);
+        Upgrades.add(MEGAItems.GREATER_ENERGY_CARD, cell, 2, tooltipGroup);
     }
 
     /** アイテムを入れるセルが受けるカード。 */

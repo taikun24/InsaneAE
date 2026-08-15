@@ -258,6 +258,16 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
         return host.isTaskFusionInstalled();
     }
 
+    @Override
+    public boolean repeatsWindowsWithinTick() {
+        return host.isWindowRepeatEnabled();
+    }
+
+    @Override
+    public void settleCompletedOutputs() {
+        host.flushPendingOutputs();
+    }
+
     /**
      * 加工パターンの押し出し待ちが残っているか、この tick の組み立て回数を使い切っていれば忙しい。
      * CPU 側はここで true を見ると他のプロバイダに回るので、無駄な {@code pushPattern} が減る。
@@ -317,6 +327,46 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
             }
             counter.reset();
         }
+    }
+
+    /** {@link #assembleOnce} の結果。1 回ぶんの完成品と端材。 */
+    public record OneCraft(ItemStack output, List<ItemStack> remainders) {
+    }
+
+    /**
+     * <b>本物の組み立てを 1 回だけ</b>回して結果を返す (ACO の craftingtable batch 用)。
+     *
+     * <p>ACO の正確な BigInteger 実行では、要求回数ぶんループを回さない。
+     * 1 回ぶんの結果に係数を掛けるのが正しい形なので、その「1 回」をここで提供する。
+     * <b>在庫・予算・完成品台帳には一切触らない</b> — 材料の出納と完成品の計上は
+     * ACO 側が escrow で持つため、ここは純粋にレシピを回すだけ。</p>
+     *
+     * @param inputsPerExecution 1 回ぶんの材料 (スロットごと)。呼び出し側が所有する。
+     * @return 組めなければ null
+     */
+    @org.jetbrains.annotations.Nullable
+    public OneCraft assembleOnce(IPatternDetails details, KeyCounter[] inputsPerExecution) {
+        if (!(details instanceof IMolecularAssemblerSupportedPattern pattern)) {
+            return null;
+        }
+        Level level = host.getLevel();
+        if (level == null) {
+            return null;
+        }
+        // 材料は ACO が持っているので、使い残しをネットワークへ返してはいけない (KEEP)。
+        KeyCounter[] scratch = copyInputHolder(inputsPerExecution);
+        fillGrid(pattern, scratch, Leftovers.KEEP);
+        Assembly assembly = resolveAssembly(details, pattern, level);
+        clearCraftingGrid();
+        if (assembly == null) {
+            return null;
+        }
+        return new OneCraft(assembly.output().copy(), List.copyOf(assembly.remainders()));
+    }
+
+    /** ACO がターゲットとして掴む BlockEntity ({@code ProviderOwnedPatternBatchTarget})。 */
+    public QuantumCpuBlockEntity getHostBlockEntity() {
+        return host;
     }
 
     /**

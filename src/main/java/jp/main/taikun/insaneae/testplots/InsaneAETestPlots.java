@@ -28,6 +28,7 @@ import jp.main.taikun.insaneae.integration.aco.AcoCalculationIntegration;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderBlockEntity;
 import jp.main.taikun.insaneae.quantum.CraftingJobView;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
+import org.jetbrains.annotations.Nullable;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModCells;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
@@ -351,6 +352,14 @@ public final class InsaneAETestPlots {
             helper.check(appeng.api.upgrades.Upgrades.getMaxInstallable(
                             appeng.core.definitions.AEItems.ENERGY_CARD, portable) == 2,
                     "ポータブルセルにエネルギーカード ×2 を登録していない");
+            // MEGA Cells の Greater Energy Card。MEGA が自分のポータブルセルにしているのと同じ ×2。
+            helper.check(appeng.api.upgrades.Upgrades.getMaxInstallable(
+                            gripe._90.megacells.definition.MEGAItems.GREATER_ENERGY_CARD, portable) == 2,
+                    "ポータブルセルに Greater Energy Card ×2 を登録していない");
+            var portableFluid = ModCells.PORTABLE_FLUID_CELLS.get(InsaneCraftingUnitType.STORAGE_1G).get();
+            helper.check(appeng.api.upgrades.Upgrades.getMaxInstallable(
+                            gripe._90.megacells.definition.MEGAItems.GREATER_ENERGY_CARD, portableFluid) == 2,
+                    "ポータブル液体セルに Greater Energy Card ×2 を登録していない");
         }));
     }
 
@@ -888,6 +897,52 @@ public final class InsaneAETestPlots {
 
             sequence.thenSucceed();
         });
+    }
+
+    /**
+     * ACO が居るとき、Quantum CPU が<b>正確な BigInteger 実行のターゲットとして見える</b>ことを確かめる。
+     *
+     * <p>ACO は「{@code ICraftingProvider} が {@code ProviderOwnedPatternBatchTarget} で、
+     * 返した BlockEntity が {@code CraftingTableBatchTarget}」という形でターゲットを探す。
+     * <b>どちらか片方でも欠けると候補にすら入らず、黙って別の経路に落ちる</b>ので、
+     * ここで両方が生えていることを見張る。</p>
+     *
+     * <p>ACO が無ければ何も検査せず成功する (Mixin ごと適用されないのが正しい)。
+     * ACO の型を直接書かないのは、このテストが<b>両方の環境で走る</b>ため。</p>
+     */
+    @TestPlot("insaneae_aco_batch_target")
+    public static void acoBatchTarget(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,1] 0 0");
+        plot.blockState("1 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        plot.test(helper -> helper.startSequence().thenExecute(() -> {
+            Class<?> targetType = optionalClass(
+                    "com.syaru.ae2craftingoptimizer.api.craftingtable.CraftingTableBatchTarget");
+            if (targetType == null) {
+                return;
+            }
+            Class<?> providerType = optionalClass(
+                    "com.syaru.ae2craftingoptimizer.api.batch.v2.ProviderOwnedPatternBatchTarget");
+            helper.check(providerType != null,
+                    "ACO は居るのに ProviderOwnedPatternBatchTarget が無い (API の形が変わった)");
+
+            var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(1, 0, 0));
+            helper.check(targetType.isInstance(cpu),
+                    "Quantum CPU に CraftingTableBatchTarget が生えていない");
+            helper.check(providerType.isInstance(cpu.getQuantumLogic()),
+                    "Quantum CPU のロジックに ProviderOwnedPatternBatchTarget が生えていない");
+        }).thenSucceed());
+    }
+
+    /** 居なければ null。ACO 連携のテストを ACO 無しの環境でも走らせるため。 */
+    @Nullable
+    private static Class<?> optionalClass(String name) {
+        try {
+            return Class.forName(name, false, InsaneAETestPlots.class.getClassLoader());
+        } catch (ClassNotFoundException | LinkageError absent) {
+            return null;
+        }
     }
 
     /**
