@@ -73,7 +73,7 @@ public class ModCells {
      * <b>ACO の正確な計算経路だけ</b>で、922京を超える材料を要求する BigInteger クラフトを
      * 作成可能にするためのもの。ACO が無ければ強化クリエイティブセルと同じ。</p>
      */
-    public static final DeferredHolder<Item, Item> ULTRA_CREATIVE_CELL =
+    public static final RegistryObject<Item> ULTRA_CREATIVE_CELL =
             register("ultra_creative_cell", () -> new InsaneUltraCreativeCellItem(new Item.Properties()));
 
     static {
