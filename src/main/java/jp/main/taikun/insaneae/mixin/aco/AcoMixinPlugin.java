@@ -32,11 +32,27 @@ public class AcoMixinPlugin implements IMixinConfigPlugin {
     private static final String ACO_MARKER =
             "com.syaru.ae2craftingoptimizer.api.craftingtable.CraftingTableBatchTarget";
 
+    /**
+     * 在庫を BigInteger で名乗る<b>公開契約</b>。<b>ACO 1.5.20 で入った</b>ので、
+     * それより古い ACO では目印のクラスがあってもこれは無い。
+     * これを実装する Mixin だけは、実在を別に確かめてから当てる
+     * (無いまま当てると、存在しないインターフェイスを実装したクラスとして
+     * 検証に失敗し、セルごとロードできなくなる)。
+     */
+    private static final String ACO_EXACT_STORAGE_PROVIDER =
+            "com.syaru.ae2craftingoptimizer.api.contract.ExactStorageAmountProvider";
+
+    /** 上のクラスを実装する Mixin。ここだけ追加の条件が要る。 */
+    private static final String EXACT_STORAGE_PROVIDER_MIXIN =
+            "jp.main.taikun.insaneae.mixin.aco.UltraCreativeCellExactAmountProviderMixin";
+
     private boolean acoPresent;
+    private boolean exactStorageProviderPresent;
 
     @Override
     public void onLoad(String mixinPackage) {
         acoPresent = insaneae$canSee(ACO_MARKER);
+        exactStorageProviderPresent = acoPresent && insaneae$canSee(ACO_EXACT_STORAGE_PROVIDER);
     }
 
     /**
@@ -64,6 +80,9 @@ public class AcoMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        if (EXACT_STORAGE_PROVIDER_MIXIN.equals(mixinClassName)) {
+            return exactStorageProviderPresent;
+        }
         return acoPresent;
     }
 

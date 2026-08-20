@@ -12,16 +12,17 @@ import org.spongepowered.asm.mixin.Unique;
 /**
  * 超強化クリエイティブセルに「BigInteger の在庫を名乗る窓口」を生やす。
  *
- * <h2>なぜ内部のインターフェイスを使っているのか</h2>
- * <p>ACO の {@code BigIntegerStorageSnapshotBridge} は、long を超える在庫を
- * <b>{@code ExtendedAePlusBigIntegerCellInventoryAccess} を実装した MEStorage からしか読まない</b>
- * (1.5.19 で確認)。これは ExtendedAE Plus のセル向けに ACO が Mixin で生やしている
- * <b>内部の access インターフェイス</b>で、公開 API ではない。
- * アドオンのセルが正確な在庫を名乗るための公開フックは今のところ無いので、
- * ひとまずこれに乗っている。<b>ACO 側に公開境界が入ったら乗り換えること。</b></p>
+ * <h2>これは<b>書き込み側</b>の担当</h2>
+ * <p>在庫を<b>読む</b>のは公開契約
+ * ({@link UltraCreativeCellExactAmountProviderMixin}) に移した。ACO 1.5.20 で
+ * {@code ExactStorageAmountProvider} が入り、スナップショット側は
+ * そちらを先に見るようになったため。</p>
  *
- * <p>名前に ExtendedAePlus と付いているが、ACO 側の判定は {@code instanceof} だけで
- * 相手の Mod を問わない。</p>
+ * <p>残っているのは<b>在庫を減らす側</b>。{@code ExactNetworkStorageBridge} は
+ * 1.5.22 でもこの {@code ExtendedAePlusBigIntegerCellInventoryAccess} しか知らず、
+ * 公開の代替が無い。これは ExtendedAE Plus のセル向けに ACO が Mixin で生やしている
+ * <b>内部の access インターフェイス</b>だが、判定は {@code instanceof} だけなので
+ * 相手の Mod は問わない。<b>書き込み側にも公開境界が入ったら、このクラスは畳むこと。</b></p>
  *
  * <p>ACO が無い環境では {@link AcoMixinPlugin} がこの Mixin ごと適用を止める。</p>
  */

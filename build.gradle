@@ -88,27 +88,47 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 // ACO の公開連携境界はインターフェイス実装が前提なので compileOnly が要る。
 // CurseForge にも Maven にも上がっていないので、GitHub Releases から取ってくる。
 // 取得済みなら何もしない (オフラインでもビルドできる)。
-ext.aco_version = '1.5.19'
+// -PacoVersion=... で差し替えられる。ACO の main を手元でビルドして
+// libs/aco-<その名前>.jar に置けば、未リリースの修正を dev 実行で試せる
+// (ファイルが既にあれば downloadAco は何もしない)。
+ext.aco_version = project.findProperty('acoVersion') ?: '1.5.22'
 ext.acoJarFile = file("libs/aco-${aco_version}.jar")
+
+// dev 実行にだけ別バージョンを載せたいとき用 (-PacoRuntimeVersion=1.5.19)。
+// 「新しい ACO でコンパイルしたものを、古い ACO の環境で動かす」を試すためにある。
+// うちは新 API を Mixin 越しにしか触らず、無ければ AcoMixinPlugin が
+// その Mixin だけ当てないので落ちない — それをテストで確かめるのが目的。
+ext.aco_runtime_version = project.findProperty('acoRuntimeVersion') ?: aco_version
+ext.acoRuntimeJarFile = file("libs/aco-${aco_runtime_version}.jar")
+
+var fetchAco = { File target, String wanted ->
+    target.parentFile.mkdirs()
+    var url = "https://github.com/syarukasu/ae2-crafting-optimizer/releases/download/" +
+            "v${wanted}/aco${wanted}_${minecraft_version}.jar"
+    logger.lifecycle("ACO ${wanted} を取得: ${url}")
+    new java.net.URL(url).withInputStream { input ->
+        target.withOutputStream { it << input }
+    }
+}
 
 var downloadAco = tasks.register('downloadAco') {
     description = 'GitHub Releases から ACO の jar を取得する (compileOnly 用)'
     outputs.file(acoJarFile)
     // 取得済みなら up-to-date。ネットワークが無くてもビルドが通る。
     onlyIf { !acoJarFile.exists() }
-    doLast {
-        acoJarFile.parentFile.mkdirs()
-        var url = "https://github.com/syarukasu/ae2-crafting-optimizer/releases/download/" +
-                "v${aco_version}/aco${aco_version}_${minecraft_version}.jar"
-        logger.lifecycle("ACO ${aco_version} を取得: ${url}")
-        new java.net.URL(url).withInputStream { input ->
-            acoJarFile.withOutputStream { it << input }
-        }
-    }
+    doLast { fetchAco(acoJarFile, aco_version) }
+}
+
+var downloadAcoRuntime = tasks.register('downloadAcoRuntime') {
+    description = 'dev 実行に載せる ACO の jar を取得する'
+    outputs.file(acoRuntimeJarFile)
+    onlyIf { !acoRuntimeJarFile.exists() }
+    doLast { fetchAco(acoRuntimeJarFile, aco_runtime_version) }
 }
 
 // files(...) にタスクを紐付けておかないと、jar がまだ無い状態で compileJava が走る。
 ext.acoApiJar = files(acoJarFile) { builtBy downloadAco }
+ext.acoRuntimeJar = files(acoRuntimeJarFile) { builtBy downloadAcoRuntime }
 
 // localRuntime は「dev 実行では要るが、この Mod への依存として公開はしない」もの。
 configurations {
@@ -156,7 +176,7 @@ dependencies {
     // AE2 のテスト基盤 (TestCraftingJob) で「beginCraftingCalculation is not cancellable」の
     // CancellationException を出しサーバーごと落ちるバグがあるため。
     if (project.findProperty('withAco') == 'true') {
-        localRuntime acoApiJar
+        localRuntime acoRuntimeJar
     }
 
     // Advanced AE — 自前のクラフト CPU (AdvCraftingCPULogic) へ入れている compat Mixin

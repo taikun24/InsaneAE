@@ -1,5 +1,26 @@
 # ACO への PR — 別セッション用の引き継ぎ
 
+> **状況 (2026-08-17): PR は出して、マージされた。**
+> [PR #106](https://github.com/syarukasu/ae2-crafting-optimizer/pull/106)
+> "fix: separate wide-plan and snapshot declines from capacity and ambiguity" が
+> ACO の `main` に入った。ただし **まだリリースされていない** (CHANGELOG の
+> `[Unreleased]`、直前のリリースは 1.6.2)。issue #103 も open のまま。
+>
+> 入ったもの:
+> - `CPU_TOO_SMALL` を騙るのをやめ、「除外」として数えて必要 bytes / 空き bytes を
+>   WARN する (`logWidePlanSubmissionDeclines`、既定 on) — **問題 1 の修正**
+> - `NO_COMPILED_PROGRAM` を分割し、スナップショット起因に
+>   `INCOMPLETE_GRAPH_SNAPSHOT` を新設。新設定
+>   `retryIncompleteCraftingGraphSnapshot` (既定 on) が 1 世代 1 回だけ組み直す
+>   — **問題 2 の修正**
+>
+> **残っていること:** これは「診断が正しくなった」であって「投入が通るようになった」
+> とは限らない。下の再現テスト 2 本が緑になるかは未確認。`gradle.properties` は
+> ACO を CurseForge のファイル ID で固定しているので、**リリースまで CI では確かめられない**。
+> 手元で確かめるなら ACO の `main` をビルドしてローカル jar を差し込むこと。
+>
+> 以下は PR を書いたときの調査メモ。経緯として残してある。
+
 AE2 Crafting Optimizer (ACO) 本体に PR を出したい。作者には Discord で連絡済み。
 
 ## リポジトリ
