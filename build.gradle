@@ -151,8 +151,14 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 // CurseForge にも Maven にも上がっていないので、GitHub Releases から取ってくる。
 // 取得済みなら何もしない (オフラインでもビルドできる)。
 // 実行時は fg.deobf を通す必要があるので、flatDir 経由の blank:aco:<ver> を使う。
-ext.aco_version = '1.5.19'
+// -PacoVersion=... で差し替えられる (未リリースの ACO を試すとき用)。
+ext.aco_version = project.findProperty('acoVersion') ?: '1.5.22'
 ext.acoJarFile = file("libs/aco-${aco_version}.jar")
+
+// dev 実行にだけ別バージョンを載せたいとき用 (-PacoRuntimeVersion=1.5.19)。
+// 「新しい ACO でコンパイルしたものを、古い ACO の環境で動かす」を試すためにある。
+ext.aco_runtime_version = project.findProperty('acoRuntimeVersion') ?: aco_version
+ext.acoRuntimeJarFile = file("libs/aco-${aco_runtime_version}.jar")
 
 var downloadAco = tasks.register('downloadAco') {
     description = 'GitHub Releases から ACO の jar を取得する (compileOnly 用)'
@@ -245,8 +251,19 @@ dependencies {
     // <b>配布 jar は SRG 名なので fg.deobf が必須</b> (そのまま run/mods に置くと dev では落ちる)。
     // 既定でオフなのは、ACO が AE2 の挙動自体を変える (実行バッチの乗っ取り・プロバイダ結合等) ため
     // ACO 前提でないゲームテストが複数落ちるから。回すときは落ちる前提で読むこと。
-    if (project.findProperty('withAco') == 'true' && acoJarFile.exists()) {
-        runtimeOnly fg.deobf("blank:aco:${aco_version}")
+    if (project.findProperty('withAco') == 'true') {
+        // flatDir は設定時に実体が要るので、ここだけ遅延させずに取りに行く
+        // (compileOnly 側の downloadAco と違い、タスクでは間に合わない)。
+        if (!acoRuntimeJarFile.exists()) {
+            acoRuntimeJarFile.parentFile.mkdirs()
+            var runtimeUrl = "https://github.com/syarukasu/ae2-crafting-optimizer/releases/download/" +
+                    "v${aco_runtime_version}/aco${aco_runtime_version}_${minecraft_version}.jar"
+            logger.lifecycle("ACO ${aco_runtime_version} を取得 (dev 実行用): ${runtimeUrl}")
+            new java.net.URL(runtimeUrl).withInputStream { input ->
+                acoRuntimeJarFile.withOutputStream { it << input }
+            }
+        }
+        runtimeOnly fg.deobf("blank:aco:${aco_runtime_version}")
     }
     // Astral Mekanism & Energistics — 自動搬出をネットワークへ流す互換 Mixin
     // (compat.AstralEjectorMixin) の実機テスト用【任意・オプトイン】。

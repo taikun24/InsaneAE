@@ -23,15 +23,19 @@ import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.crafting.CraftingCalculationBatch;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.iface.InsaneInterfaceBlockEntity;
+import jp.main.taikun.insaneae.iface.InsaneInterfacePart;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry;
 import jp.main.taikun.insaneae.integration.aco.AcoCalculationIntegration;
 import jp.main.taikun.insaneae.integration.aco.AcoExactLimits;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderBlockEntity;
+import jp.main.taikun.insaneae.provider.InsanePatternProviderLogic;
+import jp.main.taikun.insaneae.provider.InsanePatternProviderPart;
 import jp.main.taikun.insaneae.quantum.CraftingJobView;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import org.jetbrains.annotations.Nullable;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModCells;
+import jp.main.taikun.insaneae.registries.ModParts;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
 import jp.main.taikun.insaneae.upgrade.InsaneSpeedCardType;
 import net.minecraft.core.BlockPos;
@@ -1272,19 +1276,36 @@ public final class InsaneAETestPlots {
      */
     @TestPlot("insaneae_craft_past_long")
     public static void craftPastLong(PlotBuilder plot) {
+        // 要求量。完了判定にも使うので 1 か所にまとめる。
+        final long requested = Long.MAX_VALUE;
         plot.creativeEnergyCell("0 -1 0");
         plot.cable("[0,3] 0 0");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
             drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
-            drive.getInternalInventory().addItems(AEItems.ITEM_CELL_64K.stack());
+            // 完成品の置き場。64K セルだと 1 種類で 520,192 個 ((65536-512)*8) で満杯になり、
+            // クラフトが「途中で止まった」ようにしか見えない。8E セルなら 3.6e19 個入るので
+            // Long.MAX_VALUE の注文でも置き場が先に尽きない。
+            drive.getInternalInventory().addItems(new ItemStack(
+                    ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_8E).get()));
         });
         // 理論上限容量の BigInteger クラフト CPU。普通のクラフトストレージだと
         // この規模は「容量が足りない」で投入前に弾かれる。
-        plot.blockState("2 0 0", ModBlocks.BIG_INTEGER_CPU.get().defaultBlockState());
+        // 1 個では足りない。この注文の正確な必要量は 3.2e19 bytes で、
+        // このブロック 1 個の容量 (2^63-1 = 9.2e18) の約 3.5 倍ある。
+        // 足りないまま投入すると CPU_TOO_SMALL で断られ、
+        // <b>ACO 側の不具合と見分けが付かない</b>ので、余裕を持って 5 個積む。
+        plot.blockState("2 [0,1] [0,2]", ModBlocks.BIG_INTEGER_CPU.get().defaultBlockState());
         plot.block("2 1 0", AEBlocks.CRAFTING_ACCELERATOR);
         plot.blockState("3 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
 
         plot.test(helper -> {
+            // ACO が無ければ<b>何も検査しない</b>。
+            // この 2 本は「ACO が long を超える BigInteger 計画を作れる」ことが前提で、
+            // ACO 無しでは AE2 が素直に計画を作れず、失敗しても意味が読めない。
+            if (optionalClass("com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi") == null) {
+                helper.startSequence().thenSucceed();
+                return;
+            }
             var state = new Object() {
                 appeng.me.helpers.MachineSource source;
                 java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan> plan;
@@ -1318,7 +1339,7 @@ public final class InsaneAETestPlots {
                                 helper.getBlockEntity(new BlockPos(3, 0, 0)));
                 state.plan = grid.getCraftingService().beginCraftingCalculation(
                         helper.getLevel(), () -> state.source,
-                        AEItemKey.of(Items.OAK_BUTTON), Long.MAX_VALUE,
+                        AEItemKey.of(Items.OAK_BUTTON), requested,
                         appeng.api.networking.crafting.CalculationStrategy.REPORT_MISSING_ITEMS);
             });
             sequence.thenWaitUntil(() -> helper.check(state.plan.isDone(), "計算が終わらない"));
@@ -1343,6 +1364,7 @@ public final class InsaneAETestPlots {
                 helper.check(result.successful(),
                         "long を超える要求の投入が断られた: errorCode=" + result.errorCode()
                                 + " 必要bytes=" + plan.bytes()
+                                + " 正確な必要bytes=" + insaneae$exactPlanBytes(plan)
                                 + " CPU=" + cpuSizes
                                 + " ACOの判断=" + insaneae$acoPlanDiagnostics()
                                 + " graph=" + insaneae$acoGraphProbe(helper,
@@ -1359,15 +1381,24 @@ public final class InsaneAETestPlots {
             });
 
             // 止まっていないか。ここが「進行中のまま何も起きない」を捕まえる。
+            // <b>「増えていること」だけを見てはいけない。</b>Quantum CPU はこの規模を
+            // 数 tick で作りきってしまうので、最初の標本が既に要求量に達していることがある。
+            // そのとき「40 tick 経っても増えない」は<b>停止ではなく完了</b>である。
             sequence.thenIdle(40);
             sequence.thenExecute(() -> {
                 long second = insaneae$storedAmount(helper, Items.OAK_BUTTON);
-                helper.check(second > state.firstSample,
+                helper.check(second >= state.firstSample,
+                        "完成品が減っている (" + state.firstSample + " → " + second + ")");
+                boolean finished = second >= requested;
+                helper.check(finished || second > state.firstSample,
                         "long を超える要求が途中で止まっている (" + state.firstSample
-                                + " から 40 tick 経っても " + second + " のまま)");
+                                + " から 40 tick 経っても " + second + " のまま。"
+                                + "要求は " + requested + " なので未完了)");
             });
             sequence.thenSucceed();
-        });
+        // 既定の制限時間だと足りない。投入が通るようになったぶん
+        // 最後まで走るので、待ち time の合計 (60 + 計算 + 20 + 40) を賄う。
+        }).maxTicks(400);
     }
 
     /**
@@ -1392,13 +1423,28 @@ public final class InsaneAETestPlots {
         plot.cable("[0,3] 0 0");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
             drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
-            drive.getInternalInventory().addItems(AEItems.ITEM_CELL_64K.stack());
+            // 完成品の置き場。64K セルだと 1 種類で 520,192 個 ((65536-512)*8) で満杯になり、
+            // クラフトが「途中で止まった」ようにしか見えない。8E セルなら 3.6e19 個入るので
+            // Long.MAX_VALUE の注文でも置き場が先に尽きない。
+            drive.getInternalInventory().addItems(new ItemStack(
+                    ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_8E).get()));
         });
-        plot.blockState("2 0 0", ModBlocks.BIG_INTEGER_CPU.get().defaultBlockState());
+        // 1 個では足りない。この注文の正確な必要量は 3.2e19 bytes で、
+        // このブロック 1 個の容量 (2^63-1 = 9.2e18) の約 3.5 倍ある。
+        // 足りないまま投入すると CPU_TOO_SMALL で断られ、
+        // <b>ACO 側の不具合と見分けが付かない</b>ので、余裕を持って 5 個積む。
+        plot.blockState("2 [0,1] [0,2]", ModBlocks.BIG_INTEGER_CPU.get().defaultBlockState());
         plot.block("2 1 0", AEBlocks.CRAFTING_ACCELERATOR);
         plot.block("3 0 0", AEBlocks.PATTERN_PROVIDER);
 
         plot.test(helper -> {
+            // ACO が無ければ<b>何も検査しない</b>。
+            // この 2 本は「ACO が long を超える BigInteger 計画を作れる」ことが前提で、
+            // ACO 無しでは AE2 が素直に計画を作れず、失敗しても意味が読めない。
+            if (optionalClass("com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi") == null) {
+                helper.startSequence().thenSucceed();
+                return;
+            }
             var state = new Object() {
                 appeng.me.helpers.MachineSource source;
                 java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan> plan;
@@ -1439,15 +1485,39 @@ public final class InsaneAETestPlots {
                                 + insaneae$acoPlanDiagnostics());
                 var result = helper.getGrid(BlockPos.ZERO).getCraftingService()
                         .submitJob(plan, null, null, false, state.source);
-                helper.check(result.successful(),
-                        "加工パターンでも投入が断られた: errorCode=" + result.errorCode()
-                                + " 必要bytes=" + plan.bytes()
-                                + " ACOの判断=" + insaneae$acoPlanDiagnostics()
-                                + " graph=" + insaneae$acoGraphProbe(helper,
-                                        Items.OAK_BUTTON, Items.OAK_PLANKS, Items.OAK_LOG));
+                // <b>断られるのが正解。</b>Quantum CPU は加工パターンを回せないので、
+                // 受けると飽和した long のタスクが終わらないジョブとして CPU を占有する。
+                helper.check(!result.successful(),
+                        "加工パターンの BigInteger 計画を受理してしまった "
+                                + "(受けると終わらないジョブが CPU を占有する)");
+                helper.check(result.errorCode()
+                                == appeng.api.networking.crafting.CraftingSubmitErrorCode
+                                        .INCOMPLETE_PLAN,
+                        "断り方が想定と違う: errorCode=" + result.errorCode()
+                                + " (INCOMPLETE_PLAN を期待。"
+                                + "正確な必要bytes=" + insaneae$exactPlanBytes(plan) + ")");
             });
             sequence.thenSucceed();
-        });
+        // 既定の制限時間だと足りない。投入が通るようになったぶん
+        // 最後まで走るので、待ち time の合計 (60 + 計算 + 20 + 40) を賄う。
+        }).maxTicks(400);
+    }
+
+    /**
+     * ACO の BigInteger 計画が持つ<b>正確な</b>必要バイト数。
+     *
+     * <p>{@code plan.bytes()} は long に飽和するので、断られた理由が
+     * 「BigInteger 計画が作れなかった」のか「作れたが容量が足りない」のかを
+     * 区別できない。ここが {@code <BigInteger計画なし>} なら前者。</p>
+     */
+    private static String insaneae$exactPlanBytes(appeng.api.networking.crafting.ICraftingPlan plan) {
+        try {
+            return jp.main.taikun.insaneae.integration.aco.AcoBigIntegerPlanBridge.inspect(plan)
+                    .map(exact -> exact.exactBytes().toString())
+                    .orElse("<BigInteger計画なし>");
+        } catch (RuntimeException | LinkageError unavailable) {
+            return "<読めず: " + unavailable + ">";
+        }
     }
 
     /**
@@ -1942,6 +2012,86 @@ public final class InsaneAETestPlots {
 
             sequence.thenSucceed();
         });
+    }
+
+    /**
+     * ケーブル版 (プレート) がブロック版と同じ中身を持ち、グリッドにも入ることの検証。
+     *
+     * <p>部品は AE2 の {@code InterfacePart} / {@code PatternProviderPart} を継承して
+     * {@code createLogic()} だけ差し替えている。<b>差し替えが効いていないと
+     * 静かに AE2 の既定 (9 枠 / 36 枠) に戻る</b>ので、枠数と 1 枠の上限をここで押さえる。</p>
+     *
+     * <p>あわせて「ケーブルに貼れて、チャネルが通り、電力が来ている」ことも見る。
+     * 部品はブロックと違って {@code IInWorldGridNodeHost} の登録が要らない
+     * (ケーブルバスがまとめて面倒を見る) が、そこを取り違えていれば
+     * {@code isActive()} が落ちる。</p>
+     */
+    @TestPlot("insaneae_cable_parts")
+    public static void cableParts(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("0 0 0");
+        plot.part("0 0 0", net.minecraft.core.Direction.UP, insaneae$partDefinition(
+                "Insane ME Interface", ModParts.INSANE_INTERFACE));
+        plot.part("0 0 0", net.minecraft.core.Direction.NORTH, insaneae$partDefinition(
+                "Insane Pattern Provider", ModParts.INSANE_PATTERN_PROVIDER));
+
+        plot.test(helper -> {
+            var pos = new BlockPos(0, 0, 0);
+            var sequence = helper.startSequence();
+
+            // グリッドの起動 (チャネル割り当てまで) を待つ。
+            sequence.thenIdle(10);
+
+            sequence.thenExecute(() -> {
+                var iface = helper.<InsaneInterfacePart>getPart(pos,
+                        net.minecraft.core.Direction.UP, InsaneInterfacePart.class);
+                helper.check(iface != null, "超特大インターフェイスのケーブル版が置けていない", pos);
+
+                var storage = iface.getInterfaceLogic().getStorage();
+                helper.check(storage.size() == InsaneInterfaceBlockEntity.SLOTS,
+                        "枠数が " + InsaneInterfaceBlockEntity.SLOTS + " ではない: " + storage.size()
+                                + " (createLogic() の差し替えが効いていない)", pos);
+                helper.check(storage.getMaxAmount(AEItemKey.of(Items.IRON_INGOT))
+                                == InsaneInterfaceBlockEntity.MAX_PER_SLOT,
+                        "1 枠に入るアイテム数が違う: "
+                                + storage.getMaxAmount(AEItemKey.of(Items.IRON_INGOT))
+                                + " (allowOverstacking / capacity が効いていない)", pos);
+                helper.check(iface.isActive(),
+                        "ケーブル版インターフェイスがグリッドに入っていない", pos);
+            });
+
+            sequence.thenExecute(() -> {
+                var provider = helper.<InsanePatternProviderPart>getPart(pos,
+                        net.minecraft.core.Direction.NORTH, InsanePatternProviderPart.class);
+                helper.check(provider != null, "特大パターンプロバイダーのケーブル版が置けていない", pos);
+
+                int slots = provider.getLogic().getPatternInv().size();
+                helper.check(slots == QuantumCpuBlockEntity.PATTERN_SLOTS,
+                        "パターン枠が " + QuantumCpuBlockEntity.PATTERN_SLOTS + " ではない: " + slots
+                                + " (createLogic() の差し替えが効いていない)", pos);
+                helper.check(provider.getLogic() instanceof InsanePatternProviderLogic,
+                        "まとめ更新版の PatternProviderLogic になっていない: "
+                                + provider.getLogic().getClass().getName(), pos);
+                helper.check(provider.isActive(),
+                        "ケーブル版パターンプロバイダーがグリッドに入っていない", pos);
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    /**
+     * {@code PlotBuilder#part} は AE2 の {@code ItemDefinition} しか受け付けないので、
+     * こちらの {@code RegistryObject} を包んで渡す。表示名はテストの出力にしか出ない。
+     *
+     * <p>1.20.1 の {@code ItemDefinition} は {@code (英名, id, 実体)} を取る
+     * (1.21.1 は {@code DeferredItem} を取るので形が違う)。</p>
+     */
+    private static <T extends appeng.api.parts.IPart>
+            appeng.core.definitions.ItemDefinition<appeng.items.parts.PartItem<T>> insaneae$partDefinition(
+                    String englishName,
+                    net.minecraftforge.registries.RegistryObject<appeng.items.parts.PartItem<T>> item) {
+        return new appeng.core.definitions.ItemDefinition<>(englishName, item.getId(), item.get());
     }
 
     private static long countInNetwork(appeng.server.testworld.PlotTestHelper helper,

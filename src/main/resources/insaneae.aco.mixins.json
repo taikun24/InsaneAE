@@ -9,7 +9,8 @@
   "mixins": [
     "QuantumCpuBatchTargetMixin",
     "QuantumCpuProviderTargetMixin",
-    "UltraCreativeCellExactStorageMixin"
+    "UltraCreativeCellExactStorageMixin",
+    "UltraCreativeCellExactAmountProviderMixin"
   ],
   "injectors": {
     "defaultRequire": 0

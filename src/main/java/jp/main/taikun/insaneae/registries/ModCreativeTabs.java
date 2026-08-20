@@ -24,10 +24,12 @@ public class ModCreativeTabs {
                 output.accept(ModBlocks.QUANTUM_CPU.get());
                 output.accept(ModBlocks.BIG_INTEGER_CPU.get());
                 output.accept(ModBlocks.INSANE_PATTERN_PROVIDER.get());
+                output.accept(ModParts.INSANE_PATTERN_PROVIDER.get());
                 output.accept(ModUpgrades.QUANTUM_ACCELERATION_CARD.get());
                 output.accept(ModUpgrades.TASK_FUSION_CARD.get());
                 output.accept(ModBlocks.IMPROVED_CHARGER.get());
                 output.accept(ModBlocks.INSANE_INTERFACE.get());
+                output.accept(ModParts.INSANE_INTERFACE.get());
                 // AE2 の EnergyCellBlock#addToMainCreativeTab は「空」と「満充電」の 2 個を出す。
                 ModBlocks.allEnergyCells().forEach(cell -> cell.addToMainCreativeTab(output));
                 ModBlocks.allSolarPanels().forEach(output::accept);

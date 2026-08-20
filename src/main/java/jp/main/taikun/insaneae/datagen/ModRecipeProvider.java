@@ -13,6 +13,7 @@ import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModCells;
 import jp.main.taikun.insaneae.registries.ModItems;
+import jp.main.taikun.insaneae.registries.ModParts;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.recipes.*;
@@ -148,6 +149,12 @@ public class ModRecipeProvider extends RecipeProvider {
                         'C', AEBlocks.PATTERN_PROVIDER
                 ));
 
+        // ケーブル版 (プレート) ⇔ ブロック版。AE2 の ME インターフェイス / パターンプロバイダと同じく
+        // 1:1 で行き来できる。中身 (パターン・設定) は移らないので、空の状態で持ち替えること。
+        convert(consumer, ModBlocks.INSANE_INTERFACE.get(), ModParts.INSANE_INTERFACE.get());
+        convert(consumer, ModBlocks.INSANE_PATTERN_PROVIDER.get(),
+                ModParts.INSANE_PATTERN_PROVIDER.get());
+
         // エネルギーセル: 下位セル ×8 + 集積プロセッサ (AE2/MEGA の Dense / Superdense と同じ形)。
         // 容量が 1 段 8 倍なので、材料 8 個ぶんの容量がそのまま 1 個に収まる。
         InsaneEnergyCellTier[] energyCells = InsaneEnergyCellTier.values();
@@ -228,6 +235,25 @@ public class ModRecipeProvider extends RecipeProvider {
         ingredients.accept(builder);
         builder.unlockedBy("has_component", has(unlockedBy)).save(consumer);
     }
+    /**
+     * ブロック版とケーブル版を 1:1 で行き来する shapeless レシピを<b>両方向</b>出す。
+     *
+     * <p>レシピ ID は結果アイテム名そのままにすると<b>本来の作成レシピと衝突する</b>
+     * (ブロック版はここより上で 3x3 から作っている) ので、{@code convert/} を頭に付けて分ける。</p>
+     */
+    static void convert(Consumer<FinishedRecipe> consumer, ItemLike block, ItemLike part) {
+        convertOneWay(consumer, block, part);
+        convertOneWay(consumer, part, block);
+    }
+
+    private static void convertOneWay(Consumer<FinishedRecipe> consumer, ItemLike from, ItemLike to) {
+        ResourceLocation id = ForgeRegistries.ITEMS.getKey(to.asItem()).withPrefix("convert/");
+        ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, to)
+                .requires(from)
+                .unlockedBy("has_component", has(from))
+                .save(consumer, id);
+    }
+
     static void shaped(Consumer<FinishedRecipe> consumer, ItemLike result, ItemLike unlockedBy, String[] pattern, Map<Character, ItemLike> ingredients) {
         ShapedRecipeBuilder builder = ShapedRecipeBuilder.shaped(RecipeCategory.MISC, result);
         for (String s : pattern) {

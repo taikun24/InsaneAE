@@ -1,4 +1,4 @@
-// 1.20.1	2026-08-15T12:56:38.4042205	Item Models: insaneae
+// 1.20.1	2026-08-20T19:02:08.2615428	Item Models: insaneae
 f529f4a37c476252be1cb472861b0a1e9db434ff assets/insaneae/models/item/16g_crafting_storage.json
 b8297d2e4d0e57b588bb33a68b7cbbec467a6a8e assets/insaneae/models/item/16k_crafting_accelerator.json
 401cf74a997cde406b246a8d310885200181f7ae assets/insaneae/models/item/16m_crafting_accelerator.json
@@ -99,7 +99,9 @@ eb270cc884746c824b2fee6612d849fa28846dbc assets/insaneae/models/item/hypernova_e
 abb1d6feea9d7be6692b9893c10b8899b105862c assets/insaneae/models/item/hypersonic_card.json
 38a53168aa67e63e470ccd0efe65794adc1a70a1 assets/insaneae/models/item/improved_charger.json
 2782400f449e821237aff714e0ca6e44a28c44e3 assets/insaneae/models/item/insane_interface.json
+356e192e4fb3346f21e50c801a81513349f6b42c assets/insaneae/models/item/insane_interface_part.json
 954e41bd135c07e950689bb925d1ca79e5d2123e assets/insaneae/models/item/insane_pattern_provider.json
+a53803e8bedaa2e235dc331a1b52bd4fb987f9b0 assets/insaneae/models/item/insane_pattern_provider_part.json
 a696c9145830ffe41edeb43123d5b0768d49f434 assets/insaneae/models/item/item_storage_cell_16g.json
 7647fe2ceaeee030a6eae8fd4c09e5d205c103f9 assets/insaneae/models/item/item_storage_cell_16p.json
 1cca228659fed4c316f1ea15142c34599c94e8ae assets/insaneae/models/item/item_storage_cell_16t.json
