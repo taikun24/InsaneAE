@@ -189,6 +189,32 @@ dependencies {
         localRuntime "curse.maven:geckolib-388172:8350073"
     }
 
+    // Pendulum — クライアント側のスクリプト実行 Mod【任意・オプトイン】。
+    // -PwithPendulum=true で dev クライアントに載る。
+    //
+    // 目的は<b>手動の実機確認を自動化すること</b>。ゲームテストはヘッドレスのサーバなので、
+    // GUI を開いて表示を読む・コマンドを叩いて結果を見る、ができない。ACO や AQE 絡みの
+    // 「クラフト中 100% で止まる」のような症状はそこにしか出ないため、
+    // MCP サーバ (既定 TCP 25566) 経由でクライアントを操作して観測する。
+    //
+    // <b>クライアント専用</b> (server_side=unsupported)。ゲームテストには一切載せないこと。
+    //
+    // jar は libs/ に置く (gitignore 済みなので各自で取得すること)。
+    // 依存の Jupiter (設定 GUI) と Rhino (JS エンジン) も一緒に要る。
+    //   pendulum-1.0-1.21.1-neoforge.jar  https://mediafilez.forgecdn.net/files/8654/865/pendulum-1.0-1.21.1-neoforge.jar
+    //   jupiter-2.3.7-1.21.1-neoforge.jar https://cdn.modrinth.com/data/XbiLGMMU/versions/Jpcw76rq/jupiter-2.3.7-1.21.1-neoforge.jar
+    //   rhino-2101.2.8-build.91.jar       https://cdn.modrinth.com/data/sk9knFPE/versions/SqkDvOLG/rhino-2101.2.8-build.91.jar
+    //
+    // <b>1.0 未満は使えない。</b>beta.3 は @SubscribeEvent を抽象基底の Event に付けており、
+    // 今の NeoForge (21.1.247) は「Cannot register listeners for abstract class Event」で
+    // 蹴るため、Mod の生成自体に失敗する。1.0 で型付き (ClientTickEvent.Pre) に直っている。
+    if (project.findProperty('withPendulum') == 'true') {
+        localRuntime files(
+                'libs/pendulum-1.0-1.21.1-neoforge.jar',
+                'libs/jupiter-2.3.7-1.21.1-neoforge.jar',
+                'libs/rhino-2101.2.8-build.91.jar')
+    }
+
     // テスト用
     localRuntime "curse.maven:jei-238222:${jei_file}"
     testImplementation platform("org.junit:junit-bom:5.10.2")
