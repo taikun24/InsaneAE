@@ -73,6 +73,11 @@ public final class ReflectiveCraftingJobView implements CraftingJobView {
     }
 
     @Override
+    public boolean isOwnedByAcoExactExecution() {
+        return jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership.isAcoOwned(job);
+    }
+
+    @Override
     public ListCraftingInventory getInventory() {
         return read(layout.inventory, logic);
     }

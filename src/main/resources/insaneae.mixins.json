@@ -11,6 +11,7 @@
     "CraftingCPUClusterMixin",
     "CraftingCPUNameMixin",
     "CraftingCpuLogicMixin",
+    "CraftingCpuLogicJobAccessor",
     "CraftingUnitThreadLimitMixin",
     "ElapsedTimeTrackerInvoker",
     "ExecutingCraftingJobAccessor",
