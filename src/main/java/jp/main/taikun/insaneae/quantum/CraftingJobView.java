@@ -57,6 +57,18 @@ public interface CraftingJobView {
         return Optional.empty();
     }
 
+    /**
+     * ACO の正確な BigInteger 実行がこのジョブを所有しているか。
+     *
+     * <p>true なら<b>まとめ処理は何もしない</b>。ACO 1.5.23 以降、exact ジョブの実行と納品は
+     * ACO の {@code PhysicalCraftingTreeTransaction} が丸ごと持っており、
+     * こちらが 1 回でも進めると ACO の台帳に無い実行になる
+     * ({@link jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership})。</p>
+     */
+    default boolean isOwnedByAcoExactExecution() {
+        return false;
+    }
+
     /** Whether the native AE2 task loop must not run after the exact hook. */
     default boolean hasExactCraftingPlan() {
         return exactTasks().isPresent();

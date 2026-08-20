@@ -40,6 +40,13 @@ public final class BulkCraftingHook {
      */
     public int begin(CraftingJobView view, int maxPatterns, CraftingService craftingService,
             IEnergyService energyService, Level level) {
+        // ACO 1.5.23 以降、exact ジョブの実行と納品は ACO が丸ごと所有する。
+        // <b>同じ @HEAD でこちらのほうが先に走る</b>ので、ACO が打ち切る前に降りること。
+        // 0 を返して打ち切るのは ACO 自身の挙動と同じ — AE2 本来の long タスクを
+        // 走らせてはいけない (ACO が渡した 1 回実行 facade を実行してしまう)。
+        if (view != null && view.isOwnedByAcoExactExecution()) {
+            return 0;
+        }
         int done = QuantumBulkCrafting.execute(view, maxPatterns, craftingService, energyService, level);
         // ACOのBigInteger正本をInsaneAEが所有するJobは、done=0でもAE2本来のlong taskへ
         // 戻してはいけない。飽和したTaskProgressを実行すると、材料不足・二重計上・再注文の

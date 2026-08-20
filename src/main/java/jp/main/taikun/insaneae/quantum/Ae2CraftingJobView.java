@@ -57,6 +57,11 @@ public final class Ae2CraftingJobView implements CraftingJobView {
     }
 
     @Override
+    public boolean isOwnedByAcoExactExecution() {
+        return jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership.isAcoOwned(exactJob);
+    }
+
+    @Override
     public Optional<AcoBigIntegerJobRegistry.CraftingCursor> exactTasks() {
         return AcoBigIntegerJobRegistry.find(exactJob)
                 .map(exact -> exact.cursor(pattern -> job.insaneae$getTasks().remove(pattern)));

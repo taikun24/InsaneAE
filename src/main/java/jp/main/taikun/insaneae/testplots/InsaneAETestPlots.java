@@ -1563,6 +1563,109 @@ public final class InsaneAETestPlots {
      * {@code -PwithAco} だけだと値が空文字になり、build.gradle の {@code == 'true'} が
      * 偽になって<b>黙って ACO 無しで走る</b> (テストは通ってしまう)。</p>
      */
+    /**
+     * ACO 1.5.23 以降、exact ジョブの実行を ACO が所有していることを<b>こちらが認識できる</b>か。
+     *
+     * <p>{@code executeCrafting} の @HEAD にはこちらのまとめ処理と ACO の打ち切りが両方刺さって
+     * いて、実機の適用順ではこちらが先に走る。ACO の所有を見落とすと、ACO の台帳に無い実行を
+     * 1 回進めてしまう。ここで検査するのは<b>判定そのもの</b> — ACO が生やすメソッド名
+     * ({@code aco$isExactJob}) は相手の都合で変わりうるのに、変わっても<b>エラーにならず
+     * 黙って false になる</b>ため、注入の有無ではなく実ジョブに対する戻り値で見張る。</p>
+     *
+     * <p>ACO が古い (1.5.22 以下) 環境では共通契約のクラスが無いので何も検査しない。</p>
+     */
+    @TestPlot("insaneae_aco_exact_ownership")
+    public static void acoExactOwnership(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,3] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
+            drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
+            drive.getInternalInventory().addItems(new ItemStack(
+                    ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_8E).get()));
+        });
+        plot.blockState("2 [0,1] [0,2]", ModBlocks.BIG_INTEGER_CPU.get().defaultBlockState());
+        plot.block("2 1 0", AEBlocks.CRAFTING_ACCELERATOR);
+        plot.blockState("3 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        plot.test(helper -> {
+            // 共通契約 (ACO 1.5.23 で AAE 専用から切り出されたもの) が無ければ何も検査しない。
+            if (optionalClass("com.syaru.ae2craftingoptimizer.access.ExactCraftingJobAccess") == null) {
+                helper.startSequence().thenSucceed();
+                return;
+            }
+            var state = new Object() {
+                appeng.me.helpers.MachineSource source;
+                java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan> plan;
+            };
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(3, 0, 0));
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_LOG)));
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_PLANKS)));
+                for (int i = 0; i < QuantumCpuBlockEntity.MAX_ACCELERATION_CARDS; i++) {
+                    cpu.getUpgrades().addItems(
+                            new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
+                }
+                cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.TASK_FUSION_CARD.get()));
+            });
+            sequence.thenIdle(60);
+
+            sequence.thenExecute(() -> {
+                state.source = new appeng.me.helpers.MachineSource(
+                        (appeng.api.networking.security.IActionHost)
+                                helper.getBlockEntity(new BlockPos(3, 0, 0)));
+                state.plan = helper.getGrid(BlockPos.ZERO).getCraftingService()
+                        .beginCraftingCalculation(helper.getLevel(), () -> state.source,
+                                AEItemKey.of(Items.OAK_BUTTON), Long.MAX_VALUE,
+                                appeng.api.networking.crafting.CalculationStrategy.REPORT_MISSING_ITEMS);
+            });
+            sequence.thenWaitUntil(() -> helper.check(state.plan.isDone(), "計算が終わらない"));
+            sequence.thenExecute(() -> {
+                appeng.api.networking.crafting.ICraftingPlan plan;
+                try {
+                    plan = state.plan.get();
+                } catch (Exception failure) {
+                    throw new GameTestAssertException("計算が例外で終わった: " + failure);
+                }
+                helper.check(!plan.simulation(), "計算がシミュレーション止まり (素材不足扱い)");
+                var result = helper.getGrid(BlockPos.ZERO).getCraftingService()
+                        .submitJob(plan, null, null, false, state.source);
+                helper.check(result.successful(),
+                        "long を超える要求の投入が断られた: errorCode=" + result.errorCode());
+            });
+
+            // 投入直後に見る。ACO が隔離してジョブを畳んだあとでは判定できない。
+            sequence.thenIdle(2);
+            sequence.thenExecute(() -> {
+                appeng.crafting.execution.ExecutingCraftingJob job = null;
+                for (var cpu : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
+                    if (cpu instanceof appeng.me.cluster.implementations.CraftingCPUCluster cluster) {
+                        var found = ((jp.main.taikun.insaneae.mixin.CraftingCpuLogicJobAccessor)
+                                (Object) cluster.craftingLogic).insaneae$getJob();
+                        if (found != null) {
+                            job = found;
+                            break;
+                        }
+                    }
+                }
+                helper.check(job != null, "投入したはずのジョブが CPU に無い");
+                helper.check(
+                        jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership.isAcoOwned(job),
+                        "ACO 1.5.23 以降なのに exact ジョブの所有を認識できていない。"
+                                + "ACO 側の判定メソッド名 (aco$isExactJob) が変わった可能性がある。"
+                                + " job=" + job.getClass().getName()
+                                + " 観測回数=" + jp.main.taikun.insaneae.integration.aco
+                                        .AcoExactJobOwnership.observedAcoOwnedJobs);
+            });
+            sequence.thenSucceed();
+        }).maxTicks(400);
+    }
+
     @TestPlot("insaneae_craft_past_long")
     public static void craftPastLong(PlotBuilder plot) {
         // 要求量。完了判定にも使うので 1 か所にまとめる。
