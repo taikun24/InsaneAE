@@ -25,6 +25,7 @@ import jp.main.taikun.insaneae.registries.ModCells;
 import jp.main.taikun.insaneae.registries.ModCreativeTabs;
 import jp.main.taikun.insaneae.registries.ModItems;
 import jp.main.taikun.insaneae.registries.ModMenus;
+import jp.main.taikun.insaneae.registries.ModParts;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -54,6 +55,8 @@ public class InsaneAE {
         container.registerConfig(ModConfig.Type.COMMON, InsaneAEConfig.SPEC);
         ModBlocks.register(bus);
         ModItems.register(bus);
+        // ケーブルに貼る版。部品のモデル申告が凍結前に済む必要があるのでここで。
+        ModParts.register(bus);
         // appmek 未導入の環境では AppMekCells をロードしてはいけないので、
         // クラス参照ごと分岐の内側に閉じ込める (別クラスなので条件が false ならロードされない)。
         if (ModList.get().isLoaded(APPMEK_MODID)) {

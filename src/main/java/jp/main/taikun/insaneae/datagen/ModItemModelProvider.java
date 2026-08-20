@@ -6,6 +6,7 @@ import jp.main.taikun.insaneae.energy.InsaneEnergyCellTier;
 import jp.main.taikun.insaneae.energy.SolarPanelTier;
 import jp.main.taikun.insaneae.upgrade.InsaneSpeedCardType;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
+import net.minecraft.core.Direction;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.client.model.generators.ItemModelBuilder;
@@ -128,6 +129,14 @@ public class ModItemModelProvider extends ItemModelProvider {
         getBuilder("insane_pattern_provider").parent(new ModelFile.UncheckedModelFile(
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/insane_pattern_provider")));
 
+        // ケーブル版 (プレート) の手持ちモデル。AE2 の部品アイテムの形をそのまま継承し、
+        // 正面のテクスチャだけこちらのものに差し替える。
+        // ワールドに置いたときの見た目は models/part/*_base.json (手書き) が担当する。
+        partItem("insane_interface_part", "insane_interface",
+                "ae2:part/interface_sides", "ae2:part/interface_back");
+        partItem("insane_pattern_provider_part", "insane_pattern_provider",
+                "ae2:part/pattern_provider_sides", "ae2:part/pattern_provider_back");
+
         for (SolarPanelTier tier : SolarPanelTier.values()) {
             getBuilder(tier.id()).parent(new ModelFile.UncheckedModelFile(
                     ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/" + tier.id())));
@@ -164,6 +173,56 @@ public class ModItemModelProvider extends ItemModelProvider {
         return new ModelFile.UncheckedModelFile(ResourceLocation.fromNamespaceAndPath(
                 InsaneAE.MODID, ModBlockStateProvider.energyCellModelPath(tier, fullness)));
     }
+    /**
+     * ケーブル版 (プレート) の手持ちモデル。
+     *
+     * <p>親は AE2 のインターフェイス部品 ({@code ae2:item/cable_interface})。パターンプロバイダ部品も
+     * これを親にしてテクスチャだけ差し替えているので、こちらも同じやり方に揃える。</p>
+     *
+     * @param name        アイテムの登録名
+     * @param blockTexture 正面に貼るブロックテクスチャ ({@code insaneae:block/} 以下)
+     * @param sides       側面のテクスチャ (AE2 のものを借りる)
+     * @param back        背面のテクスチャ (同上)
+     */
+    private void partItem(String name, String blockTexture, String sides, String back) {
+        ItemModelBuilder builder = withExistingParent(name, mega("ae2", "item/part_base"))
+                .texture("front", modLoc("block/" + blockTexture))
+                .texture("sides", ResourceLocation.parse(sides))
+                .texture("back", ResourceLocation.parse(back))
+                .texture("particle", modLoc("block/" + blockTexture));
+        // 本体の板。
+        partPlate(builder, 2, 2, 7, 14, 14, 9, 0, 0, 16, 16);
+        // 中央の出っ張り 2 段。
+        partPlate(builder, 5, 5, 10, 11, 11, 11, 4, 4, 12, 12);
+        partPlate(builder, 5, 5, 9, 11, 11, 10, 4, 4, 12, 12);
+    }
+
+    /**
+     * ケーブル版アイテムの箱を 1 つ足す。
+     *
+     * <p>形は {@code ae2:item/cable_interface} と同じだが、<b>正面の uv は差し替えてある</b>。
+     * AE2 の {@code part/interface} は部品用に描かれた絵で外周 2px が余白だが、
+     * こちらが借りるのは 16x16 のブロック面なので、AE2 と同じ uv で切ると絵が欠ける。
+     * ワールド側 ({@code models/part/*_base.json}) も同じ uv にしてあるので、
+     * <b>片方だけ変えないこと</b>。</p>
+     */
+    private static void partPlate(ItemModelBuilder builder,
+            int fromX, int fromY, int fromZ, int toX, int toY, int toZ,
+            float u0, float v0, float u1, float v1) {
+        // 正面以外は uv を書かない = バニラが箱の寸法からそのまま起こす。
+        // AE2 は側面用に細い帯を切り出しているが、こちらは借り物のテクスチャなので
+        // 自動で十分 (どのみち帯 1px ぶんしか見えない)。
+        builder.element()
+                .from(fromX, fromY, fromZ).to(toX, toY, toZ)
+                .face(Direction.NORTH).uvs(u0, v0, u1, v1).texture("#front").end()
+                .face(Direction.SOUTH).texture("#back").end()
+                .face(Direction.EAST).texture("#sides").end()
+                .face(Direction.WEST).texture("#sides").end()
+                .face(Direction.UP).texture("#sides").end()
+                .face(Direction.DOWN).texture("#sides").end()
+                .end();
+    }
+
     private void simple(String name){
         layered(name, mega("insaneae", "item/" + name));
     }

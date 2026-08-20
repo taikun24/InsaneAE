@@ -2,6 +2,7 @@ package jp.main.taikun.insaneae.iface;
 
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGrid;
+import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.AEKeyTypes;
@@ -10,6 +11,7 @@ import appeng.api.storage.MEStorage;
 import appeng.api.storage.StorageHelper;
 import appeng.blockentity.misc.InterfaceBlockEntity;
 import appeng.helpers.InterfaceLogic;
+import appeng.helpers.InterfaceLogicHost;
 import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
@@ -19,6 +21,7 @@ import jp.main.taikun.insaneae.mixin.ConfigInventoryAccessor;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -97,8 +100,20 @@ public class InsaneInterfaceBlockEntity extends InterfaceBlockEntity {
      */
     @Override
     protected InterfaceLogic createLogic() {
+        return createInsaneLogic(getMainNode(), this, getItemFromBlockEntity());
+    }
+
+    /**
+     * 枠数と 1 枠あたりの上限を引き上げた {@link InterfaceLogic} を作る。
+     *
+     * <p>ブロック版 ({@link #createLogic()}) とケーブル版 ({@link InsaneInterfacePart}) の
+     * 共通部分。<b>どちらも相手のコンストラクタ途中から呼ばれる</b>ので、
+     * 引数以外のインスタンス状態に触ってはいけない。</p>
+     */
+    static InterfaceLogic createInsaneLogic(IManagedGridNode mainNode, InterfaceLogicHost host,
+            Item icon) {
         // 枠数はコンストラクタ引数で受け付けている (AE2 の既定は 9)。
-        InterfaceLogic logic = new InterfaceLogic(getMainNode(), this, getItemFromBlockEntity(), SLOTS);
+        InterfaceLogic logic = new InterfaceLogic(mainNode, host, icon, SLOTS);
         widen(logic.getConfig());
         widen(logic.getStorage());
         return logic;

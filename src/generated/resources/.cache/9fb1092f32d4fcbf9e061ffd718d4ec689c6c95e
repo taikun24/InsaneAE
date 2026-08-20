@@ -1,4 +1,4 @@
-// 1.21.1	2026-08-11T16:03:34.743858	Recipes
+// 1.21.1	2026-08-17T14:33:29.3765683	Recipes
 76676eec4d3336f3774ced8226ac9befea089988 data/insaneae/advancement/recipes/misc/16g_crafting_storage.json
 477857022b80635795c17b51c2fdf260f0985f60 data/insaneae/advancement/recipes/misc/16k_crafting_accelerator.json
 a21e5f230c17260505417571ca0d945dbf23f659 data/insaneae/advancement/recipes/misc/16m_crafting_accelerator.json
@@ -70,6 +70,10 @@ fb85d78d0bcea8ecba09b3f56effbbf33f1f1068 data/insaneae/advancement/recipes/misc/
 f760a352c1376f5fb56c33ad955ef515622b41e6 data/insaneae/advancement/recipes/misc/chemical_storage_cell_64t.json
 63b3f21b14a66605cc45bd0fec434ed4b50f6f29 data/insaneae/advancement/recipes/misc/chemical_storage_cell_8e.json
 c6fd70ee15b826f1681591f2260ca6df2ea443d1 data/insaneae/advancement/recipes/misc/collapsar_energy_cell.json
+44ebf9de44f5be57d37785c6d595bba11277f951 data/insaneae/advancement/recipes/misc/convert/insane_interface.json
+55e25435971545a0d42285cc173cf1f370942638 data/insaneae/advancement/recipes/misc/convert/insane_interface_part.json
+2eaf3df7417669d5e2d6fa3f7be27fcfd670cf4e data/insaneae/advancement/recipes/misc/convert/insane_pattern_provider.json
+bc47f7be4c293521ee4cda1d715dd261c9a83c8a data/insaneae/advancement/recipes/misc/convert/insane_pattern_provider_part.json
 7f3163e932a04a06cb295ae3a3d274ac978a56f5 data/insaneae/advancement/recipes/misc/cosmic_energy_cell.json
 77f220908db360de360d2c5f09bed7026035e4ed data/insaneae/advancement/recipes/misc/degenerate_energy_cell.json
 09b8a4d042e06d24c5ca5d3cc4be6949c3f91666 data/insaneae/advancement/recipes/misc/elite_solar_panel.json
@@ -310,6 +314,10 @@ e3c855361daafa0c6583046c42a3c58adae04e9c data/insaneae/recipe/chemical_storage_c
 213b91e3f17af86e84abd8adb014fd2a5f09202e data/insaneae/recipe/chemical_storage_cell_64t.json
 530188cf4370e8fb87c12da7fb435feea53d1d70 data/insaneae/recipe/chemical_storage_cell_8e.json
 f16fc60db46b4ec32c428405c2d115a0c68af751 data/insaneae/recipe/collapsar_energy_cell.json
+ad5aa783de7109e158993157145befb6062a0e6a data/insaneae/recipe/convert/insane_interface.json
+446fd62a009325e6f4709f9c644ee7d32926e968 data/insaneae/recipe/convert/insane_interface_part.json
+c598518577ee2c300fe72939f5b08255dec1c2b9 data/insaneae/recipe/convert/insane_pattern_provider.json
+f9760001213c6549e4b6e940eb434dca38de1302 data/insaneae/recipe/convert/insane_pattern_provider_part.json
 e3fa87439114d6409e82445222f033b5736f77f1 data/insaneae/recipe/cosmic_energy_cell.json
 058d58b131cbbeaf46116977aa8f92f6fec88b65 data/insaneae/recipe/degenerate_energy_cell.json
 7fc8c8589f530405f1d6d2ff4fbc63286829df1f data/insaneae/recipe/elite_solar_panel.json
