@@ -39,6 +39,14 @@ neoForge {
         client {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // -PquickPlay="<ワールド名>" で、メニューを通らず直接そのワールドへ入る。
+            // Pendulum で操作するときに要る: メニュー画面の遷移はマウス座標が
+            // 効かない (GUI スケール分ずれる) 上、SelectWorldScreen は
+            // this.minecraft が null のまま描画されて NPE で落ちることがある。
+            if (project.findProperty('quickPlay')) {
+                programArguments.addAll '--quickPlaySingleplayer',
+                        project.findProperty('quickPlay').toString()
+            }
         }
 
         server {
@@ -186,6 +194,47 @@ dependencies {
     if (project.findProperty('withAdvancedAe') == 'true') {
         localRuntime "curse.maven:advancedae-1084104:8564177"
         // Advanced AE の mandatory 依存。FML が止まってから分かる類なので明示しておく。
+        localRuntime "curse.maven:geckolib-388172:8350073"
+    }
+
+    // Advanced Quantum Engineering (syarukasu)【任意・オプトイン】。
+    // -PwithAqe=true で dev 実行に載る。BigInteger 量子コアの実機確認用。
+    //
+    // <b>-PwithAdvancedAe とは併用できない。</b>AQE 2.2.7 は advanced_ae を
+    // [1.6.11,1.6.12) で要求する = <b>1.6.11 ちょうど</b>なので、
+    // withAdvancedAe が入れる 1.6.12 (file 8564177) では FML が止まる。
+    // こちらは 1.6.11 (file 7849217) を自分で連れてくる。
+    //
+    // ae2omnicells は AQE の必須依存。CurseForge には無いので Modrinth から
+    // libs/ へ取ること (gitignore 済み):
+    //   ae2omnicells-1.21.1-neoforge-1.1.6.jar
+    //     https://cdn.modrinth.com/data/RYE1pYyr/versions/k444ySGT/ae2omnicells-1.21.1-neoforge-1.1.6.jar
+    //   aqe<版>_1.21.1.jar
+    //     gh release download v<版> -R syarukasu/advanced-quantum-engineering
+    //
+    // <b>既定が 2.2.4 なのは 2.2.5 以降が 1.21.1 で起動できないから。</b>
+    // AQEDiagnostics.checkExactVersion が advanced_ae のバージョン文字列を
+    // String.equals("1.6.11") で見るのに、AAE が名乗るのは "1.6.11-1.21.1" なので
+    // 必ず食い違い、commonSetup が IllegalStateException を投げる。
+    // -PaqeVersion=2.2.7 で上書きできる (直ったかの確認用)。
+    if (project.findProperty('withAqe') == 'true') {
+        if (project.findProperty('withAdvancedAe') == 'true') {
+            throw new GradleException('-PwithAqe と -PwithAdvancedAe は併用できない '
+                    + '(AQE は Advanced AE 1.6.11 ちょうどを要求する)')
+        }
+        localRuntime files(
+                "libs/aqe${project.findProperty('aqeVersion') ?: '2.2.4'}_1.21.1.jar",
+                'libs/ae2omnicells-1.21.1-neoforge-1.1.6.jar')
+        // Advanced AE のファイル ID。既定は 1.6.12 (file 8564177)。
+        // <b>ここは AQE と ACO で要求が食い違う。</b>
+        //   AQE 2.2.4     : advanced_ae [1.6.11,1.7.0) → 1.6.12 で可
+        //   AQE 2.2.5+    : advanced_ae [1.6.11,1.6.12) → 1.6.11 ちょうど (が、前述のとおり起動しない)
+        //   ACO 1.5.23    : AAE 向け Mixin が 1.6.12 前提。1.6.11 だと
+        //                   ExperimentalCompatibilityValidator が
+        //                   「does not implement ...Access」でサーバ起動時に落とす
+        // → 1.6.12 + AQE 2.2.4 が今のところ唯一そろう組み合わせ。
+        // 1.6.11 が要るときは -PaaeFile=7849217。
+        localRuntime "curse.maven:advancedae-1084104:${project.findProperty('aaeFile') ?: '8564177'}"
         localRuntime "curse.maven:geckolib-388172:8350073"
     }
 
