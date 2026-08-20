@@ -1694,7 +1694,9 @@ public final class InsaneAETestPlots {
                                 + "要求は " + requested + " なので未完了)");
             });
             sequence.thenSucceed();
-        });
+        // 既定の制限時間だと足りない。投入が通るようになったぶん
+        // 最後まで走るので、待ち time の合計 (60 + 計算 + 20 + 40) を賄う。
+        }).maxTicks(400);
     }
 
     /**
@@ -1798,7 +1800,9 @@ public final class InsaneAETestPlots {
                                 + "正確な必要bytes=" + insaneae$exactPlanBytes(plan) + ")");
             });
             sequence.thenSucceed();
-        });
+        // 既定の制限時間だと足りない。投入が通るようになったぶん
+        // 最後まで走るので、待ち time の合計 (60 + 計算 + 20 + 40) を賄う。
+        }).maxTicks(400);
     }
 
     /**
