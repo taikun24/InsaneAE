@@ -1579,7 +1579,12 @@ public final class InsaneAETestPlots {
         plot.creativeEnergyCell("0 -1 0");
         plot.cable("[0,3] 0 0");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
-            drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
+            // 完成品 (ボタン) もセルに設定してある。ACO の exact 実行は境界の入出力を
+            // exact 書き込み可能セルでしか行えず、#125 の修正後は「最終出力の納品先が
+            // 無い計画」は所有権を取らずに外部コンシューマへ委譲するようになった。
+            // このテストの主題は<b>所有の認識</b>なので、所有が成立する盤面にしておく。
+            drive.getInternalInventory().addItems(
+                    insaneae$ultraCreativeCell(Items.OAK_LOG, Items.OAK_BUTTON));
             drive.getInternalInventory().addItems(new ItemStack(
                     ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_8E).get()));
         });
@@ -1909,6 +1914,235 @@ public final class InsaneAETestPlots {
     }
 
     /**
+     * <b>同じ long 超の注文を、ACC (Advanced Assembly Computing) の Vector 実行系で走らせる対照実験。</b>
+     *
+     * <p>{@link #craftPastLong} の実行側はうちの Quantum CPU (汎用の
+     * {@code CraftingTableBatchTarget})。一方、ACO の物理実行
+     * ({@code PhysicalCraftingTreeTransaction}) の待ち理由の文字列はほとんどが NeoECO を
+     * 名指ししており、<b>本来想定されている実行系は ACC + NeoECO の Vector Crafting
+     * System</b> と見ている (build.gradle の withAcc の説明を参照)。そこでこちらは
+     * Quantum CPU を置かず、パターンを NeoECO のパターンバスへ入れて同じ注文を投げる。</p>
+     *
+     * <p><b>2026-08-21 の決着:</b> 対照実験の結果は「こちらも止まる」だった。
+     * 計装ビルドで読んだ停止理由から、#125 の芯は<b>「exact 実行の入出力は
+     * 監査済み exact セルしか通れないのに、経路が成立しない盤面でも所有権を取り、
+     * 理由も出さず永久待機する」</b>ことと判明。ACO への修正 (境界 route の事前検証)
+     * を書いた後、このプロットの正しい結末は変わった:</p>
+     * <ul>
+     *   <li>完成品の exact 受け皿が無い → ACO は所有せず外部コンシューマへ委譲</li>
+     *   <li>このグリッドには Quantum CPU も無い → こちらの
+     *       {@code supportsQuantumCpu} ゲートが {@code INCOMPLETE_PLAN} で明確に断る</li>
+     * </ul>
+     *
+     * <p>つまり<b>「受けられない注文は黙って止まるのではなく、投入時点で断られる」</b>
+     * ことがこのプロットの検査対象。修正前の ACO (素の 1.5.23/1.5.24) では投入が
+     * 通ってしまい赤になる — それは #125 が直っていないという正しい赤。</p>
+     *
+     * <p>(NeoECO Vector 実行系そのものを完走させる検査は、無限に受けられる
+     * exact 受け皿 (ExtendedAE Plus の実セル相当) が要るため、ここでは扱わない。)</p>
+     *
+     * <p>構造は AAC の {@code AACMultiBlocks} の定義 (= NeoECO L9 設計図の Vector 版) を
+     * コントローラ北向きのままプロット座標へ写したもの。形成は AE2 と同じ
+     * MBCalculator 方式なので、正しく置けば自動で組み上がる。グリッドへは
+     * crafting_interface (形成後に全面が接続可) からケーブルで繋ぐ。</p>
+     *
+     * <p>ACC が居ない環境、または ACO が exact 実行を持たない (1.5.22 以前) 環境では
+     * 何も検査せずに成功する。実行は
+     * {@code -PwithAco=true -PacoVersion=1.5.24 -PwithAcc=true}。</p>
+     */
+    @TestPlot("insaneae_craft_past_long_acc")
+    public static void craftPastLongAcc(PlotBuilder plot) {
+        var controller = insaneae$optionalBlock(
+                "advanced_assembly_computing", "vector_crafting_controller");
+        var worker = insaneae$optionalBlock(
+                "advanced_assembly_computing", "vector_crafting_worker");
+        var parallelCore = insaneae$optionalBlock(
+                "advanced_assembly_computing", "vector_crafting_parallel_core");
+        var casing = insaneae$optionalBlock("neoecoae", "crafting_casing");
+        var patternBus = insaneae$optionalBlock("neoecoae", "crafting_pattern_bus");
+        var vent = insaneae$optionalBlock("neoecoae", "crafting_vent");
+        var craftingInterface = insaneae$optionalBlock("neoecoae", "crafting_interface");
+        var inputHatch = insaneae$optionalBlock("neoecoae", "input_hatch");
+        var outputHatch = insaneae$optionalBlock("neoecoae", "output_hatch");
+        if (controller == null || worker == null || parallelCore == null || casing == null
+                || patternBus == null || vent == null || craftingInterface == null
+                || inputHatch == null || outputHatch == null) {
+            // 空のプロットは AE2 の Plot#getBounds が通らないので 1 つ置く。
+            plot.cable("0 0 0");
+            plot.test(helper -> helper.startSequence().thenSucceed());
+            return;
+        }
+
+        // 要求量。完了判定にも使うので 1 か所にまとめる。
+        final long requested = Long.MAX_VALUE;
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,9] 0 0");
+        plot.cable("9 0 [1,2]");
+        // crafting_interface (8,1,2) の東面へ。
+        plot.cable("9 1 2");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
+            drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
+            // 完成品の置き場。craftPastLong と同じく、置き場が先に尽きないよう 8E セル。
+            drive.getInternalInventory().addItems(new ItemStack(
+                    ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_8E).get()));
+        });
+        // クラフト CPU も craftPastLong と同じ 5 個 (必要量 3.2e19 bytes に対し余裕を持たせる)。
+        plot.blockState("2 [0,1] [0,2]", ModBlocks.BIG_INTEGER_CPU.get().defaultBlockState());
+        plot.block("2 1 0", AEBlocks.CRAFTING_ACCELERATOR);
+        // 計算・投入の主体 (IActionHost)。パターンは入れない。
+        plot.block("3 0 0", AEBlocks.PATTERN_PROVIDER);
+
+        var facing = net.minecraft.world.level.block.state.properties.BlockStateProperties
+                .HORIZONTAL_FACING;
+        var north = net.minecraft.core.Direction.NORTH;
+        var south = net.minecraft.core.Direction.SOUTH;
+        // 頭部: いったん全部ケーシングで埋めてから、機能ブロックで上書きする。
+        plot.blockState("[6,8] [0,2] [1,2]", casing.defaultBlockState());
+        plot.blockState("7 1 1", controller.defaultBlockState().setValue(facing, north));
+        plot.blockState("8 0 2", outputHatch.defaultBlockState());
+        plot.blockState("8 1 2", craftingInterface.defaultBlockState());
+        plot.blockState("8 2 2", inputHatch.defaultBlockState());
+        // 作業列 (反復 1 回ぶん)。Worker と並列コアはコントローラと同じ北向き、
+        // パターンバスと排熱口は後ろ (南) 向きが形成条件。
+        plot.blockState("5 1 1", worker.defaultBlockState().setValue(facing, north));
+        plot.blockState("5 0 1", parallelCore.defaultBlockState().setValue(facing, north));
+        plot.blockState("5 2 1", parallelCore.defaultBlockState().setValue(facing, north));
+        plot.blockState("5 0 2", patternBus.defaultBlockState().setValue(facing, south));
+        plot.blockState("5 1 2", vent.defaultBlockState().setValue(facing, south));
+        plot.blockState("5 2 2", patternBus.defaultBlockState().setValue(facing, south));
+        // 端のふた。
+        plot.blockState("4 [0,2] [1,2]", casing.defaultBlockState());
+
+        plot.test(helper -> {
+            // ACO の exact 実行 (1.5.23+) と ACC の連携が両方居るときだけ意味がある。
+            if (optionalClass("com.syaru.ae2craftingoptimizer.access.ExactCraftingJobAccess") == null
+                    || optionalClass("com.syaru.advancedassemblycomputing.integration"
+                            + ".AACCraftingTableBatchAdapter") == null) {
+                helper.startSequence().thenSucceed();
+                return;
+            }
+            var state = new Object() {
+                appeng.me.helpers.MachineSource source;
+                java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan> plan;
+                long firstSample;
+            };
+            var sequence = helper.startSequence();
+
+            // Vector Crafting System が組み上がるまで待つ。
+            sequence.thenWaitUntil(() -> {
+                var be = helper.getBlockEntity(new BlockPos(7, 1, 1));
+                helper.check(be != null && insaneae$reflectFormed(be),
+                        "Vector Crafting System が組み上がらない (構造の並びか、"
+                                + "NeoECO/AAC 側の検証条件が変わった可能性)");
+            });
+
+            // パターンは NeoECO のパターンバスへ。craftPastLong と同じ 2 段:
+            // 原木 -> 板材 -> ボタン。
+            sequence.thenExecute(() -> {
+                var bus = helper.getBlockEntity(new BlockPos(5, 0, 2));
+                helper.check(bus != null, "パターンバスの BlockEntity が無い");
+                insaneae$insertPatternsIntoBus(bus,
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_LOG)),
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_PLANKS)));
+            });
+            // ACO の compiled graph と generation が落ち着くまで待つ。
+            sequence.thenIdle(60);
+
+            sequence.thenExecute(() -> {
+                var grid = helper.getGrid(BlockPos.ZERO);
+                state.source = new appeng.me.helpers.MachineSource(
+                        (appeng.api.networking.security.IActionHost)
+                                helper.getBlockEntity(new BlockPos(3, 0, 0)));
+                state.plan = grid.getCraftingService().beginCraftingCalculation(
+                        helper.getLevel(), () -> state.source,
+                        AEItemKey.of(Items.OAK_BUTTON), requested,
+                        appeng.api.networking.crafting.CalculationStrategy.REPORT_MISSING_ITEMS);
+            });
+            sequence.thenWaitUntil(() -> helper.check(state.plan.isDone(), "計算が終わらない"));
+            sequence.thenExecute(() -> {
+                appeng.api.networking.crafting.ICraftingPlan plan;
+                try {
+                    plan = state.plan.get();
+                } catch (Exception failure) {
+                    throw new GameTestAssertException("計算が例外で終わった: " + failure);
+                }
+                helper.check(!plan.simulation(),
+                        "計算がシミュレーション止まり (素材不足扱い)。"
+                                + "ACO の判断: " + insaneae$acoPlanDiagnostics());
+                var result = helper.getGrid(BlockPos.ZERO).getCraftingService()
+                        .submitJob(plan, null, null, false, state.source);
+                // <b>断られるのが正解。</b>exact 受け皿も Quantum CPU も無いこの盤面では
+                // 誰も実行できない。修正前の ACO はここで受理してしまい、
+                // ジョブが理由も出さず永久待機する (= #125)。
+                helper.check(!result.successful(),
+                        "実行手段の無い long 超の要求を受理してしまった "
+                                + "(ACO #125 の無言停止の再現。修正済みの ACO なら"
+                                + "委譲とゲートで投入時点で断られる)");
+                helper.check(result.errorCode()
+                                == appeng.api.networking.crafting.CraftingSubmitErrorCode
+                                        .INCOMPLETE_PLAN,
+                        "断り方が想定と違う: errorCode=" + result.errorCode()
+                                + " (INCOMPLETE_PLAN を期待。ACOの判断="
+                                + insaneae$acoPlanDiagnostics() + ")");
+            });
+
+            // 断ったあと、CPU がジョブを抱えていないこと (受理→即取消の残骸も無いこと)。
+            sequence.thenIdle(10);
+            sequence.thenExecute(() -> {
+                for (var cpu : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
+                    helper.check(!cpu.isBusy(),
+                            "断ったはずの要求でクラフト CPU が忙しいまま");
+                }
+                long stored = insaneae$storedAmount(helper, Items.OAK_BUTTON);
+                helper.check(stored == 0,
+                        "断ったはずの要求で完成品が湧いている (" + stored + ")");
+            });
+            sequence.thenSucceed();
+        // 多ブロックの形成待ちが加わるぶん、craftPastLong より少し余裕を持たせる。
+        }).maxTicks(500);
+    }
+
+    /** NeoECO の {@code NEBlockEntity#isFormed} を反射で読む (コンパイル時に型が無い)。 */
+    private static boolean insaneae$reflectFormed(Object blockEntity) {
+        try {
+            return (Boolean) blockEntity.getClass().getMethod("isFormed").invoke(blockEntity);
+        } catch (ReflectiveOperationException | RuntimeException unavailable) {
+            return false;
+        }
+    }
+
+    /**
+     * NeoECO のパターンバスへエンコード済みパターンを入れる。
+     *
+     * <p>{@code ECOCraftingPatternBusBlockEntity.itemHandler} は public final の
+     * {@code IItemHandlerModifiable} (表示中ページのスロットへ写像される)。
+     * 反射なのはコンパイル時に NeoECO の型が無いため。</p>
+     */
+    private static void insaneae$insertPatternsIntoBus(Object bus, ItemStack... patterns) {
+        net.neoforged.neoforge.items.IItemHandlerModifiable handler;
+        try {
+            handler = (net.neoforged.neoforge.items.IItemHandlerModifiable)
+                    bus.getClass().getField("itemHandler").get(bus);
+        } catch (ReflectiveOperationException | ClassCastException failure) {
+            throw new GameTestAssertException("パターンバスへ反射でアクセスできない "
+                    + "(NeoECO の itemHandler フィールドが変わった可能性): " + failure);
+        }
+        int slot = 0;
+        for (ItemStack pattern : patterns) {
+            ItemStack rest = pattern;
+            while (!rest.isEmpty() && slot < handler.getSlots()) {
+                rest = handler.insertItem(slot++, rest, false);
+            }
+            if (!rest.isEmpty()) {
+                throw new GameTestAssertException(
+                        "パターンバスがパターンを受け取らない: " + pattern);
+            }
+        }
+    }
+
+    /**
      * ACO が BigInteger 計画を断った理由。{@code /aco stats} に出るのと同じ内容。
      *
      * <p>反射なのは、この検査クラスが ACO 無しの環境でも読まれるため。</p>
@@ -1971,7 +2205,14 @@ public final class InsaneAETestPlots {
     /** Advanced AE のブロック。入っていなければ null。 */
     @Nullable
     private static net.minecraft.world.level.block.Block insaneae$aaeBlock(String id) {
-        var key = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("advanced_ae", id);
+        return insaneae$optionalBlock("advanced_ae", id);
+    }
+
+    /** 任意 Mod のブロック。その Mod が入っていなければ null。 */
+    @Nullable
+    private static net.minecraft.world.level.block.Block insaneae$optionalBlock(
+            String namespace, String id) {
+        var key = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(namespace, id);
         if (!net.minecraft.core.registries.BuiltInRegistries.BLOCK.containsKey(key)) {
             return null;
         }
