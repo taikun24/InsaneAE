@@ -238,6 +238,27 @@ dependencies {
         localRuntime "curse.maven:geckolib-388172:8350073"
     }
 
+    // Advanced Assembly Computing (ACC) + Neo ECO AE【任意・オプトイン】。
+    // -PwithAcc=true で dev 実行に載る。
+    //
+    // <b>ACO の物理実行が本来想定している実行系がこれ。</b>
+    // PhysicalCraftingTreeTransaction の待ち理由の文字列はほとんどが NeoECO を名指ししている
+    // (waiting for a NeoECO crafting-table Pattern Bus / all NeoECO crafting-table workers are busy 等)。
+    // うちの Quantum CPU は汎用の CraftingTableBatchTarget として乗っているが、
+    // <b>そちらの経路が実際に駆動されているのか</b>を確かめるための対照として要る (ACO #125)。
+    //
+    // jar は libs/ へ (gitignore 済み):
+    //   aac1.0.7_1.21.1.jar  gh release download aac-v1.0.7-mc1.21.1 -R syarukasu/advanced-assembly-computing
+    //   neoecoae-21.1.1.jar  https://cdn.modrinth.com/data/udZtKfzP/versions/gWMhHBje/neoecoae-21.1.1.jar
+    //   ldlib2-...-all.jar   https://cdn.modrinth.com/data/B1CBVXHX/versions/DwvxthOm/ldlib2-neoforge-1.21.1-2.2.36.a-all.jar
+    // ACC は ACO を<b>必須</b>で要求する ([1.5.15,1.6.0)) ので -PwithAco=true と併用すること。
+    if (project.findProperty('withAcc') == 'true') {
+        localRuntime files(
+                'libs/aac1.0.7_1.21.1.jar',
+                'libs/neoecoae-21.1.1.jar',
+                'libs/ldlib2-neoforge-1.21.1-2.2.36.a-all.jar')
+    }
+
     // Pendulum — クライアント側のスクリプト実行 Mod【任意・オプトイン】。
     // -PwithPendulum=true で dev クライアントに載る。
     //
