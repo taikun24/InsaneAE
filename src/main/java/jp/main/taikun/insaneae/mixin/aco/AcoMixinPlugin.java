@@ -46,13 +46,26 @@ public class AcoMixinPlugin implements IMixinConfigPlugin {
     private static final String EXACT_STORAGE_PROVIDER_MIXIN =
             "jp.main.taikun.insaneae.mixin.aco.UltraCreativeCellExactAmountProviderMixin";
 
+    /**
+     * exact 実行の納品先ポリシー。<b>ACO 1.5.23 で入った</b>公開契約なので、
+     * これを実装する Mixin にも同じ形の追加条件が要る。
+     */
+    private static final String ACO_EXACT_INSERT_POLICY =
+            "com.syaru.ae2craftingoptimizer.api.vector.ExactVectorStoragePolicy";
+
+    /** 上のクラスを実装する Mixin。 */
+    private static final String EXACT_INSERT_POLICY_MIXIN =
+            "jp.main.taikun.insaneae.mixin.aco.UltraCreativeCellExactInsertPolicyMixin";
+
     private boolean acoPresent;
     private boolean exactStorageProviderPresent;
+    private boolean exactInsertPolicyPresent;
 
     @Override
     public void onLoad(String mixinPackage) {
         acoPresent = insaneae$canSee(ACO_MARKER);
         exactStorageProviderPresent = acoPresent && insaneae$canSee(ACO_EXACT_STORAGE_PROVIDER);
+        exactInsertPolicyPresent = acoPresent && insaneae$canSee(ACO_EXACT_INSERT_POLICY);
     }
 
     /**
@@ -82,6 +95,9 @@ public class AcoMixinPlugin implements IMixinConfigPlugin {
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
         if (EXACT_STORAGE_PROVIDER_MIXIN.equals(mixinClassName)) {
             return exactStorageProviderPresent;
+        }
+        if (EXACT_INSERT_POLICY_MIXIN.equals(mixinClassName)) {
+            return exactInsertPolicyPresent;
         }
         return acoPresent;
     }
