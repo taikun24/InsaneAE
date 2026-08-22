@@ -131,6 +131,18 @@ public final class AcoBigIntegerJobRegistry {
             this.removeNativeTask = removeNativeTask;
         }
 
+        /**
+         * 先頭から舐め直す。
+         *
+         * <p>1 tick のうちに木を下から上へ何度も往復するために使う。
+         * 次の {@link #next()} で今の残りを取り直すので、直前の周回で
+         * 作った中間素材が次の段の材料として見える。</p>
+         */
+        public void rewind() {
+            iterator = null;
+            current = null;
+        }
+
         public boolean next() {
             if (iterator == null) {
                 iterator = job.snapshotKeys().iterator();

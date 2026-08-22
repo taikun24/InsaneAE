@@ -1818,10 +1818,16 @@ public final class InsaneAETestPlots {
                                 + " ACOの判断=" + insaneae$acoPlanDiagnostics());
             });
 
-            sequence.thenIdle(20);
+            // <b>1 tick だけ待つ。</b>加速カード満載 + タスク統合なら、この規模は
+            // 1 tick で作り切れるのが仕様 (窓は 1 tick で 1024 枚使える)。
+            // ここを長く取ると「遅いが完走する」状態を緑にしてしまう。
+            // <b>tick 数まで見る。</b>加速カード満載 + タスク統合なら、この規模は
+            // 数 tick で終わるのが仕様 (窓は 1 tick に 1024 枚使える)。段ごとに
+            // tick を消費していた頃はここが 4 tick あたり 1 段しか進まなかった。
+            sequence.thenIdle(2);
             sequence.thenExecute(() ->
                     state.firstSample = insaneae$storedAmount(helper, Items.CHEST));
-            sequence.thenIdle(60);
+            sequence.thenIdle(6);
             sequence.thenExecute(() -> {
                 long second = insaneae$storedAmount(helper, Items.CHEST);
                 helper.check(second >= state.firstSample,
@@ -1829,7 +1835,7 @@ public final class InsaneAETestPlots {
                 // 「増えている」だけでは不十分。実機の症状は「進むが終わらない」なので、
                 // この規模なら数 tick で作り切れるはずの<b>完走</b>を要求する。
                 helper.check(second >= requested,
-                        "中間素材が long を超える木が完走しない (" + state.firstSample
+                        "中間素材が long を超える木が数 tick で終わらない (" + state.firstSample
                                 + " → " + second + "、要求は " + requested + ")。"
                                 + "板の在庫=" + insaneae$storedAmount(helper, Items.OAK_PLANKS)
                                 + " 原木の在庫=" + insaneae$storedAmount(helper, Items.OAK_LOG));
