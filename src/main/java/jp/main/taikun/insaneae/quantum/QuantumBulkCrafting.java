@@ -242,7 +242,7 @@ public final class QuantumBulkCrafting {
         KeyCounter containerItems = new KeyCounter();
         boolean exactWindow = view.hasExactCraftingPlan();
         // AE2のwaitingForはlong固定なので、1窓の出力だけはlongへ正確に戻せる範囲に制限する。
-        limit = Math.min(limit, getSafeOutputWindow(details));
+        limit = Math.min(limit, getSafeOutputWindow(view, details));
         if (limit <= 0L) {
             return 0;
         }
@@ -508,16 +508,46 @@ public final class QuantumBulkCrafting {
         }
     }
 
-    /** 1窓の出力がAE2のlong会計を超えないように上限を求める。 */
-    private static long getSafeOutputWindow(IPatternDetails details) {
+    /**
+     * 1窓の出力がAE2のlong会計を超えないように上限を求める。
+     *
+     * <p><b>1 窓ぶんの掛け算だけを見てはいけない。</b>組み上がった出力は CPU の
+     * クラフト在庫 ({@code ListCraftingInventory} = {@code KeyCounter}) に積まれ、
+     * そこは<b>キーごとに long</b> である。窓を重ねると 1 窓が安全でも
+     * <b>積算が long を折り返し、作った中間素材がまるごと消える</b>。
+     * 消えたぶんは誰も作り直さないので、次の段が材料待ちのまま永久に止まる。</p>
+     *
+     * <p>実際、8 倍の段を重ねた木 (中間素材が long を超えるもの) がこれで停止した。
+     * 中間素材を使う側が減らすまで待てば良いだけなので、<b>いま抱えている数を
+     * 差し引いた残り</b>を窓の上限にする。</p>
+     */
+    private static long getSafeOutputWindow(CraftingJobView view, IPatternDetails details) {
         long limit = Long.MAX_VALUE;
         for (GenericStack output : details.getOutputs()) {
             if (output.amount() <= 0L) {
                 return 0L;
             }
-            limit = Math.min(limit, Long.MAX_VALUE / output.amount());
+            long headroom = Long.MAX_VALUE - heldForOutput(view, output.what());
+            // 抱えている数が上限に達している間は、この窓では 1 回も組まない。
+            if (headroom <= 0L) {
+                return 0L;
+            }
+            limit = Math.min(limit, headroom / output.amount());
         }
         return limit;
+    }
+
+    /**
+     * この出力キーについて CPU が今抱えている数。
+     *
+     * <p>クラフト在庫と完成待ち帳簿の<b>大きいほう</b>を見る。搬入されるまでは
+     * 完成待ちだけが増え、搬入後はクラフト在庫だけが増えるので、
+     * どちらか一方では折り返しを見逃す。</p>
+     */
+    private static long heldForOutput(CraftingJobView view, AEKey key) {
+        long inventory = view.getInventory().extract(key, Long.MAX_VALUE, Actionable.SIMULATE);
+        long waitingFor = view.getWaitingFor().extract(key, Long.MAX_VALUE, Actionable.SIMULATE);
+        return Math.max(Math.max(inventory, 0L), Math.max(waitingFor, 0L));
     }
 
     /** 加算結果を負数へ折り返さず、窓の上限Long.MAX_VALUEへ飽和させる。 */

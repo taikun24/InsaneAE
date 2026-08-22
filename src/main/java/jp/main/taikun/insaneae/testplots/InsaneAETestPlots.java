@@ -1432,6 +1432,133 @@ public final class InsaneAETestPlots {
         }).maxTicks(60);
     }
 
+    /**
+     * <b>中間素材の必要数が long を超える木を、最後まで作り切れること。</b>
+     *
+     * <p>{@link #craftPastLong} との違いは<b>どこが long を超えるか</b>。あちらは
+     * 完成品の要求数だけが大きく、木を下りるほど数が減る (ボタン→板→原木)。
+     * こちらは<b>途中の段が要求数より多くなる</b> (チェスト 1 個 = 板 8 枚) ので、
+     * 完成品が long 内でも<b>中間素材が long を超える</b>。</p>
+     *
+     * <p>実機で 8 倍ずつ 100 段重ねた鎖を頼んだとき、<b>中間段が long を超える
+     * ちょうどそこから</b>完成しなくなる症状が出た (22 段までは完走、23 段から停止)。
+     * 既存のテストはどれも中間段が long 内なので、この形だけ穴になっていた。</p>
+     */
+    @TestPlot("insaneae_craft_past_long_intermediate")
+    public static void craftPastLongIntermediate(PlotBuilder plot) {
+        // チェスト 1 個 = 板 8 枚、原木 1 本 = 板 4 枚。
+        // 要求 5e18 だと 板 = 4e19、<b>板パターンの実行回数 = 1e19</b> で、
+        // どちらも Long.MAX_VALUE (9.22e18) を超える。
+        // 回数が long 内だと ACO は通常の long 計画を返し、BigInteger 実行経路を
+        // 通らない (= このテストが何も検査しないことになる) ので、ここは回数で選ぶ。
+        final long requested = 5_000_000_000_000_000_000L;
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,3] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
+            drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
+            // 完成品の置き場。8E セルなら 3.6e19 個入るので要求数で先に満杯にならない。
+            drive.getInternalInventory().addItems(new ItemStack(
+                    ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_8E).get()));
+        });
+        plot.blockState("2 [0,1] [0,2]", ModBlocks.BIG_INTEGER_CPU.get().defaultBlockState());
+        plot.block("2 1 0", AEBlocks.CRAFTING_ACCELERATOR);
+        plot.blockState("3 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        plot.test(helper -> {
+            // ACO 無しではこの規模の計画自体が作れないので、何も検査しない。
+            if (optionalClass("com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi") == null) {
+                helper.startSequence().thenSucceed();
+                return;
+            }
+            var state = new Object() {
+                appeng.me.helpers.MachineSource source;
+                java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan> plan;
+                long firstSample;
+            };
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(3, 0, 0));
+                // 原木 1 → 板 4。
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_LOG)));
+                // 板 8 → チェスト 1。中央だけ空けた 3x3 のバニラレシピ。
+                //
+                // 1.20.1 の AE2 テストヘルパーには定形レシピの encode が無い
+                // (1.21.1 の CraftingPatternHelper.encodeCraftingPattern は 1.20.1 に無い)
+                // ので、公開 API へ直接レシピを渡して組む。
+                ItemStack[] sparse = new ItemStack[9];
+                for (int slot = 0; slot < sparse.length; slot++) {
+                    sparse[slot] = slot == 4
+                            ? ItemStack.EMPTY
+                            : new ItemStack(Items.OAK_PLANKS);
+                }
+                var chestRecipe = helper.getLevel().getRecipeManager()
+                        .byKey(new net.minecraft.resources.ResourceLocation("minecraft", "chest"))
+                        .orElseThrow(() -> new GameTestAssertException("チェストのレシピが無い"));
+                cpu.getLogic().getPatternInv().addItems(
+                        appeng.api.crafting.PatternDetailsHelper.encodeCraftingPattern(
+                                (net.minecraft.world.item.crafting.CraftingRecipe) chestRecipe,
+                                sparse, new ItemStack(Items.CHEST), false, false));
+                for (int i = 0; i < QuantumCpuBlockEntity.MAX_ACCELERATION_CARDS; i++) {
+                    cpu.getUpgrades().addItems(
+                            new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
+                }
+                cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.TASK_FUSION_CARD.get()));
+            });
+            sequence.thenIdle(60);
+
+            sequence.thenExecute(() -> {
+                var grid = helper.getGrid(BlockPos.ZERO);
+                state.source = new appeng.me.helpers.MachineSource(
+                        (appeng.api.networking.security.IActionHost)
+                                helper.getBlockEntity(new BlockPos(3, 0, 0)));
+                state.plan = grid.getCraftingService().beginCraftingCalculation(
+                        helper.getLevel(), () -> state.source,
+                        AEItemKey.of(Items.CHEST), requested,
+                        appeng.api.networking.crafting.CalculationStrategy.REPORT_MISSING_ITEMS);
+            });
+            sequence.thenWaitUntil(() -> helper.check(state.plan.isDone(), "計算が終わらない"));
+            sequence.thenExecute(() -> {
+                appeng.api.networking.crafting.ICraftingPlan plan;
+                try {
+                    plan = state.plan.get();
+                } catch (Exception failure) {
+                    throw new GameTestAssertException("計算が例外で終わった: " + failure);
+                }
+                helper.check(!plan.simulation(),
+                        "計算がシミュレーション止まり (素材不足扱い)。"
+                                + "ACO の判断: " + insaneae$acoPlanDiagnostics());
+                var result = helper.getGrid(BlockPos.ZERO).getCraftingService()
+                        .submitJob(plan, null, null, false, state.source);
+                helper.check(result.successful(),
+                        "中間素材が long を超える要求の投入が断られた: errorCode="
+                                + result.errorCode()
+                                + " 正確な必要bytes=" + insaneae$exactPlanBytes(plan)
+                                + " ACOの判断=" + insaneae$acoPlanDiagnostics());
+            });
+
+            sequence.thenIdle(20);
+            sequence.thenExecute(() ->
+                    state.firstSample = insaneae$storedAmount(helper, Items.CHEST));
+            sequence.thenIdle(60);
+            sequence.thenExecute(() -> {
+                long second = insaneae$storedAmount(helper, Items.CHEST);
+                helper.check(second >= state.firstSample,
+                        "完成品が減っている (" + state.firstSample + " → " + second + ")");
+                // 「増えている」だけでは不十分。実機の症状は「進むが終わらない」なので、
+                // この規模なら数 tick で作り切れるはずの<b>完走</b>を要求する。
+                helper.check(second >= requested,
+                        "中間素材が long を超える木が完走しない (" + state.firstSample
+                                + " → " + second + "、要求は " + requested + ")。"
+                                + "板の在庫=" + insaneae$storedAmount(helper, Items.OAK_PLANKS)
+                                + " 原木の在庫=" + insaneae$storedAmount(helper, Items.OAK_LOG));
+            });
+            sequence.thenSucceed();
+        }).maxTicks(600);
+    }
+
     @TestPlot("insaneae_craft_past_long")
     public static void craftPastLong(PlotBuilder plot) {
         // 要求量。完了判定にも使うので 1 か所にまとめる。
