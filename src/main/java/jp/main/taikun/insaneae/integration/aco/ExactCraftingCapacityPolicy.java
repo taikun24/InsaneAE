@@ -1,6 +1,8 @@
 package jp.main.taikun.insaneae.integration.aco;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
 import java.util.Objects;
 
 /** ACOの正確な必要容量と、InsaneAE CPUの正確な容量を比較する純粋な判定。 */
@@ -18,5 +20,20 @@ public final class ExactCraftingCapacityPolicy {
             return false;
         }
         return required.compareTo(capacity) <= 0;
+    }
+
+    /**
+     * ログ用の短い表記。正確な値は{@code 10進16,384桁}まで伸びうるので展開しない。
+     *
+     * <p>拒否理由を読むのに必要なのは「どれだけ足りないか」の桁感だけなので、
+     * long内はそのまま、それ以上は有効数字4桁の科学表記へ落とす。</p>
+     */
+    public static String describe(BigInteger amount) {
+        Objects.requireNonNull(amount, "amount");
+        // long内の値は丸めず読めるので、そのまま出す。
+        if (amount.abs().bitLength() < Long.SIZE) {
+            return amount.toString();
+        }
+        return new BigDecimal(amount).round(new MathContext(4)).toEngineeringString();
     }
 }
