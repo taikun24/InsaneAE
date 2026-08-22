@@ -1444,6 +1444,130 @@ public final class InsaneAETestPlots {
      * ちょうどそこから</b>完成しなくなる症状が出た (22 段までは完走、23 段から停止)。
      * 既存のテストはどれも中間段が long 内なので、この形だけ穴になっていた。</p>
      */
+    /**
+     * <b>ACO 自身に BigInteger のまま実行させたとき、同じ木が完走すること。</b>
+     *
+     * <p>{@link #craftPastLongIntermediate} と盤面は同じで、違いは<b>納品先</b>だけ。
+     * 監査対象の exact セル (ここでは完成品を設定した超強化クリエイティブセル) を
+     * 置くと、ACO は所有権を手放さず {@code PhysicalCraftingTreeTransaction} で
+     * 自分で実行する。中間素材は ACO の BigInteger エスクローに載るので、
+     * <b>long のストレージを往復しない</b>。</p>
+     *
+     * <p>納品先が無いと ACO は所有を諦めて外部コンシューマ (こちらの Quantum CPU) へ
+     * 委譲し、long の窓に刻む経路になる。どちらの経路も生きていることを見るために、
+     * 2 本並べてある。</p>
+     */
+    @TestPlot("insaneae_aco_owned_intermediate")
+    public static void acoOwnedIntermediate(PlotBuilder plot) {
+        final long requested = 5_000_000_000_000_000_000L;
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,3] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
+            // 原木の供給元であり、チェストの納品先でもある監査対象セル。
+            drive.getInternalInventory().addItems(
+                    insaneae$ultraCreativeCell(Items.OAK_LOG, Items.CHEST));
+        });
+        plot.blockState("2 [0,1] [0,2]", ModBlocks.BIG_INTEGER_CPU.get().defaultBlockState());
+        plot.block("2 1 0", AEBlocks.CRAFTING_ACCELERATOR);
+        plot.blockState("3 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        plot.test(helper -> {
+            // ACO の exact 実行が無ければ何も検査しない。
+            if (optionalClass("com.syaru.ae2craftingoptimizer.access.ExactCraftingJobAccess") == null) {
+                helper.startSequence().thenSucceed();
+                return;
+            }
+            var state = new Object() {
+                appeng.me.helpers.MachineSource source;
+                java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan> plan;
+                boolean submitted;
+            };
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(3, 0, 0));
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_LOG)));
+                Object[] chest = new Object[] {
+                        Items.OAK_PLANKS, Items.OAK_PLANKS, Items.OAK_PLANKS,
+                        Items.OAK_PLANKS, null, Items.OAK_PLANKS,
+                        Items.OAK_PLANKS, Items.OAK_PLANKS, Items.OAK_PLANKS};
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeCraftingPattern(
+                                helper.getLevel(), chest, false, false));
+                for (int i = 0; i < QuantumCpuBlockEntity.MAX_ACCELERATION_CARDS; i++) {
+                    cpu.getUpgrades().addItems(
+                            new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
+                }
+                cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.TASK_FUSION_CARD.get()));
+            });
+            sequence.thenIdle(60);
+
+            sequence.thenExecute(() -> {
+                var grid = helper.getGrid(BlockPos.ZERO);
+                state.source = new appeng.me.helpers.MachineSource(
+                        (appeng.api.networking.security.IActionHost)
+                                helper.getBlockEntity(new BlockPos(3, 0, 0)));
+                state.plan = grid.getCraftingService().beginCraftingCalculation(
+                        helper.getLevel(), () -> state.source,
+                        AEItemKey.of(Items.CHEST), requested,
+                        appeng.api.networking.crafting.CalculationStrategy.REPORT_MISSING_ITEMS);
+            });
+            sequence.thenWaitUntil(() -> helper.check(state.plan.isDone(), "計算が終わらない"));
+            sequence.thenExecute(() -> {
+                appeng.api.networking.crafting.ICraftingPlan plan;
+                try {
+                    plan = state.plan.get();
+                } catch (Exception failure) {
+                    throw new GameTestAssertException("計算が例外で終わった: " + failure);
+                }
+                var result = helper.getGrid(BlockPos.ZERO).getCraftingService()
+                        .submitJob(plan, null, null, false, state.source);
+                state.submitted = result.successful();
+                helper.check(state.submitted,
+                        "納品先がある盤面なのに投入が断られた: errorCode=" + result.errorCode()
+                                + " ACOの判断=" + insaneae$acoPlanDiagnostics());
+            });
+
+            // <b>ACO が所有したことまで見る。</b>ここが委譲に変わると、テストは
+            // 「速い long 窓経路」を検査しているだけになり、この 2 本を分けた意味が消える。
+            sequence.thenIdle(2);
+            sequence.thenExecute(() -> {
+                appeng.crafting.execution.ExecutingCraftingJob job = null;
+                for (var cpu : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
+                    if (cpu instanceof appeng.me.cluster.implementations.CraftingCPUCluster cluster) {
+                        var found = ((jp.main.taikun.insaneae.mixin.CraftingCpuLogicJobAccessor)
+                                (Object) cluster.craftingLogic).insaneae$getJob();
+                        if (found != null) {
+                            job = found;
+                            break;
+                        }
+                    }
+                }
+                helper.check(job != null, "投入したはずのジョブが CPU に無い");
+                helper.check(
+                        jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership.isAcoOwned(job),
+                        "納品先を用意したのに ACO が所有していない (long 窓へ委譲された)。"
+                                + "ACOの判断=" + insaneae$acoPlanDiagnostics());
+            });
+
+            // 実行が終わって CPU が空くこと。納品先がクリエイティブセルなので
+            // 完成品の在庫では測れない。
+            sequence.thenIdle(40);
+            sequence.thenExecute(() -> {
+                boolean busy = false;
+                for (var cpu : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
+                    busy |= cpu.isBusy();
+                }
+                helper.check(!busy,
+                        "40 tick 経ってもジョブが終わらない。"
+                                + "ACOの判断=" + insaneae$acoPlanDiagnostics());
+            });
+            sequence.thenSucceed();
+        }).maxTicks(600);
+    }
+
     @TestPlot("insaneae_craft_past_long_intermediate")
     public static void craftPastLongIntermediate(PlotBuilder plot) {
         // チェスト 1 個 = 板 8 枚、原木 1 本 = 板 4 枚。
