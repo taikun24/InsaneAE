@@ -1857,6 +1857,40 @@ public final class InsaneAETestPlots {
         }).maxTicks(600);
     }
 
+    /**
+     * <b>同じアイテムを申告するセルが 2 枚あっても、在庫が負数へ折り返さないこと。</b>
+     *
+     * <p>{@code KeyCounter} はキーごとに long。クリエイティブセルは設定した種類を
+     * {@code Long.MAX_VALUE} で申告するので、素朴に足すと 2 枚目で折り返す。
+     * 負の在庫を見た ACO は「正確値を復元できない」として計画ごと降りるため
+     * ({@code WidePlanUnavailableException: BigInteger inventory sidecar is incomplete})、
+     * <b>セルを 1 枚足しただけであらゆるクラフトが失敗する</b>。実機で
+     * ExtendedAE Plus の Infinity セルと同居させて踏んだ。</p>
+     */
+    @TestPlot("insaneae_creative_cell_no_overflow")
+    public static void creativeCellNoOverflow(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,1] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
+            // 同じ種類を申告するセルを 2 枚。実機の「無限セル 2 枚」を最小構成で再現する。
+            drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
+            drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
+        });
+
+        plot.test(helper -> {
+            var sequence = helper.startSequence();
+            sequence.thenIdle(5);
+            sequence.thenExecute(() -> {
+                long stored = insaneae$storedAmount(helper, Items.OAK_LOG);
+                helper.check(stored > 0,
+                        "無限セル 2 枚で在庫が負数へ折り返した (" + stored + ")");
+                helper.check(stored == Long.MAX_VALUE,
+                        "在庫が long の天井になっていない (" + stored + ")");
+            });
+            sequence.thenSucceed();
+        }).maxTicks(60);
+    }
+
     @TestPlot("insaneae_craft_past_long_intermediate")
     public static void craftPastLongIntermediate(PlotBuilder plot) {
         // チェスト 1 個 = 板 8 枚、原木 1 本 = 板 4 枚。
