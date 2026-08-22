@@ -1382,6 +1382,56 @@ public final class InsaneAETestPlots {
         }).maxTicks(400);
     }
 
+    /**
+     * BigInteger クラフトストレージが、ACO の理論上限を容量として名乗れているか。
+     *
+     * <p>容量は {@code AcoBigIntegerLimitBridge} が ACO の公開 API
+     * ({@code CAPACITY_LIMIT_API_VERSION} / {@code maximumSupportedAmount}) を反射で
+     * 読んで決める。API が引けないと<b>例外を握り潰して long 互換容量へ静かに退避</b>し、
+     * long 超の注文が「容量不足」で弾かれる。実際 ACO の mc/1.21.1 にはこの API が
+     * 移植されておらず、実機でそれを踏んだ。ACO 導入時だけ、退避していないことを見る。</p>
+     */
+    @TestPlot("insaneae_biginteger_cpu_capacity")
+    public static void bigIntegerCpuCapacity(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,2] 0 0");
+        plot.blockState("2 [0,1] [0,2]", ModBlocks.BIG_INTEGER_CPU.get().defaultBlockState());
+
+        plot.test(helper -> {
+            var sequence = helper.startSequence();
+            sequence.thenIdle(5);
+            sequence.thenExecute(() -> {
+                // ACO 無しなら long 互換容量が正しい姿なので、何も検査しない。
+                if (jp.main.taikun.insaneae.integration.aco.AcoBigIntegerLimitBridge
+                        .maximumSupportedAmount().isEmpty()) {
+                    if (optionalClass("com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi")
+                            != null) {
+                        throw new GameTestAssertException(
+                                "ACO はあるのに理論上限を読めていない。"
+                                        + "公開 API (CAPACITY_LIMIT_API_VERSION / "
+                                        + "maximumSupportedAmount) がこの ACO に無い可能性が高い");
+                    }
+                    return;
+                }
+
+                java.math.BigInteger capacity = null;
+                for (var cpu : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
+                    if (cpu instanceof jp.main.taikun.insaneae.crafting.IBigCraftingCapacity exact) {
+                        capacity = exact.insaneae$exactStorageCapacity();
+                        break;
+                    }
+                }
+                helper.check(capacity != null, "BigInteger CPU クラスタが見つからない");
+                // long 上限ちょうどは「退避した long 互換容量」の値。超えていることを見る。
+                helper.check(
+                        capacity.compareTo(java.math.BigInteger.valueOf(Long.MAX_VALUE)) > 0,
+                        "BigInteger クラフトストレージが long 互換容量へ退避している"
+                                + " (容量=" + capacity + ")");
+            });
+            sequence.thenSucceed();
+        }).maxTicks(60);
+    }
+
     @TestPlot("insaneae_craft_past_long")
     public static void craftPastLong(PlotBuilder plot) {
         // 要求量。完了判定にも使うので 1 か所にまとめる。

@@ -216,6 +216,17 @@ public abstract class CraftingCPUClusterMixin
         BigInteger capacity = insaneae$recountStorage();
         // 正確な必要量が正確な容量を超える場合だけ、AE2標準の失敗結果を返す。
         if (!ExactCraftingCapacityPolicy.fits(required, capacity)) {
+            /*
+             * AE2の画面に出せるのは「ストレージが不足しています」だけで、どれだけ
+             * 足りないのかが分からない。BigIntegerクラフトストレージがACO側のAPI差で
+             * long容量へ退避しているのか、単に注文が大きすぎるのかを切り分けられるよう、
+             * 正確な必要量と容量をログへ残す。
+             */
+            INSANEAE$LOGGER.warn(
+                    "InsaneAE: refusing a wide crafting job on this CPU;"
+                            + " needs {} bytes but the cluster holds {} bytes",
+                    ExactCraftingCapacityPolicy.describe(required),
+                    ExactCraftingCapacityPolicy.describe(capacity));
             cir.setReturnValue(CraftingSubmitResult.CPU_TOO_SMALL);
         }
     }

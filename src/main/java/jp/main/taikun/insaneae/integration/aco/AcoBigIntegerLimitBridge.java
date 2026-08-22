@@ -4,6 +4,8 @@ import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** ACOを必須依存にせず、公開されているBigInteger実装上限を容量計算と表示へ渡す。 */
 public final class AcoBigIntegerLimitBridge {
@@ -18,6 +20,16 @@ public final class AcoBigIntegerLimitBridge {
             new AtomicReference<>();
 
     private AcoBigIntegerLimitBridge() {
+    }
+
+    /**
+     * ログの取得を遅延させる。
+     *
+     * <p>この橋はACO非導入の判定だけならログ実装に触らずに終わるため、
+     * ログ基盤の無い単体テストからも書式ヘルパーを直接呼べるようにしておく。</p>
+     */
+    private static Logger logger() {
+        return LoggerFactory.getLogger("InsaneAE");
     }
 
     /** ACOが有効な場合だけ、公開APIが返す計画・NBT・同期の正確な上限を返す。 */
@@ -75,17 +87,27 @@ public final class AcoBigIntegerLimitBridge {
     }
 
     private static Optional<BigInteger> resolveMaximumSupportedAmount() {
+        ClassLoader loader = AcoBigIntegerLimitBridge.class.getClassLoader();
+        Class<?> api;
         try {
-            ClassLoader loader = AcoBigIntegerLimitBridge.class.getClassLoader();
-            Class<?> api = Class.forName(ACO_API_CLASS, false, loader);
+            api = Class.forName(ACO_API_CLASS, false, loader);
+        } catch (ClassNotFoundException | LinkageError absent) {
+            // ACO未導入は通常構成なので、long互換容量へ静かに戻す。
+            return Optional.empty();
+        }
+
+        try {
             int capacityApiVersion = api.getField(CAPACITY_API_VERSION_FIELD).getInt(null);
             // 容量上限APIを持たない旧ACOから、内部値を推測して読まない。
             if (capacityApiVersion < 1) {
-                return Optional.empty();
+                return unsupported("capacity limit API v" + capacityApiVersion + " is too old");
             }
             Method isEnabled = api.getMethod(ENABLED_METHOD);
             // ACOのBigIntegerバックエンドが無効なら、CPU容量として表示しない。
             if (!Boolean.TRUE.equals(isEnabled.invoke(null))) {
+                logger().info(
+                        "InsaneAE: ACO BigInteger backend is disabled;"
+                                + " BigInteger crafting storage falls back to the long capacity");
                 return Optional.empty();
             }
 
@@ -93,11 +115,28 @@ public final class AcoBigIntegerLimitBridge {
             Object value = maximumAmount.invoke(null);
             // 公開APIの戻り値が契約と異なる場合は、推測で変換しない。
             if (!(value instanceof BigInteger maximum) || maximum.signum() <= 0) {
-                return Optional.empty();
+                return unsupported(MAXIMUM_AMOUNT_METHOD + " returned " + value);
             }
             return Optional.of(maximum);
         } catch (ReflectiveOperationException | LinkageError | RuntimeException unavailable) {
-            return Optional.empty();
+            // ACOはあるのにAPIが引けない = 想定外の版。容量が黙って縮むので必ず知らせる。
+            return unsupported(unavailable.toString());
         }
+    }
+
+    /**
+     * ACOはあるのに容量上限APIが使えない場合の退避。
+     *
+     * <p>ここに落ちるとBigIntegerクラフトストレージは1ブロック{@code Long.MAX_VALUE}
+     * バイトの通常ストレージになり、long超の注文が「容量不足」で弾かれる。
+     * 症状がACO側の版差に見えないよう、理由を一度だけ警告へ残す。</p>
+     */
+    private static Optional<BigInteger> unsupported(String detail) {
+        logger().warn(
+                "InsaneAE: ACO is present but its BigInteger capacity-limit API is unavailable ({});"
+                        + " BigInteger crafting storage reports only Long.MAX_VALUE bytes per block,"
+                        + " so wide orders are refused as CPU_TOO_SMALL",
+                detail);
+        return Optional.empty();
     }
 }
