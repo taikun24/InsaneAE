@@ -145,49 +145,119 @@ public final class QuantumBulkCrafting {
             CraftingService craftingService,
             IEnergyService energyService,
             Level level) {
+        // 1 tick に使える窓の総数。パターンをまたいで共有する。
+        // 1 本のパターンが全部使い切ると、次の段が材料をもらえないまま tick が終わる。
+        WindowBudget windows = new WindowBudget(InsaneAEConfig.maxCraftingWindowsPerTick());
         int pushed = 0;
-        while (pushed < maxPatterns && cursor.next()) {
-            BigInteger remaining = cursor.remaining();
-            if (remaining.signum() <= 0) {
-                cursor.remove();
-                continue;
+        boolean drainWholeTree = false;
+        boolean progressed = true;
+
+        // 加速カード満載 + タスク統合のときは、木の下から上へ<b>何度も往復</b>する。
+        // 1 周では「下の段を作る → 上の段が使う」の 1 段ぶんしか進まないので、
+        // 段数のぶんだけ tick を食っていた (実機で「完走はするが遅い」の原因)。
+        // 往復の回数ではなく<b>窓の総数</b>で頭打ちにするので、1 tick の重さは変わらない。
+        // この呼び出しで触ったプロバイダ。周回の合間に完成品を清算するために覚えておく。
+        java.util.Set<IBulkCraftingProvider> touched =
+                java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
+        while (progressed && windows.remaining() > 0) {
+            progressed = false;
+            /*
+             * 周回の頭で完成品を流しておく。組み上がったものは一旦プロバイダの
+             * 保留分に溜まり、ME へ入るまで<b>次の段からは見えない</b>。清算しないと
+             * 「下の段は作ったのに上の段が材料切れ」で 1 周ごとに空振りし、
+             * 1 tick に 1 段しか進まない。
+             */
+            for (IBulkCraftingProvider settled : touched) {
+                settled.settleCompletedOutputs();
             }
-            IPatternDetails details = cursor.details();
-            IBulkCraftingProvider provider = findBulkProvider(craftingService, details);
-            if (provider == null) {
-                // 親Patternの材料がまだMEへ戻っていなくても、同じ窓の別Patternは進められる。
-                continue;
+            cursor.rewind();
+            while ((drainWholeTree || pushed < maxPatterns) && cursor.next()) {
+                BigInteger remaining = cursor.remaining();
+                if (remaining.signum() <= 0) {
+                    cursor.remove();
+                    continue;
+                }
+                IPatternDetails details = cursor.details();
+                IBulkCraftingProvider provider = findBulkProvider(craftingService, details);
+                if (provider == null) {
+                    // 親Patternの材料がまだMEへ戻っていなくても、同じ窓の別Patternは進められる。
+                    continue;
+                }
+                // タスク統合 (fusesOperations): 通常経路と同じく、まとめ 1 回を CPU 予算の
+                // 1 操作として数え、回数はプロバイダ自身の予算に任せる。
+                // BigInteger 経路こそ 1 窓が大きいので、ここを飛ばすと統合カードが効かない。
+                // 直前の窓で組んだぶんが保留のままだと、プロバイダは「取り込み中」を名乗って
+                // 予算 0 を返す。周回のたびに清算しておかないと 1 tick に 1 窓しか進まない。
+                if (touched.contains(provider)) {
+                    provider.settleCompletedOutputs();
+                }
+                boolean fused = provider.fusesOperations();
+                // 「アップグレード満載」= 統合カード + 加速カード 7 枚。この組み合わせのときだけ、
+                // CPU の 1 tick 予算 (long/tick) ではなく窓の総数だけで区切る。
+                if (fused && provider.repeatsWindowsWithinTick()) {
+                    drainWholeTree = true;
+                }
+                long boundedRemaining = remaining.min(LONG_MAX).longValueExact();
+                long limit = Math.min(boundedRemaining, provider.getBulkCapacity(details));
+                if (!fused) {
+                    limit = Math.min(limit, maxPatterns - pushed);
+                }
+                limit = clampForOutputs(details, limit);
+                if (limit <= 0L) {
+                    // このプロバイダのtick予算が尽きた場合は、次の窓で同じTaskを再試行する。
+                    continue;
+                }
+                long done = pushBulk(view, details, provider, limit, energyService, level);
+                if (done <= 0L) {
+                    // 材料搬入待ちのTaskで全Exact Jobを止めず、依存元Patternを先に進める。
+                    continue;
+                }
+                touched.add(provider);
+                windows.spend();
+                progressed = true;
+                BigInteger left = remaining.subtract(BigInteger.valueOf(done));
+                left = repeatWindows(view, details, provider, fused, left, windows,
+                        energyService, level);
+                cursor.setRemaining(left);
+                // 統合中は done が int を超えうるので、toIntExact に渡さないこと。
+                pushed += fused ? 1 : Math.toIntExact(done);
+                if (cursor.remaining().signum() <= 0) {
+                    cursor.remove();
+                }
+                view.markDirty();
             }
-            // タスク統合 (fusesOperations): 通常経路と同じく、まとめ 1 回を CPU 予算の
-            // 1 操作として数え、回数はプロバイダ自身の予算に任せる。
-            // BigInteger 経路こそ 1 窓が大きいので、ここを飛ばすと統合カードが効かない。
-            boolean fused = provider.fusesOperations();
-            long boundedRemaining = remaining.min(LONG_MAX).longValueExact();
-            long limit = Math.min(boundedRemaining, provider.getBulkCapacity(details));
-            if (!fused) {
-                limit = Math.min(limit, maxPatterns - pushed);
+            // 往復するのは木を下から上へ流すためなので、統合していない
+            // (= 1 クラフト 1 操作で CPU 予算に従う) ときは 1 周で終える。
+            if (!drainWholeTree) {
+                break;
             }
-            limit = clampForOutputs(details, limit);
-            if (limit <= 0L) {
-                // このプロバイダのtick予算が尽きた場合は、次の窓で同じTaskを再試行する。
-                continue;
-            }
-            long done = pushBulk(view, details, provider, limit, energyService, level);
-            if (done <= 0L) {
-                // 材料搬入待ちのTaskで全Exact Jobを止めず、依存元Patternを先に進める。
-                continue;
-            }
-            BigInteger left = remaining.subtract(BigInteger.valueOf(done));
-            left = repeatWindows(view, details, provider, fused, left, energyService, level);
-            cursor.setRemaining(left);
-            // 統合中は done が int を超えうるので、toIntExact に渡さないこと。
-            pushed += fused ? 1 : Math.toIntExact(done);
-            if (cursor.remaining().signum() <= 0) {
-                cursor.remove();
-            }
-            view.markDirty();
         }
         return pushed;
+    }
+
+    /**
+     * 1 tick に使える窓の総数。パターンをまたいで共有する予算。
+     *
+     * <p>これが無いと、一番下の段が窓を全部使い切って上の段に回らない。
+     * 「1 tick の重さ」を決めるのはここだけにしておき、往復の回数は縛らない。</p>
+     */
+    private static final class WindowBudget {
+        private int remaining;
+
+        WindowBudget(int windows) {
+            this.remaining = Math.max(windows, 1);
+        }
+
+        int remaining() {
+            return remaining;
+        }
+
+        void spend() {
+            if (remaining > 0) {
+                remaining--;
+            }
+        }
     }
 
     /**
@@ -210,12 +280,11 @@ public final class QuantumBulkCrafting {
      */
     private static BigInteger repeatWindows(CraftingJobView view, IPatternDetails details,
             IBulkCraftingProvider provider, boolean fused, BigInteger remaining,
-            IEnergyService energyService, Level level) {
+            WindowBudget windows, IEnergyService energyService, Level level) {
         if (!fused || !provider.repeatsWindowsWithinTick()) {
             return remaining;
         }
-        int maxWindows = InsaneAEConfig.maxCraftingWindowsPerTick();
-        for (int window = 1; window < maxWindows && remaining.signum() > 0; window++) {
+        while (windows.remaining() > 0 && remaining.signum() > 0) {
             // 先に清算する。これをしないと完成待ちが積み上がって long を溢れさせる。
             provider.settleCompletedOutputs();
 
@@ -227,9 +296,10 @@ public final class QuantumBulkCrafting {
             }
             long done = pushBulk(view, details, provider, limit, energyService, level);
             if (done <= 0L) {
-                // 材料切れ・電力切れ・ジョブ完了。次の tick に持ち越す。
+                // 材料切れ・電力切れ・ジョブ完了。同じ tick の別パターンへ回す。
                 break;
             }
+            windows.spend();
             remaining = remaining.subtract(BigInteger.valueOf(done));
         }
         return remaining;
