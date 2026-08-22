@@ -49,7 +49,18 @@ public class InsaneCreativeCellInventory implements StorageCell {
     public void getAvailableStacks(KeyCounter out) {
         for (AEKey key : configured) {
             // ここが AE2 との唯一の違い (向こうは Integer.MAX_VALUE)。
-            out.add(key, Long.MAX_VALUE);
+            //
+            // <b>ただし天井を越えて足さない。</b>KeyCounter はキーごとに long なので、
+            // 同じアイテムを大量に申告する別のセル (ExtendedAE Plus の Infinity セル、
+            // 他のクリエイティブセル) と同居すると素朴な加算が<b>負数へ折り返す</b>。
+            // 負の在庫は ACO が「正確値を復元できない」として計画ごと降りるため
+            // (WidePlanUnavailableException: BigInteger inventory sidecar is incomplete)、
+            // <b>セルを入れただけであらゆるクラフトが失敗する</b>。
+            // 自分の申告で天井を越えないぶんには、単独なら従来どおり Long.MAX_VALUE になる。
+            long headroom = Long.MAX_VALUE - Math.max(out.get(key), 0L);
+            if (headroom > 0L) {
+                out.add(key, headroom);
+            }
         }
     }
 

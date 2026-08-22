@@ -1489,13 +1489,22 @@ public final class InsaneAETestPlots {
                 cpu.getLogic().getPatternInv().addItems(
                         CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
                                 new ItemStack(Items.OAK_LOG)));
-                Object[] chest = new Object[] {
-                        Items.OAK_PLANKS, Items.OAK_PLANKS, Items.OAK_PLANKS,
-                        Items.OAK_PLANKS, null, Items.OAK_PLANKS,
-                        Items.OAK_PLANKS, Items.OAK_PLANKS, Items.OAK_PLANKS};
+                // 板 8 → チェスト 1。1.20.1 の AE2 テストヘルパーには定形レシピの
+                // encode が無いので、公開 API へ直接レシピを渡して組む
+                // (craftPastLongIntermediate と同じ理由)。
+                ItemStack[] sparse = new ItemStack[9];
+                for (int slot = 0; slot < sparse.length; slot++) {
+                    sparse[slot] = slot == 4
+                            ? ItemStack.EMPTY
+                            : new ItemStack(Items.OAK_PLANKS);
+                }
+                var chestRecipe = helper.getLevel().getRecipeManager()
+                        .byKey(new net.minecraft.resources.ResourceLocation("minecraft", "chest"))
+                        .orElseThrow(() -> new GameTestAssertException("チェストのレシピが無い"));
                 cpu.getLogic().getPatternInv().addItems(
-                        CraftingPatternHelper.encodeCraftingPattern(
-                                helper.getLevel(), chest, false, false));
+                        appeng.api.crafting.PatternDetailsHelper.encodeCraftingPattern(
+                                (net.minecraft.world.item.crafting.CraftingRecipe) chestRecipe,
+                                sparse, new ItemStack(Items.CHEST), false, false));
                 for (int i = 0; i < QuantumCpuBlockEntity.MAX_ACCELERATION_CARDS; i++) {
                     cpu.getUpgrades().addItems(
                             new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
@@ -1566,6 +1575,40 @@ public final class InsaneAETestPlots {
             });
             sequence.thenSucceed();
         }).maxTicks(600);
+    }
+
+    /**
+     * <b>同じアイテムを申告するセルが 2 枚あっても、在庫が負数へ折り返さないこと。</b>
+     *
+     * <p>{@code KeyCounter} はキーごとに long。クリエイティブセルは設定した種類を
+     * {@code Long.MAX_VALUE} で申告するので、素朴に足すと 2 枚目で折り返す。
+     * 負の在庫を見た ACO は「正確値を復元できない」として計画ごと降りるため
+     * ({@code WidePlanUnavailableException: BigInteger inventory sidecar is incomplete})、
+     * <b>セルを 1 枚足しただけであらゆるクラフトが失敗する</b>。実機で
+     * ExtendedAE Plus の Infinity セルと同居させて踏んだ。</p>
+     */
+    @TestPlot("insaneae_creative_cell_no_overflow")
+    public static void creativeCellNoOverflow(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,1] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
+            // 同じ種類を申告するセルを 2 枚。実機の「無限セル 2 枚」を最小構成で再現する。
+            drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
+            drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
+        });
+
+        plot.test(helper -> {
+            var sequence = helper.startSequence();
+            sequence.thenIdle(5);
+            sequence.thenExecute(() -> {
+                long stored = insaneae$storedAmount(helper, Items.OAK_LOG);
+                helper.check(stored > 0,
+                        "無限セル 2 枚で在庫が負数へ折り返した (" + stored + ")");
+                helper.check(stored == Long.MAX_VALUE,
+                        "在庫が long の天井になっていない (" + stored + ")");
+            });
+            sequence.thenSucceed();
+        }).maxTicks(60);
     }
 
     @TestPlot("insaneae_craft_past_long_intermediate")

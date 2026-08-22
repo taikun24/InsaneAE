@@ -116,6 +116,15 @@
 
 ### 修正
 
+- **無限セルを 2 枚以上入れると、あらゆるクラフトが失敗していたのを修正しました**。
+  クリエイティブセルは設定した種類を `Long.MAX_VALUE` で申告しますが、AE2 の在庫集計は
+  キーごとに long なので、同じアイテムを大量に申告するセル (ExtendedAE Plus の
+  Infinity セル、もう 1 枚のクリエイティブセル) と同居すると**負数へ折り返して**いました。
+  負の在庫を見た ACO は「正確値を復元できない」として計画ごと降りるため、
+  `WidePlanUnavailableException: BigInteger inventory sidecar is incomplete` で
+  **セルを 1 枚足しただけで何も作れなくなります**。自分の申告で long の天井を
+  越えないようにしました (単独なら従来どおり `Long.MAX_VALUE` を申告します)。
+  回帰テスト `insaneae_creative_cell_no_overflow` を追加。
 - **アップグレード満載の Quantum CPU が、深い木を 1 tick でまとめて流すようになりました**。
   これまでは 1 tick に「下の段を作る → 上の段が使う」の<b>1 往復ぶん</b>しか進まず、
   段数が増えるほど tick を食っていました (完走はするが遅い)。加速カード 7 枚 +
