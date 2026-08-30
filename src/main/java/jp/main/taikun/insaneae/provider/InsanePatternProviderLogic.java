@@ -1,9 +1,11 @@
 package jp.main.taikun.insaneae.provider;
 
 import appeng.api.crafting.IPatternDetails;
+import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.IManagedGridNode;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
+import jp.main.taikun.insaneae.menu.PatternPagingHandshake;
 
 import java.util.HashSet;
 import java.util.List;
@@ -68,6 +70,19 @@ public class InsanePatternProviderLogic extends PatternProviderLogic {
         if (currentTick() != lastFlushTick) {
             flushPatternUpdate();
         }
+    }
+
+    /**
+     * パターン枠のインベントリ。<b>メニューを組み立てている最中だけ</b>
+     * 1 ページぶんの窓を返す ({@link PatternPagingHandshake} を参照)。
+     *
+     * <p>{@code PatternProviderMenu} のコンストラクタは、ここで返した枠数だけスロットを並べる。
+     * 1620 枠すべてをスロットにすると毎 tick の同期がそのぶん走るので、窓だけ見せる。
+     * それ以外の呼び出し (パターンの出し入れ・クラフト計算・NBT) は今までどおり全枠。</p>
+     */
+    @Override
+    public InternalInventory getPatternInv() {
+        return PatternPagingHandshake.windowFor(patternHost, super.getPatternInv());
     }
 
     /** 溜めていたパターン更新を実行する。何度呼んでも安全。 */

@@ -22,7 +22,7 @@ import net.minecraftforge.network.NetworkHooks;
  * <p>中身は {@link QuantumCpuMenu} そのまま (パターン枠のページ送り・全枠 Shift クリック・
  * アップグレード枠のガードはホストが {@code IUpgradeableObject} のときだけ効く)。
  * 別クラスにしているのは {@code MenuType} を分けるためで、
- * {@code PatternProviderMenuMixin} の instanceof 判定はサブクラスなのでそのまま通る。</p>
+ * パターン枠のページングは {@link QuantumCpuMenu} のコンストラクタでそのまま効く。</p>
  */
 public class InsanePatternProviderMenu extends QuantumCpuMenu {
 
