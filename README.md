@@ -75,6 +75,10 @@ AE2 のバージョン範囲は実際に検証した `[19.2.17,20)` に固定し
 | `craftingBatchThreshold` | まとめ処理を使う最小クラフト回数 |
 | `serverSidePatternPaging` | Quantum CPU のパターン枠をサーバ側でページ分割する |
 
+### スペシャルサンクス
+- kaitsu さん — 様々なアイデアや検証、調整など多数の助言をいただきました。
+- [syarukasu](https://github.com/syarukasu) さん — AE2 Crafting Optimizer の開発者。連携のためのAPIの整備や検証をしていただきました。
+
 ## ビルド
 
 ```sh
