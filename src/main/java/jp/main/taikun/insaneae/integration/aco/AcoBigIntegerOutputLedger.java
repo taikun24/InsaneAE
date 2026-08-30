@@ -30,8 +30,6 @@ import org.slf4j.Logger;
  */
 final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String API_CLASS =
-            "com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi";
     private static final String LEDGER_CLASS =
             "com.syaru.ae2craftingoptimizer.api.big.BigIntegerAmountLedger";
     /** ACO 1.5.12で追加された、内部codec型を要求しないAEKey台帳API。 */
@@ -62,7 +60,7 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
     /** ACO APIが無い、古い、または無効設定ならemptyを返す。 */
     static java.util.Optional<PendingOutputLedger> tryCreate() {
         try {
-            Class<?> api = Class.forName(API_CLASS);
+            Class<?> api = Class.forName(AcoClassNames.BIG_CRAFTING_ENGINE_API);
             int apiVersion = api.getField("API_VERSION").getInt(null);
             int ledgerVersion = api.getField("AMOUNT_LEDGER_API_VERSION").getInt(null);
             if (apiVersion < 3 || ledgerVersion < REQUIRED_LEDGER_API_VERSION) {

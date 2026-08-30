@@ -9,7 +9,6 @@ import jp.main.taikun.insaneae.integration.appmek.AppMekCells;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.world.level.ItemLike;
 
-import java.util.function.Consumer;
 
 /**
  * 化学物質セルのレシピ生成。

@@ -33,7 +33,6 @@ import net.neoforged.fml.ModList;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 

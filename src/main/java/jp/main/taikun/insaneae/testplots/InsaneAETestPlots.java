@@ -1,26 +1,44 @@
 package jp.main.taikun.insaneae.testplots;
 
 import appeng.api.AECapabilities;
+import appeng.api.config.Actionable;
+import appeng.api.crafting.IPatternDetails;
+import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.crafting.CalculationStrategy;
+import appeng.api.networking.crafting.CraftingSubmitErrorCode;
 import appeng.api.networking.crafting.ICraftingPlan;
 import appeng.api.networking.crafting.ICraftingSimulationRequester;
+import appeng.api.networking.security.IActionHost;
+import appeng.api.parts.IPart;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
+import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
+import appeng.api.upgrades.Upgrades;
 import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import appeng.core.definitions.AEBlocks;
 import appeng.core.definitions.AEItems;
 import appeng.core.definitions.AEParts;
+import appeng.core.definitions.ItemDefinition;
+import appeng.crafting.execution.ElapsedTimeTracker;
+import appeng.crafting.execution.ExecutingCraftingJob;
+import appeng.crafting.inv.ListCraftingInventory;
+import appeng.items.contents.CellConfig;
+import appeng.items.parts.PartItem;
 import appeng.items.storage.CreativeCellItem;
+import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.me.helpers.MachineSource;
+import appeng.me.service.CraftingService;
 import appeng.server.testplots.CraftingPatternHelper;
 import appeng.server.testplots.TestPlot;
+import appeng.server.testplots.TestPlotClass;
 import appeng.server.testplots.TestPlots;
 import appeng.server.testworld.PlotBuilder;
 import appeng.server.testworld.PlotTestHelper;
+import appeng.server.testworld.TestCraftingJob;
 import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.crafting.CraftingCalculationBatch;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
@@ -28,22 +46,38 @@ import jp.main.taikun.insaneae.iface.InsaneInterfaceBlockEntity;
 import jp.main.taikun.insaneae.iface.InsaneInterfacePart;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry;
 import jp.main.taikun.insaneae.integration.aco.AcoCalculationIntegration;
+import jp.main.taikun.insaneae.integration.aco.AcoClassNames;
 import jp.main.taikun.insaneae.integration.aco.AcoExactLimits;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderBlockEntity;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderLogic;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderPart;
 import jp.main.taikun.insaneae.quantum.CraftingJobView;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
-import org.jetbrains.annotations.Nullable;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModCells;
 import jp.main.taikun.insaneae.registries.ModParts;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
 import jp.main.taikun.insaneae.upgrade.InsaneSpeedCardType;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestAssertException;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.neoforged.fml.ModList;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import net.neoforged.neoforge.registries.DeferredItem;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -59,7 +93,7 @@ import java.util.concurrent.Future;
  * <p>走らせ方: {@code ./gradlew runGameTestServer} (AE2 のテストも一緒に走る)。
  * テスト名は AE2 のアダプタ経由なので {@code ae2.insaneae_crafting_batch}。</p>
  */
-@appeng.server.testplots.TestPlotClass
+@TestPlotClass
 public final class InsaneAETestPlots {
 
     /** ケーキ 1 個につきバケツ 3 個が行き来する = コンテナアイテム持ちのパターン。 */
@@ -295,27 +329,27 @@ public final class InsaneAETestPlots {
             var fluidCell = ModCells.FLUID_CELLS.get(InsaneCraftingUnitType.STORAGE_1G).get();
             var portable = ModCells.PORTABLE_ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_1G).get();
 
-            helper.check(appeng.api.upgrades.Upgrades.getMaxInstallable(
-                            appeng.core.definitions.AEItems.FUZZY_CARD, itemCell) > 0,
+            helper.check(Upgrades.getMaxInstallable(
+                            AEItems.FUZZY_CARD, itemCell) > 0,
                     "アイテムセルにあいまいカードを登録していない");
-            helper.check(appeng.api.upgrades.Upgrades.getMaxInstallable(
-                            appeng.core.definitions.AEItems.VOID_CARD, itemCell) > 0,
+            helper.check(Upgrades.getMaxInstallable(
+                            AEItems.VOID_CARD, itemCell) > 0,
                     "アイテムセルに超過破棄カードを登録していない");
-            helper.check(appeng.api.upgrades.Upgrades.getMaxInstallable(
-                            appeng.core.definitions.AEItems.INVERTER_CARD, fluidCell) > 0,
+            helper.check(Upgrades.getMaxInstallable(
+                            AEItems.INVERTER_CARD, fluidCell) > 0,
                     "液体セルに白黒リストカードを登録していない");
-            helper.check(appeng.api.upgrades.Upgrades.getMaxInstallable(
-                            appeng.core.definitions.AEItems.EQUAL_DISTRIBUTION_CARD, fluidCell) > 0,
+            helper.check(Upgrades.getMaxInstallable(
+                            AEItems.EQUAL_DISTRIBUTION_CARD, fluidCell) > 0,
                     "液体セルに均等配分カードを登録していない");
-            helper.check(appeng.api.upgrades.Upgrades.getMaxInstallable(
-                            appeng.core.definitions.AEItems.ENERGY_CARD, portable) == 2,
+            helper.check(Upgrades.getMaxInstallable(
+                            AEItems.ENERGY_CARD, portable) == 2,
                     "ポータブルセルにエネルギーカード ×2 を登録していない");
             // MEGA Cells の Greater Energy Card。MEGA が自分のポータブルセルにしているのと同じ ×2。
-            helper.check(appeng.api.upgrades.Upgrades.getMaxInstallable(
+            helper.check(Upgrades.getMaxInstallable(
                             gripe._90.megacells.definition.MEGAItems.GREATER_ENERGY_CARD, portable) == 2,
                     "ポータブルセルに Greater Energy Card ×2 を登録していない");
             var portableFluid = ModCells.PORTABLE_FLUID_CELLS.get(InsaneCraftingUnitType.STORAGE_1G).get();
-            helper.check(appeng.api.upgrades.Upgrades.getMaxInstallable(
+            helper.check(Upgrades.getMaxInstallable(
                             gripe._90.megacells.definition.MEGAItems.GREATER_ENERGY_CARD, portableFluid) == 2,
                     "ポータブル液体セルに Greater Energy Card ×2 を登録していない");
         }));
@@ -466,7 +500,7 @@ public final class InsaneAETestPlots {
             sequence.thenExecute(() -> {
                 var inv = helper.getCapability(pos, AECapabilities.GENERIC_INTERNAL_INV, null);
                 state.accepted = inv.insert(0, AEItemKey.of(Items.IRON_INGOT), inserted,
-                        appeng.api.config.Actionable.MODULATE);
+                        Actionable.MODULATE);
             });
 
             sequence.thenExecute(() -> {
@@ -495,7 +529,7 @@ public final class InsaneAETestPlots {
             sequence.thenExecute(() -> {
                 var be = (InsaneInterfaceBlockEntity) helper.getBlockEntity(pos);
                 be.getInterfaceLogic().getStorage().setStack(5,
-                        new appeng.api.stacks.GenericStack(AEItemKey.of(Items.GOLD_INGOT), parked));
+                        new GenericStack(AEItemKey.of(Items.GOLD_INGOT), parked));
             });
             sequence.thenExecute(() -> helper.destroyBlock(pos));
             sequence.thenIdle(5);
@@ -528,9 +562,9 @@ public final class InsaneAETestPlots {
     public static void cableParts(PlotBuilder plot) {
         plot.creativeEnergyCell("0 -1 0");
         plot.cable("0 0 0");
-        plot.part("0 0 0", net.minecraft.core.Direction.UP, insaneae$partDefinition(
+        plot.part("0 0 0", Direction.UP, partDefinition(
                 "Insane ME Interface", ModParts.INSANE_INTERFACE));
-        plot.part("0 0 0", net.minecraft.core.Direction.NORTH, insaneae$partDefinition(
+        plot.part("0 0 0", Direction.NORTH, partDefinition(
                 "Insane Pattern Provider", ModParts.INSANE_PATTERN_PROVIDER));
 
         plot.test(helper -> {
@@ -542,7 +576,7 @@ public final class InsaneAETestPlots {
 
             sequence.thenExecute(() -> {
                 var iface = helper.<InsaneInterfacePart>getPart(pos,
-                        net.minecraft.core.Direction.UP, InsaneInterfacePart.class);
+                        Direction.UP, InsaneInterfacePart.class);
                 helper.check(iface != null, "超特大インターフェイスのケーブル版が置けていない", pos);
 
                 var storage = iface.getInterfaceLogic().getStorage();
@@ -560,7 +594,7 @@ public final class InsaneAETestPlots {
 
             sequence.thenExecute(() -> {
                 var provider = helper.<InsanePatternProviderPart>getPart(pos,
-                        net.minecraft.core.Direction.NORTH, InsanePatternProviderPart.class);
+                        Direction.NORTH, InsanePatternProviderPart.class);
                 helper.check(provider != null, "特大パターンプロバイダーのケーブル版が置けていない", pos);
 
                 int slots = provider.getLogic().getPatternInv().size();
@@ -595,7 +629,7 @@ public final class InsaneAETestPlots {
         plot.cable("0 0 0");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> drive.getInternalInventory().addItems(
                 new ItemStack(ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_1G).get())));
-        plot.part("0 0 0", net.minecraft.core.Direction.UP, AEParts.IMPORT_BUS,
+        plot.part("0 0 0", Direction.UP, AEParts.IMPORT_BUS,
                 bus -> bus.getUpgrades().addItems(new ItemStack(
                         ModUpgrades.SPEED_CARDS.get(InsaneSpeedCardType.WARP).get())));
 
@@ -628,14 +662,14 @@ public final class InsaneAETestPlots {
      * {@code PlotBuilder#part} は AE2 の {@code ItemDefinition} しか受け付けないので、
      * こちらの {@code DeferredItem} を包んで渡す。表示名はテストの出力にしか出ない。
      */
-    private static <T extends appeng.api.parts.IPart>
-            appeng.core.definitions.ItemDefinition<appeng.items.parts.PartItem<T>> insaneae$partDefinition(
+    private static <T extends IPart>
+            ItemDefinition<PartItem<T>> partDefinition(
                     String englishName,
-                    net.neoforged.neoforge.registries.DeferredItem<appeng.items.parts.PartItem<T>> item) {
-        return new appeng.core.definitions.ItemDefinition<>(englishName, item);
+                    DeferredItem<PartItem<T>> item) {
+        return new ItemDefinition<>(englishName, item);
     }
 
-    private static long countInNetwork(PlotTestHelper helper, net.minecraft.world.item.Item item) {
+    private static long countInNetwork(PlotTestHelper helper, Item item) {
         var counter = new KeyCounter();
         helper.getGrid(BlockPos.ZERO).getStorageService().getInventory().getAvailableStacks(counter);
         return counter.get(AEItemKey.of(item));
@@ -704,7 +738,7 @@ public final class InsaneAETestPlots {
                 var logic = new FakeForeignCpuLogic();
                 logic.job.tasks.put(patterns.get(0), new ForeignTaskProgress(requested));
                 logic.inventory.insert(AEItemKey.of(Items.OAK_LOG), logsInStock,
-                        appeng.api.config.Actionable.MODULATE);
+                        Actionable.MODULATE);
 
                 var view = jp.main.taikun.insaneae.quantum.ReflectiveCraftingJobView.of(logic);
                 helper.check(view != null,
@@ -713,7 +747,7 @@ public final class InsaneAETestPlots {
                 var grid = helper.getGrid(BlockPos.ZERO);
                 int pushed = jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.execute(
                         view, (int) requested,
-                        (appeng.me.service.CraftingService) grid.getCraftingService(),
+                        (CraftingService) grid.getCraftingService(),
                         grid.getEnergyService(), grid.getPivot().getLevel());
 
                 helper.check(pushed == logsInStock,
@@ -748,9 +782,9 @@ public final class InsaneAETestPlots {
 
     /** AAE の ExecutingCraftingJob に相当するフィールド構造。 */
     private static final class ForeignExecutingJob {
-        final Map<appeng.api.crafting.IPatternDetails, ForeignTaskProgress> tasks = new HashMap<>();
-        final appeng.crafting.inv.ListCraftingInventory waitingFor =
-                new appeng.crafting.inv.ListCraftingInventory(what -> {
+        final Map<IPatternDetails, ForeignTaskProgress> tasks = new HashMap<>();
+        final ListCraftingInventory waitingFor =
+                new ListCraftingInventory(what -> {
                 });
         final ForeignTimeTracker timeTracker = new ForeignTimeTracker();
     }
@@ -758,8 +792,8 @@ public final class InsaneAETestPlots {
     /** AAE の AdvCraftingCPULogic に相当するフィールド構造。 */
     private static final class FakeForeignCpuLogic {
         final ForeignExecutingJob job = new ForeignExecutingJob();
-        final appeng.crafting.inv.ListCraftingInventory inventory =
-                new appeng.crafting.inv.ListCraftingInventory(what -> {
+        final ListCraftingInventory inventory =
+                new ListCraftingInventory(what -> {
                 });
         boolean dirty;
 
@@ -804,7 +838,7 @@ public final class InsaneAETestPlots {
                         "long 超の量が正確に積まれていない: " + cpu.getPendingOutputs().get(log));
 
                 // 2) NBT 往復で 1 個もずれない
-                var tag = new net.minecraft.nbt.CompoundTag();
+                var tag = new CompoundTag();
                 cpu.saveAdditional(tag, registries);
                 cpu.loadTag(tag, registries);
                 helper.check(overLong.equals(cpu.getPendingOutputs().get(log)),
@@ -813,7 +847,7 @@ public final class InsaneAETestPlots {
                 // 3) 壊れたエントリは例外なしで捨てられ、正常なエントリは残る
                 var broken = tag.copy();
                 var entries = broken.getCompound("pendingOutputsBig")
-                        .getList("entries", net.minecraft.nbt.Tag.TAG_COMPOUND);
+                        .getList("entries", Tag.TAG_COMPOUND);
                 var badKey = entries.getCompound(0).copy();
                 badKey.getCompound("key").putString("id", "nomod:removed_item");
                 entries.add(badKey);
@@ -830,12 +864,12 @@ public final class InsaneAETestPlots {
                         "壊れたエントリの扱いが想定と違う: " + cpu.getPendingOutputs());
 
                 // 4) 旧 long 形式から移行できる
-                var legacy = new net.minecraft.nbt.CompoundTag();
+                var legacy = new CompoundTag();
                 cpu.saveAdditional(legacy, registries);
                 legacy.remove("pendingOutputsBig");
-                var legacyList = new net.minecraft.nbt.ListTag();
-                legacyList.add(appeng.api.stacks.GenericStack.writeTag(registries,
-                        new appeng.api.stacks.GenericStack(log, 123_456_789L)));
+                var legacyList = new ListTag();
+                legacyList.add(GenericStack.writeTag(registries,
+                        new GenericStack(log, 123_456_789L)));
                 legacy.put("pendingOutputs", legacyList);
                 cpu.loadTag(legacy, registries);
                 helper.check(java.math.BigInteger.valueOf(123_456_789L)
@@ -916,11 +950,11 @@ public final class InsaneAETestPlots {
                 state.view = new FakeJobView(patterns.get(0), requested);
                 // <b>5 回ぶんしか入れない。</b>要求は 1000 回。
                 state.view.inventory.insert(AEItemKey.of(Items.OAK_LOG), logsInStock,
-                        appeng.api.config.Actionable.MODULATE);
+                        Actionable.MODULATE);
 
                 state.pushed = jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.execute(
                         state.view, (int) requested,
-                        (appeng.me.service.CraftingService) grid.getCraftingService(),
+                        (CraftingService) grid.getCraftingService(),
                         grid.getEnergyService(), grid.getPivot().getLevel());
             });
 
@@ -997,7 +1031,7 @@ public final class InsaneAETestPlots {
      *       {@code result.simulation()} が NPE になる。実機で発生した回帰)</li>
      * </ul>
      */
-    private static void checkOverflowRejected(appeng.server.testworld.PlotTestHelper helper,
+    private static void checkOverflowRejected(PlotTestHelper helper,
             Future<ICraftingPlan> pending, String label) {
         if (!pending.isDone()) {
             throw new GameTestAssertException(label + " の計算がまだ終わっていない");
@@ -1061,11 +1095,11 @@ public final class InsaneAETestPlots {
                 var grid = helper.getGrid(BlockPos.ZERO);
                 state.view = new FakeJobView(patterns.get(0), requested);
                 state.view.inventory.insert(AEItemKey.of(Items.OAK_LOG), requested,
-                        appeng.api.config.Actionable.MODULATE);
+                        Actionable.MODULATE);
 
                 state.ops = jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.execute(
                         state.view, clusterBudget,
-                        (appeng.me.service.CraftingService) grid.getCraftingService(),
+                        (CraftingService) grid.getCraftingService(),
                         grid.getEnergyService(), grid.getPivot().getLevel());
             });
 
@@ -1129,7 +1163,7 @@ public final class InsaneAETestPlots {
                 var grid = helper.getGrid(BlockPos.ZERO);
                 state.view = new FakeJobView(patterns.get(0), requested);
                 state.view.inventory.insert(AEItemKey.of(Items.OAK_LOG), requested,
-                        appeng.api.config.Actionable.MODULATE);
+                        Actionable.MODULATE);
 
                 // Exact 台帳は ExecutingCraftingJob をキーにするが、ここでは本物のジョブを
                 // 立てずに経路だけ試したいので null をキーに使う (WeakHashMap は null を許す)。
@@ -1143,7 +1177,7 @@ public final class InsaneAETestPlots {
 
                 state.ops = jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.execute(
                         state.view, clusterBudget,
-                        (appeng.me.service.CraftingService) grid.getCraftingService(),
+                        (CraftingService) grid.getCraftingService(),
                         grid.getEnergyService(), grid.getPivot().getLevel());
                 AcoBigIntegerJobRegistry.remove(null);
             });
@@ -1254,7 +1288,7 @@ public final class InsaneAETestPlots {
      * 「BigInteger 計画が作れなかった」のか「作れたが容量が足りない」のかを
      * 区別できない。ここが {@code <BigInteger計画なし>} なら前者。</p>
      */
-    private static String insaneae$exactPlanBytes(appeng.api.networking.crafting.ICraftingPlan plan) {
+    private static String exactPlanBytes(ICraftingPlan plan) {
         try {
             return jp.main.taikun.insaneae.integration.aco.AcoBigIntegerPlanBridge.inspect(plan)
                     .map(exact -> exact.exactBytes().toString())
@@ -1292,7 +1326,7 @@ public final class InsaneAETestPlots {
         // 中身は反射で見るだけだが、空のプロットは AE2 の Plot#getBounds が通らないので 1 つ置く。
         plot.cable("0 0 0");
         plot.test(helper -> helper.startSequence().thenExecute(() -> {
-            if (!net.neoforged.fml.ModList.get().isLoaded("advanced_ae")) {
+            if (!ModList.get().isLoaded("advanced_ae")) {
                 return;
             }
             Class<?> logic;
@@ -1383,13 +1417,13 @@ public final class InsaneAETestPlots {
      */
     @TestPlot("insaneae_craft_from_creative_cell")
     public static void craftFromCreativeCell(PlotBuilder plot) {
-        insaneae$craftCompletionPlot(plot, false);
+        craftCompletionPlot(plot, false);
     }
 
     /** {@link #craftFromCreativeCell} の並び 2 — 完成品もセルに設定してある場合。 */
     @TestPlot("insaneae_craft_output_also_in_cell")
     public static void craftOutputAlsoInCell(PlotBuilder plot) {
-        insaneae$craftCompletionPlot(plot, true);
+        craftCompletionPlot(plot, true);
     }
 
     /**
@@ -1404,9 +1438,9 @@ public final class InsaneAETestPlots {
      */
     @TestPlot("insaneae_craft_on_advanced_ae_cpu")
     public static void craftOnAdvancedAeCpu(PlotBuilder plot) {
-        var core = insaneae$aaeBlock("quantum_core");
-        var unit = insaneae$aaeBlock("quantum_storage_256");
-        var shell = insaneae$aaeBlock("quantum_structure");
+        var core = aaeBlock("quantum_core");
+        var unit = aaeBlock("quantum_storage_256");
+        var shell = aaeBlock("quantum_structure");
         if (core == null || unit == null || shell == null) {
             // 空のプロットは AE2 の Plot#getBounds が通らないので 1 つ置く。
             plot.cable("0 0 0");
@@ -1417,7 +1451,7 @@ public final class InsaneAETestPlots {
         plot.creativeEnergyCell("0 -1 0");
         plot.cable("[0,4] 0 0");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
-            drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
+            drive.getInternalInventory().addItems(ultraCreativeCell(Items.OAK_LOG));
             drive.getInternalInventory().addItems(AEItems.ITEM_CELL_64K.stack());
         });
         plot.blockState("3 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
@@ -1433,7 +1467,7 @@ public final class InsaneAETestPlots {
 
         plot.test(helper -> {
             var state = new Object() {
-                appeng.server.testworld.TestCraftingJob job;
+                TestCraftingJob job;
             };
             var sequence = helper.startSequence();
 
@@ -1468,12 +1502,12 @@ public final class InsaneAETestPlots {
                         + "(外殻・中身の並びか、必要ブロックが変わった可能性)");
             });
 
-            sequence.thenExecute(() -> state.job = new appeng.server.testworld.TestCraftingJob(
+            sequence.thenExecute(() -> state.job = new TestCraftingJob(
                     helper, BlockPos.ZERO, AEItemKey.of(Items.OAK_BUTTON), requested));
             sequence.thenWaitUntil(() -> state.job.tickUntilStarted());
 
             sequence.thenWaitUntil(() -> {
-                long stored = insaneae$storedAmount(helper, Items.OAK_BUTTON);
+                long stored = storedAmount(helper, Items.OAK_BUTTON);
                 if (stored < requested) {
                     throw new GameTestAssertException("Advanced AE の CPU で 2 段クラフトが "
                             + stored + "/" + requested + " しか進まない");
@@ -1546,7 +1580,7 @@ public final class InsaneAETestPlots {
      * 同じ木を加工パターンで組んでも、まったく同じ {@code NO_COMPILED_PROGRAM} で断られる。
      * パターンの種類は関係ない。</p>
      *
-     * <p>さらに {@link #insaneae$acoGraphProbe} で ACO の compiled graph を直接覗くと、
+     * <p>さらに {@link #acoGraphProbe} で ACO の compiled graph を直接覗くと、
      * 木は<b>完全に健全</b>だった:</p>
      *
      * <pre>
@@ -1584,7 +1618,7 @@ public final class InsaneAETestPlots {
             // 無い計画」は所有権を取らずに外部コンシューマへ委譲するようになった。
             // このテストの主題は<b>所有の認識</b>なので、所有が成立する盤面にしておく。
             drive.getInternalInventory().addItems(
-                    insaneae$ultraCreativeCell(Items.OAK_LOG, Items.OAK_BUTTON));
+                    ultraCreativeCell(Items.OAK_LOG, Items.OAK_BUTTON));
             drive.getInternalInventory().addItems(new ItemStack(
                     ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_8E).get()));
         });
@@ -1599,8 +1633,8 @@ public final class InsaneAETestPlots {
                 return;
             }
             var state = new Object() {
-                appeng.me.helpers.MachineSource source;
-                java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan> plan;
+                MachineSource source;
+                Future<ICraftingPlan> plan;
             };
             var sequence = helper.startSequence();
 
@@ -1621,17 +1655,17 @@ public final class InsaneAETestPlots {
             sequence.thenIdle(60);
 
             sequence.thenExecute(() -> {
-                state.source = new appeng.me.helpers.MachineSource(
-                        (appeng.api.networking.security.IActionHost)
+                state.source = new MachineSource(
+                        (IActionHost)
                                 helper.getBlockEntity(new BlockPos(3, 0, 0)));
                 state.plan = helper.getGrid(BlockPos.ZERO).getCraftingService()
                         .beginCraftingCalculation(helper.getLevel(), () -> state.source,
                                 AEItemKey.of(Items.OAK_BUTTON), Long.MAX_VALUE,
-                                appeng.api.networking.crafting.CalculationStrategy.REPORT_MISSING_ITEMS);
+                                CalculationStrategy.REPORT_MISSING_ITEMS);
             });
             sequence.thenWaitUntil(() -> helper.check(state.plan.isDone(), "計算が終わらない"));
             sequence.thenExecute(() -> {
-                appeng.api.networking.crafting.ICraftingPlan plan;
+                ICraftingPlan plan;
                 try {
                     plan = state.plan.get();
                 } catch (Exception failure) {
@@ -1647,9 +1681,9 @@ public final class InsaneAETestPlots {
             // 投入直後に見る。ACO が隔離してジョブを畳んだあとでは判定できない。
             sequence.thenIdle(2);
             sequence.thenExecute(() -> {
-                appeng.crafting.execution.ExecutingCraftingJob job = null;
+                ExecutingCraftingJob job = null;
                 for (var cpu : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
-                    if (cpu instanceof appeng.me.cluster.implementations.CraftingCPUCluster cluster) {
+                    if (cpu instanceof CraftingCPUCluster cluster) {
                         var found = ((jp.main.taikun.insaneae.mixin.CraftingCpuLogicJobAccessor)
                                 (Object) cluster.craftingLogic).insaneae$getJob();
                         if (found != null) {
@@ -1693,7 +1727,7 @@ public final class InsaneAETestPlots {
                 // ACO 無しなら long 互換容量が正しい姿なので、何も検査しない。
                 if (jp.main.taikun.insaneae.integration.aco.AcoBigIntegerLimitBridge
                         .maximumSupportedAmount().isEmpty()) {
-                    if (optionalClass("com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi")
+                    if (optionalClass(AcoClassNames.BIG_CRAFTING_ENGINE_API)
                             != null) {
                         throw new GameTestAssertException(
                                 "ACO はあるのに理論上限を読めていない。"
@@ -1754,7 +1788,7 @@ public final class InsaneAETestPlots {
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
             // 原木の供給元であり、チェストの納品先でもある監査対象セル。
             drive.getInternalInventory().addItems(
-                    insaneae$ultraCreativeCell(Items.OAK_LOG, Items.CHEST));
+                    ultraCreativeCell(Items.OAK_LOG, Items.CHEST));
         });
         plot.blockState("2 [0,1] [0,2]", ModBlocks.BIG_INTEGER_CPU.get().defaultBlockState());
         plot.block("2 1 0", AEBlocks.CRAFTING_ACCELERATOR);
@@ -1767,8 +1801,8 @@ public final class InsaneAETestPlots {
                 return;
             }
             var state = new Object() {
-                appeng.me.helpers.MachineSource source;
-                java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan> plan;
+                MachineSource source;
+                Future<ICraftingPlan> plan;
                 boolean submitted;
             };
             var sequence = helper.startSequence();
@@ -1795,17 +1829,17 @@ public final class InsaneAETestPlots {
 
             sequence.thenExecute(() -> {
                 var grid = helper.getGrid(BlockPos.ZERO);
-                state.source = new appeng.me.helpers.MachineSource(
-                        (appeng.api.networking.security.IActionHost)
+                state.source = new MachineSource(
+                        (IActionHost)
                                 helper.getBlockEntity(new BlockPos(3, 0, 0)));
                 state.plan = grid.getCraftingService().beginCraftingCalculation(
                         helper.getLevel(), () -> state.source,
                         AEItemKey.of(Items.CHEST), requested,
-                        appeng.api.networking.crafting.CalculationStrategy.REPORT_MISSING_ITEMS);
+                        CalculationStrategy.REPORT_MISSING_ITEMS);
             });
             sequence.thenWaitUntil(() -> helper.check(state.plan.isDone(), "計算が終わらない"));
             sequence.thenExecute(() -> {
-                appeng.api.networking.crafting.ICraftingPlan plan;
+                ICraftingPlan plan;
                 try {
                     plan = state.plan.get();
                 } catch (Exception failure) {
@@ -1816,16 +1850,16 @@ public final class InsaneAETestPlots {
                 state.submitted = result.successful();
                 helper.check(state.submitted,
                         "納品先がある盤面なのに投入が断られた: errorCode=" + result.errorCode()
-                                + " ACOの判断=" + insaneae$acoPlanDiagnostics());
+                                + " ACOの判断=" + acoPlanDiagnostics());
             });
 
             // <b>ACO が所有したことまで見る。</b>ここが委譲に変わると、テストは
             // 「速い long 窓経路」を検査しているだけになり、この 2 本を分けた意味が消える。
             sequence.thenIdle(2);
             sequence.thenExecute(() -> {
-                appeng.crafting.execution.ExecutingCraftingJob job = null;
+                ExecutingCraftingJob job = null;
                 for (var cpu : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
-                    if (cpu instanceof appeng.me.cluster.implementations.CraftingCPUCluster cluster) {
+                    if (cpu instanceof CraftingCPUCluster cluster) {
                         var found = ((jp.main.taikun.insaneae.mixin.CraftingCpuLogicJobAccessor)
                                 (Object) cluster.craftingLogic).insaneae$getJob();
                         if (found != null) {
@@ -1838,7 +1872,7 @@ public final class InsaneAETestPlots {
                 helper.check(
                         jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership.isAcoOwned(job),
                         "納品先を用意したのに ACO が所有していない (long 窓へ委譲された)。"
-                                + "ACOの判断=" + insaneae$acoPlanDiagnostics());
+                                + "ACOの判断=" + acoPlanDiagnostics());
             });
 
             // 実行が終わって CPU が空くこと。納品先がクリエイティブセルなので
@@ -1851,7 +1885,7 @@ public final class InsaneAETestPlots {
                 }
                 helper.check(!busy,
                         "40 tick 経ってもジョブが終わらない。"
-                                + "ACOの判断=" + insaneae$acoPlanDiagnostics());
+                                + "ACOの判断=" + acoPlanDiagnostics());
             });
             sequence.thenSucceed();
         }).maxTicks(600);
@@ -1873,15 +1907,15 @@ public final class InsaneAETestPlots {
         plot.cable("[0,1] 0 0");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
             // 同じ種類を申告するセルを 2 枚。実機の「無限セル 2 枚」を最小構成で再現する。
-            drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
-            drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
+            drive.getInternalInventory().addItems(ultraCreativeCell(Items.OAK_LOG));
+            drive.getInternalInventory().addItems(ultraCreativeCell(Items.OAK_LOG));
         });
 
         plot.test(helper -> {
             var sequence = helper.startSequence();
             sequence.thenIdle(5);
             sequence.thenExecute(() -> {
-                long stored = insaneae$storedAmount(helper, Items.OAK_LOG);
+                long stored = storedAmount(helper, Items.OAK_LOG);
                 helper.check(stored > 0,
                         "無限セル 2 枚で在庫が負数へ折り返した (" + stored + ")");
                 helper.check(stored == Long.MAX_VALUE,
@@ -1902,7 +1936,7 @@ public final class InsaneAETestPlots {
         plot.creativeEnergyCell("0 -1 0");
         plot.cable("[0,3] 0 0");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
-            drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
+            drive.getInternalInventory().addItems(ultraCreativeCell(Items.OAK_LOG));
             // 完成品の置き場。8E セルなら 3.6e19 個入るので要求数で先に満杯にならない。
             drive.getInternalInventory().addItems(new ItemStack(
                     ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_8E).get()));
@@ -1913,13 +1947,13 @@ public final class InsaneAETestPlots {
 
         plot.test(helper -> {
             // ACO 無しではこの規模の計画自体が作れないので、何も検査しない。
-            if (optionalClass("com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi") == null) {
+            if (optionalClass(AcoClassNames.BIG_CRAFTING_ENGINE_API) == null) {
                 helper.startSequence().thenSucceed();
                 return;
             }
             var state = new Object() {
-                appeng.me.helpers.MachineSource source;
-                java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan> plan;
+                MachineSource source;
+                Future<ICraftingPlan> plan;
                 long firstSample;
             };
             var sequence = helper.startSequence();
@@ -1948,17 +1982,17 @@ public final class InsaneAETestPlots {
 
             sequence.thenExecute(() -> {
                 var grid = helper.getGrid(BlockPos.ZERO);
-                state.source = new appeng.me.helpers.MachineSource(
-                        (appeng.api.networking.security.IActionHost)
+                state.source = new MachineSource(
+                        (IActionHost)
                                 helper.getBlockEntity(new BlockPos(3, 0, 0)));
                 state.plan = grid.getCraftingService().beginCraftingCalculation(
                         helper.getLevel(), () -> state.source,
                         AEItemKey.of(Items.CHEST), requested,
-                        appeng.api.networking.crafting.CalculationStrategy.REPORT_MISSING_ITEMS);
+                        CalculationStrategy.REPORT_MISSING_ITEMS);
             });
             sequence.thenWaitUntil(() -> helper.check(state.plan.isDone(), "計算が終わらない"));
             sequence.thenExecute(() -> {
-                appeng.api.networking.crafting.ICraftingPlan plan;
+                ICraftingPlan plan;
                 try {
                     plan = state.plan.get();
                 } catch (Exception failure) {
@@ -1966,28 +2000,25 @@ public final class InsaneAETestPlots {
                 }
                 helper.check(!plan.simulation(),
                         "計算がシミュレーション止まり (素材不足扱い)。"
-                                + "ACO の判断: " + insaneae$acoPlanDiagnostics());
+                                + "ACO の判断: " + acoPlanDiagnostics());
                 var result = helper.getGrid(BlockPos.ZERO).getCraftingService()
                         .submitJob(plan, null, null, false, state.source);
                 helper.check(result.successful(),
                         "中間素材が long を超える要求の投入が断られた: errorCode="
                                 + result.errorCode()
-                                + " 正確な必要bytes=" + insaneae$exactPlanBytes(plan)
-                                + " ACOの判断=" + insaneae$acoPlanDiagnostics());
+                                + " 正確な必要bytes=" + exactPlanBytes(plan)
+                                + " ACOの判断=" + acoPlanDiagnostics());
             });
 
-            // <b>1 tick だけ待つ。</b>加速カード満載 + タスク統合なら、この規模は
-            // 1 tick で作り切れるのが仕様 (窓は 1 tick で 1024 枚使える)。
-            // ここを長く取ると「遅いが完走する」状態を緑にしてしまう。
             // <b>tick 数まで見る。</b>加速カード満載 + タスク統合なら、この規模は
             // 数 tick で終わるのが仕様 (窓は 1 tick に 1024 枚使える)。段ごとに
             // tick を消費していた頃はここが 4 tick あたり 1 段しか進まなかった。
             sequence.thenIdle(2);
             sequence.thenExecute(() ->
-                    state.firstSample = insaneae$storedAmount(helper, Items.CHEST));
+                    state.firstSample = storedAmount(helper, Items.CHEST));
             sequence.thenIdle(6);
             sequence.thenExecute(() -> {
-                long second = insaneae$storedAmount(helper, Items.CHEST);
+                long second = storedAmount(helper, Items.CHEST);
                 helper.check(second >= state.firstSample,
                         "完成品が減っている (" + state.firstSample + " → " + second + ")");
                 // 「増えている」だけでは不十分。実機の症状は「進むが終わらない」なので、
@@ -1995,8 +2026,8 @@ public final class InsaneAETestPlots {
                 helper.check(second >= requested,
                         "中間素材が long を超える木が数 tick で終わらない (" + state.firstSample
                                 + " → " + second + "、要求は " + requested + ")。"
-                                + "板の在庫=" + insaneae$storedAmount(helper, Items.OAK_PLANKS)
-                                + " 原木の在庫=" + insaneae$storedAmount(helper, Items.OAK_LOG));
+                                + "板の在庫=" + storedAmount(helper, Items.OAK_PLANKS)
+                                + " 原木の在庫=" + storedAmount(helper, Items.OAK_LOG));
             });
             sequence.thenSucceed();
         }).maxTicks(600);
@@ -2009,7 +2040,7 @@ public final class InsaneAETestPlots {
         plot.creativeEnergyCell("0 -1 0");
         plot.cable("[0,3] 0 0");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
-            drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
+            drive.getInternalInventory().addItems(ultraCreativeCell(Items.OAK_LOG));
             // 完成品の置き場。64K セルだと 1 種類で 520,192 個 ((65536-512)*8) で満杯になり、
             // クラフトが「途中で止まった」ようにしか見えない。8E セルなら 3.6e19 個入るので
             // Long.MAX_VALUE の注文でも置き場が先に尽きない。
@@ -2030,13 +2061,13 @@ public final class InsaneAETestPlots {
             // ACO が無ければ<b>何も検査しない</b>。
             // この 2 本は「ACO が long を超える BigInteger 計画を作れる」ことが前提で、
             // ACO 無しでは AE2 が素直に計画を作れず、失敗しても意味が読めない。
-            if (optionalClass("com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi") == null) {
+            if (optionalClass(AcoClassNames.BIG_CRAFTING_ENGINE_API) == null) {
                 helper.startSequence().thenSucceed();
                 return;
             }
             var state = new Object() {
-                appeng.me.helpers.MachineSource source;
-                java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan> plan;
+                MachineSource source;
+                Future<ICraftingPlan> plan;
                 long firstSample;
             };
             var sequence = helper.startSequence();
@@ -2062,17 +2093,17 @@ public final class InsaneAETestPlots {
             // ここは自分で計算 → 投入して<b>断られた理由</b>を出す。
             sequence.thenExecute(() -> {
                 var grid = helper.getGrid(BlockPos.ZERO);
-                state.source = new appeng.me.helpers.MachineSource(
-                        (appeng.api.networking.security.IActionHost)
+                state.source = new MachineSource(
+                        (IActionHost)
                                 helper.getBlockEntity(new BlockPos(3, 0, 0)));
                 state.plan = grid.getCraftingService().beginCraftingCalculation(
                         helper.getLevel(), () -> state.source,
                         AEItemKey.of(Items.OAK_BUTTON), requested,
-                        appeng.api.networking.crafting.CalculationStrategy.REPORT_MISSING_ITEMS);
+                        CalculationStrategy.REPORT_MISSING_ITEMS);
             });
             sequence.thenWaitUntil(() -> helper.check(state.plan.isDone(), "計算が終わらない"));
             sequence.thenExecute(() -> {
-                appeng.api.networking.crafting.ICraftingPlan plan;
+                ICraftingPlan plan;
                 try {
                     plan = state.plan.get();
                 } catch (Exception failure) {
@@ -2080,7 +2111,7 @@ public final class InsaneAETestPlots {
                 }
                 helper.check(!plan.simulation(),
                         "計算がシミュレーション止まり (素材不足扱い)。"
-                                + "ACO の判断: " + insaneae$acoPlanDiagnostics());
+                                + "ACO の判断: " + acoPlanDiagnostics());
                 var result = helper.getGrid(BlockPos.ZERO).getCraftingService()
                         .submitJob(plan, null, null, false, state.source);
                 var cpuSizes = new StringBuilder();
@@ -2098,17 +2129,17 @@ public final class InsaneAETestPlots {
                 helper.check(result.successful(),
                         "long を超える要求の投入が断られた: errorCode=" + result.errorCode()
                                 + " 必要bytes=" + plan.bytes()
-                                + " 正確な必要bytes=" + insaneae$exactPlanBytes(plan)
+                                + " 正確な必要bytes=" + exactPlanBytes(plan)
                                 + " CPU=" + cpuSizes
-                                + " ACOの判断=" + insaneae$acoPlanDiagnostics()
-                                + " graph=" + insaneae$acoGraphProbe(helper,
+                                + " ACOの判断=" + acoPlanDiagnostics()
+                                + " graph=" + acoGraphProbe(helper,
                                         Items.OAK_BUTTON, Items.OAK_PLANKS, Items.OAK_LOG));
             });
 
             // 走り出しているか。
             sequence.thenIdle(20);
             sequence.thenExecute(() -> {
-                state.firstSample = insaneae$storedAmount(helper, Items.OAK_BUTTON);
+                state.firstSample = storedAmount(helper, Items.OAK_BUTTON);
                 helper.check(state.firstSample > 0,
                         "long を超える要求で完成品が 1 つも出てこない "
                                 + "(投入は通ったのに実行が始まっていない)");
@@ -2123,7 +2154,7 @@ public final class InsaneAETestPlots {
             //  ここで頭打ちになるなら本当に作り終えたとき。)
             sequence.thenIdle(40);
             sequence.thenExecute(() -> {
-                long second = insaneae$storedAmount(helper, Items.OAK_BUTTON);
+                long second = storedAmount(helper, Items.OAK_BUTTON);
                 helper.check(second >= state.firstSample,
                         "完成品が減っている (" + state.firstSample + " → " + second + ")");
                 boolean finished = second >= requested;
@@ -2163,7 +2194,7 @@ public final class InsaneAETestPlots {
         plot.creativeEnergyCell("0 -1 0");
         plot.cable("[0,3] 0 0");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
-            drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
+            drive.getInternalInventory().addItems(ultraCreativeCell(Items.OAK_LOG));
             // 完成品の置き場。64K セルだと 1 種類で 520,192 個 ((65536-512)*8) で満杯になり、
             // クラフトが「途中で止まった」ようにしか見えない。8E セルなら 3.6e19 個入るので
             // Long.MAX_VALUE の注文でも置き場が先に尽きない。
@@ -2182,18 +2213,18 @@ public final class InsaneAETestPlots {
             // ACO が無ければ<b>何も検査しない</b>。
             // この 2 本は「ACO が long を超える BigInteger 計画を作れる」ことが前提で、
             // ACO 無しでは AE2 が素直に計画を作れず、失敗しても意味が読めない。
-            if (optionalClass("com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi") == null) {
+            if (optionalClass(AcoClassNames.BIG_CRAFTING_ENGINE_API) == null) {
                 helper.startSequence().thenSucceed();
                 return;
             }
             var state = new Object() {
-                appeng.me.helpers.MachineSource source;
-                java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan> plan;
+                MachineSource source;
+                Future<ICraftingPlan> plan;
             };
             var sequence = helper.startSequence();
 
             sequence.thenExecute(() -> {
-                var provider = (appeng.blockentity.crafting.PatternProviderBlockEntity)
+                var provider = (PatternProviderBlockEntity)
                         helper.getBlockEntity(new BlockPos(3, 0, 0));
                 var patterns = provider.getLogic().getPatternInv();
                 // craftPastLong と同じ 2 段: 原木 -> 板材 -> ボタン。
@@ -2205,17 +2236,17 @@ public final class InsaneAETestPlots {
 
             sequence.thenExecute(() -> {
                 var grid = helper.getGrid(BlockPos.ZERO);
-                state.source = new appeng.me.helpers.MachineSource(
-                        (appeng.api.networking.security.IActionHost)
+                state.source = new MachineSource(
+                        (IActionHost)
                                 helper.getBlockEntity(new BlockPos(3, 0, 0)));
                 state.plan = grid.getCraftingService().beginCraftingCalculation(
                         helper.getLevel(), () -> state.source,
                         AEItemKey.of(Items.OAK_BUTTON), Long.MAX_VALUE,
-                        appeng.api.networking.crafting.CalculationStrategy.REPORT_MISSING_ITEMS);
+                        CalculationStrategy.REPORT_MISSING_ITEMS);
             });
             sequence.thenWaitUntil(() -> helper.check(state.plan.isDone(), "計算が終わらない"));
             sequence.thenExecute(() -> {
-                appeng.api.networking.crafting.ICraftingPlan plan;
+                ICraftingPlan plan;
                 try {
                     plan = state.plan.get();
                 } catch (Exception failure) {
@@ -2223,7 +2254,7 @@ public final class InsaneAETestPlots {
                 }
                 helper.check(!plan.simulation(),
                         "加工パターンでも計算がシミュレーション止まり。ACO の判断: "
-                                + insaneae$acoPlanDiagnostics());
+                                + acoPlanDiagnostics());
                 var result = helper.getGrid(BlockPos.ZERO).getCraftingService()
                         .submitJob(plan, null, null, false, state.source);
                 // <b>断られるのが正解。</b>詳細は上のクラス説明を参照。
@@ -2232,11 +2263,11 @@ public final class InsaneAETestPlots {
                                 + "Quantum CPU は加工パターンを回せないので、"
                                 + "受けると終わらないジョブが CPU を占有する");
                 helper.check(result.errorCode()
-                                == appeng.api.networking.crafting.CraftingSubmitErrorCode
+                                == CraftingSubmitErrorCode
                                         .INCOMPLETE_PLAN,
                         "断り方が想定と違う: errorCode=" + result.errorCode()
                                 + " (INCOMPLETE_PLAN を期待。"
-                                + "正確な必要bytes=" + insaneae$exactPlanBytes(plan) + ")");
+                                + "正確な必要bytes=" + exactPlanBytes(plan) + ")");
             });
             sequence.thenSucceed();
         // 既定の制限時間だと足りない。投入が通るようになったぶん
@@ -2283,18 +2314,18 @@ public final class InsaneAETestPlots {
      */
     @TestPlot("insaneae_craft_past_long_acc")
     public static void craftPastLongAcc(PlotBuilder plot) {
-        var controller = insaneae$optionalBlock(
+        var controller = optionalBlock(
                 "advanced_assembly_computing", "vector_crafting_controller");
-        var worker = insaneae$optionalBlock(
+        var worker = optionalBlock(
                 "advanced_assembly_computing", "vector_crafting_worker");
-        var parallelCore = insaneae$optionalBlock(
+        var parallelCore = optionalBlock(
                 "advanced_assembly_computing", "vector_crafting_parallel_core");
-        var casing = insaneae$optionalBlock("neoecoae", "crafting_casing");
-        var patternBus = insaneae$optionalBlock("neoecoae", "crafting_pattern_bus");
-        var vent = insaneae$optionalBlock("neoecoae", "crafting_vent");
-        var craftingInterface = insaneae$optionalBlock("neoecoae", "crafting_interface");
-        var inputHatch = insaneae$optionalBlock("neoecoae", "input_hatch");
-        var outputHatch = insaneae$optionalBlock("neoecoae", "output_hatch");
+        var casing = optionalBlock("neoecoae", "crafting_casing");
+        var patternBus = optionalBlock("neoecoae", "crafting_pattern_bus");
+        var vent = optionalBlock("neoecoae", "crafting_vent");
+        var craftingInterface = optionalBlock("neoecoae", "crafting_interface");
+        var inputHatch = optionalBlock("neoecoae", "input_hatch");
+        var outputHatch = optionalBlock("neoecoae", "output_hatch");
         if (controller == null || worker == null || parallelCore == null || casing == null
                 || patternBus == null || vent == null || craftingInterface == null
                 || inputHatch == null || outputHatch == null) {
@@ -2312,7 +2343,7 @@ public final class InsaneAETestPlots {
         // crafting_interface (8,1,2) の東面へ。
         plot.cable("9 1 2");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
-            drive.getInternalInventory().addItems(insaneae$ultraCreativeCell(Items.OAK_LOG));
+            drive.getInternalInventory().addItems(ultraCreativeCell(Items.OAK_LOG));
             // 完成品の置き場。craftPastLong と同じく、置き場が先に尽きないよう 8E セル。
             drive.getInternalInventory().addItems(new ItemStack(
                     ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_8E).get()));
@@ -2323,10 +2354,10 @@ public final class InsaneAETestPlots {
         // 計算・投入の主体 (IActionHost)。パターンは入れない。
         plot.block("3 0 0", AEBlocks.PATTERN_PROVIDER);
 
-        var facing = net.minecraft.world.level.block.state.properties.BlockStateProperties
+        var facing = BlockStateProperties
                 .HORIZONTAL_FACING;
-        var north = net.minecraft.core.Direction.NORTH;
-        var south = net.minecraft.core.Direction.SOUTH;
+        var north = Direction.NORTH;
+        var south = Direction.SOUTH;
         // 頭部: いったん全部ケーシングで埋めてから、機能ブロックで上書きする。
         plot.blockState("[6,8] [0,2] [1,2]", casing.defaultBlockState());
         plot.blockState("7 1 1", controller.defaultBlockState().setValue(facing, north));
@@ -2353,8 +2384,8 @@ public final class InsaneAETestPlots {
                 return;
             }
             var state = new Object() {
-                appeng.me.helpers.MachineSource source;
-                java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan> plan;
+                MachineSource source;
+                Future<ICraftingPlan> plan;
                 long firstSample;
             };
             var sequence = helper.startSequence();
@@ -2362,7 +2393,7 @@ public final class InsaneAETestPlots {
             // Vector Crafting System が組み上がるまで待つ。
             sequence.thenWaitUntil(() -> {
                 var be = helper.getBlockEntity(new BlockPos(7, 1, 1));
-                helper.check(be != null && insaneae$reflectFormed(be),
+                helper.check(be != null && reflectFormed(be),
                         "Vector Crafting System が組み上がらない (構造の並びか、"
                                 + "NeoECO/AAC 側の検証条件が変わった可能性)");
             });
@@ -2372,7 +2403,7 @@ public final class InsaneAETestPlots {
             sequence.thenExecute(() -> {
                 var bus = helper.getBlockEntity(new BlockPos(5, 0, 2));
                 helper.check(bus != null, "パターンバスの BlockEntity が無い");
-                insaneae$insertPatternsIntoBus(bus,
+                insertPatternsIntoBus(bus,
                         CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
                                 new ItemStack(Items.OAK_LOG)),
                         CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
@@ -2383,17 +2414,17 @@ public final class InsaneAETestPlots {
 
             sequence.thenExecute(() -> {
                 var grid = helper.getGrid(BlockPos.ZERO);
-                state.source = new appeng.me.helpers.MachineSource(
-                        (appeng.api.networking.security.IActionHost)
+                state.source = new MachineSource(
+                        (IActionHost)
                                 helper.getBlockEntity(new BlockPos(3, 0, 0)));
                 state.plan = grid.getCraftingService().beginCraftingCalculation(
                         helper.getLevel(), () -> state.source,
                         AEItemKey.of(Items.OAK_BUTTON), requested,
-                        appeng.api.networking.crafting.CalculationStrategy.REPORT_MISSING_ITEMS);
+                        CalculationStrategy.REPORT_MISSING_ITEMS);
             });
             sequence.thenWaitUntil(() -> helper.check(state.plan.isDone(), "計算が終わらない"));
             sequence.thenExecute(() -> {
-                appeng.api.networking.crafting.ICraftingPlan plan;
+                ICraftingPlan plan;
                 try {
                     plan = state.plan.get();
                 } catch (Exception failure) {
@@ -2401,7 +2432,7 @@ public final class InsaneAETestPlots {
                 }
                 helper.check(!plan.simulation(),
                         "計算がシミュレーション止まり (素材不足扱い)。"
-                                + "ACO の判断: " + insaneae$acoPlanDiagnostics());
+                                + "ACO の判断: " + acoPlanDiagnostics());
                 var result = helper.getGrid(BlockPos.ZERO).getCraftingService()
                         .submitJob(plan, null, null, false, state.source);
                 // <b>断られるのが正解。</b>exact 受け皿も Quantum CPU も無いこの盤面では
@@ -2412,11 +2443,11 @@ public final class InsaneAETestPlots {
                                 + "(ACO #125 の無言停止の再現。修正済みの ACO なら"
                                 + "委譲とゲートで投入時点で断られる)");
                 helper.check(result.errorCode()
-                                == appeng.api.networking.crafting.CraftingSubmitErrorCode
+                                == CraftingSubmitErrorCode
                                         .INCOMPLETE_PLAN,
                         "断り方が想定と違う: errorCode=" + result.errorCode()
                                 + " (INCOMPLETE_PLAN を期待。ACOの判断="
-                                + insaneae$acoPlanDiagnostics() + ")");
+                                + acoPlanDiagnostics() + ")");
             });
 
             // 断ったあと、CPU がジョブを抱えていないこと (受理→即取消の残骸も無いこと)。
@@ -2426,7 +2457,7 @@ public final class InsaneAETestPlots {
                     helper.check(!cpu.isBusy(),
                             "断ったはずの要求でクラフト CPU が忙しいまま");
                 }
-                long stored = insaneae$storedAmount(helper, Items.OAK_BUTTON);
+                long stored = storedAmount(helper, Items.OAK_BUTTON);
                 helper.check(stored == 0,
                         "断ったはずの要求で完成品が湧いている (" + stored + ")");
             });
@@ -2436,7 +2467,7 @@ public final class InsaneAETestPlots {
     }
 
     /** NeoECO の {@code NEBlockEntity#isFormed} を反射で読む (コンパイル時に型が無い)。 */
-    private static boolean insaneae$reflectFormed(Object blockEntity) {
+    private static boolean reflectFormed(Object blockEntity) {
         try {
             return (Boolean) blockEntity.getClass().getMethod("isFormed").invoke(blockEntity);
         } catch (ReflectiveOperationException | RuntimeException unavailable) {
@@ -2451,10 +2482,10 @@ public final class InsaneAETestPlots {
      * {@code IItemHandlerModifiable} (表示中ページのスロットへ写像される)。
      * 反射なのはコンパイル時に NeoECO の型が無いため。</p>
      */
-    private static void insaneae$insertPatternsIntoBus(Object bus, ItemStack... patterns) {
-        net.neoforged.neoforge.items.IItemHandlerModifiable handler;
+    private static void insertPatternsIntoBus(Object bus, ItemStack... patterns) {
+        IItemHandlerModifiable handler;
         try {
-            handler = (net.neoforged.neoforge.items.IItemHandlerModifiable)
+            handler = (IItemHandlerModifiable)
                     bus.getClass().getField("itemHandler").get(bus);
         } catch (ReflectiveOperationException | ClassCastException failure) {
             throw new GameTestAssertException("パターンバスへ反射でアクセスできない "
@@ -2478,7 +2509,7 @@ public final class InsaneAETestPlots {
      *
      * <p>反射なのは、この検査クラスが ACO 無しの環境でも読まれるため。</p>
      */
-    private static String insaneae$acoPlanDiagnostics() {
+    private static String acoPlanDiagnostics() {
         try {
             Class<?> diagnostics = Class.forName(
                     "com.syaru.ae2craftingoptimizer.optimization.BigIntegerPlanDiagnostics",
@@ -2497,14 +2528,14 @@ public final class InsaneAETestPlots {
      * 言わないので、組めない条件 (パターンが 1 つでない / 循環 / 不完全) のどれなのかを
      * ここで直接聞く。全部 ACO の public メソッドだが、ACO 無しでも読めるよう反射で呼ぶ。</p>
      */
-    private static String insaneae$acoGraphProbe(appeng.server.testworld.PlotTestHelper helper,
-            net.minecraft.world.level.ItemLike... keys) {
+    private static String acoGraphProbe(PlotTestHelper helper,
+            ItemLike... keys) {
         try {
             Class<?> cache = Class.forName(
                     "com.syaru.ae2craftingoptimizer.engine.Ae2CompiledCraftingGraphCache",
                     false, InsaneAETestPlots.class.getClassLoader());
             Object snapshot = cache.getMethod("getOrCompile",
-                            appeng.api.networking.IGrid.class, net.minecraft.world.level.Level.class)
+                            IGrid.class, Level.class)
                     .invoke(null, helper.getGrid(BlockPos.ZERO), helper.getLevel());
             Class<?> snapType = snapshot.getClass();
             var count = snapType.getMethod("registeredPatternCount", AEKey.class);
@@ -2535,33 +2566,33 @@ public final class InsaneAETestPlots {
 
     /** Advanced AE のブロック。入っていなければ null。 */
     @Nullable
-    private static net.minecraft.world.level.block.Block insaneae$aaeBlock(String id) {
-        return insaneae$optionalBlock("advanced_ae", id);
+    private static Block aaeBlock(String id) {
+        return optionalBlock("advanced_ae", id);
     }
 
     /** 任意 Mod のブロック。その Mod が入っていなければ null。 */
     @Nullable
-    private static net.minecraft.world.level.block.Block insaneae$optionalBlock(
+    private static Block optionalBlock(
             String namespace, String id) {
-        var key = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(namespace, id);
-        if (!net.minecraft.core.registries.BuiltInRegistries.BLOCK.containsKey(key)) {
+        var key = ResourceLocation.fromNamespaceAndPath(namespace, id);
+        if (!BuiltInRegistries.BLOCK.containsKey(key)) {
             return null;
         }
-        var block = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(key);
-        return block == net.minecraft.world.level.block.Blocks.AIR ? null : block;
+        var block = BuiltInRegistries.BLOCK.get(key);
+        return block == Blocks.AIR ? null : block;
     }
 
     /**
      * @param configureOutputToo クリエイティブセルに完成品 (板材) も設定するか
      */
-    private static void insaneae$craftCompletionPlot(PlotBuilder plot, boolean configureOutputToo) {
+    private static void craftCompletionPlot(PlotBuilder plot, boolean configureOutputToo) {
         plot.creativeEnergyCell("0 -1 0");
         plot.cable("[0,3] 0 0");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
             // 材料は超強化クリエイティブセルから。完成品の置き場に普通のセルを 1 枚。
             drive.getInternalInventory().addItems(configureOutputToo
-                    ? insaneae$ultraCreativeCell(Items.OAK_LOG, Items.OAK_PLANKS)
-                    : insaneae$ultraCreativeCell(Items.OAK_LOG));
+                    ? ultraCreativeCell(Items.OAK_LOG, Items.OAK_PLANKS)
+                    : ultraCreativeCell(Items.OAK_LOG));
             drive.getInternalInventory().addItems(AEItems.ITEM_CELL_64K.stack());
         });
         plot.block("2 0 0", AEBlocks.CRAFTING_STORAGE_64K);
@@ -2573,7 +2604,7 @@ public final class InsaneAETestPlots {
 
         plot.test(helper -> {
             var state = new Object() {
-                appeng.server.testworld.TestCraftingJob job;
+                TestCraftingJob job;
             };
             var sequence = helper.startSequence();
 
@@ -2585,14 +2616,14 @@ public final class InsaneAETestPlots {
             });
             sequence.thenIdle(5);
 
-            sequence.thenExecute(() -> state.job = new appeng.server.testworld.TestCraftingJob(
+            sequence.thenExecute(() -> state.job = new TestCraftingJob(
                     helper, BlockPos.ZERO, AEItemKey.of(Items.OAK_PLANKS), requested));
             sequence.thenWaitUntil(() -> state.job.tickUntilStarted());
 
             // 完成待ちが減って<b>要求量がまるごとネットワークに載る</b>まで待つ。
             // 途中で消えていると、ここで時間切れになって落ちる (= 症状の再現)。
             sequence.thenWaitUntil(() -> {
-                long stored = insaneae$storedAmount(helper, Items.OAK_PLANKS);
+                long stored = storedAmount(helper, Items.OAK_PLANKS);
                 if (stored < requested) {
                     throw new GameTestAssertException("板材が " + stored + "/" + requested
                             + " しかネットワークに無い"
@@ -2619,19 +2650,19 @@ public final class InsaneAETestPlots {
     }
 
     /** 中身を設定した超強化クリエイティブセルを 1 枚作る。 */
-    private static ItemStack insaneae$ultraCreativeCell(net.minecraft.world.level.ItemLike... contents) {
+    private static ItemStack ultraCreativeCell(ItemLike... contents) {
         ItemStack cell = new ItemStack(ModCells.ULTRA_CREATIVE_CELL.get());
-        var config = appeng.items.contents.CellConfig.create(cell);
+        var config = CellConfig.create(cell);
         for (int i = 0; i < contents.length; i++) {
-            config.setStack(i, new appeng.api.stacks.GenericStack(
+            config.setStack(i, new GenericStack(
                     AEItemKey.of(contents[i].asItem()), 1));
         }
         return cell;
     }
 
     /** ネットワーク全体に載っているアイテム数。 */
-    private static long insaneae$storedAmount(appeng.server.testworld.PlotTestHelper helper,
-            net.minecraft.world.level.ItemLike item) {
+    private static long storedAmount(PlotTestHelper helper,
+            ItemLike item) {
         return helper.getGrid(BlockPos.ZERO).getStorageService().getInventory()
                 .getAvailableStacks().get(AEItemKey.of(item.asItem()));
     }
@@ -2655,7 +2686,7 @@ public final class InsaneAETestPlots {
         plot.test(helper -> {
             var state = new Object() {
                 long windowsBefore;
-                appeng.server.testworld.TestCraftingJob job;
+                TestCraftingJob job;
             };
             var sequence = helper.startSequence();
 
@@ -2676,7 +2707,7 @@ public final class InsaneAETestPlots {
                 helper.check(cpu.getLogic().getAvailablePatterns().size() == 1,
                         "Quantum CPU がパターンを 1 枚だけ持っている状態にならなかった");
                 state.windowsBefore = jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.bulkWindows;
-                state.job = new appeng.server.testworld.TestCraftingJob(helper, BlockPos.ZERO,
+                state.job = new TestCraftingJob(helper, BlockPos.ZERO,
                         AEItemKey.of(Items.OAK_PLANKS), crafts * planksPerCraft);
             });
 
@@ -2700,38 +2731,38 @@ public final class InsaneAETestPlots {
      */
     private static final class FakeJobView implements CraftingJobView {
 
-        final appeng.crafting.inv.ListCraftingInventory inventory =
-                new appeng.crafting.inv.ListCraftingInventory(what -> {
+        final ListCraftingInventory inventory =
+                new ListCraftingInventory(what -> {
                 });
-        final appeng.crafting.inv.ListCraftingInventory waitingFor =
-                new appeng.crafting.inv.ListCraftingInventory(what -> {
+        final ListCraftingInventory waitingFor =
+                new ListCraftingInventory(what -> {
                 });
-        final appeng.crafting.execution.ElapsedTimeTracker tracker =
-                new appeng.crafting.execution.ElapsedTimeTracker();
+        final ElapsedTimeTracker tracker =
+                new ElapsedTimeTracker();
 
-        final appeng.api.crafting.IPatternDetails details;
+        final IPatternDetails details;
         long remaining;
         boolean removed;
         /** null でなければ Exact (BigInteger) 経路を通す。 */
         jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry.CraftingCursor exactCursor;
 
-        FakeJobView(appeng.api.crafting.IPatternDetails details, long remaining) {
+        FakeJobView(IPatternDetails details, long remaining) {
             this.details = details;
             this.remaining = remaining;
         }
 
         @Override
-        public appeng.crafting.inv.ListCraftingInventory getInventory() {
+        public ListCraftingInventory getInventory() {
             return inventory;
         }
 
         @Override
-        public appeng.crafting.inv.ListCraftingInventory getWaitingFor() {
+        public ListCraftingInventory getWaitingFor() {
             return waitingFor;
         }
 
         @Override
-        public appeng.crafting.execution.ElapsedTimeTracker getTimeTracker() {
+        public ElapsedTimeTracker getTimeTracker() {
             return tracker;
         }
 
@@ -2761,7 +2792,7 @@ public final class InsaneAETestPlots {
                 }
 
                 @Override
-                public appeng.api.crafting.IPatternDetails details() {
+                public IPatternDetails details() {
                     return details;
                 }
 
@@ -2783,12 +2814,12 @@ public final class InsaneAETestPlots {
         }
     }
 
-    private static ItemStack processingPattern(net.minecraft.world.item.Item input, long inputAmount,
-            net.minecraft.world.item.Item output, long outputAmount) {
+    private static ItemStack processingPattern(Item input, long inputAmount,
+            Item output, long outputAmount) {
         // 19.2 で配列ではなく List を取るようになった。
-        return appeng.api.crafting.PatternDetailsHelper.encodeProcessingPattern(
-                java.util.List.of(new appeng.api.stacks.GenericStack(AEItemKey.of(input), inputAmount)),
-                java.util.List.of(new appeng.api.stacks.GenericStack(AEItemKey.of(output), outputAmount)));
+        return PatternDetailsHelper.encodeProcessingPattern(
+                java.util.List.of(new GenericStack(AEItemKey.of(input), inputAmount)),
+                java.util.List.of(new GenericStack(AEItemKey.of(output), outputAmount)));
     }
 
     /**
@@ -2805,11 +2836,11 @@ public final class InsaneAETestPlots {
         return CraftingCalculationBatch.batchedCrafts > before;
     }
 
-    private static Future<ICraftingPlan> beginCalculation(appeng.server.testworld.PlotTestHelper helper) {
+    private static Future<ICraftingPlan> beginCalculation(PlotTestHelper helper) {
         return beginCalculation(helper, AEItemKey.of(Items.CAKE), CAKES);
     }
 
-    private static Future<ICraftingPlan> beginCalculation(appeng.server.testworld.PlotTestHelper helper,
+    private static Future<ICraftingPlan> beginCalculation(PlotTestHelper helper,
             AEItemKey what, long amount) {
         var grid = helper.getGrid(BlockPos.ZERO);
         var source = new MachineSource(grid::getPivot);
@@ -2831,14 +2862,14 @@ public final class InsaneAETestPlots {
         }
     }
 
-    private static void checkSameCounts(appeng.server.testworld.PlotTestHelper helper, String what,
+    private static void checkSameCounts(PlotTestHelper helper, String what,
             KeyCounter expected, KeyCounter actual) {
         Map<AEKey, Long> left = toMap(expected);
         Map<AEKey, Long> right = toMap(actual);
         helper.check(left.equals(right), what + "が違う: " + left + " → " + right);
     }
 
-    private static void checkSamePatternTimes(appeng.server.testworld.PlotTestHelper helper,
+    private static void checkSamePatternTimes(PlotTestHelper helper,
             ICraftingPlan expected, ICraftingPlan actual) {
         Map<String, Long> left = new HashMap<>();
         expected.patternTimes().forEach((pattern, times) -> left.merge(

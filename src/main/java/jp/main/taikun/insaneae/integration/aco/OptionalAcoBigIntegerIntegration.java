@@ -31,7 +31,7 @@ public final class OptionalAcoBigIntegerIntegration {
             return;
         }
         try {
-            Class<?> api = Class.forName("com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi",
+            Class<?> api = Class.forName(AcoClassNames.BIG_CRAFTING_ENGINE_API,
                     false, OptionalAcoBigIntegerIntegration.class.getClassLoader());
             api.getMethod("registerExternalBigIntegerPlanConsumer").invoke(null);
             LOGGER.info("InsaneAE: registered as an ACO external BigInteger plan consumer");
