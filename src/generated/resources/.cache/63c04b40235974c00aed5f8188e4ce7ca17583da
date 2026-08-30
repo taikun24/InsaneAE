@@ -1,4 +1,4 @@
-// 1.20.1	2026-08-12T02:52:35.3641206	Block States: insaneae
+// 1.20.1	2026-08-30T18:47:59.1728971	Block States: insaneae
 1217691b26d186472c5298a7a2b69b4980135da4 assets/insaneae/blockstates/16g_crafting_storage.json
 983215dd2cea3593fb796af5e30db33b185fa849 assets/insaneae/blockstates/16k_crafting_accelerator.json
 7e04398b23cf24c4ae4612140bc2c3ecc5d2bb9e assets/insaneae/blockstates/16m_crafting_accelerator.json
@@ -41,7 +41,7 @@ ad325049d9cd17a7a68005d22182d3c75ba85ec2 assets/insaneae/blockstates/degenerate_
 51e2ccc97bc3e44e4062b8dc27f44e3d528c90e9 assets/insaneae/blockstates/galactic_energy_cell.json
 13015c9d1fd9e237109ad154094fffc3927e2c6a assets/insaneae/blockstates/hyperdense_energy_cell.json
 4493feacbe79e8ef5d7c6b049372664165f04ce6 assets/insaneae/blockstates/hypernova_energy_cell.json
-23b1fd6d2a21673f764266453e9f55882ce79eb0 assets/insaneae/blockstates/improved_charger.json
+06be219779cb08974aae622bdab7a3ec167b428d assets/insaneae/blockstates/improved_charger.json
 e75bb16dc0db47fd5e8ce646e9cdfad90011c60a assets/insaneae/blockstates/insane_interface.json
 eceefe613dc1921a08cfc9b88b4dec34df133581 assets/insaneae/blockstates/insane_pattern_provider.json
 f891c70aa34506254ced9095870b3112e005391d assets/insaneae/blockstates/neutron_energy_cell.json

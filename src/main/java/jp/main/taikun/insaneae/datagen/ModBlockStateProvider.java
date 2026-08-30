@@ -1,15 +1,19 @@
 package jp.main.taikun.insaneae.datagen;
 
+import appeng.api.orientation.BlockOrientation;
 import appeng.block.crafting.AbstractCraftingUnitBlock;
 import appeng.block.networking.EnergyCellBlock;
+import com.google.gson.JsonObject;
 import jp.main.taikun.insaneae.InsaneAE;
 import jp.main.taikun.insaneae.crafting.InsaneAcceleratorType;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.energy.InsaneEnergyCellTier;
 import jp.main.taikun.insaneae.energy.SolarPanelTier;
 import jp.main.taikun.insaneae.registries.ModBlocks;
+import net.minecraft.core.Direction;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.Block;
 import net.minecraftforge.client.model.generators.BlockModelBuilder;
 import net.minecraftforge.client.model.generators.BlockStateProvider;
 import net.minecraftforge.client.model.generators.ModelFile;
@@ -88,7 +92,8 @@ public class ModBlockStateProvider extends BlockStateProvider {
         simpleBlock(ModBlocks.QUANTUM_CPU.get(), handwritten("quantum_cpu"));
         // 通常クラフトストレージとしてformed状態を持つが、両状態とも意図的にmissing-textureを使う。
         craftingUnitWithSingleModel(ModBlocks.BIG_INTEGER_CPU.get(), handwritten("big_integer_cpu"));
-        simpleBlock(ModBlocks.IMPROVED_CHARGER.get(), handwritten("improved_charger"));
+        // チャージャーは向きを持つ (facing x 6 × spin x 4)。
+        orientedBlock(ModBlocks.IMPROVED_CHARGER.get(), handwritten("improved_charger"));
 
         // 超特大インターフェイスはただのキューブ。テクスチャは AE2 の ME インターフェイスの
         // 色相を回したもので、1.21.1 ブランチの tools/gen_interface_texture.py が生成している
@@ -100,6 +105,49 @@ public class ModBlockStateProvider extends BlockStateProvider {
         // tools/gen_pattern_provider_texture.py が生成している。
         simpleBlock(ModBlocks.INSANE_PATTERN_PROVIDER.get(), models().cubeAll("insane_pattern_provider",
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/insane_pattern_provider")));
+    }
+
+    /**
+     * 向き付きブロック 1 個ぶんのブロックステートを出す
+     * ({@code facing} 6 方向 × {@code spin} 4 回転 = 24 通り)。
+     *
+     * <p>AE2 の {@code OrientationStrategies.full()} を使うブロック用。
+     * 角度は {@link BlockOrientation} から引くので、AE2 のチャージャーなどと
+     * <b>同じ向き付けになる</b>ことが保証される。</p>
+     *
+     * <p><b>{@code getVariantBuilder} が使えない理由</b>: 24 通りのうち半分は
+     * <b>Z 軸回転</b>を要求するが、バニラのブロックステートは x / y しか持たない。
+     * AE2 は {@code ae2:z} という独自キーを足し、その解釈を Mixin
+     * ({@code VariantDeserializerMixin}) でバニラのパーサに入れている。
+     * これは名前空間に関係なく効くのでこちらの JSON でも使えるが、
+     * NeoForge の {@code ConfiguredModel} には z を書く口が無いので、
+     * ここだけ JSON を直接組んで {@code registeredBlocks} に入れている。</p>
+     */
+    private void orientedBlock(Block block, ModelFile model) {
+        JsonObject variants = new JsonObject();
+        for (Direction facing : Direction.values()) {
+            for (int spin = 0; spin < 4; spin++) {
+                BlockOrientation orientation = BlockOrientation.get(facing, spin);
+                JsonObject variant = new JsonObject();
+                variant.addProperty("model", model.getLocation().toString());
+                putAngle(variant, "x", orientation.getAngleX());
+                putAngle(variant, "y", orientation.getAngleY());
+                putAngle(variant, "ae2:z", orientation.getAngleZ());
+                variants.add("facing=" + facing.getSerializedName() + ",spin=" + spin, variant);
+            }
+        }
+
+        JsonObject blockState = new JsonObject();
+        blockState.add("variants", variants);
+        registeredBlocks.put(block, () -> blockState);
+    }
+
+    /** 0 度は書かない (AE2 が出す JSON と同じ形にするため)。 */
+    private static void putAngle(JsonObject variant, String key, int angle) {
+        int normalized = Math.floorMod(angle, 360);
+        if (normalized != 0) {
+            variant.addProperty(key, normalized);
+        }
     }
 
     /**
