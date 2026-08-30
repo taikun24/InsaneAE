@@ -73,13 +73,15 @@ TEMPLATE_DIRS = resolve_template_dirs(REPO)
 # 階層と色 — ここだけ触れば見た目が変わる
 # --------------------------------------------------------------------------------------
 
+#　cosmicは手動で描くので生成しない
+
 # InsaneEnergyCellTier と同じ並び。ファイル名は "<tier>_energy_cell_<残量>.png"。
 ENERGY_TIERS = ["hyperdense", "ultradense", "neutron", "degenerate", "collapsar",
                 "singularity", "pulsar", "quasar", "nova", "supernova",
-                "hypernova", "galactic", "cosmic"]
+                "hypernova", "galactic"]
 
 # 最上段はドットごとに色相を回す虹色にする。
-RAINBOW_TIERS = {"cosmic"}
+RAINBOW_TIERS = {}
 
 # 階層の色 = 色相を HUE_START から HUE_END まで均等に回したもの。
 #
