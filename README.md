@@ -61,6 +61,10 @@ AE2の厳密なBigInteger計算境界をACOへ委譲します。InsaneAEの計�
 - **加速カード** — Turbo (×8) / Overclock (×64) / Hypersonic (×512) / Warp (×4096)。
   カードの枚数ではなく機械側の速度値に倍率を掛けます。
 
+## スペシャルサンクス
+- kaitsu さん — 様々なアイデアや検証、調整など多数の助言をいただきました。
+- [syarukasu](https://github.com/syarukasu) さん — AE2 Crafting Optimizer の開発者。連携のためのAPIの整備や検証をしていただきました。
+
 ## ビルド
 
 ```sh
