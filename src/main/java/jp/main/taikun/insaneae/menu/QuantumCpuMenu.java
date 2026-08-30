@@ -1,7 +1,6 @@
 package jp.main.taikun.insaneae.menu;
 
 import appeng.api.crafting.PatternDetailsHelper;
-import appeng.api.inventories.InternalInventory;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import appeng.menu.MenuOpener;
@@ -11,6 +10,7 @@ import appeng.menu.implementations.PatternProviderMenu;
 import appeng.menu.locator.MenuHostLocator;
 import appeng.menu.locator.MenuLocators;
 import appeng.menu.slot.AppEngSlot;
+import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -36,7 +36,7 @@ import java.util.List;
  * こちらの分も {@code assets/ae2/screens/insaneae/quantum_cpu.json} に置いてある。</p>
  *
  * <p>パターン枠は 1620 個あるが、メニューに並べるのは<b>1 ページぶん (9x6 = 54 枠) だけ</b>。
- * {@code PatternProviderMenuMixin} がコンストラクタの見るインベントリを
+ * {@link PatternPagingHandshake} がコンストラクタの見るインベントリを
  * {@link PagedPatternInventory} にすり替え、ページ送りは窓をずらして中身を差し替える。
  * 全枠をスロットにするとバニラの毎 tick の同期が 1620 枠ぶん走るため
  * ({@link PagedPatternInventory} の説明を参照)。</p>
@@ -53,12 +53,10 @@ public class QuantumCpuMenu extends PatternProviderMenu {
     }
 
     /**
-     * パターン枠の窓。{@code PatternProviderMenuMixin} が <b>super のコンストラクタの中で</b>
-     * {@link #insaneae$createPatternWindow} を呼んで作る。
+     * パターン枠の窓。super のコンストラクタの中で作られたものを
+     * {@link PatternPagingHandshake#finish()} で受け取る。
      *
-     * <p>そのため<b>この宣言に初期化子を書いてはいけない</b> (フィールド初期化子は super の後に走るので、
-     * 書くと作られたばかりの窓を null で潰してしまう)。
-     * Mixin が効かなかった場合はここが null のままで、パターン枠は従来どおり全枠並ぶ。</p>
+     * <p>ページングを切っている場合はここが null のままで、パターン枠は従来どおり全枠並ぶ。</p>
      */
     private PagedPatternInventory patternWindow;
 
@@ -69,7 +67,12 @@ public class QuantumCpuMenu extends PatternProviderMenu {
     /** 特大パターンプロバイダー ({@code InsanePatternProviderMenu}) が MenuType を差し替えて使う。 */
     protected QuantumCpuMenu(MenuType<? extends QuantumCpuMenu> type, int id, Inventory playerInventory,
             PatternProviderLogicHost host) {
-        super(type, id, playerInventory, host);
+        super(type, id, playerInventory,
+                PatternPagingHandshake.begin(host, InsaneAEConfig.serverSidePatternPaging()));
+
+        // super がパターン枠のスロットを並べ終えた直後に窓を受け取る。
+        // ここより後で getPatternInv() を呼ぶ処理は、今までどおり全枠を見る。
+        patternWindow = PatternPagingHandshake.finish();
 
         registerClientAction(ACTION_SET_PAGE, Integer.class, this::applyPage);
         // アップグレードスロット。
@@ -97,16 +100,7 @@ public class QuantumCpuMenu extends PatternProviderMenu {
 
     // ------------------------------------------------------------ ページ送り
 
-    /**
-     * パターン枠の窓を作る。{@code PatternProviderMenuMixin} からのみ呼ばれる
-     * (super のコンストラクタの途中なので、ここで他のフィールドを触らないこと)。
-     */
-    public PagedPatternInventory insaneae$createPatternWindow(InternalInventory patternInv) {
-        patternWindow = new PagedPatternInventory(patternInv, QuantumCpuBlockEntity.PATTERN_SLOTS_PER_PAGE);
-        return patternWindow;
-    }
-
-    /** パターン枠がサーバ側でページ分割されているか (Mixin が効いているか)。 */
+    /** パターン枠がサーバ側でページ分割されているか。 */
     public boolean isServerPaged() {
         return patternWindow != null;
     }
