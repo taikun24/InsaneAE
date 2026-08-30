@@ -9,8 +9,6 @@ import org.slf4j.LoggerFactory;
 
 /** ACOを必須依存にせず、公開されているBigInteger実装上限を容量計算と表示へ渡す。 */
 public final class AcoBigIntegerLimitBridge {
-    private static final String ACO_API_CLASS =
-            "com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi";
     private static final String CAPACITY_API_VERSION_FIELD = "CAPACITY_LIMIT_API_VERSION";
     private static final String ENABLED_METHOD = "isEnabled";
     private static final String MAXIMUM_AMOUNT_METHOD = "maximumSupportedAmount";
@@ -90,7 +88,7 @@ public final class AcoBigIntegerLimitBridge {
         ClassLoader loader = AcoBigIntegerLimitBridge.class.getClassLoader();
         Class<?> api;
         try {
-            api = Class.forName(ACO_API_CLASS, false, loader);
+            api = Class.forName(AcoClassNames.BIG_CRAFTING_ENGINE_API, false, loader);
         } catch (ClassNotFoundException | LinkageError absent) {
             // ACO未導入は通常構成なので、long互換容量へ静かに戻す。
             return Optional.empty();

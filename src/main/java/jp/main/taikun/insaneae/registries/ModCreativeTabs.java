@@ -1,7 +1,6 @@
 package jp.main.taikun.insaneae.registries;
 
 import jp.main.taikun.insaneae.InsaneAE;
-import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -22,7 +21,7 @@ public class ModCreativeTabs {
                 ModBlocks.CRAFTING_STORAGE.values().forEach(block -> output.accept(block.get()));
                 ModBlocks.CRAFTING_ACCELERATOR.values().forEach(block -> output.accept(block.get()));
                 output.accept(ModBlocks.QUANTUM_CPU.get());
-                output.accept(ModBlocks.BIG_INTEGER_CPU.get());
+                // output.accept(ModBlocks.BIG_INTEGER_CPU.get());
                 output.accept(ModBlocks.INSANE_PATTERN_PROVIDER.get());
                 output.accept(ModParts.INSANE_PATTERN_PROVIDER.get());
                 output.accept(ModUpgrades.QUANTUM_ACCELERATION_CARD.get());

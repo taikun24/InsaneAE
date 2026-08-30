@@ -16,8 +16,6 @@ import org.slf4j.Logger;
 public final class AcoCalculationIntegration {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String ACO_MOD_ID = "ae2_crafting_optimizer";
-    private static final String ACO_API_CLASS =
-            "com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi";
     private static final int MINIMUM_CALCULATION_PROFILE_API_VERSION = 1;
 
     private static volatile Method calculationProfileMethod;
@@ -55,7 +53,7 @@ public final class AcoCalculationIntegration {
                 return calculationProfileMethod;
             }
             try {
-                Class<?> api = Class.forName(ACO_API_CLASS, false,
+                Class<?> api = Class.forName(AcoClassNames.BIG_CRAFTING_ENGINE_API, false,
                         AcoCalculationIntegration.class.getClassLoader());
                 int apiVersion = api.getField("CALCULATION_PROFILE_API_VERSION").getInt(null);
                 if (apiVersion < MINIMUM_CALCULATION_PROFILE_API_VERSION) {

@@ -21,8 +21,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * BigInteger扱いしない。</p>
  */
 public final class AcoBigIntegerPlanBridge {
-    private static final String ACO_API_CLASS =
-            "com.syaru.ae2craftingoptimizer.api.big.BigCraftingEngineApi";
     private static final AtomicReference<Methods> METHODS = new AtomicReference<>();
     private static final Methods UNAVAILABLE = new Methods(null, null, null, null);
 
@@ -106,7 +104,7 @@ public final class AcoBigIntegerPlanBridge {
         }
         Methods resolved;
         try {
-            Class<?> api = Class.forName(ACO_API_CLASS, false,
+            Class<?> api = Class.forName(AcoClassNames.BIG_CRAFTING_ENGINE_API, false,
                     AcoBigIntegerPlanBridge.class.getClassLoader());
             int apiVersion = api.getField("CALCULATION_PROFILE_API_VERSION").getInt(null);
             if (apiVersion < 1) {
