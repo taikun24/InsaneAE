@@ -4,7 +4,7 @@
     "sides": "ae2:part/interface_sides",
     "sidesStatus": "ae2:part/monitor_sides_status",
     "particle": "insaneae:block/insane_interface",
-    "back": "ae2:part/interface_back",
+    "back": "insaneae:part/insane_interface_back",
     "front": "insaneae:block/insane_interface"
   },
   "elements": [

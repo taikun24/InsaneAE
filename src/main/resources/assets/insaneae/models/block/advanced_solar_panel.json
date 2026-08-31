@@ -1,8 +1,8 @@
 {
   "parent": "minecraft:block/cube_bottom_top",
   "textures": {
-    "bottom": "insaneae:block/solar_panel_side",
-    "side": "insaneae:block/solar_panel_side",
+    "bottom": "ae2:block/drive/drive_bottom",
+    "side": "ae2:block/drive/drive_side",
     "top": "insaneae:block/solar_panel_advanced"
   }
 }

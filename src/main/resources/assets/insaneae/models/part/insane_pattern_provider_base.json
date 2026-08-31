@@ -4,7 +4,7 @@
     "sides": "ae2:part/pattern_provider_sides",
     "sidesStatus": "ae2:part/monitor_sides_status",
     "particle": "insaneae:block/insane_pattern_provider",
-    "back": "ae2:part/pattern_provider_back",
+    "back": "insaneae:part/insane_pattern_provider_back",
     "front": "insaneae:block/insane_pattern_provider"
   },
   "elements": [

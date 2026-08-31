@@ -188,8 +188,8 @@ def hue_rotate(template: Image.Image, target, rainbow: bool = False,
     ref_h, _, ref_v = dominant_hue(src, min_sat)
     tgt_h, tgt_s, tgt_v = colorsys.rgb_to_hsv(*[c / 255 for c in target])
     delta = tgt_h - ref_h
-    gain = tgt_v / ref_v if ref_v > 0 else 1.0
-
+    # gain = tgt_v / ref_v if ref_v > 0 else 1.0
+    gain = 1
     out = []
     width = src.width
     for i, (r, g, b, a) in enumerate(src.getdata()):
