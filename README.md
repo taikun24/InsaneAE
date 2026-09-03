@@ -1,3 +1,5 @@
+**日本語** | [English](README.en.md)
+
 # InsaneAE
 
 > More Storage, Better Gameplay...?
@@ -22,14 +24,14 @@ Minecraft のバージョンごとにブランチを分けています。**不�
 |---|---|
 | Minecraft | 1.20.1 |
 | Forge | 47.4.20 以上 |
-| [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) | 15.2.16 以上 (必須) |
+| [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) | 15.4.10 以上 (必須) |
 | [MEGA Cells](https://github.com/62832/MEGACells) | 2.4.6 以上 (必須) |
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) | 1.4 以上 (任意 / 化学物質セル用) |
 | [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) | 1.5.12 以上、**1.5.18 以上を推奨** (任意 / BigInteger量会計・厳密計算連携用) |
 | [Astral Mekanism & Energistics](https://www.curseforge.com/minecraft/mc-mods/astral-mekanism) | 1.8 以上 (任意 / ME インターフェイスへの自動搬出をまとめる連携用) |
 
 AE2 の内部 (`BasicCellInventory`、`CraftingCPUCluster`、ツールチップ描画など) に Mixin で踏み込んでいるため、
-AE2 のバージョン範囲は実際に検証した `[15.2.16,16)` に固定しています。
+AE2 のバージョン範囲は実際に検証した `[15.4.10,16)` に固定しています。
 
 AE2 Crafting Optimizer は必須ではありません。導入されていてBigIntegerバックエンドが有効な場合、
 Quantum CPUの完成品待ち台帳と厳密な計算計画をACO公開APIへ接続します。ACOが無い場合や設定で
