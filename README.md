@@ -1,3 +1,5 @@
+**日本語** | [English](README.en.md)
+
 # InsaneAE
 
 > More Storage, Better Gameplay...?
