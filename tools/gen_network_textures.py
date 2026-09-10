@@ -2,9 +2,10 @@
 """超次元 ME ケーブル / コントローラのテクスチャを tools/textures の下敷きから作る。
 
     pip install pillow
+    python tools/gen_network_textures.py
 
-    python tools/gen_network_textures.py                     # 生成
-    python tools/gen_network_textures.py --seed <ae2.jar>    # 下敷きを AE2 の jar から用意する
+<b>流れは tools/textures → src/main/resources の一方向だけ。</b>
+下敷きを描き換えて流し直せば、そのまま Mod のリソースに入る。
 
 コントローラは超特大インターフェイスや特大パターンプロバイダーと同じ方針で、
 <b>下敷きの色相を回したもの</b>を出す。回す角度は HUE_SHIFT の 1 箇所だけ。
@@ -27,8 +28,6 @@ minecraft_version を読むので、チェックアウトしているブラン�
     1. tools/textures/<minecraft_version>/   そのバージョン専用の絵
     2. tools/textures/                       バージョン共通の絵
 
-<b>下敷きはリポジトリに入っているので、普通に描き換えてよい。</b>
-流し直しても AE2 の絵には戻らない (戻したいときだけ --seed を使う)。
 `--templates <dir>` を渡すとその 1 か所だけを見る。
 
     cable_<色>.png          ケーブルの帯 17 色。ファイル名は AEColor の enum 名
@@ -49,21 +48,19 @@ minecraft_version を読むので、チェックアウトしているブラン�
 モデル側は cube_all だけで済ませる。発光レイヤが縦に並んだアニメーション
 (16x192 = 12 コマ) のときは先頭コマだけを使う。
 
-<b>ケーブルだけは色相を回さず、そのままコピーする。</b>ケーブルは 17 色あり、
-色名がそのままアイテム名になっているので、<b>色相を回すと名前と実物がずれる</b>
+<b>ケーブルだけは色相を回さない。</b>ケーブルは 17 色あり、色名がそのまま
+アイテム名になっているので、<b>色相を回すと名前と実物がずれる</b>
 (「白色の…」が緑になる)。しかも AE2 の CableBuilder は (AECableType, AEColor) の組でしか
 テクスチャを引かないため、ワールド上の色は AE2 のもののままで動かせない。
 つまり回した瞬間に<b>手持ちとワールドの色も食い違う</b>。
 
---seed が持ってくるのは<b>高密度</b>スマートケーブルの帯で、これを<b>細い</b>
-スマートケーブルの形のアイテムモデルに巻く (ModItemModelProvider)。色は AE2 と
-1 ドットも変わらないまま、模様で AE2 のスマートケーブル (帯が違う) とも
-高密度ケーブル (太い) とも見分けが付く。
+今の下敷きは AE2 の<b>高密度</b>スマートケーブルの帯で、これを<b>細い</b>
+スマートケーブルの形のアイテムモデルに巻いている (ModItemModelProvider)。
 
-<b>帯と目盛りは同じ一族から取ること。</b>AE2 の帯は目盛りが乗る溝を透明のまま
-空けてあり、埋められるのは同じ一族の目盛りだけ。細いスマート側の目盛りは溝の位置が
-違うので、混ぜると<b>アイテムの絵に穴が空く</b> (手持ちだけ軸の線が抜けて見える。
-ワールド側は AE2 のケーブルの絵なので出ない)。
+<b>帯 (cable_<色>) と目盛り (cable_channels_*) は揃えて描くこと。</b>今の下敷きは
+目盛りが乗る溝を透明のまま空けてあり、埋めるのは目盛りの側。溝と目盛りの位置が
+食い違うと<b>アイテムの絵に穴が空く</b> (手持ちだけ軸の線が抜けて見える。
+ワールド側は AE2 のケーブルの絵を使うので出ない)。
 """
 
 from __future__ import annotations
@@ -71,7 +68,6 @@ from __future__ import annotations
 import argparse
 import colorsys
 import os
-import zipfile
 
 from PIL import Image
 
@@ -89,20 +85,8 @@ CABLE_COLORS = (
 # 使用チャンネルの目盛り。色に依らない共通の重ねレイヤ。
 CABLE_OVERLAYS = ("channels_00", "channels_10")
 
-# コントローラの下敷き (下敷きの名前 → 出力での役割はコードのほうを参照)。
-CONTROLLER_TEMPLATES = ("controller.png", "controller_powered.png",
-                        "controller_lights.png", "controller_conflict.png")
-
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(REPO, "src", "main", "resources", "assets", "insaneae", "textures")
-
-# --seed で AE2 の jar から持ってくるときの対応表 (下敷きの名前 → jar の中のパス)。
-# <b>帯も目盛りも高密度スマート側</b>から取る (上の「知っておくこと」を参照)。
-SEED_SOURCES = {
-    **{"cable_%s.png" % name: "part/cable/dense_smart/%s.png" % name
-       for name in CABLE_COLORS + CABLE_OVERLAYS},
-    **{name: "block/" + name for name in CONTROLLER_TEMPLATES},
-}
 
 
 def read_minecraft_version(repo: str = REPO) -> str | None:
@@ -133,15 +117,13 @@ TEMPLATE_DIRS = resolve_template_dirs()
 
 
 def load_template(dirs: list[str], name: str) -> Image.Image:
-    """下敷きを 1 枚読む。無ければ、どうやって用意するかを言って止まる。"""
+    """下敷きを 1 枚読む。無ければ、どこに置けばよいかを言って止まる。"""
     for directory in dirs:
         path = os.path.join(directory, name)
         if os.path.isfile(path):
             return Image.open(path).convert("RGBA").copy()
     raise SystemExit(
-        "下敷きが無い: %s\n"
-        "  探した場所: %s\n"
-        "  AE2 の絵から用意するなら: python tools/gen_network_textures.py --seed <ae2.jar>"
+        "下敷きが無い: %s\n  探した場所: %s"
         % (name, " , ".join(os.path.relpath(d, REPO) for d in dirs)))
 
 
@@ -178,29 +160,13 @@ def save(image: Image.Image, *parts: str) -> None:
     print("wrote", os.path.relpath(path, REPO))
 
 
-def seed(jar_path: str, dirs: list[str]) -> None:
-    """AE2 の jar から下敷きを用意する。書き出し先は探索パスの先頭 (一番具体的なところ)。"""
-    target = dirs[0]
-    os.makedirs(target, exist_ok=True)
-    with zipfile.ZipFile(jar_path) as jar:
-        for name, path in SEED_SOURCES.items():
-            with jar.open("assets/ae2/textures/" + path) as handle:
-                image = Image.open(handle).convert("RGBA").copy()
-            image.save(os.path.join(target, name))
-            print("seeded", os.path.relpath(os.path.join(target, name), REPO))
-
-
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--templates", default=None,
                         help="下敷きの置き場所を 1 か所に固定する (既定は tools/textures を探す)")
-    parser.add_argument("--seed", metavar="AE2_JAR",
-                        help="下敷きを AE2 の jar から用意し直す (描き換えたものは上書きされる)")
     args = parser.parse_args()
 
     dirs = [args.templates] if args.templates else TEMPLATE_DIRS
-    if args.seed:
-        seed(args.seed, dirs)
 
     for name in CABLE_COLORS + CABLE_OVERLAYS:
         save(load_template(dirs, "cable_%s.png" % name),
