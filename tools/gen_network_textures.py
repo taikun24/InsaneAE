@@ -56,8 +56,11 @@ CABLE_COLORS = (
     "transparent",
 )
 
-# 使用チャンネルの目盛り。色に依らない共通の重ねレイヤで、
-# <b>細いスマートケーブル側</b>のものを使う (帯だけが高密度、形はスマートなので)。
+# 使用チャンネルの目盛り。色に依らない共通の重ねレイヤ。
+# <b>帯と同じ高密度スマート側から取ること。</b>AE2 の帯は目盛りが乗る溝を
+# 透明のまま空けてあり、埋めるのは同じ一族の目盛りだけ。細いスマート側の目盛りは
+# 溝の位置が違うので、混ぜると<b>アイテムの絵に穴が空く</b>
+# (手持ちだけ軸の線が抜けて見える。ワールド側は AE2 のケーブルの絵なので出ない)。
 CABLE_OVERLAYS = ("channels_00", "channels_10")
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -112,7 +115,7 @@ def main() -> None:
             save(load(jar, "part/cable/dense_smart/%s.png" % name),
                  "part", "cable", "hyper", name + ".png")
         for name in CABLE_OVERLAYS:
-            save(load(jar, "part/cable/smart/%s.png" % name),
+            save(load(jar, "part/cable/dense_smart/%s.png" % name),
                  "part", "cable", "hyper", name + ".png")
 
         offline = load(jar, "block/controller.png")
