@@ -12,7 +12,6 @@ import appeng.api.networking.crafting.ICraftingPlan;
 import appeng.api.networking.crafting.ICraftingSimulationRequester;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.parts.BusSupport;
-import appeng.api.parts.IPart;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
@@ -31,7 +30,6 @@ import appeng.crafting.execution.ElapsedTimeTracker;
 import appeng.crafting.execution.ExecutingCraftingJob;
 import appeng.crafting.inv.ListCraftingInventory;
 import appeng.items.contents.CellConfig;
-import appeng.items.parts.PartItem;
 import appeng.items.storage.CreativeCellItem;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.me.helpers.MachineSource;
@@ -668,10 +666,8 @@ public final class InsaneAETestPlots {
      * {@code PlotBuilder#part} は AE2 の {@code ItemDefinition} しか受け付けないので、
      * こちらの {@code DeferredItem} を包んで渡す。表示名はテストの出力にしか出ない。
      */
-    private static <T extends IPart>
-            ItemDefinition<PartItem<T>> partDefinition(
-                    String englishName,
-                    DeferredItem<PartItem<T>> item) {
+    private static <I extends Item> ItemDefinition<I> partDefinition(
+            String englishName, DeferredItem<I> item) {
         return new ItemDefinition<>(englishName, item);
     }
 

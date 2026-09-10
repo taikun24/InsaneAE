@@ -6,6 +6,7 @@ import appeng.items.parts.ColoredPartItem;
 import appeng.items.parts.PartItem;
 import jp.main.taikun.insaneae.InsaneAE;
 import jp.main.taikun.insaneae.iface.InsaneInterfacePart;
+import jp.main.taikun.insaneae.iface.InsaneInterfacePartItem;
 import jp.main.taikun.insaneae.network.HyperCablePart;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderPart;
 import net.neoforged.bus.api.IEventBus;
@@ -51,9 +52,8 @@ public final class ModParts {
     private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(InsaneAE.MODID);
 
     /** 超特大インターフェイスのケーブル版。 */
-    public static final DeferredItem<PartItem<InsaneInterfacePart>> INSANE_INTERFACE =
-            ITEMS.registerItem("insane_interface_part",
-                    props -> new PartItem<>(props, InsaneInterfacePart.class, InsaneInterfacePart::new));
+    public static final DeferredItem<InsaneInterfacePartItem> INSANE_INTERFACE =
+            ITEMS.registerItem("insane_interface_part", InsaneInterfacePartItem::new);
 
     /** 特大パターンプロバイダーのケーブル版。 */
     public static final DeferredItem<PartItem<InsanePatternProviderPart>> INSANE_PATTERN_PROVIDER =
