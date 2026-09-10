@@ -3,6 +3,7 @@ package jp.main.taikun.insaneae.client;
 import jp.main.taikun.insaneae.energy.SolarPanelTier;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerLimitBridge;
 import jp.main.taikun.insaneae.registries.ModBlocks;
+import jp.main.taikun.insaneae.registries.ModParts;
 import net.minecraft.ChatFormatting;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
@@ -38,6 +39,8 @@ public final class InsaneTooltips {
 
     private static final String SUFFIX = ".desc";
     private static final String SOLAR_PANEL = "insaneae.desc.solar_panel";
+    /** 超次元 ME ケーブルは 17 色あるが説明は共通なので、色ごとの .desc は置かない。 */
+    private static final String HYPER_CABLE = "insaneae.desc.hyper_cable";
     private static final String BIG_INTEGER_CPU_CAPACITY =
             "block.insaneae.big_integer_cpu.capacity";
 
@@ -96,6 +99,9 @@ public final class InsaneTooltips {
                 map.put(ModBlocks.SOLAR_PANELS.get(tier).get().asItem(),
                         new Description(SOLAR_PANEL,
                                 String.format(Locale.ROOT, "%,d", tier.ratePerTick())));
+            }
+            for (var cable : ModParts.allHyperCables()) {
+                map.put(cable, new Description(HYPER_CABLE));
             }
             families = map;
         }

@@ -13,6 +13,8 @@ import jp.main.taikun.insaneae.crafting.ICoProcessorCount;
 import jp.main.taikun.insaneae.crafting.ExactCraftingUnitType;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerPlanBridge;
 import jp.main.taikun.insaneae.integration.aco.ExactCraftingCapacityPolicy;
+import jp.main.taikun.insaneae.quantum.cpu.QuantumCpuClusterOwner;
+import jp.main.taikun.insaneae.quantum.cpu.QuantumOwnedCluster;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Final;
@@ -240,6 +242,18 @@ public abstract class CraftingCPUClusterMixin
      */
     @Unique
     private void insaneae$recount() {
+        // Quantum CPU の内蔵 CPU には構成ブロックが無い。合計は内部スロットの持ち主が持っている。
+        QuantumCpuClusterOwner owner = insaneae$quantumOwner();
+        if (owner != null) {
+            if (insaneae$countedBlocks == owner.cpuRevision()) {
+                return;
+            }
+            insaneae$coProcessors = owner.cpuCoProcessors();
+            insaneae$countedBlocks = owner.cpuRevision();
+            accelerator = (int) Math.min(insaneae$coProcessors, INT_CAP);
+            return;
+        }
+
         int blocks = blockEntities.size();
         if (blocks == insaneae$countedBlocks) {
             return;
@@ -277,6 +291,17 @@ public abstract class CraftingCPUClusterMixin
      */
     @Unique
     private BigInteger insaneae$recountStorage() {
+        // 内蔵 CPU のぶんは持ち主が数えている (構成ブロックが無いので数えようがない)。
+        QuantumCpuClusterOwner owner = insaneae$quantumOwner();
+        if (owner != null) {
+            if (insaneae$countedStorageBlocks != owner.cpuRevision()) {
+                insaneae$exactStorage = owner.cpuExactStorage();
+                insaneae$countedStorageBlocks = owner.cpuRevision();
+                storage = insaneae$saturatedStorage(insaneae$exactStorage);
+            }
+            return insaneae$exactStorage;
+        }
+
         int blocks = blockEntities.size();
         // 構成ブロック数が変わっていなければ、同じ容量を再利用する。
         if (blocks == insaneae$countedStorageBlocks) {
@@ -303,6 +328,17 @@ public abstract class CraftingCPUClusterMixin
         // AE2本体のlongフィールドも常に正の互換値へ整え、他Modの直接参照を壊さない。
         storage = insaneae$saturatedStorage(total);
         return total;
+    }
+
+    /**
+     * このクラスタが Quantum CPU の内蔵 CPU なら、その持ち主。AE2 が組んだクラスタなら null。
+     *
+     * <p>持ち主は {@code CraftingCpuClusterOwnerMixin} が同じクラスへ生やしたフィールドに入っている。
+     * 別 Mixin のフィールドは直接見えないので、対象クラスが実装している窓口越しに引く。</p>
+     */
+    @Unique
+    private QuantumCpuClusterOwner insaneae$quantumOwner() {
+        return ((QuantumOwnedCluster) (Object) this).insaneae$getOwner();
     }
 
     /** BigInteger容量をAE2のlong境界へ変換する。正確値は呼び出し元で保持する。 */

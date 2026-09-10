@@ -16,6 +16,7 @@ import jp.main.taikun.insaneae.energy.InsaneEnergyCellTier;
 import jp.main.taikun.insaneae.energy.SolarPanelBlock;
 import jp.main.taikun.insaneae.energy.SolarPanelTier;
 import jp.main.taikun.insaneae.iface.InsaneInterfaceBlock;
+import jp.main.taikun.insaneae.network.HyperControllerBlock;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderBlock;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlock;
 import net.minecraft.world.item.BlockItem;
@@ -73,6 +74,15 @@ public class ModBlocks {
     public static final DeferredHolder<Block, InsanePatternProviderBlock> INSANE_PATTERN_PROVIDER =
             BLOCKS.register("insane_pattern_provider", InsanePatternProviderBlock::new);
 
+    /**
+     * 超次元 ME コントローラ。
+     *
+     * <p>コントローラとしては AE2 のものと同じで、追加で
+     * <b>ネットワークの超次元チャンネルを解錠する</b> (超次元 ME ケーブルが 32 本を超える)。</p>
+     */
+    public static final DeferredHolder<Block, HyperControllerBlock> HYPER_CONTROLLER =
+            BLOCKS.register("hyper_controller", HyperControllerBlock::new);
+
     static {
         // 表示名は階層ごとの lang キーではなく「書式キー + 階層ラベル」で作る → TieredNames。
         for (InsaneCraftingUnitType type : InsaneCraftingUnitType.values()) {
@@ -118,6 +128,8 @@ public class ModBlocks {
                 () -> new BlockItem(INSANE_INTERFACE.get(), new Item.Properties()));
         BLOCK_ITEMS.register("insane_pattern_provider",
                 () -> new BlockItem(INSANE_PATTERN_PROVIDER.get(), new Item.Properties()));
+        BLOCK_ITEMS.register("hyper_controller",
+                () -> new BlockItem(HYPER_CONTROLLER.get(), new Item.Properties()));
     }
 
     /** ストレージ + アクセラレータの全ブロック (BlockEntityType やドロップ生成用)。 */

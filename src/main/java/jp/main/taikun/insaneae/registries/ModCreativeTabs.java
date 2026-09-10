@@ -27,6 +27,8 @@ public class ModCreativeTabs {
                 output.accept(ModUpgrades.QUANTUM_ACCELERATION_CARD.get());
                 output.accept(ModUpgrades.TASK_FUSION_CARD.get());
                 output.accept(ModBlocks.IMPROVED_CHARGER.get());
+                output.accept(ModBlocks.HYPER_CONTROLLER.get());
+                ModParts.allHyperCables().forEach(output::accept);
                 output.accept(ModBlocks.INSANE_INTERFACE.get());
                 output.accept(ModParts.INSANE_INTERFACE.get());
                 // AE2 の EnergyCellBlock#addToMainCreativeTab は「空」と「満充電」の 2 個を出す。

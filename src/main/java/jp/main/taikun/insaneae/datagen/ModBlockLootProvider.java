@@ -36,7 +36,8 @@ public class ModBlockLootProvider extends BlockLootSubProvider {
                         ModBlocks.allEnergyCells().stream().map(block -> (Block) block),
                         ModBlocks.allSolarPanels().stream().map(block -> (Block) block),
                         Stream.<Block>of(ModBlocks.QUANTUM_CPU.get(), ModBlocks.IMPROVED_CHARGER.get(),
-                                ModBlocks.INSANE_INTERFACE.get(), ModBlocks.INSANE_PATTERN_PROVIDER.get()))
+                                ModBlocks.INSANE_INTERFACE.get(), ModBlocks.INSANE_PATTERN_PROVIDER.get(),
+                                ModBlocks.HYPER_CONTROLLER.get()))
                 .flatMap(stream -> stream)
                 .toList();
     }

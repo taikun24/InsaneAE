@@ -2,6 +2,7 @@ package jp.main.taikun.insaneae.datagen;
 
 import appeng.api.orientation.BlockOrientation;
 import appeng.block.crafting.AbstractCraftingUnitBlock;
+import appeng.block.networking.ControllerBlock;
 import appeng.block.networking.EnergyCellBlock;
 import com.google.gson.JsonObject;
 import jp.main.taikun.insaneae.InsaneAE;
@@ -100,10 +101,37 @@ public class ModBlockStateProvider extends BlockStateProvider {
         simpleBlock(ModBlocks.INSANE_INTERFACE.get(), models().cubeAll("insane_interface",
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/insane_interface")));
 
+        // 超次元 ME コントローラ。AE2 のコントローラと同じ 3 状態 (停止 / 稼働 / 競合) を持つが、
+        // 見た目の種類 (type) は block 固定なので ({@code HyperControllerBlock} 参照)、
+        // type を条件に入れない multipart にして 3 通りだけ出す。
+        // variants で全組み合わせを並べると、使われない type のぶんまで書くことになる。
+        hyperController();
+
         // 特大パターンプロバイダーも同様に、AE2 のパターンプロバイダの色相を回したキューブ。
         // tools/gen_pattern_provider_texture.py が生成している。
         simpleBlock(ModBlocks.INSANE_PATTERN_PROVIDER.get(), models().cubeAll("insane_pattern_provider",
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/insane_pattern_provider")));
+    }
+
+    /**
+     * 超次元 ME コントローラのブロックステートとモデル。
+     *
+     * <p>発光レイヤは<b>テクスチャに焼き込んである</b> ({@code tools/gen_network_textures.py})
+     * ので、AE2 のように「本体 + 発光キューブの 2 要素」を組む必要は無く cube_all で足りる。</p>
+     */
+    private void hyperController() {
+        var builder = getMultipartBuilder(ModBlocks.HYPER_CONTROLLER.get());
+        for (ControllerBlock.ControllerBlockState state : ControllerBlock.ControllerBlockState.values()) {
+            String suffix = switch (state) {
+                case offline -> "";
+                case online -> "_powered";
+                case conflicted -> "_conflicted";
+            };
+            ModelFile model = models().cubeAll("hyper_controller" + suffix,
+                    ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/hyper_controller" + suffix));
+            builder.part().modelFile(model).addModel()
+                    .condition(ControllerBlock.CONTROLLER_STATE, state);
+        }
     }
 
     /**

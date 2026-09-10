@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "insaneae:green_hyper_cable"
+    },
+    {
+      "tag": "ae2:can_remove_color"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "insaneae:fluix_hyper_cable"
+  }
+}

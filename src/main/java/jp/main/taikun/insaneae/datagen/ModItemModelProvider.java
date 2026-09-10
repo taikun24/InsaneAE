@@ -6,6 +6,7 @@ import jp.main.taikun.insaneae.energy.InsaneEnergyCellTier;
 import jp.main.taikun.insaneae.energy.SolarPanelTier;
 import jp.main.taikun.insaneae.upgrade.InsaneSpeedCardType;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
+import appeng.api.util.AEColor;
 import net.minecraft.core.Direction;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
@@ -13,6 +14,8 @@ import net.neoforged.neoforge.client.model.generators.ItemModelBuilder;
 import net.neoforged.neoforge.client.model.generators.ItemModelProvider;
 import net.neoforged.neoforge.client.model.generators.ModelFile;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
+
+import java.util.Locale;
 
 /**
  * アイテムモデル。
@@ -77,6 +80,11 @@ public class ModItemModelProvider extends ItemModelProvider {
         return ResourceLocation.fromNamespaceAndPath(namespace, path);
     }
 
+    /** 超次元 ME ケーブルのテクスチャ (帯・目盛りとも insaneae 側にコピー済み)。 */
+    private static ResourceLocation hyperCableTexture(String name) {
+        return mega(InsaneAE.MODID, "part/cable/hyper/" + name);
+    }
+
     public ModItemModelProvider(PackOutput output, ExistingFileHelper existingFileHelper) {
         super(output, InsaneAE.MODID, existingFileHelper);
     }
@@ -136,6 +144,35 @@ public class ModItemModelProvider extends ItemModelProvider {
                 "ae2:part/interface_sides", "ae2:part/interface_back");
         partItem("insane_pattern_provider_part", "insane_pattern_provider",
                 "ae2:part/pattern_provider_sides", "ae2:part/pattern_provider_back");
+
+        getBuilder("hyper_controller").parent(new ModelFile.UncheckedModelFile(
+                ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/hyper_controller")));
+
+        // 超次元 ME ケーブルの手持ちモデル (17 色)。
+        //
+        // 形は AE2 の<b>スマートケーブル</b>のアイテムモデル (細い) をそのまま継承し、
+        // 帯だけ<b>高密度</b>スマートケーブルのものに差し替える。
+        // 「高密度の帯を細いケーブルに巻いてある」= このケーブルそのものの説明になっていて、
+        // AE2 のスマートケーブル (帯が違う) とも高密度ケーブル (太い) とも見分けが付く。
+        //
+        // <b>テクスチャは 3 枚とも insaneae 側にコピーしてある</b>
+        // ({@code tools/gen_network_textures.py})。親モデルが差す既定は ae2 のままなので、
+        // 帯 (base) だけでなく<b>目盛り 2 枚も明示的に上書きしないと ae2 のものが残る</b>。
+        // 以降は AE2 の更新に引きずられずに描き換えられる。
+        //
+        // <b>色は AE2 のものと同じにしてある。</b>色名がアイテム名になっている以上、
+        // 色相を動かすと「白色の…」が白でなくなるうえ、ワールド上の色
+        // (AE2 の CableBuilder が AECableType と AEColor だけで決める) とも食い違う。
+        //
+        // テクスチャのファイル名は AEColor の enum 名そのままで、fluix だけ transparent。
+        // registryPrefix (fluix) ではないので注意。
+        for (AEColor color : AEColor.values()) {
+            withExistingParent(color.registryPrefix + "_hyper_cable",
+                    mega("ae2", "item/smart_cable_base"))
+                    .texture("base", hyperCableTexture(color.name().toLowerCase(Locale.ROOT)))
+                    .texture("channelsOdd", hyperCableTexture("channels_00"))
+                    .texture("channelsEven", hyperCableTexture("channels_10"));
+        }
 
         for (SolarPanelTier tier : SolarPanelTier.values()) {
             getBuilder(tier.id()).parent(new ModelFile.UncheckedModelFile(

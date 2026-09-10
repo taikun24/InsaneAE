@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "a": {
+      "item": "insaneae:fluix_hyper_cable"
+    },
+    "b": {
+      "tag": "c:dyes/lime"
+    }
+  },
+  "pattern": [
+    "aaa",
+    "aba",
+    "aaa"
+  ],
+  "result": {
+    "count": 8,
+    "id": "insaneae:lime_hyper_cable"
+  }
+}

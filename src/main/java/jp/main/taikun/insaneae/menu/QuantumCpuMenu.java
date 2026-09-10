@@ -48,6 +48,20 @@ public class QuantumCpuMenu extends PatternProviderMenu {
     /** 表示ページの変更をサーバに伝えるアクション。 */
     private static final String ACTION_SET_PAGE = "insaneaeSetPage";
 
+    /**
+     * 内蔵クラフト CPU のユニットスロットの区分。
+     *
+     * <p>AE2 の {@code SlotSemantics} は決め打ちの一覧なので、自分のぶんは
+     * {@code register} で足す。画面 JSON 側はこの名前で座標を引く
+     * ({@code assets/ae2/screens/insaneae/quantum_cpu.json})。</p>
+     */
+    public static final SlotSemantic CRAFTING_UNIT =
+            SlotSemantics.register("INSANEAE_CRAFTING_UNIT", false);
+
+    /** 協調処理ユニットの枠。ストレージとは別のインベントリなので区分も分けている。 */
+    public static final SlotSemantic ACCELERATOR_UNIT =
+            SlotSemantics.register("INSANEAE_ACCELERATOR_UNIT", false);
+
     static {
         MenuOpener.addOpener(TYPE, QuantumCpuMenu::open);
     }
@@ -85,6 +99,26 @@ public class QuantumCpuMenu extends PatternProviderMenu {
         if (host instanceof IUpgradeableObject upgradeable
                 && getSlots(SlotSemantics.UPGRADE).isEmpty()) {
             setupUpgrades(upgradeable.getUpgrades());
+        }
+
+        // 内蔵クラフト CPU のユニットスロット。
+        // 特大パターンプロバイダー (このクラスを継承している) は CPU を持たないので、
+        // Quantum CPU のときだけ並べる。
+        if (host instanceof QuantumCpuBlockEntity quantumCpu) {
+            List<Component> storageTooltip =
+                    List.of(Component.translatable("gui.insaneae.quantum_cpu.crafting_units"));
+            for (int i = 0; i < QuantumCpuBlockEntity.CRAFTING_UNIT_SLOTS; i++) {
+                AppEngSlot slot = new AppEngSlot(quantumCpu.getCraftingUnits(), i);
+                slot.setEmptyTooltip(() -> storageTooltip);
+                addSlot(slot, CRAFTING_UNIT);
+            }
+            List<Component> acceleratorTooltip =
+                    List.of(Component.translatable("gui.insaneae.quantum_cpu.accelerator_units"));
+            for (int i = 0; i < QuantumCpuBlockEntity.ACCELERATOR_UNIT_SLOTS; i++) {
+                AppEngSlot slot = new AppEngSlot(quantumCpu.getAcceleratorUnits(), i);
+                slot.setEmptyTooltip(() -> acceleratorTooltip);
+                addSlot(slot, ACCELERATOR_UNIT);
+            }
         }
 
         // 返却インベントリには見出しを出していないので、

@@ -2,12 +2,14 @@ package jp.main.taikun.insaneae.registries;
 
 import net.minecraft.core.registries.Registries;
 import appeng.blockentity.crafting.CraftingBlockEntity;
+import appeng.blockentity.networking.ControllerBlockEntity;
 import appeng.blockentity.networking.EnergyCellBlockEntity;
 import jp.main.taikun.insaneae.InsaneAE;
 import jp.main.taikun.insaneae.charger.ImprovedChargerBlockEntity;
 import jp.main.taikun.insaneae.energy.SolarPanelBlock;
 import jp.main.taikun.insaneae.energy.SolarPanelBlockEntity;
 import jp.main.taikun.insaneae.iface.InsaneInterfaceBlockEntity;
+import jp.main.taikun.insaneae.network.HyperControllerBlockEntity;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderBlockEntity;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import net.minecraft.world.level.block.Block;
@@ -86,6 +88,22 @@ public class ModBlockEntities {
                             ModBlocks.INSANE_PATTERN_PROVIDER.get())
                     .build(null));
 
+    /**
+     * 超次元 ME コントローラ。
+     *
+     * <p>型引数が {@link HyperControllerBlockEntity} ではなく {@link ControllerBlockEntity} なのは、
+     * ブロック側が AE2 の {@code ControllerBlock}
+     * (= {@code AEBaseEntityBlock<ControllerBlockEntity>}) を継承していて、
+     * {@code setBlockEntity} が親の型を要求するため。<b>実際に作られるのは派生クラスの方</b>で、
+     * 解錠の判定 ({@code HyperNetwork#isUnlocked}) もその実クラスを見ている。</p>
+     */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ControllerBlockEntity>> HYPER_CONTROLLER =
+            BLOCK_ENTITY_TYPES.register("hyper_controller", () -> BlockEntityType.Builder
+                    .<ControllerBlockEntity>of(
+                            (pos, state) -> new HyperControllerBlockEntity(hyperControllerType(), pos, state),
+                            ModBlocks.HYPER_CONTROLLER.get())
+                    .build(null));
+
     /** 自己参照コンパイルエラーを避けるための遅延アクセサ。 */
     private static BlockEntityType<CraftingBlockEntity> type() {
         return CRAFTING_STORAGE.get();
@@ -113,6 +131,10 @@ public class ModBlockEntities {
 
     private static BlockEntityType<InsanePatternProviderBlockEntity> insanePatternProviderType() {
         return INSANE_PATTERN_PROVIDER.get();
+    }
+
+    private static BlockEntityType<ControllerBlockEntity> hyperControllerType() {
+        return HYPER_CONTROLLER.get();
     }
 
     public static void register(IEventBus bus) {
@@ -169,5 +191,10 @@ public class ModBlockEntities {
         ModBlocks.INSANE_PATTERN_PROVIDER.get().setBlockEntity(
                 InsanePatternProviderBlockEntity.class, INSANE_PATTERN_PROVIDER.get(), null,
                 (level, pos, state, be) -> be.serverTick());
+
+        // 超次元コントローラは AE2 のコントローラと同じく ticker を持たない
+        // (状態の更新はグリッドからの通知で走る)。
+        ModBlocks.HYPER_CONTROLLER.get().setBlockEntity(
+                ControllerBlockEntity.class, HYPER_CONTROLLER.get(), null, null);
     }
 }

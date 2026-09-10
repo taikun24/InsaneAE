@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "a": {
+      "item": "insaneae:fluix_hyper_cable"
+    },
+    "b": {
+      "tag": "c:dyes/blue"
+    }
+  },
+  "pattern": [
+    "aaa",
+    "aba",
+    "aaa"
+  ],
+  "result": {
+    "count": 8,
+    "id": "insaneae:blue_hyper_cable"
+  }
+}

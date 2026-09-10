@@ -4,8 +4,12 @@ import java.util.List;
 import java.util.Arrays;
 import appeng.recipes.game.StorageCellDisassemblyRecipe;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.tags.TagKey;
 import appeng.core.definitions.AEBlocks;
 import appeng.core.definitions.AEItems;
+import appeng.core.definitions.AEParts;
+import appeng.api.util.AEColor;
 import gripe._90.megacells.definition.MEGABlocks;
 import gripe._90.megacells.definition.MEGAItems;
 import jp.main.taikun.insaneae.InsaneAE;
@@ -53,6 +57,22 @@ public class ModRecipeProvider extends RecipeProvider {
     private static final Item MATTER_BALL = AEItems.MATTER_BALL.asItem();
     private static final Item SINGULARITY = AEItems.SINGULARITY.asItem();
     private static final Item ACCUMULATION_PROCESSOR = MEGAItems.ACCUMULATION_PROCESSOR.asItem();
+
+    /**
+     * AE2 の「色を落とせるもの」タグ (水入りバケツ・雪玉など)。
+     * AE2 自身がケーブルの色落としに使っているものをそのまま借りる。
+     */
+    private static final TagKey<Item> CAN_REMOVE_COLOR = TagKey.create(Registries.ITEM,
+            ResourceLocation.fromNamespaceAndPath("ae2", "can_remove_color"));
+
+    /**
+     * その色の染料タグ。1.21 で共通タグの名前空間が {@code forge} から {@code c} に変わっているので、
+     * <b>1.20.1 側へ移植するときはここを {@code forge} に直すこと</b>。
+     */
+    private static TagKey<Item> dyeTag(AEColor color) {
+        return TagKey.create(Registries.ITEM,
+                ResourceLocation.fromNamespaceAndPath("c", "dyes/" + color.dye.getName()));
+    }
 
     public ModRecipeProvider(PackOutput output, CompletableFuture<HolderLookup.Provider> registries) {
         super(output, registries);
@@ -169,6 +189,29 @@ public class ModRecipeProvider extends RecipeProvider {
                         'C', AEBlocks.PATTERN_PROVIDER
                 ));
 
+        // 超次元 ME ケーブル (fluix) ×4: 高密度スマートケーブル (fluix) 8 + 集積プロセッサ。
+        // 高密度と同じ本数のまま「細くなって部品が貼れる」段と、そこから
+        // 超次元 ME コントローラで 32 本を超える段の 2 段構えなので、素材は控えめにしてある。
+        // 色付きは fluix から染めて作る (下の hyperCableColoring)。
+        shapedCount(consumer, ModParts.hyperCable(AEColor.TRANSPARENT), 4, ACCUMULATION_PROCESSOR,
+                new String[]{"AAA", "ABA", "AAA"},
+                Map.of(
+                        'A', AEParts.SMART_DENSE_CABLE.item(AEColor.TRANSPARENT),
+                        'B', ACCUMULATION_PROCESSOR
+                ));
+
+        hyperCableColoring(consumer);
+
+        // 超次元 ME コントローラ: AE2 のコントローラ + 集積プロセッサ 4 + 特異点 4。
+        // 他の限界突破ブロックと同じ形。
+        shaped(consumer, ModBlocks.HYPER_CONTROLLER.get(), ACCUMULATION_PROCESSOR,
+                new String[]{"ABA", "BCB", "ABA"},
+                Map.of(
+                        'A', ACCUMULATION_PROCESSOR,
+                        'B', SINGULARITY,
+                        'C', AEBlocks.CONTROLLER
+                ));
+
         // ケーブル版 (プレート) ⇔ ブロック版。AE2 の ME インターフェイス / パターンプロバイダと同じく
         // 1:1 で行き来できる。中身 (パターン・設定) は移らないので、空の状態で持ち替えること。
         convert(consumer, ModBlocks.INSANE_INTERFACE.get(), ModParts.INSANE_INTERFACE.get());
@@ -262,6 +305,59 @@ public class ModRecipeProvider extends RecipeProvider {
                 .requires(from)
                 .unlockedBy("has_component", has(from))
                 .save(consumer, id);
+    }
+
+    /**
+     * 超次元 ME ケーブルの<b>染色と色落とし</b>。AE2 のケーブルとまったく同じ形にしてある。
+     *
+     * <ul>
+     *   <li>染色: fluix 8 本で染料 1 個を囲んで<b>その色 8 本</b>
+     *       ({@code ae2:network/cables/smart_<色>} と同じ)。</li>
+     *   <li>色落とし: 色付き 1 本 + {@code ae2:can_remove_color} (水入りバケツなど) で fluix 1 本。
+     *       AE2 は「タグ - fluix」の差分材料 1 レシピで済ませているが、
+     *       こちらは<b>色ごとに 1 レシピ</b>に分けてある。差分材料を使うには自前の
+     *       アイテムタグが要り、そのためだけにタグプロバイダを足すほどではないため。
+     *       レシピ ID は結果 (常に fluix) が同じでぶつかるので、色名で分けている。</li>
+     * </ul>
+     *
+     * <p>色を変える経路はもう 1 つ、色塗り器 / ペイントボールがある
+     * ({@code HyperCablePart#changeColor})。そちらはクラフトを通らない。</p>
+     */
+    private static void hyperCableColoring(RecipeOutput consumer) {
+        ItemLike fluix = ModParts.hyperCable(AEColor.TRANSPARENT);
+        for (AEColor color : AEColor.values()) {
+            if (color == AEColor.TRANSPARENT) {
+                continue;
+            }
+            ShapedRecipeBuilder.shaped(RecipeCategory.MISC, ModParts.hyperCable(color), 8)
+                    .pattern("aaa")
+                    .pattern("aba")
+                    .pattern("aaa")
+                    .define('a', fluix)
+                    .define('b', dyeTag(color))
+                    .unlockedBy("has_component", has(fluix))
+                    .save(consumer);
+
+            ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, fluix)
+                    .requires(ModParts.hyperCable(color))
+                    .requires(CAN_REMOVE_COLOR)
+                    .unlockedBy("has_component", has(fluix))
+                    .save(consumer, ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID,
+                            "hyper_cable_clean/" + color.registryPrefix));
+        }
+    }
+
+    /** {@link #shaped} の、結果を複数個出す版。 */
+    static void shapedCount(RecipeOutput consumer, ItemLike result, int count, ItemLike unlockedBy,
+            String[] pattern, Map<Character, ItemLike> ingredients) {
+        ShapedRecipeBuilder builder = ShapedRecipeBuilder.shaped(RecipeCategory.MISC, result, count);
+        for (String s : pattern) {
+            builder.pattern(s);
+        }
+        for (Map.Entry<Character, ItemLike> entry : ingredients.entrySet()) {
+            builder.define(entry.getKey(), entry.getValue());
+        }
+        builder.unlockedBy("has_component", has(unlockedBy)).save(consumer);
     }
 
     static void shaped(RecipeOutput consumer, ItemLike result, ItemLike unlockedBy, String[] pattern, Map<Character, ItemLike> ingredients) {

@@ -3,6 +3,8 @@ package jp.main.taikun.insaneae.iface;
 import appeng.block.AEBaseEntityBlock;
 import appeng.menu.locator.MenuLocators;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -16,6 +18,7 @@ import net.minecraft.world.phys.BlockHitResult;
  * (メモリーカード等の持ち物ありの操作は {@link AEBaseEntityBlock} が先に処理する)。</p>
  */
 public class InsaneInterfaceBlock extends AEBaseEntityBlock<InsaneInterfaceBlockEntity> {
+    private static final boolean anotherName = Math.random() < 0.01;
 
     public InsaneInterfaceBlock() {
         super(metalProps());
@@ -32,5 +35,10 @@ public class InsaneInterfaceBlock extends AEBaseEntityBlock<InsaneInterfaceBlock
             be.openMenu(player, MenuLocators.forBlockEntity(be));
         }
         return InteractionResult.sidedSuccess(level.isClientSide());
+    }
+
+    @Override
+    public MutableComponent getName() {
+        return anotherName ? Component.translatable("item.insaneae.insane_interface_part") : Component.translatable("block.insaneae.insane_interface_part");
     }
 }

@@ -55,6 +55,16 @@ public final class InsaneAEConfig {
     }
 
     /**
+     * 超次元ケーブル 1 本が運べるチャンネル数 (ChannelMode の倍率を掛ける前)。
+     *
+     * <p>効くのは<b>ネットワークに超次元 ME コントローラが在るとき</b>だけで、
+     * 無ければ高密度ケーブルと同じ 32 本のまま。</p>
+     */
+    public static int hyperChannels() {
+        return get(COMMON.hyperChannels, 128);
+    }
+
+    /**
      * 設定ファイル読み込み前でも安全に読む。
      *
      * <p>{@code ConfigValue#get()} は読み込み前に呼ぶと例外になるので、
@@ -73,6 +83,7 @@ public final class InsaneAEConfig {
         private final ModConfigSpec.IntValue craftingBatchThreshold;
         private final ModConfigSpec.BooleanValue serverSidePatternPaging;
         private final ModConfigSpec.IntValue maxCraftingWindowsPerTick;
+        private final ModConfigSpec.IntValue hyperChannels;
 
         private Common(ModConfigSpec.Builder builder) {
             builder.comment("クラフト計算 (Calculating... の部分) の軽量化").push("crafting_calculation");
@@ -109,6 +120,19 @@ public final class InsaneAEConfig {
                             "ネットワークへ流して完成待ちを清算するので、1 tick の合計は long を超えられる。",
                             "サーバが 1 tick に使う時間はこの値に比例するので、上げすぎると重くなる。")
                     .defineInRange("maxCraftingWindowsPerTick", 1024, 1, Integer.MAX_VALUE);
+
+            builder.pop();
+            builder.comment("ネットワーク (チャンネル)").push("network");
+
+            hyperChannels = builder
+                    .comment("超次元 ME ケーブル 1 本が運べるチャンネル数。",
+                            "AE2 の上限は高密度ケーブルの 32 本で、そこを上書きする値。",
+                            "ChannelMode (AE2 の設定) が x2 などなら、その倍率がさらに掛かる。",
+                            "この値が効くのは超次元 ME コントローラがネットワークに在るときだけで、",
+                            "無ければ超次元ケーブルも高密度と同じ 32 本で動く。",
+                            "使用チャンネル数はネットワーク全体で int に収まる必要があるので、",
+                            "際限なく上げないこと。")
+                    .defineInRange("hyperChannels", 128, 32, 65536);
 
             builder.pop();
         }

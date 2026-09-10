@@ -11,13 +11,17 @@ import appeng.api.networking.crafting.CraftingSubmitErrorCode;
 import appeng.api.networking.crafting.ICraftingPlan;
 import appeng.api.networking.crafting.ICraftingSimulationRequester;
 import appeng.api.networking.security.IActionHost;
+import appeng.api.parts.BusSupport;
 import appeng.api.parts.IPart;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
+import appeng.api.networking.pathing.ChannelMode;
 import appeng.api.upgrades.Upgrades;
+import appeng.api.util.AECableType;
+import appeng.api.util.AEColor;
 import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import appeng.core.definitions.AEBlocks;
 import appeng.core.definitions.AEItems;
@@ -48,6 +52,8 @@ import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry;
 import jp.main.taikun.insaneae.integration.aco.AcoCalculationIntegration;
 import jp.main.taikun.insaneae.integration.aco.AcoClassNames;
 import jp.main.taikun.insaneae.integration.aco.AcoExactLimits;
+import jp.main.taikun.insaneae.network.HyperCablePart;
+import jp.main.taikun.insaneae.network.HyperNetwork;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderBlockEntity;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderLogic;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderPart;
@@ -2650,6 +2656,131 @@ public final class InsaneAETestPlots {
     }
 
     /** 中身を設定した超強化クリエイティブセルを 1 枚作る。 */
+    /**
+     * <b>Quantum CPU の内部スロットに挿したクラフトユニットが、本物のクラフト CPU になるか。</b>
+     *
+     * <p>ネットワークには<b>他にクラフト CPU を 1 つも置いていない</b>。
+     * そのため「CPU 一覧に出る」「発注が通る」「最後まで終わる」がどれも
+     * <b>内蔵 CPU のおかげであること</b>が確定する。</p>
+     *
+     * <p>見ているのは 4 点。</p>
+     * <ol>
+     *   <li>ユニットを挿す<b>前</b>は CPU が 0 個。クラフトストレージが無ければ
+     *       CPU として名乗らない ({@code QuantumCraftingCpu#isFormed})。</li>
+     *   <li>挿すと CPU が 1 個現れ、容量とスレッド数が挿したユニットの合計になる。
+     *       ここが 0 だと {@code CraftingCPUClusterMixin} の数え直しが
+     *       内蔵 CPU 用の経路に入っていない。</li>
+     *   <li>2 段クラフト (ボタン &lt;- 板材 &lt;- 原木) が最後まで終わる。</li>
+     *   <li>ユニットを抜くと CPU 一覧から消える。</li>
+     * </ol>
+     */
+    @TestPlot("insaneae_quantum_cpu_internal_units")
+    public static void quantumCpuInternalUnits(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,3] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
+            drive.getInternalInventory().addItems(ultraCreativeCell(Items.OAK_LOG));
+            drive.getInternalInventory().addItems(AEItems.ITEM_CELL_64K.stack());
+        });
+        plot.blockState("3 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        final long requested = 64;
+        final int storageUnits = 2;
+        final int acceleratorUnits = 3;
+
+        plot.test(helper -> {
+            var cpuPos = new BlockPos(3, 0, 0);
+            var state = new Object() {
+                TestCraftingJob job;
+            };
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
+                // 2 段のツリー: ボタン <- 板材 <- 原木 (在庫にあるのは原木だけ)。
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_LOG)));
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_PLANKS)));
+            });
+            sequence.thenIdle(10);
+
+            // 1. ユニットを挿す前は CPU が無いこと。
+            sequence.thenExecute(() -> helper.check(countCpus(helper) == 0,
+                    "クラフトユニットを挿していないのに CPU が現れている: " + countCpus(helper)
+                            + " (isFormed の判定か、他に CPU が置かれている)", cpuPos));
+
+            // 2. クラフトストレージと協調処理ユニットを内部スロットへ。
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
+                cpu.getCraftingUnits().addItems(
+                        AEBlocks.CRAFTING_STORAGE_64K.stack(storageUnits));
+                cpu.getAcceleratorUnits().addItems(
+                        AEBlocks.CRAFTING_ACCELERATOR.stack(acceleratorUnits));
+            });
+            sequence.thenIdle(10);
+
+            sequence.thenExecute(() -> {
+                helper.check(countCpus(helper) == 1,
+                        "内蔵クラフト CPU が CPU 一覧に出ていない: " + countCpus(helper)
+                                + " (CraftingServiceQuantumCpuMixin が当たっていない可能性)", cpuPos);
+
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
+                var cluster = cpu.getCraftingCpu().cluster();
+                long expectedBytes =
+                        AEBlocks.CRAFTING_STORAGE_64K.block().type.getStorageBytes() * storageUnits;
+                helper.check(cluster.getAvailableStorage() == expectedBytes,
+                        "内蔵 CPU の容量が挿したユニットの合計になっていない: "
+                                + cluster.getAvailableStorage() + " != " + expectedBytes, cpuPos);
+                int expectedThreads =
+                        AEBlocks.CRAFTING_ACCELERATOR.block().type.getAcceleratorThreads()
+                                * acceleratorUnits;
+                helper.check(cluster.getCoProcessors() == expectedThreads,
+                        "内蔵 CPU のスレッド数が合っていない: " + cluster.getCoProcessors()
+                                + " != " + expectedThreads, cpuPos);
+            });
+
+            // 3. 実際に 2 段クラフトが最後まで終わること。
+            sequence.thenExecute(() -> state.job = new TestCraftingJob(
+                    helper, BlockPos.ZERO, AEItemKey.of(Items.OAK_BUTTON), requested));
+            sequence.thenWaitUntil(() -> state.job.tickUntilStarted());
+            sequence.thenWaitUntil(() -> {
+                long stored = storedAmount(helper, Items.OAK_BUTTON);
+                if (stored < requested) {
+                    throw new GameTestAssertException("内蔵 CPU での 2 段クラフトが "
+                            + stored + "/" + requested + " しか進まない");
+                }
+            });
+
+            // 4. 抜いたら CPU 一覧から消えること。
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
+                cpu.getCraftingUnits().clear();
+                cpu.getAcceleratorUnits().clear();
+                // clear() は 1 枠ずつの通知を出さないので、数え直しを促す。
+                cpu.getCraftingCpu().updateUnits();
+            });
+            sequence.thenIdle(10);
+            sequence.thenExecute(() -> helper.check(countCpus(helper) == 0,
+                    "ユニットを抜いても CPU 一覧に残っている: " + countCpus(helper), cpuPos));
+
+            sequence.thenSucceed();
+        // 既定の持ち時間ではネットワークの起動 + 2 段クラフトが終わらない
+        // (他のクラフト完走テストと同じ 400 tick)。
+        }).maxTicks(400);
+    }
+
+    /** ネットワークに見えているクラフト CPU の数。 */
+    private static int countCpus(PlotTestHelper helper) {
+        int cpus = 0;
+        for (var ignored : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
+            cpus++;
+        }
+        return cpus;
+    }
+
     private static ItemStack ultraCreativeCell(ItemLike... contents) {
         ItemStack cell = new ItemStack(ModCells.ULTRA_CREATIVE_CELL.get());
         var config = CellConfig.create(cell);
@@ -2878,6 +3009,114 @@ public final class InsaneAETestPlots {
         actual.patternTimes().forEach((pattern, times) -> right.merge(
                 pattern.getDefinition().toString(), times, Long::sum));
         helper.check(left.equals(right), "パターンの実行回数が違う: " + left + " → " + right);
+    }
+
+    /**
+     * 超次元 ME ケーブルの<b>細さ・部品の可否・チャンネル本数</b>と、
+     * 超次元 ME コントローラによる解錠を確かめる。
+     *
+     * <p>見ているのは 4 点。</p>
+     * <ol>
+     *   <li>接続の型が {@code SMART} = <b>細い</b>こと (高密度は太くて部品が貼れない)。</li>
+     *   <li>{@code supportsBuses()} が {@code CABLE} = <b>部品が貼れる</b>こと。
+     *       実際に AE2 のストレージバスを貼って、グリッドに入るところまで見る。</li>
+     *   <li>コントローラが無いうちは上限が<b>高密度と同じ 32 本</b>であること。
+     *       ここが 128 だと、既存ネットワークの挙動を変えてしまう。</li>
+     *   <li>超次元 ME コントローラを置くと上限が上がること。
+     *       上限は {@code GridNode#getMaxChannels()} が全部の起点なので、
+     *       そこだけを見れば経路計算も表示も追従する ({@link HyperNetwork})。</li>
+     * </ol>
+     *
+     * <p>コントローラは<b>後から置く</b>。同じプロットで「解錠前 → 解錠後」を続けて見ないと、
+     * 上限がコントローラに反応しているのか最初から 128 なのか区別が付かないため。</p>
+     */
+    @TestPlot("insaneae_hyper_channels")
+    public static void hyperChannels(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,3] 0 0", ModParts.hyperCable(AEColor.TRANSPARENT));
+        // 高密度ケーブルには貼れない部品を、細い超次元ケーブルに貼る。
+        plot.part("3 0 0", Direction.NORTH, AEParts.STORAGE_BUS);
+
+        plot.test(helper -> {
+            var cablePos = new BlockPos(0, 0, 0);
+            var controllerPos = new BlockPos(0, 1, 0);
+            var sequence = helper.startSequence();
+
+            sequence.thenIdle(10);
+
+            sequence.thenExecute(() -> {
+                var cable = helper.getPart(cablePos, null, HyperCablePart.class);
+                helper.check(cable != null, "超次元 ME ケーブルが置けていない", cablePos);
+                helper.check(cable.getCableConnectionType() == AECableType.SMART,
+                        "接続の型が SMART ではない: " + cable.getCableConnectionType()
+                                + " (太くなって部品が貼れなくなる)", cablePos);
+                helper.check(cable.supportsBuses() == BusSupport.CABLE,
+                        "部品を受け付けない: " + cable.supportsBuses(), cablePos);
+
+                var bus = helper.getPart(new BlockPos(3, 0, 0), Direction.NORTH,
+                        appeng.parts.storagebus.StorageBusPart.class);
+                helper.check(bus != null,
+                        "ストレージバスが超次元ケーブルに貼れていない", new BlockPos(3, 0, 0));
+                helper.check(bus.isActive(),
+                        "ストレージバスがグリッドに入っていない", new BlockPos(3, 0, 0));
+
+                // 色塗りで<b>普通のスマートケーブルに化けない</b>こと。
+                // CablePart#changeColor は接続の型で分岐して AE2 のケーブルに差し替えるので、
+                // override を外すとここが黙って壊れる。
+                helper.check(cable.changeColor(AEColor.LIME, null),
+                        "色塗りを受け付けない (changeColor が false を返した)", cablePos);
+                var recolored = helper.getPart(cablePos, null, HyperCablePart.class);
+                helper.check(recolored != null,
+                        "色を塗ったら超次元ケーブルでなくなった "
+                                + "(AE2 のスマートケーブルに差し替わっている)", cablePos);
+                helper.check(recolored.getCableColor() == AEColor.LIME,
+                        "塗った色になっていない: " + recolored.getCableColor(), cablePos);
+                helper.check(recolored.getGridNode() != null
+                                && recolored.getGridNode().getGridColor() == AEColor.LIME,
+                        "ノードの色が塗った色になっていない (接続の互換が元の色のまま残る)", cablePos);
+                // 以降の判定に影響しないよう fluix に戻す。
+                recolored.changeColor(AEColor.TRANSPARENT, null);
+
+                helper.check(maxChannels(helper, cablePos) == denseChannels(helper, cablePos),
+                        "コントローラが無いのに上限が高密度 (32) を超えている: "
+                                + maxChannels(helper, cablePos)
+                                + " (解錠されていないときは AE2 の値のままでなければならない)",
+                        cablePos);
+            });
+
+            // 超次元 ME コントローラを後から置いて解錠する。
+            sequence.thenExecute(() -> helper.setBlock(controllerPos,
+                    ModBlocks.HYPER_CONTROLLER.get().defaultBlockState()));
+            // 経路の組み直し (repath) が終わるまで待つ。
+            sequence.thenIdle(40);
+
+            sequence.thenExecute(() -> {
+                IGrid grid = helper.getGrid(cablePos);
+                helper.check(HyperNetwork.isUnlocked(grid),
+                        "超次元コントローラを置いたのに解錠されていない "
+                                + "(BlockEntityType の登録か、コントローラの接続を確認すること)",
+                        controllerPos);
+                int expected = HyperNetwork.channelCapacity(
+                        grid.getPathingService().getChannelMode());
+                helper.check(maxChannels(helper, cablePos) == expected,
+                        "解錠後の上限が " + expected + " ではない: " + maxChannels(helper, cablePos)
+                                + " (GridNodeChannelMixin が当たっていない可能性)", cablePos);
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    /** その位置のノードのチャンネル上限。 */
+    private static int maxChannels(PlotTestHelper helper, BlockPos pos) {
+        IGridNode node = helper.getGridNode(pos);
+        return node == null ? -1 : node.getMaxChannels();
+    }
+
+    /** 高密度ケーブル相当の上限 (ChannelMode の倍率込み)。解錠前の期待値。 */
+    private static int denseChannels(PlotTestHelper helper, BlockPos pos) {
+        ChannelMode mode = helper.getGrid(pos).getPathingService().getChannelMode();
+        return 32 * mode.getCableCapacityFactor();
     }
 
     private static Map<AEKey, Long> toMap(KeyCounter counter) {

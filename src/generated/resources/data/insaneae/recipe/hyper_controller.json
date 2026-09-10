@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "megacells:accumulation_processor"
+    },
+    "B": {
+      "item": "ae2:singularity"
+    },
+    "C": {
+      "item": "ae2:controller"
+    }
+  },
+  "pattern": [
+    "ABA",
+    "BCB",
+    "ABA"
+  ],
+  "result": {
+    "count": 1,
+    "id": "insaneae:hyper_controller"
+  }
+}

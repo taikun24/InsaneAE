@@ -1,0 +1,28 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "insaneae:block/hyper_controller"
+      },
+      "when": {
+        "state": "offline"
+      }
+    },
+    {
+      "apply": {
+        "model": "insaneae:block/hyper_controller_powered"
+      },
+      "when": {
+        "state": "online"
+      }
+    },
+    {
+      "apply": {
+        "model": "insaneae:block/hyper_controller_conflicted"
+      },
+      "when": {
+        "state": "conflicted"
+      }
+    }
+  ]
+}
