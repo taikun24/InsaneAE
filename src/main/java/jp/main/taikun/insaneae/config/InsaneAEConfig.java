@@ -57,8 +57,7 @@ public final class InsaneAEConfig {
     /**
      * 超次元ケーブル 1 本が運べるチャンネル数 (ChannelMode の倍率を掛ける前)。
      *
-     * <p>効くのは<b>ネットワークに超次元 ME コントローラが在るとき</b>だけで、
-     * 無ければ高密度ケーブルと同じ 32 本のまま。</p>
+     * <p>置いた時点で常にこの本数。条件は無い。</p>
      */
     public static int hyperChannels() {
         return get(COMMON.hyperChannels, 128);
@@ -128,8 +127,6 @@ public final class InsaneAEConfig {
                     .comment("超次元 ME ケーブル 1 本が運べるチャンネル数。",
                             "AE2 の上限は高密度ケーブルの 32 本で、そこを上書きする値。",
                             "ChannelMode (AE2 の設定) が x2 などなら、その倍率がさらに掛かる。",
-                            "この値が効くのは超次元 ME コントローラがネットワークに在るときだけで、",
-                            "無ければ超次元ケーブルも高密度と同じ 32 本で動く。",
                             "使用チャンネル数はネットワーク全体で int に収まる必要があるので、",
                             "際限なく上げないこと。")
                     .defineInRange("hyperChannels", 128, 32, 65536);

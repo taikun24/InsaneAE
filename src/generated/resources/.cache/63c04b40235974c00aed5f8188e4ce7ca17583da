@@ -1,4 +1,4 @@
-// 1.21.1	2026-09-04T19:00:20.3498738	Block States: insaneae
+// 1.21.1	2026-09-20T18:09:44.9847148	Block States: insaneae
 1217691b26d186472c5298a7a2b69b4980135da4 assets/insaneae/blockstates/16g_crafting_storage.json
 983215dd2cea3593fb796af5e30db33b185fa849 assets/insaneae/blockstates/16k_crafting_accelerator.json
 7e04398b23cf24c4ae4612140bc2c3ecc5d2bb9e assets/insaneae/blockstates/16m_crafting_accelerator.json
@@ -41,7 +41,6 @@ ad325049d9cd17a7a68005d22182d3c75ba85ec2 assets/insaneae/blockstates/degenerate_
 51e2ccc97bc3e44e4062b8dc27f44e3d528c90e9 assets/insaneae/blockstates/galactic_energy_cell.json
 13015c9d1fd9e237109ad154094fffc3927e2c6a assets/insaneae/blockstates/hyperdense_energy_cell.json
 4493feacbe79e8ef5d7c6b049372664165f04ce6 assets/insaneae/blockstates/hypernova_energy_cell.json
-72c1d20df384909336c747c639fd25b131c3093f assets/insaneae/blockstates/hyper_controller.json
 06be219779cb08974aae622bdab7a3ec167b428d assets/insaneae/blockstates/improved_charger.json
 e75bb16dc0db47fd5e8ce646e9cdfad90011c60a assets/insaneae/blockstates/insane_interface.json
 eceefe613dc1921a08cfc9b88b4dec34df133581 assets/insaneae/blockstates/insane_pattern_provider.json
@@ -118,9 +117,6 @@ aac3593e8598679ade586270bdaeb0c552ef6c85 assets/insaneae/models/block/hyperdense
 b034e8fb5620971170ace39d9b356816556f540f assets/insaneae/models/block/hypernova_energy_cell_2.json
 30078605e7695c1f42456a8273155af9bcdb1513 assets/insaneae/models/block/hypernova_energy_cell_3.json
 86a56056b2fdebe40cf3c13deec8cbdfe0aec501 assets/insaneae/models/block/hypernova_energy_cell_4.json
-c9f21f47853cc67759e14bf8256cbb50695ccbef assets/insaneae/models/block/hyper_controller.json
-32e73a25068286e9a0220a219b0f5ffef81fa4c5 assets/insaneae/models/block/hyper_controller_conflicted.json
-052de6d050b98f593d68b55af6540184ef85654b assets/insaneae/models/block/hyper_controller_powered.json
 6d7bd0b799bb0f5037f5b4e190f0cfcaad066b66 assets/insaneae/models/block/insane_interface.json
 c83169653ea5e536e8afb7d1c8cf1c4d18dce894 assets/insaneae/models/block/insane_pattern_provider.json
 ea0719797236ceb47e029dcfd2d95eff5bce254e assets/insaneae/models/block/neutron_energy_cell_0.json

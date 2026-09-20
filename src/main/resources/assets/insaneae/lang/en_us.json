@@ -67,8 +67,6 @@
   "item.insaneae.creative_cell.desc": "Endless supply, 9,223,372,036,854,775,807 of each.",
   "item.insaneae.ultra_creative_cell": "Ultra Creative ME Storage Cell",
   "item.insaneae.ultra_creative_cell.desc": "Endless supply. Reports an exact BigInteger amount to AE2 Crafting Optimizer.",
-  "block.insaneae.hyper_controller": "Hyperdimensional ME Controller",
-  "block.insaneae.hyper_controller.desc": "Raises the Hyperdimensional ME Cable limit from 32 to 128 channels.",
   "item.insaneae.white_hyper_cable": "White Hyperdimensional ME Cable",
   "item.insaneae.light_gray_hyper_cable": "Light Gray Hyperdimensional ME Cable",
   "item.insaneae.gray_hyper_cable": "Gray Hyperdimensional ME Cable",
@@ -86,7 +84,7 @@
   "item.insaneae.cyan_hyper_cable": "Cyan Hyperdimensional ME Cable",
   "item.insaneae.green_hyper_cable": "Green Hyperdimensional ME Cable",
   "item.insaneae.fluix_hyper_cable": "Fluix Hyperdimensional ME Cable",
-  "insaneae.desc.hyper_cable": "32 channels (128 with a Hyperdimensional ME Controller).",
+  "insaneae.desc.hyper_cable": "128 channels.",
   "gui.insaneae.quantum_cpu.accelerator_units": "Slots for co-processing units.",
   "gui.insaneae.quantum_cpu.crafting_units": "Slots for crafting storage."
 }

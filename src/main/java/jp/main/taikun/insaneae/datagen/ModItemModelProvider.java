@@ -145,9 +145,6 @@ public class ModItemModelProvider extends ItemModelProvider {
         partItem("insane_pattern_provider_part", "insane_pattern_provider",
                 "ae2:part/pattern_provider_sides", "ae2:part/pattern_provider_back");
 
-        getBuilder("hyper_controller").parent(new ModelFile.UncheckedModelFile(
-                ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/hyper_controller")));
-
         // 超次元 ME ケーブルの手持ちモデル (17 色)。
         //
         // 形は AE2 の<b>スマートケーブル</b>のアイテムモデル (細い) をそのまま継承し、

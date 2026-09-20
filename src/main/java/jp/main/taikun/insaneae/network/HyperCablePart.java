@@ -31,9 +31,8 @@ import java.util.function.Predicate;
  *
  * <h2>32 本を超えるぶん</h2>
  * <p>コンストラクタで立てている {@code DENSE_CAPACITY} だけでは高密度ケーブルと同じ 32 本。
- * そこから先は {@code GridNodeChannelMixin} が
- * 「オーナーがこのクラスで、かつネットワークに超次元コントローラが在る」ときだけ
- * 上限を引き上げる → {@link HyperNetwork}。</p>
+ * そこから先は {@code GridNodeChannelMixin} が「オーナーがこのクラスなら」上限を引き上げる
+ * → {@link HyperNetwork}。<b>解錠の条件は無く、置いた時点で常に 128 本</b>運ぶ。</p>
  *
  * <h2>見た目はスマートケーブルと同じになる</h2>
  * <p>ケーブルの描画は部品のモデルではなく {@code CableBuilder} が持っていて、
@@ -45,7 +44,8 @@ public class HyperCablePart extends CablePart implements IUsedChannelProvider {
 
     public HyperCablePart(ColoredPartItem<?> partItem) {
         super(partItem);
-        // 解錠前の既定値。高密度ケーブルと同じ 32 本 (× ChannelMode 倍率) になる。
+        // Mixin が効かない場面 (ChannelMode が INFINITE など) の下地。
+        // これだけなら高密度ケーブルと同じ 32 本 (× ChannelMode 倍率)。
         getMainNode().setFlags(GridFlags.DENSE_CAPACITY);
     }
 

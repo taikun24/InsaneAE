@@ -1,6 +1,5 @@
 package jp.main.taikun.insaneae.network;
 
-import appeng.api.networking.IGrid;
 import appeng.api.networking.pathing.ChannelMode;
 import jp.main.taikun.insaneae.config.InsaneAEConfig;
 
@@ -25,14 +24,12 @@ import jp.main.taikun.insaneae.config.InsaneAEConfig;
  * {@code PathingCalculation} が呼ぶのは {@code GridNode} の方だけ)。
  * 触らない理由がそれで、将来 AE2 が呼び始めたらここにも Mixin が要る。</p>
  *
- * <h2>「コントローラを強くする」が成立しない理由</h2>
- * <p>コントローラのノードは {@code CANNOT_CARRY} なので上限は常に 0 —
- * チャンネルを<b>運ばない</b>側で、運ぶのは常にケーブルだから、
- * コントローラ側の数字をいくら上げても本数は 1 本も増えない。
- * そこで {@link HyperControllerBlockEntity} は<b>本数そのものではなく解錠キー</b>として扱い、
- * 「ネットワークに超次元コントローラが在るときだけ超次元ケーブルが 32 を超える」形にした。
- * ケーブル単体では高密度ケーブルと同じ 32 本のままなので、
- * 既存のネットワークに置いても挙動が変わらない。</p>
+ * <h2>解錠の条件は無い</h2>
+ * <p>本数を増やせるのは<b>ケーブルだけ</b>。コントローラのノードは {@code CANNOT_CARRY} で
+ * 上限が常に 0 — チャンネルを運ばない側なので、専用コントローラを足しても本数は 1 本も増えない。
+ * したがって「専用コントローラが在るときだけ解錠する」ような条件は持たせず、
+ * <b>超次元 ME ケーブルは置いた時点で常に {@link #channelCapacity} 本運ぶ</b>。
+ * ネットワークのコントローラは AE2 のもの (または他 Mod のもの) をそのまま使う。</p>
  */
 public final class HyperNetwork {
 
@@ -40,21 +37,7 @@ public final class HyperNetwork {
     }
 
     /**
-     * この {@code grid} で超次元チャンネルが解錠されているか
-     * (＝{@link HyperControllerBlockEntity} が 1 つでも繋がっているか)。
-     *
-     * <p>{@code getActiveMachines} ではなく {@code getMachines} で見ている。
-     * 経路計算はネットワーク起動の途中で走るので、「電力が入って
-     * チャンネルが割り当たった後」を条件にすると<b>解錠が 1 テンポ遅れて
-     * 経路が 32 本で組まれてしまう</b>。どのみち電力が無ければ
-     * チャンネルは流れないので、在るかどうかだけを見れば足りる。</p>
-     */
-    public static boolean isUnlocked(IGrid grid) {
-        return !grid.getMachines(HyperControllerBlockEntity.class).isEmpty();
-    }
-
-    /**
-     * 解錠済みの超次元ケーブル 1 本が運べる本数。
+     * 超次元ケーブル 1 本が運べる本数。
      *
      * <p>{@link ChannelMode} の倍率は AE2 の他のケーブルと同じように掛ける
      * (x2 設定なら高密度が 64 になるのと並びで、超次元も 2 倍になる)。

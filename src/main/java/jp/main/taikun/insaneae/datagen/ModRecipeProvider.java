@@ -190,8 +190,6 @@ public class ModRecipeProvider extends RecipeProvider {
                 ));
 
         // 超次元 ME ケーブル (fluix) ×4: 高密度スマートケーブル (fluix) 8 + 集積プロセッサ。
-        // 高密度と同じ本数のまま「細くなって部品が貼れる」段と、そこから
-        // 超次元 ME コントローラで 32 本を超える段の 2 段構えなので、素材は控えめにしてある。
         // 色付きは fluix から染めて作る (下の hyperCableColoring)。
         shapedCount(consumer, ModParts.hyperCable(AEColor.TRANSPARENT), 4, ACCUMULATION_PROCESSOR,
                 new String[]{"AAA", "ABA", "AAA"},
@@ -201,16 +199,6 @@ public class ModRecipeProvider extends RecipeProvider {
                 ));
 
         hyperCableColoring(consumer);
-
-        // 超次元 ME コントローラ: AE2 のコントローラ + 集積プロセッサ 4 + 特異点 4。
-        // 他の限界突破ブロックと同じ形。
-        shaped(consumer, ModBlocks.HYPER_CONTROLLER.get(), ACCUMULATION_PROCESSOR,
-                new String[]{"ABA", "BCB", "ABA"},
-                Map.of(
-                        'A', ACCUMULATION_PROCESSOR,
-                        'B', SINGULARITY,
-                        'C', AEBlocks.CONTROLLER
-                ));
 
         // ケーブル版 (プレート) ⇔ ブロック版。AE2 の ME インターフェイス / パターンプロバイダと同じく
         // 1:1 で行き来できる。中身 (パターン・設定) は移らないので、空の状態で持ち替えること。

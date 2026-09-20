@@ -24,9 +24,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * 最初の {@code instanceof} で落ちる形にしてある。グリッドを引く処理まで進むのは
  * 超次元ケーブルのノードだけ。</p>
  *
- * <p>解錠されていなければ<b>何も書き換えずに AE2 の値を返させる</b> (＝高密度と同じ 32)。
- * 既存のネットワークの挙動を変えないための一番大事な性質なので、
- * ここを「常に 128」にしてはいけない。</p>
+ * <p>条件はそれだけで、<b>ネットワークに何が在るかは見ない</b>。超次元ケーブルは
+ * 置いた時点で常にこの本数を運ぶ (以前は専用コントローラを解錠キーにしていたが、
+ * コントローラ側はチャンネルを運ばないので本数の話とは噛み合わなかった → {@link HyperNetwork})。</p>
  */
 @Mixin(value = GridNode.class, remap = false)
 public abstract class GridNodeChannelMixin {
@@ -55,9 +55,6 @@ public abstract class GridNodeChannelMixin {
         ChannelMode mode = grid.getPathingService().getChannelMode();
         if (mode == ChannelMode.INFINITE) {
             // 無制限設定では AE2 が Integer.MAX_VALUE を返すので、下げてはいけない。
-            return;
-        }
-        if (!HyperNetwork.isUnlocked(grid)) {
             return;
         }
         cir.setReturnValue(HyperNetwork.channelCapacity(mode));

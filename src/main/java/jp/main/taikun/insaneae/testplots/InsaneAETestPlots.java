@@ -3008,23 +3008,18 @@ public final class InsaneAETestPlots {
     }
 
     /**
-     * 超次元 ME ケーブルの<b>細さ・部品の可否・チャンネル本数</b>と、
-     * 超次元 ME コントローラによる解錠を確かめる。
+     * 超次元 ME ケーブルの<b>細さ・部品の可否・チャンネル本数</b>を確かめる。
      *
-     * <p>見ているのは 4 点。</p>
+     * <p>見ているのは 3 点。</p>
      * <ol>
      *   <li>接続の型が {@code SMART} = <b>細い</b>こと (高密度は太くて部品が貼れない)。</li>
      *   <li>{@code supportsBuses()} が {@code CABLE} = <b>部品が貼れる</b>こと。
      *       実際に AE2 のストレージバスを貼って、グリッドに入るところまで見る。</li>
-     *   <li>コントローラが無いうちは上限が<b>高密度と同じ 32 本</b>であること。
-     *       ここが 128 だと、既存ネットワークの挙動を変えてしまう。</li>
-     *   <li>超次元 ME コントローラを置くと上限が上がること。
-     *       上限は {@code GridNode#getMaxChannels()} が全部の起点なので、
-     *       そこだけを見れば経路計算も表示も追従する ({@link HyperNetwork})。</li>
+     *   <li>上限が<b>高密度 (32) ではなく設定値 (既定 128)</b> になっていること。
+     *       解錠の条件は無く、置いた時点でこの本数になる。上限は
+     *       {@code GridNode#getMaxChannels()} が全部の起点なので、そこだけを見れば
+     *       経路計算も表示も追従する ({@link HyperNetwork})。</li>
      * </ol>
-     *
-     * <p>コントローラは<b>後から置く</b>。同じプロットで「解錠前 → 解錠後」を続けて見ないと、
-     * 上限がコントローラに反応しているのか最初から 128 なのか区別が付かないため。</p>
      */
     @TestPlot("insaneae_hyper_channels")
     public static void hyperChannels(PlotBuilder plot) {
@@ -3035,7 +3030,6 @@ public final class InsaneAETestPlots {
 
         plot.test(helper -> {
             var cablePos = new BlockPos(0, 0, 0);
-            var controllerPos = new BlockPos(0, 1, 0);
             var sequence = helper.startSequence();
 
             sequence.thenIdle(10);
@@ -3073,30 +3067,14 @@ public final class InsaneAETestPlots {
                 // 以降の判定に影響しないよう fluix に戻す。
                 recolored.changeColor(AEColor.TRANSPARENT, null);
 
-                helper.check(maxChannels(helper, cablePos) == denseChannels(helper, cablePos),
-                        "コントローラが無いのに上限が高密度 (32) を超えている: "
-                                + maxChannels(helper, cablePos)
-                                + " (解錠されていないときは AE2 の値のままでなければならない)",
-                        cablePos);
-            });
-
-            // 超次元 ME コントローラを後から置いて解錠する。
-            sequence.thenExecute(() -> helper.setBlock(controllerPos,
-                    ModBlocks.HYPER_CONTROLLER.get().defaultBlockState()));
-            // 経路の組み直し (repath) が終わるまで待つ。
-            sequence.thenIdle(40);
-
-            sequence.thenExecute(() -> {
                 IGrid grid = helper.getGrid(cablePos);
-                helper.check(HyperNetwork.isUnlocked(grid),
-                        "超次元コントローラを置いたのに解錠されていない "
-                                + "(BlockEntityType の登録か、コントローラの接続を確認すること)",
-                        controllerPos);
+                helper.check(maxChannels(helper, cablePos) > denseChannels(helper, cablePos),
+                        "上限が高密度 (32) のまま: " + maxChannels(helper, cablePos)
+                                + " (GridNodeChannelMixin が当たっていない可能性)", cablePos);
                 int expected = HyperNetwork.channelCapacity(
                         grid.getPathingService().getChannelMode());
                 helper.check(maxChannels(helper, cablePos) == expected,
-                        "解錠後の上限が " + expected + " ではない: " + maxChannels(helper, cablePos)
-                                + " (GridNodeChannelMixin が当たっていない可能性)", cablePos);
+                        "上限が " + expected + " ではない: " + maxChannels(helper, cablePos), cablePos);
             });
 
             sequence.thenSucceed();

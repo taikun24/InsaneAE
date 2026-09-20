@@ -67,8 +67,6 @@
   "item.insaneae.creative_cell.desc": "設定した中身を1種につき922京で無限に供給",
   "item.insaneae.ultra_creative_cell": "超強化クリエイティブMEストレージセル",
   "item.insaneae.ultra_creative_cell.desc": "設定した中身を無限に供給　ACOへは正確なBigInteger量を報告",
-  "block.insaneae.hyper_controller": "超次元MEコントローラー",
-  "block.insaneae.hyper_controller.desc": "超次元MEケーブルの上限を32から128チャンネルにする",
   "item.insaneae.white_hyper_cable": "白色の超次元MEケーブル",
   "item.insaneae.light_gray_hyper_cable": "薄灰色の超次元MEケーブル",
   "item.insaneae.gray_hyper_cable": "灰色の超次元MEケーブル",
@@ -86,7 +84,7 @@
   "item.insaneae.cyan_hyper_cable": "青緑色の超次元MEケーブル",
   "item.insaneae.green_hyper_cable": "緑色の超次元MEケーブル",
   "item.insaneae.fluix_hyper_cable": "フルーシュの超次元MEケーブル",
-  "insaneae.desc.hyper_cable": "32チャンネル (超次元MEコントローラーがあれば128)",
+  "insaneae.desc.hyper_cable": "128チャンネル",
   "gui.insaneae.quantum_cpu.accelerator_units": "協調処理ユニットを入れる枠",
   "gui.insaneae.quantum_cpu.crafting_units": "クラフトストレージを入れる枠"
 }

@@ -1,4 +1,4 @@
-// 1.21.1	2026-09-04T21:19:52.9796914	Recipes
+// 1.21.1	2026-09-20T18:09:44.9937432	Recipes
 76676eec4d3336f3774ced8226ac9befea089988 data/insaneae/advancement/recipes/misc/16g_crafting_storage.json
 477857022b80635795c17b51c2fdf260f0985f60 data/insaneae/advancement/recipes/misc/16k_crafting_accelerator.json
 a21e5f230c17260505417571ca0d945dbf23f659 data/insaneae/advancement/recipes/misc/16m_crafting_accelerator.json
@@ -122,7 +122,6 @@ c1ff5258a6ca3ece6a1a8dcdad77425d5e09939c data/insaneae/advancement/recipes/misc/
 c066e69fe0270a4520b5d755a393ab8a8436c108 data/insaneae/advancement/recipes/misc/hyper_cable_clean/red.json
 47dcf6bd742857bbdf087bb236ec9b78d1de2096 data/insaneae/advancement/recipes/misc/hyper_cable_clean/white.json
 9db9bce91f1b32026de5ca774c7bea9bfbccd376 data/insaneae/advancement/recipes/misc/hyper_cable_clean/yellow.json
-567300d7d5296ab89f01bb9acb9875560d3530bf data/insaneae/advancement/recipes/misc/hyper_controller.json
 ab7bd4791b555e943b167f7e6316670720f0e349 data/insaneae/advancement/recipes/misc/improved_charger.json
 458be7d7dac87c91032a4283eb566d1b8a202a53 data/insaneae/advancement/recipes/misc/insane_interface.json
 9138a1e4e5e2481711eee97b137b50dea1f53191 data/insaneae/advancement/recipes/misc/insane_pattern_provider.json
@@ -400,7 +399,6 @@ f049b879f55216b9c37f05914e01d04805e690c3 data/insaneae/recipe/hyper_cable_clean/
 948d15af042864a490156cf762559db225e11471 data/insaneae/recipe/hyper_cable_clean/red.json
 8e25605b5a02f40544c415d6ee01521c28205cca data/insaneae/recipe/hyper_cable_clean/white.json
 feabcd4b3ba01b40d37f08fd53f228bcdb615d41 data/insaneae/recipe/hyper_cable_clean/yellow.json
-59336b8ba95f63e2c06f3e401336a9d43c22054a data/insaneae/recipe/hyper_controller.json
 2352447c4ebe5fa3c4508c454335e789a6f4fb2d data/insaneae/recipe/improved_charger.json
 323fbd0c9e95799db1d1d45bae1ad7a4f0de9742 data/insaneae/recipe/insane_interface.json
 ed6516ec6c069e2231b0c13be2a7f2ccda2e4ede data/insaneae/recipe/insane_pattern_provider.json
