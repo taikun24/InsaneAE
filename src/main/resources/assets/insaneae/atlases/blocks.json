@@ -1,0 +1,15 @@
+{
+  "_comment": "ケーブルの絵はアイテムモデルからだけでなく、ワールド描画 (InsaneCableSprites) からも引く。モデルに出てこない目盛り・芯はここで明示しないとアトラスに載らない。",
+  "sources": [
+    {
+      "type": "minecraft:directory",
+      "source": "part/cable/hyper",
+      "prefix": "part/cable/hyper/"
+    },
+    {
+      "type": "minecraft:directory",
+      "source": "part/cable/compressed",
+      "prefix": "part/cable/compressed/"
+    }
+  ]
+}

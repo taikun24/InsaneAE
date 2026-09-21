@@ -24,7 +24,12 @@
     "TooltipsMixin"
   ],
   "client": [
-    "BigIntegerCPUSelectionListMixin"
+    "BigIntegerCPUSelectionListMixin",
+    "CableBuilderMixin",
+    "CableBusBakedModelMixin",
+    "CableBusContainerRenderStateMixin",
+    "CableBusRenderStateMixin",
+    "CubeBuilderMixin"
   ],
   "injectors": {
     "defaultRequire": 1

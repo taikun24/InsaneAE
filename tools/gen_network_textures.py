@@ -11,12 +11,18 @@
 
 出力 (src/main/resources/assets/insaneae/textures/):
 
-    part/cable/hyper/<色>.png            超次元 ME ケーブルの手持ちアイテム用 (17 色)。
-                                         <b>色は加工せずそのままコピー</b>
-    part/cable/hyper/channels_*.png      その使用チャンネル目盛り (同上)
-    part/cable/compressed/<色>.png       圧縮 ME 高密度スマートケーブル用 (17 色)。
+    part/cable/hyper/<色>.png            超次元 ME ケーブルの帯 (17 色)。<b>色は加工せずそのままコピー</b>
+    part/cable/hyper/core_<色>.png       その芯 (繋がっていない中央の立方体)
+    part/cable/hyper/channels_*.png      その使用チャンネル目盛り (10 枚)
+    part/cable/compressed/<色>.png       圧縮 ME 高密度スマートケーブルの帯 (17 色)。
                                          <b>枠だけを明るくしたもの</b> (下)
+    part/cable/compressed/core_<色>.png  その芯 (同じ加工)
     part/cable/compressed/channels_*.png その使用チャンネル目盛り (同上)
+
+<b>手持ちの絵にもワールドの絵にも同じものを使う。</b>手持ちはアイテムモデルが
+(帯 + channels_00 + channels_10) を差し、ワールドは {@code CableBusRenderState} の
+差し替え (insaneae の client Mixin) が同じ絵に向ける。目盛りは 0〜4 本の 5 段階 ×
+奇数/偶数の 2 枚で 10 枚あり、<b>10 枚そろっていないとワールドの目盛りが欠ける</b>。
 
 --------------------------------------------------------------------------------------
 下敷きの置き場所 (MC バージョンごとに分けられる)
@@ -31,8 +37,10 @@ minecraft_version を読むので、チェックアウトしているブラン�
 
     cable_<色>.png          ケーブルの帯 17 色。ファイル名は AEColor の enum 名
                             そのままで、fluix だけ transparent
-    cable_channels_00.png   使用チャンネルの目盛り (色に依らない重ねレイヤ)
-    cable_channels_10.png
+    cable_core_<色>.png     芯 17 色 (ファイル名の規則は帯と同じ)
+    cable_channels_XX.png   使用チャンネルの目盛り 10 枚 (色に依らない重ねレイヤ)。
+                            XX は 00〜04 (奇数側) と 10〜14 (偶数側) で、
+                            数字が本数の段階 (0〜4) を表す
 
 --------------------------------------------------------------------------------------
 知っておくこと
@@ -83,8 +91,11 @@ CABLE_COLORS = (
     "transparent",
 )
 
-# 使用チャンネルの目盛り。色に依らない共通の重ねレイヤ。
-CABLE_OVERLAYS = ("channels_00", "channels_10")
+# 使用チャンネルの目盛り。色に依らない共通の重ねレイヤ (奇数側 5 枚 + 偶数側 5 枚)。
+CABLE_OVERLAYS = tuple("channels_%02d" % n for n in (0, 1, 2, 3, 4, 10, 11, 12, 13, 14))
+
+# 芯 (繋がっていない中央の立方体)。色は帯と同じ 17 色。
+CABLE_CORES = tuple("core_" + name for name in CABLE_COLORS)
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(REPO, "src", "main", "resources", "assets", "insaneae", "textures")
@@ -164,7 +175,7 @@ def main() -> None:
 
     dirs = [args.templates] if args.templates else TEMPLATE_DIRS
 
-    for name in CABLE_COLORS + CABLE_OVERLAYS:
+    for name in CABLE_COLORS + CABLE_OVERLAYS + CABLE_CORES:
         template = load_template(dirs, "cable_%s.png" % name)
         save(template, "part", "cable", "hyper", name + ".png")
         save(lighten_frame(template), "part", "cable", "compressed", name + ".png")
