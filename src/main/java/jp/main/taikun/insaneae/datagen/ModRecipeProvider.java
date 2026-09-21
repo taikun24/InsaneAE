@@ -189,16 +189,29 @@ public class ModRecipeProvider extends RecipeProvider {
                         'C', AEBlocks.PATTERN_PROVIDER
                 ));
 
-        // 超次元 ME ケーブル (fluix) ×4: 高密度スマートケーブル (fluix) 8 + 集積プロセッサ。
-        // 色付きは fluix から染めて作る (下の hyperCableColoring)。
-        shapedCount(consumer, ModParts.hyperCable(AEColor.TRANSPARENT), 4, ACCUMULATION_PROCESSOR,
+        // 圧縮 ME 高密度スマートケーブル (fluix) ×4: 高密度スマートケーブル (fluix) 8 + 工学プロセッサ。
+        // 本数は高密度のままで、細くなって部品が貼れるようになるだけなので、
+        // 素材は AE2 の範囲 (工学プロセッサ) で収めてある。
+        // 色付きは fluix から染めて作る (下の cableColoring)。
+        shapedCount(consumer, ModParts.compressedCable(AEColor.TRANSPARENT), 4,
+                AEItems.ENGINEERING_PROCESSOR,
                 new String[]{"AAA", "ABA", "AAA"},
                 Map.of(
                         'A', AEParts.SMART_DENSE_CABLE.item(AEColor.TRANSPARENT),
+                        'B', AEItems.ENGINEERING_PROCESSOR
+                ));
+
+        // 超次元 ME ケーブル (fluix) ×4: 圧縮 ME 高密度スマートケーブル (fluix) 8 + 集積プロセッサ。
+        // 「細くする」段 (上) と「32 本を超える」段 (ここ) の 2 段構え。
+        shapedCount(consumer, ModParts.hyperCable(AEColor.TRANSPARENT), 4, ACCUMULATION_PROCESSOR,
+                new String[]{"AAA", "ABA", "AAA"},
+                Map.of(
+                        'A', ModParts.compressedCable(AEColor.TRANSPARENT),
                         'B', ACCUMULATION_PROCESSOR
                 ));
 
-        hyperCableColoring(consumer);
+        cableColoring(consumer, ModParts::compressedCable, "compressed_dense_cable_clean");
+        cableColoring(consumer, ModParts::hyperCable, "hyper_cable_clean");
 
         // ケーブル版 (プレート) ⇔ ブロック版。AE2 の ME インターフェイス / パターンプロバイダと同じく
         // 1:1 で行き来できる。中身 (パターン・設定) は移らないので、空の状態で持ち替えること。
@@ -296,7 +309,7 @@ public class ModRecipeProvider extends RecipeProvider {
     }
 
     /**
-     * 超次元 ME ケーブルの<b>染色と色落とし</b>。AE2 のケーブルとまったく同じ形にしてある。
+     * ケーブルの<b>染色と色落とし</b>。AE2 のケーブルとまったく同じ形にしてある。
      *
      * <ul>
      *   <li>染色: fluix 8 本で染料 1 個を囲んで<b>その色 8 本</b>
@@ -309,15 +322,19 @@ public class ModRecipeProvider extends RecipeProvider {
      * </ul>
      *
      * <p>色を変える経路はもう 1 つ、色塗り器 / ペイントボールがある
-     * ({@code HyperCablePart#changeColor})。そちらはクラフトを通らない。</p>
+     * ({@code ThinDenseCablePart#changeColor})。そちらはクラフトを通らない。</p>
+     *
+     * @param cables     色 → そのケーブルのアイテム
+     * @param cleanIdDir 色落としレシピの ID の置き場所 (ケーブルごとに分ける)
      */
-    private static void hyperCableColoring(RecipeOutput consumer) {
-        ItemLike fluix = ModParts.hyperCable(AEColor.TRANSPARENT);
+    private static void cableColoring(RecipeOutput consumer,
+            java.util.function.Function<AEColor, ? extends ItemLike> cables, String cleanIdDir) {
+        ItemLike fluix = cables.apply(AEColor.TRANSPARENT);
         for (AEColor color : AEColor.values()) {
             if (color == AEColor.TRANSPARENT) {
                 continue;
             }
-            ShapedRecipeBuilder.shaped(RecipeCategory.MISC, ModParts.hyperCable(color), 8)
+            ShapedRecipeBuilder.shaped(RecipeCategory.MISC, cables.apply(color), 8)
                     .pattern("aaa")
                     .pattern("aba")
                     .pattern("aaa")
@@ -327,11 +344,11 @@ public class ModRecipeProvider extends RecipeProvider {
                     .save(consumer);
 
             ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, fluix)
-                    .requires(ModParts.hyperCable(color))
+                    .requires(cables.apply(color))
                     .requires(CAN_REMOVE_COLOR)
                     .unlockedBy("has_component", has(fluix))
                     .save(consumer, ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID,
-                            "hyper_cable_clean/" + color.registryPrefix));
+                            cleanIdDir + "/" + color.registryPrefix));
         }
     }
 

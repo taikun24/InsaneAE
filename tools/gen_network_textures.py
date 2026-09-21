@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""超次元 ME ケーブルのテクスチャを tools/textures の下敷きから作る。
+"""超次元 / 圧縮 ME ケーブルのテクスチャを tools/textures の下敷きから作る。
 
     pip install pillow
     python tools/gen_network_textures.py
@@ -11,8 +11,12 @@
 
 出力 (src/main/resources/assets/insaneae/textures/):
 
-    part/cable/hyper/<色>.png       ケーブルの手持ちアイテム用 (17 色)。<b>色は加工せずそのままコピー</b>
-    part/cable/hyper/channels_*.png ケーブルの使用チャンネル目盛り (同上)
+    part/cable/hyper/<色>.png            超次元 ME ケーブルの手持ちアイテム用 (17 色)。
+                                         <b>色は加工せずそのままコピー</b>
+    part/cable/hyper/channels_*.png      その使用チャンネル目盛り (同上)
+    part/cable/compressed/<色>.png       圧縮 ME 高密度スマートケーブル用 (17 色)。
+                                         <b>枠だけを明るくしたもの</b> (下)
+    part/cable/compressed/channels_*.png その使用チャンネル目盛り (同上)
 
 --------------------------------------------------------------------------------------
 下敷きの置き場所 (MC バージョンごとに分けられる)
@@ -33,6 +37,14 @@ minecraft_version を読むので、チェックアウトしているブラン�
 --------------------------------------------------------------------------------------
 知っておくこと
 --------------------------------------------------------------------------------------
+<b>圧縮ケーブルは枠だけを明るくする。</b>圧縮 ME 高密度スマートケーブルは超次元 ME ケーブルと
+同じ下敷き (AE2 の高密度スマートケーブルの帯) を使うので、何もしないと<b>手持ちの絵が
+超次元ケーブルと見分けが付かない</b>。かといって色を動かすと下の理由で名前とずれる。
+そこで<b>暗くて彩度の低い画素 (= 金属の枠) だけ</b>を FRAME_LIGHTEN ぶん明るくしている。
+色の付いた芯には触らないので、17 色の名前はそのまま正しい。
+アイテムの絵に出るのは帯のごく一部 (UV [5,5,11,11] と [0,5,5,11]) で、そこは枠が大半を
+占めるため、<b>枠の明るさが一番よく効く</b>。目盛りにも同じ加工を掛けて色味を揃えること。
+
 <b>ケーブルは色相を回さない。</b>ケーブルは 17 色あり、色名がそのまま
 アイテム名になっているので、<b>色相を回すと名前と実物がずれる</b>
 (「白色の…」が緑になる)。しかも AE2 の CableBuilder は (AECableType, AEColor) の組でしか
@@ -51,9 +63,17 @@ minecraft_version を読むので、チェックアウトしているブラン�
 from __future__ import annotations
 
 import argparse
+import colorsys
 import os
 
 from PIL import Image
+
+# 圧縮ケーブルの枠をどれだけ明るくするか (HLS の明度に足す量)。
+FRAME_LIGHTEN = 0.22
+
+# 「枠」と見なす画素の条件 (彩度と明度の上限)。色の付いた芯を巻き込まないための線引き。
+FRAME_MAX_SATURATION = 0.25
+FRAME_MAX_LIGHTNESS = 0.35
 
 # 超次元 ME ケーブルの帯の色。
 # ファイル名は AEColor の enum 名そのままで、fluix だけ transparent。
@@ -108,6 +128,27 @@ def load_template(dirs: list[str], name: str) -> Image.Image:
         % (name, " , ".join(os.path.relpath(d, REPO) for d in dirs)))
 
 
+def lighten_frame(image: Image.Image) -> Image.Image:
+    """暗くて彩度の低い画素 (金属の枠) だけを明るくする。色の付いた芯は素通し。"""
+    image = image.convert("RGBA")
+    out = Image.new("RGBA", image.size)
+    src = image.load()
+    dst = out.load()
+    for y in range(image.size[1]):
+        for x in range(image.size[0]):
+            r, g, b, a = src[x, y]
+            if a == 0:
+                dst[x, y] = (0, 0, 0, 0)
+                continue
+            h, l, s = colorsys.rgb_to_hls(r / 255.0, g / 255.0, b / 255.0)
+            if s > FRAME_MAX_SATURATION or l > FRAME_MAX_LIGHTNESS:
+                dst[x, y] = (r, g, b, a)
+                continue
+            r2, g2, b2 = colorsys.hls_to_rgb(h, min(1.0, l + FRAME_LIGHTEN), s)
+            dst[x, y] = (round(r2 * 255), round(g2 * 255), round(b2 * 255), a)
+    return out
+
+
 def save(image: Image.Image, *parts: str) -> None:
     path = os.path.join(OUT, *parts)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -124,8 +165,9 @@ def main() -> None:
     dirs = [args.templates] if args.templates else TEMPLATE_DIRS
 
     for name in CABLE_COLORS + CABLE_OVERLAYS:
-        save(load_template(dirs, "cable_%s.png" % name),
-             "part", "cable", "hyper", name + ".png")
+        template = load_template(dirs, "cable_%s.png" % name)
+        save(template, "part", "cable", "hyper", name + ".png")
+        save(lighten_frame(template), "part", "cable", "compressed", name + ".png")
 
 
 

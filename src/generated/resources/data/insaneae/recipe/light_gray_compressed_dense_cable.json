@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "a": {
+      "item": "insaneae:fluix_compressed_dense_cable"
+    },
+    "b": {
+      "tag": "c:dyes/light_gray"
+    }
+  },
+  "pattern": [
+    "aaa",
+    "aba",
+    "aaa"
+  ],
+  "result": {
+    "count": 8,
+    "id": "insaneae:light_gray_compressed_dense_cable"
+  }
+}

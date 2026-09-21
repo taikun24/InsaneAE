@@ -7,6 +7,7 @@ import appeng.items.parts.PartItem;
 import jp.main.taikun.insaneae.InsaneAE;
 import jp.main.taikun.insaneae.iface.InsaneInterfacePart;
 import jp.main.taikun.insaneae.iface.InsaneInterfacePartItem;
+import jp.main.taikun.insaneae.network.CompressedCablePart;
 import jp.main.taikun.insaneae.network.HyperCablePart;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderPart;
 import net.neoforged.bus.api.IEventBus;
@@ -80,11 +81,24 @@ public final class ModParts {
     public static final Map<AEColor, DeferredItem<ColoredPartItem<HyperCablePart>>> HYPER_CABLES =
             new EnumMap<>(AEColor.class);
 
+    /**
+     * 圧縮 ME 高密度スマートケーブル。超次元 ME ケーブルと同じく<b>17 色</b>を出す。
+     *
+     * <p>登録名は {@code <色>_compressed_dense_cable}。本数は高密度ケーブルと同じ 32 本で、
+     * 違うのは<b>細くて部品が貼れる</b>こと → {@link CompressedCablePart}。</p>
+     */
+    public static final Map<AEColor, DeferredItem<ColoredPartItem<CompressedCablePart>>> COMPRESSED_CABLES =
+            new EnumMap<>(AEColor.class);
+
     static {
         for (AEColor color : AEColor.values()) {
             HYPER_CABLES.put(color, ITEMS.registerItem(color.registryPrefix + "_hyper_cable",
                     props -> new ColoredPartItem<>(props, HyperCablePart.class, HyperCablePart::new,
                             color)));
+            COMPRESSED_CABLES.put(color, ITEMS.registerItem(
+                    color.registryPrefix + "_compressed_dense_cable",
+                    props -> new ColoredPartItem<>(props, CompressedCablePart.class,
+                            CompressedCablePart::new, color)));
         }
     }
 
@@ -96,6 +110,16 @@ public final class ModParts {
     /** 全色の超次元 ME ケーブル (クリエイティブタブ / レシピ生成用)。AE2 と同じ並び順。 */
     public static List<ColoredPartItem<HyperCablePart>> allHyperCables() {
         return Arrays.stream(AEColor.values()).map(ModParts::hyperCable).toList();
+    }
+
+    /** その色の圧縮 ME 高密度スマートケーブルのアイテム。全色そろえてあるので null にはならない。 */
+    public static ColoredPartItem<CompressedCablePart> compressedCable(AEColor color) {
+        return COMPRESSED_CABLES.get(color).get();
+    }
+
+    /** 全色の圧縮 ME 高密度スマートケーブル (クリエイティブタブ / レシピ生成用)。 */
+    public static List<ColoredPartItem<CompressedCablePart>> allCompressedCables() {
+        return Arrays.stream(AEColor.values()).map(ModParts::compressedCable).toList();
     }
 
     private ModParts() {

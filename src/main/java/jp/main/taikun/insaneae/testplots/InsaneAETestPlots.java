@@ -50,6 +50,7 @@ import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry;
 import jp.main.taikun.insaneae.integration.aco.AcoCalculationIntegration;
 import jp.main.taikun.insaneae.integration.aco.AcoClassNames;
 import jp.main.taikun.insaneae.integration.aco.AcoExactLimits;
+import jp.main.taikun.insaneae.network.CompressedCablePart;
 import jp.main.taikun.insaneae.network.HyperCablePart;
 import jp.main.taikun.insaneae.network.HyperNetwork;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderBlockEntity;
@@ -3075,6 +3076,63 @@ public final class InsaneAETestPlots {
                         grid.getPathingService().getChannelMode());
                 helper.check(maxChannels(helper, cablePos) == expected,
                         "上限が " + expected + " ではない: " + maxChannels(helper, cablePos), cablePos);
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    /**
+     * 圧縮 ME 高密度スマートケーブルの<b>細さ・部品の可否・チャンネル本数</b>を確かめる。
+     *
+     * <p>超次元ケーブルとの違いは本数だけなので、ここで見るのは
+     * <b>上限が高密度と同じ 32 本のままであること</b>。ここが 128 になっていたら
+     * {@code GridNodeChannelMixin} が種類を見分けられていない
+     * (2 本とも {@code ThinDenseCablePart} を継承しているため、
+     * {@code instanceof} の相手を親クラスに広げると黙ってこうなる)。</p>
+     */
+    @TestPlot("insaneae_compressed_dense_cable")
+    public static void compressedDenseCable(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,3] 0 0", ModParts.compressedCable(AEColor.TRANSPARENT));
+        // 高密度ケーブルには貼れない部品を、細い圧縮ケーブルに貼る。
+        plot.part("3 0 0", Direction.NORTH, AEParts.STORAGE_BUS);
+
+        plot.test(helper -> {
+            var cablePos = new BlockPos(0, 0, 0);
+            var sequence = helper.startSequence();
+
+            sequence.thenIdle(10);
+
+            sequence.thenExecute(() -> {
+                var cable = helper.getPart(cablePos, null, CompressedCablePart.class);
+                helper.check(cable != null, "圧縮ケーブルが置けていない", cablePos);
+                helper.check(cable.getCableConnectionType() == AECableType.SMART,
+                        "接続の型が SMART ではない: " + cable.getCableConnectionType()
+                                + " (太くなって部品が貼れなくなる)", cablePos);
+                helper.check(cable.supportsBuses() == BusSupport.CABLE,
+                        "部品を受け付けない: " + cable.supportsBuses(), cablePos);
+
+                var bus = helper.getPart(new BlockPos(3, 0, 0), Direction.NORTH,
+                        appeng.parts.storagebus.StorageBusPart.class);
+                helper.check(bus != null,
+                        "ストレージバスが圧縮ケーブルに貼れていない", new BlockPos(3, 0, 0));
+                helper.check(bus.isActive(),
+                        "ストレージバスがグリッドに入っていない", new BlockPos(3, 0, 0));
+
+                // 色塗りで<b>普通のスマートケーブルにも超次元ケーブルにも化けない</b>こと。
+                helper.check(cable.changeColor(AEColor.LIME, null),
+                        "色塗りを受け付けない (changeColor が false を返した)", cablePos);
+                var recolored = helper.getPart(cablePos, null, CompressedCablePart.class);
+                helper.check(recolored != null,
+                        "色を塗ったら圧縮ケーブルでなくなった", cablePos);
+                helper.check(recolored.getCableColor() == AEColor.LIME,
+                        "塗った色になっていない: " + recolored.getCableColor(), cablePos);
+                recolored.changeColor(AEColor.TRANSPARENT, null);
+
+                helper.check(maxChannels(helper, cablePos) == denseChannels(helper, cablePos),
+                        "上限が高密度 (32) ではない: " + maxChannels(helper, cablePos)
+                                + " (超次元ケーブル用の上書きが圧縮ケーブルにも効いている)", cablePos);
             });
 
             sequence.thenSucceed();

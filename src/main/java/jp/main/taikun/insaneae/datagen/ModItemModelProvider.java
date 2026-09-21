@@ -85,6 +85,11 @@ public class ModItemModelProvider extends ItemModelProvider {
         return mega(InsaneAE.MODID, "part/cable/hyper/" + name);
     }
 
+    /** 圧縮 ME 高密度スマートケーブルのテクスチャ (枠を明るくした版)。 */
+    private static ResourceLocation compressedCableTexture(String name) {
+        return mega(InsaneAE.MODID, "part/cable/compressed/" + name);
+    }
+
     public ModItemModelProvider(PackOutput output, ExistingFileHelper existingFileHelper) {
         super(output, InsaneAE.MODID, existingFileHelper);
     }
@@ -173,6 +178,19 @@ public class ModItemModelProvider extends ItemModelProvider {
                     .texture("base", hyperCableTexture(color.name().toLowerCase(Locale.ROOT)))
                     .texture("channelsOdd", hyperCableTexture("channels_00"))
                     .texture("channelsEven", hyperCableTexture("channels_10"));
+        }
+
+        // 圧縮 ME 高密度スマートケーブルの手持ちモデル (17 色)。組み方は上と同じで、
+        // テクスチャだけ<b>枠を明るくした版</b>を差す。同じ下敷きから作っているので、
+        // ここを hyper と同じにすると<b>2 本の見分けが付かなくなる</b>
+        // (ワールド上はどちらも AE2 のスマートケーブルの絵になるため、
+        // 見分けられるのは手持ちの絵だけ)。
+        for (AEColor color : AEColor.values()) {
+            withExistingParent(color.registryPrefix + "_compressed_dense_cable",
+                    mega("ae2", "item/smart_cable_base"))
+                    .texture("base", compressedCableTexture(color.name().toLowerCase(Locale.ROOT)))
+                    .texture("channelsOdd", compressedCableTexture("channels_00"))
+                    .texture("channelsEven", compressedCableTexture("channels_10"));
         }
 
         for (SolarPanelTier tier : SolarPanelTier.values()) {

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "a": {
+      "item": "insaneae:fluix_compressed_dense_cable"
+    },
+    "b": {
+      "tag": "c:dyes/orange"
+    }
+  },
+  "pattern": [
+    "aaa",
+    "aba",
+    "aaa"
+  ],
+  "result": {
+    "count": 8,
+    "id": "insaneae:orange_compressed_dense_cable"
+  }
+}
