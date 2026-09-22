@@ -3,6 +3,7 @@ package jp.main.taikun.insaneae.client;
 import jp.main.taikun.insaneae.energy.SolarPanelTier;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerLimitBridge;
 import jp.main.taikun.insaneae.registries.ModBlocks;
+import jp.main.taikun.insaneae.registries.ModParts;
 import net.minecraft.ChatFormatting;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
@@ -27,8 +28,11 @@ import java.util.Map;
  * <p>共通キーの方は<b>書式引数を渡せる</b>ので、階層ごとに違う数値を文中に出せる
  * (ソーラーパネルの発電量など)。改行は lang の値に {@code \n} を入れる。</p>
  *
- * <p>説明を出しているのは Quantum CPU / Improved Crystal Charger / ソーラーパネルの 3 種だけ。
- * <b>増やしたいときは lang にキーを足すだけ</b>でよく、階層共通にしたいときだけ
+ * <p>説明は<b>仕様を 1 行書くだけ</b>にしてある。理由・使い分け・注意書きは載せない
+ * (画面や名前で分かることを毎回読ませないため)。ゲーム中に他から読み取れない値
+ * — 枠数・上限・速度・チャンネル数 — だけを書くこと。</p>
+ *
+ * <p>増やしたいときは lang にキーを足すだけでよく、階層共通にしたいときだけ
  * {@link #families()} に 1 行足す。</p>
  *
  * <p>加速カードのように {@code appendHoverText} で自前の行を出しているアイテムは
@@ -38,6 +42,10 @@ public final class InsaneTooltips {
 
     private static final String SUFFIX = ".desc";
     private static final String SOLAR_PANEL = "insaneae.desc.solar_panel";
+    /** 超次元 ME ケーブルは 17 色あるが説明は共通なので、色ごとの .desc は置かない。 */
+    private static final String HYPER_CABLE = "insaneae.desc.hyper_cable";
+    /** 圧縮 ME 高密度スマートケーブルも同様。 */
+    private static final String COMPRESSED_CABLE = "insaneae.desc.compressed_dense_cable";
     private static final String BIG_INTEGER_CPU_CAPACITY =
             "block.insaneae.big_integer_cpu.capacity";
 
@@ -96,6 +104,12 @@ public final class InsaneTooltips {
                 map.put(ModBlocks.SOLAR_PANELS.get(tier).get().asItem(),
                         new Description(SOLAR_PANEL,
                                 String.format(Locale.ROOT, "%,d", tier.ratePerTick())));
+            }
+            for (var cable : ModParts.allHyperCables()) {
+                map.put(cable, new Description(HYPER_CABLE));
+            }
+            for (var cable : ModParts.allCompressedCables()) {
+                map.put(cable, new Description(COMPRESSED_CABLE));
             }
             families = map;
         }

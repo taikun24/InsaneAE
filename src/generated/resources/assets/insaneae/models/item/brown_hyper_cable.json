@@ -1,0 +1,8 @@
+{
+  "parent": "ae2:item/smart_cable_base",
+  "textures": {
+    "base": "insaneae:part/cable/hyper/brown",
+    "channelsEven": "insaneae:part/cable/hyper/channels_10",
+    "channelsOdd": "insaneae:part/cable/hyper/channels_00"
+  }
+}

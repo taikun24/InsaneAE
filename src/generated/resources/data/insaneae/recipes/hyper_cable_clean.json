@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "type": "forge:difference",
+      "base": {
+        "tag": "insaneae:hyper_cables"
+      },
+      "subtracted": {
+        "item": "insaneae:fluix_hyper_cable"
+      }
+    },
+    {
+      "tag": "ae2:can_remove_color"
+    }
+  ],
+  "result": {
+    "item": "insaneae:fluix_hyper_cable"
+  }
+}

@@ -6,6 +6,7 @@ import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.datagen.ModBlockLootProvider;
 import jp.main.taikun.insaneae.datagen.ModBlockStateProvider;
 import jp.main.taikun.insaneae.datagen.ModItemModelProvider;
+import jp.main.taikun.insaneae.datagen.ModItemTagProvider;
 import jp.main.taikun.insaneae.datagen.ModRecipeProvider;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.PackOutput;
@@ -85,6 +86,12 @@ public class InsaneAE {
         PackOutput output = generator.getPackOutput();
         ExistingFileHelper existingFiles = event.getExistingFileHelper();
 
+        // タグはレシピより先に (レシピがタグを材料に使うため、生成の順を揃えておく)。
+        generator.addProvider(event.includeServer(), new ModItemTagProvider(output,
+                event.getLookupProvider(),
+                java.util.concurrent.CompletableFuture.completedFuture(
+                        net.minecraft.data.tags.TagsProvider.TagLookup.empty()),
+                existingFiles));
         generator.addProvider(event.includeServer(), new ModRecipeProvider(output));
         generator.addProvider(event.includeServer(), new LootTableProvider(output, Set.of(),
                 List.of(new LootTableProvider.SubProviderEntry(

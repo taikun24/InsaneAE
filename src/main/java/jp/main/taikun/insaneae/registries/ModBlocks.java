@@ -12,6 +12,7 @@ import jp.main.taikun.insaneae.util.TieredBlockItem;
 import jp.main.taikun.insaneae.util.TieredNames;
 import jp.main.taikun.insaneae.charger.ImprovedChargerBlock;
 import jp.main.taikun.insaneae.iface.InsaneInterfaceBlock;
+import jp.main.taikun.insaneae.iface.InsaneInterfaceBlockItem;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderBlock;
 import jp.main.taikun.insaneae.energy.InsaneEnergyCellTier;
 import jp.main.taikun.insaneae.energy.SolarPanelBlock;
@@ -114,8 +115,10 @@ public class ModBlocks {
         BigIntegerCraftingUnitType.INSTANCE.setItem(() -> BIG_INTEGER_CPU.get().asItem());
         BLOCK_ITEMS.register("improved_charger",
                 () -> new BlockItem(IMPROVED_CHARGER.get(), new Item.Properties()));
+        // 名前を 1% で差し替えるお遊びがあるので、素の BlockItem ではなく専用のもの
+        // (アイテムの名前はブロックの getName() ではなくアイテム側が決めるため)。
         BLOCK_ITEMS.register("insane_interface",
-                () -> new BlockItem(INSANE_INTERFACE.get(), new Item.Properties()));
+                () -> new InsaneInterfaceBlockItem(INSANE_INTERFACE.get(), new Item.Properties()));
         BLOCK_ITEMS.register("insane_pattern_provider",
                 () -> new BlockItem(INSANE_PATTERN_PROVIDER.get(), new Item.Properties()));
     }

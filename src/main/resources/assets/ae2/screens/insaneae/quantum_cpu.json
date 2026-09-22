@@ -1,7 +1,10 @@
 {
   "$schema": "../schema.json",
-  "$comment": "Quantum CPU の画面。StyleManager が ae2 名前空間固定で読むので assets/ae2 に置いている。ENCODED_PATTERN の座標は QuantumCpuScreen の定数と揃えること。ページ送り (prevPage/nextPage/page) は返却インベントリ STORAGE (top=134 の 18px 1 行) に被らないよう、その真下の top=152 に置いてある (プレイヤーインベントリは bottom=82 なので top=169 から)。",
-  "includes": ["../common/common.json", "../common/player_inventory.json"],
+  "$comment": "Quantum CPU の画面。StyleManager が ae2 名前空間固定で読むので assets/ae2 に置いている。ENCODED_PATTERN の座標は QuantumCpuScreen の定数と揃えること。内蔵クラフト CPU のユニット枠 (INSANEAE_CRAFTING_UNIT / INSANEAE_ACCELERATOR_UNIT) はパターン枠と同じ場所へ QuantumCpuScreen が並べ直すので、ここの座標は使われない (スタイルに区分が無いと AE2 が落ちるので置いてあるだけ)。ページ送り (prevPage/nextPage/page) は返却インベントリ STORAGE (top=134 の 18px 1 行) に被らないよう、その真下の top=152 に置いてある (プレイヤーインベントリは bottom=82 なので top=169 から)。",
+  "includes": [
+    "../common/common.json",
+    "../common/player_inventory.json"
+  ],
   "generatedBackground": {
     "width": 176,
     "height": 251
@@ -17,6 +20,18 @@
       "left": 8,
       "top": 134,
       "grid": "HORIZONTAL"
+    },
+    "INSANEAE_CRAFTING_UNIT": {
+      "$comment": "内蔵クラフト CPU のクラフトストレージ枠。配置は QuantumCpuScreen が上書きする。",
+      "left": 8,
+      "top": 34,
+      "grid": "BREAK_AFTER_9COLS"
+    },
+    "INSANEAE_ACCELERATOR_UNIT": {
+      "$comment": "内蔵クラフト CPU の協調処理ユニット枠。配置は QuantumCpuScreen が上書きする。",
+      "left": 8,
+      "top": 86,
+      "grid": "BREAK_AFTER_9COLS"
     }
   },
   "text": {
@@ -27,6 +42,27 @@
       "position": {
         "left": 8,
         "top": 6
+      }
+    },
+    "storageUnitsLabel": {
+      "$comment": "クラフトユニット枠を開いている間だけ出る (QuantumCpuScreen が出し入れする)。",
+      "text": {
+        "translate": "gui.insaneae.quantum_cpu.crafting_storage_label"
+      },
+      "color": "DEFAULT_TEXT_COLOR",
+      "position": {
+        "left": 8,
+        "top": 24
+      }
+    },
+    "acceleratorUnitsLabel": {
+      "text": {
+        "translate": "gui.insaneae.quantum_cpu.co_processor_label"
+      },
+      "color": "DEFAULT_TEXT_COLOR",
+      "position": {
+        "left": 8,
+        "top": 76
       }
     },
     "page": {
@@ -51,6 +87,11 @@
       "$comment": "クラフトロック中だけ出る。同じ行のタイトルは QuantumCpuScreen が隠す。",
       "left": 5,
       "top": 2
+    },
+    "unitsToggle": {
+      "$comment": "クラフトユニット枠の開閉。ページ送りと同じ行の左端。",
+      "left": 8,
+      "top": 152
     },
     "prevPage": {
       "left": 104,

@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "insaneae:fluix_compressed_dense_cable"
+    },
+    "B": {
+      "item": "megacells:accumulation_processor"
+    }
+  },
+  "pattern": [
+    "AAA",
+    "ABA",
+    "AAA"
+  ],
+  "result": {
+    "count": 4,
+    "item": "insaneae:fluix_hyper_cable"
+  },
+  "show_notification": true
+}

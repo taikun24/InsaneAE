@@ -60,6 +60,15 @@ public final class InsaneAEConfig {
     }
 
     /**
+     * 超次元ケーブル 1 本が運べるチャンネル数 (ChannelMode の倍率を掛ける前)。
+     *
+     * <p>置いた時点で常にこの本数。条件は無い。</p>
+     */
+    public static int hyperChannels() {
+        return get(COMMON.hyperChannels, 128);
+    }
+
+    /**
      * 設定ファイル読み込み前でも安全に読む。
      *
      * <p>{@code ConfigValue#get()} は読み込み前に呼ぶと例外になるので、
@@ -79,6 +88,7 @@ public final class InsaneAEConfig {
         private final ForgeConfigSpec.BooleanValue serverSidePatternPaging;
         private final ForgeConfigSpec.IntValue maxCraftingWindowsPerTick;
         private final ForgeConfigSpec.BooleanValue astralNetworkEject;
+        private final ForgeConfigSpec.IntValue hyperChannels;
 
         private Common(ForgeConfigSpec.Builder builder) {
             builder.comment("クラフト計算 (Calculating... の部分) の軽量化").push("crafting_calculation");
@@ -127,6 +137,17 @@ public final class InsaneAEConfig {
                             "設定枠を入れてあるインターフェイス (在庫確保用) には効かない。",
                             "false にすると Mekanism 本来の搬出だけになる。")
                     .define("astralNetworkEject", true);
+
+            builder.pop();
+            builder.comment("ネットワーク (チャンネル)").push("network");
+
+            hyperChannels = builder
+                    .comment("超次元 ME ケーブル 1 本が運べるチャンネル数。",
+                            "AE2 の上限は高密度ケーブルの 32 本で、そこを上書きする値。",
+                            "ChannelMode (AE2 の設定) が x2 などなら、その倍率がさらに掛かる。",
+                            "使用チャンネル数はネットワーク全体で int に収まる必要があるので、",
+                            "際限なく上げないこと。")
+                    .defineInRange("hyperChannels", 128, 32, 65536);
 
             builder.pop();
         }

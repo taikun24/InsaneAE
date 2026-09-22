@@ -14,6 +14,9 @@ import appeng.api.storage.MEStorage;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
+import appeng.util.inv.AppEngInternalInventory;
+import appeng.util.inv.InternalInventoryHost;
+import appeng.util.inv.filter.IAEItemFilter;
 import appeng.api.util.AECableType;
 import appeng.blockentity.ServerTickingBlockEntity;
 import appeng.blockentity.grid.AENetworkBlockEntity;
@@ -27,6 +30,7 @@ import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocator;
 import jp.main.taikun.insaneae.menu.QuantumCpuMenu;
 import jp.main.taikun.insaneae.quantum.batch.QuantumBatchReceipts;
+import jp.main.taikun.insaneae.quantum.cpu.QuantumCraftingCpu;
 import jp.main.taikun.insaneae.integration.aco.OptionalAcoBigIntegerIntegration;
 import jp.main.taikun.insaneae.integration.aco.PendingOutputLedger;
 import jp.main.taikun.insaneae.integration.aco.PendingOutputNbt;
@@ -65,7 +69,8 @@ import java.math.BigInteger;
  * {@link #MULTIPLIER_PER_CARD} 倍になり、{@link #MAX_ACCELERATION_CARDS} 枚で long の上限に達する。</p>
  */
 public class QuantumCpuBlockEntity extends AENetworkBlockEntity
-        implements PatternProviderLogicHost, IUpgradeableObject, ServerTickingBlockEntity {
+        implements PatternProviderLogicHost, IUpgradeableObject, ServerTickingBlockEntity,
+        InternalInventoryHost {
 
     /** カード無しでの 1 tick あたりの組み立て回数。 */
     public static final long BASE_CRAFTS_PER_TICK = 256L;
@@ -92,7 +97,22 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
      */
     public static final int PATTERN_SLOTS = PATTERN_SLOTS_PER_PAGE * PATTERN_PAGES;
 
+    /**
+     * 内蔵クラフト CPU の<b>クラフトストレージ</b>用スロット数 (9 x 2)。
+     *
+     * <p>AE2 / InsaneAE のクラフトストレージを<b>ブロックのまま</b>挿す。
+     * 1 枠に 64 個まで積めるので、上位階層を数枠入れれば AE2 のマルチブロック CPU を
+     * 大きく超える容量になる。</p>
+     */
+    public static final int CRAFTING_UNIT_SLOTS = 9 * 2;
+
+    /** <b>協調処理 (並列)</b> ユニット用スロット数 (9 x 2)。ストレージとは別枠にしてある。 */
+    public static final int ACCELERATOR_UNIT_SLOTS = 9 * 2;
+
     private static final String NBT_UPGRADES = "upgrades";
+    private static final String NBT_CRAFTING_UNITS = "craftingUnits";
+    private static final String NBT_ACCELERATOR_UNITS = "acceleratorUnits";
+    private static final String NBT_CRAFTING_CPU = "craftingCpu";
     private static final String NBT_PENDING = "pendingOutputs";
     private static final String NBT_PENDING_BIG = "pendingOutputsBig";
 
@@ -103,6 +123,27 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
     private final IUpgradeInventory upgrades = UpgradeInventories.forMachine(
             ModBlocks.QUANTUM_CPU.get(), UPGRADE_SLOTS, this::saveChanges);
     private final IActionSource actionSource = new MachineSource(getMainNode()::getNode);
+
+    /**
+     * 内蔵クラフト CPU に挿さっているユニット。
+     *
+     * <p>フィルタでクラフトユニット以外を弾いているので、ホッパー等から
+     * 関係ないアイテムが流れ込むこともない。</p>
+     */
+    private final AppEngInternalInventory craftingUnits =
+            new AppEngInternalInventory(this, CRAFTING_UNIT_SLOTS, 64, new StorageUnitFilter());
+
+    /**
+     * 協調処理 (並列) ユニットの挿さっている枠。
+     *
+     * <p>ストレージと分けてあるのは<b>入れ間違いを防ぐため</b>で、
+     * 合計の数え方 ({@code QuantumCraftingCpu#updateUnits}) は 2 つを足すだけ。</p>
+     */
+    private final AppEngInternalInventory acceleratorUnits =
+            new AppEngInternalInventory(this, ACCELERATOR_UNIT_SLOTS, 64, new AcceleratorUnitFilter());
+
+    /** 内蔵クラフト CPU 本体。AE2 の CraftingCPUCluster を 1 個抱えている。 */
+    private final QuantumCraftingCpu craftingCpu = new QuantumCraftingCpu(this);
 
     /**
      * 組み上がったが、まだネットワークに入れていない完成品。
@@ -269,6 +310,54 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
         }
     }
 
+    // ---------------------------------------------------- 内蔵クラフト CPU
+
+    /**
+     * 内蔵クラフト CPU。
+     *
+     * <p>クラフト端末の CPU 一覧に「Quantum CPU」として出て、普通に発注を受け取る。
+     * 性能 (容量・同時スレッド数) は {@link #getCraftingUnits()} に挿した
+     * クラフトユニットの合計そのもの。</p>
+     *
+     * <p>クラフトストレージが 1 個も入っていない間は CPU として名乗らない
+     * ({@code QuantumCraftingCpu#isFormed})。パターンプロバイダ兼分子組立装置としての
+     * 従来の働きは、ユニットを 1 個も挿さなくてもこれまでどおり動く。</p>
+     */
+    public QuantumCraftingCpu getCraftingCpu() {
+        return craftingCpu;
+    }
+
+    /** 内蔵クラフト CPU のクラフトストレージ枠。 */
+    public InternalInventory getCraftingUnits() {
+        return craftingUnits;
+    }
+
+    /** 内蔵クラフト CPU の協調処理 (並列) ユニット枠。 */
+    public InternalInventory getAcceleratorUnits() {
+        return acceleratorUnits;
+    }
+
+    /** CPU 一覧に出す名前。 */
+    public Component getCpuDisplayName() {
+        return hasCustomName() ? getCustomName() : ModBlocks.QUANTUM_CPU.get().getName();
+    }
+
+    /**
+     * ユニットスロットの中身が変わったら合計を数え直す。
+     *
+     * <p>{@link AppEngInternalInventory} は変更のたびにここを呼ぶ。パターン枠や
+     * 返却インベントリも同じ口を通るので、<b>どのインベントリが変わったのかを見る</b>こと。</p>
+     *
+     * <p>({@code saveChanges()} と {@code isClientSide()} は {@code AEBaseBlockEntity} が
+     * 既に持っているので、{@link InternalInventoryHost} で足りないのはこれだけ。)</p>
+     */
+    @Override
+    public void onChangeInventory(InternalInventory inv, int slot) {
+        if (inv == craftingUnits || inv == acceleratorUnits) {
+            craftingCpu.updateUnits();
+        }
+    }
+
     // ------------------------------------------------- PatternProviderLogicHost
 
     @Override
@@ -336,12 +425,17 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
     @Override
     public void onMainNodeStateChanged(IGridNodeListener.State reason) {
         logic.onMainNodeStateChanged();
+        // 電源が入った・チャンネルが付いた等で CPU の使用可否が変わるので、名簿を組み直させる。
+        craftingCpu.refresh();
     }
 
     @Override
     public void onReady() {
         super.onReady();
         logic.updatePatterns();
+        // 読み込み直後の合計をここで確定させる (スロットの中身は loadTag で入っている)。
+        craftingCpu.updateUnits();
+        craftingCpu.refresh();
     }
 
     @Override
@@ -354,6 +448,14 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
         super.saveAdditional(data);
         logic.writeToNBT(data);
         upgrades.writeToNBT(data, NBT_UPGRADES);
+        craftingUnits.writeToNBT(data, NBT_CRAFTING_UNITS);
+        acceleratorUnits.writeToNBT(data, NBT_ACCELERATOR_UNITS);
+        // 実行中のジョブ・CPU に溜まっている中間物。クラスタがまだ作られていなければ何も書かない。
+        CompoundTag cpuData = new CompoundTag();
+        craftingCpu.writeToNBT(cpuData);
+        if (!cpuData.isEmpty()) {
+            data.put(NBT_CRAFTING_CPU, cpuData);
+        }
 
         // BigIntegerはbyte[]として保存する。旧ListTagはloadTag側で移行する。
         // 形式は台帳の実装 (ACO / 内蔵) に任せず、常に InsaneAE 側で固定する。
@@ -368,6 +470,14 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
         super.loadTag(data);
         logic.readFromNBT(data);
         upgrades.readFromNBT(data, NBT_UPGRADES);
+        craftingUnits.readFromNBT(data, NBT_CRAFTING_UNITS);
+        acceleratorUnits.readFromNBT(data, NBT_ACCELERATOR_UNITS);
+        // 枠を分ける前のワールドでは両方が craftingUnits に入っている。
+        migrateMixedUnits();
+        // 合計は onReady() で数え直す (ここではまだワールドにもグリッドにも繋がっていない)。
+        if (data.contains(NBT_CRAFTING_CPU, Tag.TAG_COMPOUND)) {
+            craftingCpu.readFromNBT(data.getCompound(NBT_CRAFTING_CPU));
+        }
 
         batchReceipts.load(data);
 
@@ -397,6 +507,12 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
         for (ItemStack upgrade : upgrades) {
             drops.add(upgrade);
         }
+        for (ItemStack unit : craftingUnits) {
+            drops.add(unit);
+        }
+        for (ItemStack unit : acceleratorUnits) {
+            drops.add(unit);
+        }
         for (var entry : pendingOutputs.snapshot().entrySet()) {
             BigInteger amount = entry.getValue();
             if (amount.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) <= 0) {
@@ -414,7 +530,48 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
         super.clearContent();
         logic.clearContent();
         upgrades.clear();
+        craftingUnits.clear();
+        acceleratorUnits.clear();
         pendingOutputs.clear();
+    }
+
+    /**
+     * 枠を分ける前のセーブデータを引き継ぐ。
+     *
+     * <p>以前は 1 つの枠に両方を混ぜて挿していたので、<b>読み込み時に協調処理ユニットだけ
+     * 引っ越す</b>。移せなかったぶん (枠が埋まっている等) はその場に残すので、
+     * 合計が減ることはない。</p>
+     */
+    private void migrateMixedUnits() {
+        for (int slot = 0; slot < craftingUnits.size(); slot++) {
+            ItemStack stack = craftingUnits.getStackInSlot(slot);
+            if (stack.isEmpty() || !QuantumCraftingCpu.isAcceleratorUnit(stack)) {
+                continue;
+            }
+            ItemStack remainder = acceleratorUnits.addItems(stack.copy());
+            craftingUnits.setItemDirect(slot, remainder);
+        }
+    }
+
+    /**
+     * クラフトストレージ枠のフィルタ。
+     *
+     * <p>AE2 のものも InsaneAE のものも MEGA Cells のものも、
+     * <b>容量を持つユニットなら</b>通る。</p>
+     */
+    private static final class StorageUnitFilter implements IAEItemFilter {
+        @Override
+        public boolean allowInsert(InternalInventory inv, int slot, ItemStack stack) {
+            return QuantumCraftingCpu.isStorageUnit(stack);
+        }
+    }
+
+    /** 協調処理ユニット枠のフィルタ。<b>スレッドを持つユニットだけ</b>通る。 */
+    private static final class AcceleratorUnitFilter implements IAEItemFilter {
+        @Override
+        public boolean allowInsert(InternalInventory inv, int slot, ItemStack stack) {
+            return QuantumCraftingCpu.isAcceleratorUnit(stack);
+        }
     }
 
     @Override

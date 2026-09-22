@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "ae2:fluix_smart_dense_cable"
+    },
+    "B": {
+      "item": "ae2:engineering_processor"
+    }
+  },
+  "pattern": [
+    "AAA",
+    "ABA",
+    "AAA"
+  ],
+  "result": {
+    "count": 4,
+    "item": "insaneae:fluix_compressed_dense_cable"
+  },
+  "show_notification": true
+}

@@ -11,17 +11,26 @@
     "CraftingCPUClusterMixin",
     "CraftingCPUNameMixin",
     "CraftingCpuLogicMixin",
+    "CraftingCpuClusterAccessor",
+    "CraftingCpuClusterOwnerMixin",
+    "CraftingServiceQuantumCpuMixin",
     "CraftingCpuLogicJobAccessor",
     "CraftingUnitThreadLimitMixin",
     "ElapsedTimeTrackerInvoker",
     "ExecutingCraftingJobAccessor",
+    "GridNodeChannelMixin",
     "PatternProviderLogicAccessor",
     "SlotAccessor",
     "TaskProgressAccessor",
     "TooltipsMixin"
   ],
   "client": [
-    "BigIntegerCPUSelectionListMixin"
+    "BigIntegerCPUSelectionListMixin",
+    "CableBuilderMixin",
+    "CableBusBakedModelMixin",
+    "CableBusContainerRenderStateMixin",
+    "CableBusRenderStateMixin",
+    "CubeBuilderMixin"
   ],
   "injectors": {
     "defaultRequire": 1
