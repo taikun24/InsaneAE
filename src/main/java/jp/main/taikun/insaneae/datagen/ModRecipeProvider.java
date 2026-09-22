@@ -27,10 +27,12 @@ import net.minecraft.data.PackOutput;
 import net.minecraft.data.recipes.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.core.HolderLookup;
 import net.neoforged.neoforge.common.conditions.ModLoadedCondition;
+import net.neoforged.neoforge.common.crafting.DifferenceIngredient;
 
 import java.util.concurrent.CompletableFuture;
 import net.neoforged.fml.ModList;
@@ -210,8 +212,10 @@ public class ModRecipeProvider extends RecipeProvider {
                         'B', ACCUMULATION_PROCESSOR
                 ));
 
-        cableColoring(consumer, ModParts::compressedCable, "compressed_dense_cable_clean");
-        cableColoring(consumer, ModParts::hyperCable, "hyper_cable_clean");
+        cableColoring(consumer, ModParts::compressedCable,
+                ModItemTagProvider.COMPRESSED_DENSE_CABLES, "compressed_dense_cable_clean");
+        cableColoring(consumer, ModParts::hyperCable,
+                ModItemTagProvider.HYPER_CABLES, "hyper_cable_clean");
 
         // ケーブル版 (プレート) ⇔ ブロック版。AE2 の ME インターフェイス / パターンプロバイダと同じく
         // 1:1 で行き来できる。中身 (パターン・設定) は移らないので、空の状態で持ち替えること。
@@ -312,23 +316,26 @@ public class ModRecipeProvider extends RecipeProvider {
      * ケーブルの<b>染色と色落とし</b>。AE2 のケーブルとまったく同じ形にしてある。
      *
      * <ul>
-     *   <li>染色: fluix 8 本で染料 1 個を囲んで<b>その色 8 本</b>
-     *       ({@code ae2:network/cables/smart_<色>} と同じ)。</li>
+     *   <li>染色: <b>同じ種類のケーブル</b> 8 本で染料 1 個を囲んで、その色 8 本。
+     *       材料をタグにしてあるので<b>どの色からでも直接塗り替えられる</b>
+     *       (fluix に戻してから塗り直す必要がない)。結果の色ごとに 1 本ずつ要るので、
+     *       ここだけは 16 本になる。</li>
      *   <li>色落とし: 色付き 1 本 + {@code ae2:can_remove_color} (水入りバケツなど) で fluix 1 本。
-     *       AE2 は「タグ - fluix」の差分材料 1 レシピで済ませているが、
-     *       こちらは<b>色ごとに 1 レシピ</b>に分けてある。差分材料を使うには自前の
-     *       アイテムタグが要り、そのためだけにタグプロバイダを足すほどではないため。
-     *       レシピ ID は結果 (常に fluix) が同じでぶつかるので、色名で分けている。</li>
+     *       材料は<b>「タグ - fluix」の差分</b> ({@link DifferenceIngredient}) なので、
+     *       AE2 と同じく<b>全色ぶんで 1 本</b>で済む
+     *       (fluix を除かないと「fluix → fluix」が無限に作れてしまう)。</li>
      * </ul>
      *
      * <p>色を変える経路はもう 1 つ、色塗り器 / ペイントボールがある
      * ({@code ThinDenseCablePart#changeColor})。そちらはクラフトを通らない。</p>
      *
-     * @param cables     色 → そのケーブルのアイテム
-     * @param cleanIdDir 色落としレシピの ID の置き場所 (ケーブルごとに分ける)
+     * @param cables   色 → そのケーブルのアイテム
+     * @param cableTag そのケーブル 17 色をまとめたタグ ({@link ModItemTagProvider})
+     * @param cleanId  色落としレシピの ID (ケーブルごとに分ける)
      */
     private static void cableColoring(RecipeOutput consumer,
-            java.util.function.Function<AEColor, ? extends ItemLike> cables, String cleanIdDir) {
+            java.util.function.Function<AEColor, ? extends ItemLike> cables,
+            TagKey<Item> cableTag, String cleanId) {
         ItemLike fluix = cables.apply(AEColor.TRANSPARENT);
         for (AEColor color : AEColor.values()) {
             if (color == AEColor.TRANSPARENT) {
@@ -338,18 +345,17 @@ public class ModRecipeProvider extends RecipeProvider {
                     .pattern("aaa")
                     .pattern("aba")
                     .pattern("aaa")
-                    .define('a', fluix)
+                    .define('a', cableTag)
                     .define('b', dyeTag(color))
                     .unlockedBy("has_component", has(fluix))
                     .save(consumer);
-
-            ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, fluix)
-                    .requires(cables.apply(color))
-                    .requires(CAN_REMOVE_COLOR)
-                    .unlockedBy("has_component", has(fluix))
-                    .save(consumer, ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID,
-                            cleanIdDir + "/" + color.registryPrefix));
         }
+
+        ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, fluix)
+                .requires(DifferenceIngredient.of(Ingredient.of(cableTag), Ingredient.of(fluix)))
+                .requires(CAN_REMOVE_COLOR)
+                .unlockedBy("has_component", has(fluix))
+                .save(consumer, ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, cleanId));
     }
 
     /** {@link #shaped} の、結果を複数個出す版。 */

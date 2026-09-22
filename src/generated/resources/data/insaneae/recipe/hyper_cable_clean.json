@@ -3,7 +3,13 @@
   "category": "misc",
   "ingredients": [
     {
-      "item": "insaneae:gray_hyper_cable"
+      "type": "neoforge:difference",
+      "base": {
+        "tag": "insaneae:hyper_cables"
+      },
+      "subtracted": {
+        "item": "insaneae:fluix_hyper_cable"
+      }
     },
     {
       "tag": "ae2:can_remove_color"

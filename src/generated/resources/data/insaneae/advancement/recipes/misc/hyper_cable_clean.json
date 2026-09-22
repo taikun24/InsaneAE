@@ -5,7 +5,7 @@
       "conditions": {
         "items": [
           {
-            "items": "insaneae:fluix_compressed_dense_cable"
+            "items": "insaneae:fluix_hyper_cable"
           }
         ]
       },
@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "insaneae:compressed_dense_cable_clean/black"
+        "recipe": "insaneae:hyper_cable_clean"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "insaneae:compressed_dense_cable_clean/black"
+      "insaneae:hyper_cable_clean"
     ]
   }
 }

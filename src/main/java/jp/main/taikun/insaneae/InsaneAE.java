@@ -6,6 +6,7 @@ import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.datagen.ModBlockLootProvider;
 import jp.main.taikun.insaneae.datagen.ModBlockStateProvider;
 import jp.main.taikun.insaneae.datagen.ModItemModelProvider;
+import jp.main.taikun.insaneae.datagen.ModItemTagProvider;
 import jp.main.taikun.insaneae.datagen.ModRecipeProvider;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.DataGenerator;
@@ -96,6 +97,11 @@ public class InsaneAE {
         // (タグやデータコンポーネントをレジストリ越しに引くため)。
         CompletableFuture<HolderLookup.Provider> registries = event.getLookupProvider();
 
+        // タグはレシピより先に (レシピがタグを材料に使うため、生成の順を揃えておく)。
+        generator.addProvider(event.includeServer(), new ModItemTagProvider(output, registries,
+                CompletableFuture.completedFuture(
+                        net.minecraft.data.tags.TagsProvider.TagLookup.empty()),
+                existingFiles));
         generator.addProvider(event.includeServer(), new ModRecipeProvider(output, registries));
         generator.addProvider(event.includeServer(), new LootTableProvider(output, Set.of(),
                 List.of(new LootTableProvider.SubProviderEntry(

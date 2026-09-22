@@ -3,7 +3,13 @@
   "category": "misc",
   "ingredients": [
     {
-      "item": "insaneae:yellow_compressed_dense_cable"
+      "type": "neoforge:difference",
+      "base": {
+        "tag": "insaneae:compressed_dense_cables"
+      },
+      "subtracted": {
+        "item": "insaneae:fluix_compressed_dense_cable"
+      }
     },
     {
       "tag": "ae2:can_remove_color"

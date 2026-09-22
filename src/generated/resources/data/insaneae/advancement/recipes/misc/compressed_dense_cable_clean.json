@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "insaneae:compressed_dense_cable_clean/gray"
+        "recipe": "insaneae:compressed_dense_cable_clean"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "insaneae:compressed_dense_cable_clean/gray"
+      "insaneae:compressed_dense_cable_clean"
     ]
   }
 }
