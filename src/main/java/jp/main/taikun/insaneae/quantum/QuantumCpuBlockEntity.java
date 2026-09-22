@@ -142,7 +142,11 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
     private final AppEngInternalInventory acceleratorUnits =
             new AppEngInternalInventory(this, ACCELERATOR_UNIT_SLOTS, 64, new AcceleratorUnitFilter());
 
-    /** 内蔵クラフト CPU 本体。AE2 の CraftingCPUCluster を 1 個抱えている。 */
+    /**
+     * 内蔵クラフト CPU 本体。
+     *
+     * <p>AE2 のクラスタを<b>発注の本数ぶん</b>抱えている (容量を切り分けて同時に受けるため)。</p>
+     */
     private final QuantumCraftingCpu craftingCpu = new QuantumCraftingCpu(this);
 
     /**
@@ -245,6 +249,9 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
         // 溜めておいたパターン更新をここで流す (遅れは最大 1 tick)。
         logic.flushPatternUpdate();
 
+        // 終わったクラフトの区画を畳んで、容量を次の発注へ返す。
+        craftingCpu.tick();
+
         if (flushPendingOutputs()) {
             savePendingIfNeeded();
         }
@@ -318,6 +325,10 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
      * <p>クラフト端末の CPU 一覧に「Quantum CPU」として出て、普通に発注を受け取る。
      * 性能 (容量・同時スレッド数) は {@link #getCraftingUnits()} に挿した
      * クラフトユニットの合計そのもの。</p>
+     *
+     * <p>容量は<b>発注のたびに切り分けられる</b>ので、大きなクラフトを 1 本始めても
+     * 残量ぶんの発注は受け付ける (クラフト端末の CPU 一覧には、実行中のぶんと
+     * 残量ぶんが別々に並ぶ)。</p>
      *
      * <p>クラフトストレージが 1 個も入っていない間は CPU として名乗らない
      * ({@code QuantumCraftingCpu#isFormed})。パターンプロバイダ兼分子組立装置としての

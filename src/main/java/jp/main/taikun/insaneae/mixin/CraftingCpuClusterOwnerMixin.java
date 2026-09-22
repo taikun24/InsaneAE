@@ -1,10 +1,18 @@
 package jp.main.taikun.insaneae.mixin;
 
+import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
+import appeng.api.networking.crafting.ICraftingPlan;
+import appeng.api.networking.crafting.ICraftingRequester;
+import appeng.api.networking.crafting.ICraftingSubmitResult;
+import appeng.api.networking.security.IActionSource;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
+import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerPlanBridge;
 import jp.main.taikun.insaneae.quantum.cpu.QuantumCpuClusterOwner;
 import jp.main.taikun.insaneae.quantum.cpu.QuantumOwnedCluster;
 import net.minecraft.world.level.Level;
+
+import java.math.BigInteger;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -62,6 +70,33 @@ public abstract class CraftingCpuClusterOwnerMixin implements QuantumOwnedCluste
         if (insaneae$owner != null) {
             cir.setReturnValue(insaneae$owner.cpuLevel());
         }
+    }
+
+    /**
+     * ジョブを受け取ったら持ち主へ伝える (容量の切り分けはそちらの仕事)。
+     *
+     * <p>失敗した結果でも RETURN は通るので、<b>成功したときだけ</b>伝える。
+     * 容量が足りないときに InsaneAE 自身が返す {@code CPU_TOO_SMALL}
+     * ({@code CraftingCPUClusterMixin}) もここで弾かれる。</p>
+     *
+     * <p>要求量は ACO の BigInteger 計画ならその正確値を使う。
+     * {@code ICraftingPlan#bytes()} は long なので、桁が溢れた計画では
+     * 予約量が実際より小さくなる (= 残量を多く見せてしまう)。</p>
+     */
+    @Inject(method = "submitJob", at = @At("RETURN"))
+    private void insaneae$onJobSubmitted(IGrid grid, ICraftingPlan plan, IActionSource src,
+            ICraftingRequester requester, CallbackInfoReturnable<ICraftingSubmitResult> cir) {
+        if (insaneae$owner == null) {
+            return;
+        }
+        ICraftingSubmitResult result = cir.getReturnValue();
+        if (result == null || !result.successful()) {
+            return;
+        }
+        BigInteger bytes = AcoBigIntegerPlanBridge.inspect(plan)
+                .map(exact -> exact.exactBytes())
+                .orElseGet(() -> BigInteger.valueOf(Math.max(plan.bytes(), 0L)));
+        insaneae$owner.cpuJobSubmitted(bytes);
     }
 
     @Inject(method = "markDirty", at = @At("HEAD"), cancellable = true)

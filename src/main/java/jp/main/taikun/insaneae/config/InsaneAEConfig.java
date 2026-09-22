@@ -55,6 +55,16 @@ public final class InsaneAEConfig {
     }
 
     /**
+     * Quantum CPU が同時に受けられるクラフトの本数。
+     *
+     * <p>内蔵 CPU は容量を切り分けて何本も同時に走らせる。1 にすると
+     * AE2 のクラフト CPU と同じ「1 台 1 ジョブ」に戻る。</p>
+     */
+    public static int quantumCpuMaxJobs() {
+        return get(COMMON.quantumCpuMaxJobs, 16);
+    }
+
+    /**
      * 超次元ケーブル 1 本が運べるチャンネル数 (ChannelMode の倍率を掛ける前)。
      *
      * <p>置いた時点で常にこの本数。条件は無い。</p>
@@ -82,6 +92,7 @@ public final class InsaneAEConfig {
         private final ModConfigSpec.IntValue craftingBatchThreshold;
         private final ModConfigSpec.BooleanValue serverSidePatternPaging;
         private final ModConfigSpec.IntValue maxCraftingWindowsPerTick;
+        private final ModConfigSpec.IntValue quantumCpuMaxJobs;
         private final ModConfigSpec.IntValue hyperChannels;
 
         private Common(ModConfigSpec.Builder builder) {
@@ -119,6 +130,16 @@ public final class InsaneAEConfig {
                             "ネットワークへ流して完成待ちを清算するので、1 tick の合計は long を超えられる。",
                             "サーバが 1 tick に使う時間はこの値に比例するので、上げすぎると重くなる。")
                     .defineInRange("maxCraftingWindowsPerTick", 1024, 1, Integer.MAX_VALUE);
+
+            quantumCpuMaxJobs = builder
+                    .comment("内蔵クラフト CPU が同時に受けられるクラフトの本数。",
+                            "挿してあるクラフトストレージの容量を発注のたびに切り分けるので、",
+                            "大きなクラフトを 1 本始めても残量ぶんは発注できる。",
+                            "同時に走っているぶんだけクラフト端末の CPU 一覧に行が増える。",
+                            "協調処理スレッドは走っているジョブで均等に分けるので、",
+                            "本数を増やしても合計の処理速度は変わらない。",
+                            "1 にすると AE2 と同じ「1 台 1 ジョブ」に戻る。")
+                    .defineInRange("quantumCpuMaxJobs", 16, 1, 256);
 
             builder.pop();
             builder.comment("ネットワーク (チャンネル)").push("network");

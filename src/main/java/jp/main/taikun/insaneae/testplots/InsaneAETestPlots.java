@@ -84,6 +84,7 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.registries.DeferredItem;
 import org.jetbrains.annotations.Nullable;
 
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -2767,6 +2768,180 @@ public final class InsaneAETestPlots {
         // 既定の持ち時間ではネットワークの起動 + 2 段クラフトが終わらない
         // (他のクラフト完走テストと同じ 400 tick)。
         }).maxTicks(400);
+    }
+
+    /**
+     * <b>内蔵 CPU が容量を切り分けて、2 本のクラフトを同時に受けるか。</b>
+     *
+     * <p>AE2 のクラフト CPU は 1 台 1 ジョブで、実行中は容量が丸ごと塞がる。
+     * Quantum CPU は容量を発注のたびに切り出すので、
+     * <b>1 本走らせたまま残量ぶんの発注ができる</b> ({@code QuantumCraftingCpu})。</p>
+     *
+     * <p>見ているのは 4 点。</p>
+     * <ol>
+     *   <li>1 本目を始めると、CPU 一覧が<b>実行中のぶんと残量ぶんの 2 行</b>になる。</li>
+     *   <li>残量が「合計 - 1 本目が要求したバイト数」に減っている
+     *       (塞がるのは使うぶんだけ = 切り分けが効いている)。</li>
+     *   <li>1 本目を止めたまま<b>2 本目を発注できる</b>。
+     *       ここが通らないと「実行中は発注できない」元の挙動のまま。</li>
+     *   <li>両方終わると区画が畳まれ、CPU 一覧も容量も元に戻る。</li>
+     * </ol>
+     *
+     * <p>1 本目は<b>わざと一時停止</b>して止めてある ({@code setJobSuspended})。
+     * そうしないと 2 本目を出す前に終わってしまい、同時に走っているかを見られない。</p>
+     */
+    @TestPlot("insaneae_quantum_cpu_split")
+    public static void quantumCpuSplit(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,3] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
+            drive.getInternalInventory().addItems(ultraCreativeCell(Items.OAK_LOG));
+            drive.getInternalInventory().addItems(AEItems.ITEM_CELL_64K.stack());
+        });
+        plot.blockState("3 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        final long buttons = 64;
+        final long planks = 32;
+        final int storageUnits = 4;
+
+        plot.test(helper -> {
+            var cpuPos = new BlockPos(3, 0, 0);
+            var state = new Object() {
+                TestCraftingJob first;
+                TestCraftingJob second;
+                BigInteger total = BigInteger.ZERO;
+                BigInteger freeAfterFirst = BigInteger.ZERO;
+                ItemStack heldPattern = ItemStack.EMPTY;
+            };
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
+                // 2 段のツリー: ボタン <- 板材 <- 原木 (在庫にあるのは原木だけ)。
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_LOG)));
+                cpu.getLogic().getPatternInv().addItems(
+                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                new ItemStack(Items.OAK_PLANKS)));
+                // 協調処理ユニットは挿さない。スレッドが 0 でも区画は切れること。
+                cpu.getCraftingUnits().addItems(AEBlocks.CRAFTING_STORAGE_64K.stack(storageUnits));
+            });
+            sequence.thenIdle(10);
+
+            // 1. 発注前は CPU 1 台、容量は挿したぶん全部。
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
+                state.total = cpu.getCraftingCpu().totalStorage();
+                helper.check(countCpus(helper) == 1,
+                        "発注前なのに CPU が " + countCpus(helper) + " 台ある", cpuPos);
+                helper.check(cpu.getCraftingCpu().freeStorage().equals(state.total),
+                        "発注前なのに空き容量が合計と違う: "
+                                + cpu.getCraftingCpu().freeStorage() + " != " + state.total, cpuPos);
+            });
+
+            // 2. 1 本目を始めて、すぐ止める (終わってしまう前に)。
+            sequence.thenExecute(() -> state.first = new TestCraftingJob(
+                    helper, BlockPos.ZERO, AEItemKey.of(Items.OAK_BUTTON), buttons));
+            // 止めるのは<b>始まったのと同じ tick のうち</b>に。1 tick でも空けると
+            // 先に終わってしまい、同時に走っているところを見られない。
+            sequence.thenWaitUntil(() -> {
+                state.first.tickUntilStarted();
+                state.heldPattern = takeButtonPattern(helper, cpuPos);
+            });
+            // CPU 名簿の作り直しは tick の終わりなので、数えるのは少し待ってから。
+            sequence.thenIdle(5);
+
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
+                helper.check(cpu.getCraftingCpu().runningJobs() == 1,
+                        "実行中の区画が 1 つになっていない: "
+                                + cpu.getCraftingCpu().runningJobs(), cpuPos);
+                // 実行中のぶんと残量ぶんで 2 行。
+                helper.check(countCpus(helper) == 2,
+                        "実行中でも残量ぶんの CPU が出ていない: " + countCpus(helper)
+                                + " 台 (区画の切り出しが効いていない)", cpuPos);
+                state.freeAfterFirst = cpu.getCraftingCpu().freeStorage();
+                helper.check(state.freeAfterFirst.signum() > 0,
+                        "1 本走らせただけで空き容量が 0 になっている"
+                                + " (容量が丸ごと塞がっている)", cpuPos);
+                helper.check(state.freeAfterFirst.compareTo(state.total) < 0,
+                        "1 本走らせても空き容量が減っていない: "
+                                + state.freeAfterFirst + " == " + state.total, cpuPos);
+            });
+
+            // 3. 止めたまま 2 本目を発注できること。
+            sequence.thenExecute(() -> state.second = new TestCraftingJob(
+                    helper, BlockPos.ZERO, AEItemKey.of(Items.OAK_PLANKS), planks));
+            sequence.thenWaitUntil(() -> {
+                state.second.tickUntilStarted();
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
+                int running = cpu.getCraftingCpu().runningJobs();
+                if (running != 2) {
+                    throw new GameTestAssertException(
+                            "2 本目が別の区画で走っていない: 実行中 " + running + " 本");
+                }
+            });
+            sequence.thenIdle(5);
+            sequence.thenExecute(() -> helper.check(countCpus(helper) == 3,
+                    "2 本実行中 + 残量ぶんで 3 台にならない: " + countCpus(helper) + " 台",
+                    cpuPos));
+
+            // 4. パターンを戻したら両方終わり、区画も容量も元に戻ること。
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
+                cpu.getLogic().getPatternInv().setItemDirect(BUTTON_PATTERN_SLOT,
+                        state.heldPattern);
+            });
+            sequence.thenWaitUntil(() -> {
+                long madeButtons = storedAmount(helper, Items.OAK_BUTTON);
+                if (madeButtons < buttons) {
+                    throw new GameTestAssertException("1 本目 (ボタン) が "
+                            + madeButtons + "/" + buttons + " しか進まない");
+                }
+                long madePlanks = storedAmount(helper, Items.OAK_PLANKS);
+                if (madePlanks < planks) {
+                    throw new GameTestAssertException("2 本目 (板材) が "
+                            + madePlanks + "/" + planks + " しか進まない");
+                }
+            });
+            sequence.thenWaitUntil(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
+                if (cpu.getCraftingCpu().runningJobs() != 0) {
+                    throw new GameTestAssertException("終わった区画が畳まれていない: 実行中 "
+                            + cpu.getCraftingCpu().runningJobs() + " 本");
+                }
+                if (!cpu.getCraftingCpu().freeStorage().equals(state.total)) {
+                    throw new GameTestAssertException("空き容量が元に戻っていない: "
+                            + cpu.getCraftingCpu().freeStorage() + " != " + state.total);
+                }
+                if (countCpus(helper) != 1) {
+                    throw new GameTestAssertException(
+                            "CPU 一覧が 1 台に戻っていない: " + countCpus(helper) + " 台");
+                }
+            });
+
+            sequence.thenSucceed();
+        // 2 本ぶんのクラフトと、その間の待ちを入れても収まる長さ。
+        }).maxTicks(600);
+    }
+
+    /** ボタンのパターンを入れてある枠 (板材のパターンの次に入れているので 1 番)。 */
+    private static final int BUTTON_PATTERN_SLOT = 1;
+
+    /**
+     * ボタンのパターンを引き抜いて、1 本目のクラフトをそこで止める。
+     *
+     * <p>作り手が居なくなるだけなので<b>ジョブは実行中のまま待ちに入る</b>。
+     * パターンを戻せば続きから進む。AE2 のジョブ一時停止 API は
+     * 1.21.1 の AE2 にしか無いので、両ブランチで同じ手が使えるこちらにしてある。</p>
+     */
+    private static ItemStack takeButtonPattern(PlotTestHelper helper, BlockPos cpuPos) {
+        var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
+        var patterns = cpu.getLogic().getPatternInv();
+        ItemStack pattern = patterns.getStackInSlot(BUTTON_PATTERN_SLOT).copy();
+        patterns.setItemDirect(BUTTON_PATTERN_SLOT, ItemStack.EMPTY);
+        return pattern;
     }
 
     /** ネットワークに見えているクラフト CPU の数。 */
