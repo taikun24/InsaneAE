@@ -38,6 +38,18 @@ public interface QuantumCpuClusterOwner {
     long cpuCoProcessors();
 
     /**
+     * この CPU がジョブを受け取った。
+     *
+     * <p>Quantum CPU は容量を切り分けて何本も同時に受けるので、
+     * <b>受け取った時点で自分の容量をそのジョブのぶんへ縮める</b>必要がある
+     * ({@link QuantumCpuPartition} → {@link QuantumCraftingCpu})。
+     * 呼び元は {@code CraftingCpuClusterOwnerMixin} ({@code submitJob} の成功時)。</p>
+     *
+     * @param bytes そのジョブが要求したバイト数 (ACO の BigInteger 計画なら正確値)
+     */
+    void cpuJobSubmitted(java.math.BigInteger bytes);
+
+    /**
      * 中身の版番号。変わるたびに増える。
      *
      * <p>AE2 のクラスタは「構成ブロック数」を世代の目印にして数え直しを省いているが、

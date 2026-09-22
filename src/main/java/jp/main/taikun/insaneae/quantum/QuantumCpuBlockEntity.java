@@ -245,6 +245,9 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
         // 溜めておいたパターン更新をここで流す (遅れは最大 1 tick)。
         logic.flushPatternUpdate();
 
+        // 終わったクラフトの区画を畳んで、容量を次の発注へ返す。
+        craftingCpu.tick();
+
         if (flushPendingOutputs()) {
             savePendingIfNeeded();
         }

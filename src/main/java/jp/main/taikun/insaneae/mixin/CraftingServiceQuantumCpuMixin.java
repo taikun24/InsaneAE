@@ -63,6 +63,9 @@ public abstract class CraftingServiceQuantumCpuMixin {
      * <p>{@code updateCPUClusters} は毎回 {@code clear()} してから組み直すので、
      * ここで足すぶんも毎回入れ直しになる = 取り外しは自動的に反映される。</p>
      *
+     * <p>Quantum CPU 1 台につき載るのは<b>その時点の区画の数</b>で、
+     * 発注のたびに増え、終わると減る ({@code QuantumCraftingCpu})。</p>
+     *
      * <p>AE2 が構成ブロックのクラスタに対してやっているのと同じく、
      * <b>復元したリンクを登録し直す</b> (これを飛ばすと、ワールド再読み込み後に
      * 「発注元へ完成を伝える紐」が切れて注文が宙に浮く)。</p>
@@ -75,10 +78,14 @@ public abstract class CraftingServiceQuantumCpuMixin {
             if (!cpu.isFormed()) {
                 continue;
             }
-            CraftingCPUCluster cluster = cpu.cluster();
-            craftingCPUClusters.add(cluster);
-            if (cluster.craftingLogic.getLastLink() instanceof CraftingLink link) {
-                addLink(link);
+            // 内蔵 CPU は容量を切り分けて何本も同時に受けるので、名簿へ入れるのは
+            // 1 台ではなく「いま成立している区画ぜんぶ」。
+            for (var partition : cpu.partitions()) {
+                CraftingCPUCluster cluster = partition.cluster();
+                craftingCPUClusters.add(cluster);
+                if (cluster.craftingLogic.getLastLink() instanceof CraftingLink link) {
+                    addLink(link);
+                }
             }
         }
     }
