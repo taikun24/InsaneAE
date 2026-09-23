@@ -79,6 +79,16 @@ public final class InsaneAEConfig {
     }
 
     /**
+     * 待ち時間で頭打ちになる機械 (刻印機など) を、1 tick のうちに何回まで回すか。
+     *
+     * <p>加速カードの倍率とこの値の小さい方が実際の回数になる。1 にすると追い tick を止めて
+     * AE2 本来の「1 tick に 1 回」に戻る。</p>
+     */
+    public static int machineTickBurst() {
+        return get(COMMON.machineTickBurst, 256);
+    }
+
+    /**
      * 設定ファイル読み込み前でも安全に読む。
      *
      * <p>{@code ConfigValue#get()} は読み込み前に呼ぶと例外になるので、
@@ -100,6 +110,7 @@ public final class InsaneAEConfig {
         private final ForgeConfigSpec.IntValue quantumCpuMaxJobs;
         private final ForgeConfigSpec.BooleanValue astralNetworkEject;
         private final ForgeConfigSpec.IntValue hyperChannels;
+        private final ForgeConfigSpec.IntValue machineTickBurst;
 
         private Common(ForgeConfigSpec.Builder builder) {
             builder.comment("クラフト計算 (Calculating... の部分) の軽量化").push("crafting_calculation");
@@ -169,6 +180,21 @@ public final class InsaneAEConfig {
                             "使用チャンネル数はネットワーク全体で int に収まる必要があるので、",
                             "際限なく上げないこと。")
                     .defineInRange("hyperChannels", 128, 32, 65536);
+
+            builder.pop();
+            builder.comment("機械 (加速カード)").push("machines");
+
+            machineTickBurst = builder
+                    .comment("加速カードを挿した機械を、1 tick のうちに何回まで回すか。",
+                            "刻印機のように「加工が終わったあと決まった tick 数だけ待つ」機械は、",
+                            "速度値をいくら上げても待ち時間 (刻印機なら 16 tick) で頭打ちになる。",
+                            "そこを抜けるために、待ち時間ぶんの tick を同じ tick の中でまとめて回す。",
+                            "実際の回数は加速カードの倍率とこの値の小さい方。材料切れ・出力満杯なら",
+                            "そこで打ち切るので、動いていない機械の負荷は増えない。",
+                            "1 にすると追い tick を止めて AE2 本来の挙動に戻る。",
+                            "輸出入バスや IO ポートのように 1 tick の処理量そのものが速度で決まる機械は",
+                            "対象外 (二重に掛かるため)。")
+                    .defineInRange("machineTickBurst", 256, 1, 65536);
 
             builder.pop();
         }
