@@ -22,6 +22,7 @@ import appeng.api.upgrades.Upgrades;
 import appeng.api.util.AECableType;
 import appeng.api.util.AEColor;
 import appeng.blockentity.crafting.PatternProviderBlockEntity;
+import appeng.blockentity.misc.InscriberBlockEntity;
 import appeng.core.definitions.AEBlocks;
 import appeng.core.definitions.AEItems;
 import appeng.core.definitions.AEParts;
@@ -658,6 +659,54 @@ public final class InsaneAETestPlots {
                 helper.check(inNetwork == total,
                         stacks + " スタックがまとめて動いていない: " + inNetwork + " / " + total
                                 + " (加速カードの倍率がインポートバスに効いていない)", pos);
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    /** 刻印機の内部インベントリ (上 / 下 / 横の入力 / 横の出力 をつないだもの) の枠番号。 */
+    private static final int INSCRIBER_TOP = 0;
+    private static final int INSCRIBER_INPUT = 2;
+    private static final int INSCRIBER_OUTPUT = 3;
+
+    /**
+     * <b>刻印機の強制クールダウンを貫通する</b>ことを確かめる。
+     *
+     * <p>AE2 の刻印機は加工そのものが 1 tick で終わっても、そのあとプレス動作の 16 tick が
+     * 必ず挟まる。つまり加速カードで速度値をいくら上げても<b>16 tick に 1 個</b>が上限で、
+     * シリコン 64 個を刻むのに 1000 tick 以上かかる。{@code TickBoost} の追い tick が
+     * 効いていれば、同じ 1 tick のうちにその待ち時間ごと回してしまえる。</p>
+     *
+     * <p>40 tick (グリッドの起動を含む) で 64 個すべて刻めていれば貫通できている。</p>
+     */
+    @TestPlot("insaneae_inscriber_tick_burst")
+    public static void inscriberTickBurst(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("0 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.INSCRIBER, inscriber -> {
+            inscriber.getUpgrades().addItems(new ItemStack(
+                    ModUpgrades.SPEED_CARDS.get(InsaneSpeedCardType.WARP).get()));
+            var inv = inscriber.getInternalInventory();
+            inv.setItemDirect(INSCRIBER_TOP, AEItems.SILICON_PRESS.stack());
+            inv.setItemDirect(INSCRIBER_INPUT, AEItems.SILICON.stack(64));
+        });
+
+        plot.test(helper -> {
+            var pos = new BlockPos(1, 0, 0);
+            var sequence = helper.startSequence();
+
+            sequence.thenIdle(40);
+            sequence.thenExecute(() -> {
+                var inv = ((InscriberBlockEntity) helper.getBlockEntity(pos)).getInternalInventory();
+                long made = inv.getStackInSlot(INSCRIBER_OUTPUT).getCount()
+                        + countInNetwork(helper, AEItems.SILICON_PRINT.asItem());
+                helper.check(inv.getStackInSlot(INSCRIBER_INPUT).isEmpty(),
+                        "シリコンが刻み切れていない: 残り "
+                                + inv.getStackInSlot(INSCRIBER_INPUT).getCount()
+                                + " 個 (プレス動作の 16 tick を貫通できていない)", pos);
+                helper.check(made == 64,
+                        "刻印済みシリコンが 64 個できていない: " + made + " 個", pos);
             });
 
             sequence.thenSucceed();

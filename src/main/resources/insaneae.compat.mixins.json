@@ -13,6 +13,7 @@
     "IOBusPartMixin",
     "IOPortBlockEntityMixin",
     "MolecularAssemblerBlockEntityMixin",
+    "TickManagerServiceMixin",
     "compat.AAEQuantumCrafterMixin",
     "compat.AAEReactionChamberMixin",
     "compat.AdvCraftingCpuBudgetMixin",
