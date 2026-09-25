@@ -93,6 +93,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import appeng.parts.storagebus.StorageBusPart;
+import java.util.Optional;
+import jp.main.taikun.insaneae.cell.InsaneUltraCreativeCellInventory;
+import jp.main.taikun.insaneae.compat.AaeCompatCounters;
+import jp.main.taikun.insaneae.crafting.IBigCraftingCapacity;
+import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerLimitBridge;
+import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerPlanBridge;
+import jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership;
+import jp.main.taikun.insaneae.mixin.CraftingCpuLogicJobAccessor;
+import jp.main.taikun.insaneae.quantum.QuantumBulkCrafting;
+import jp.main.taikun.insaneae.quantum.ReflectiveCraftingJobView;
+import jp.main.taikun.insaneae.quantum.TimeTrackerAdapter;
 
 /**
  * AE2 のテストプロットに相乗りする検証。{@code appeng.tests=true} のときだけ登録する。
@@ -782,7 +794,7 @@ public final class InsaneAETestPlots {
 
                 // 自前型カウンタが直接呼べること (AAE の addMaxItems はパッケージプライベート)
                 var tracker = new ForeignTimeTracker();
-                jp.main.taikun.insaneae.quantum.TimeTrackerAdapter.addMaxItems(
+                TimeTrackerAdapter.addMaxItems(
                         tracker, 7, AEKeyType.items());
                 helper.check(tracker.max == 7,
                         "自前型カウンタへの加算が効いていない: " + tracker.max);
@@ -793,12 +805,12 @@ public final class InsaneAETestPlots {
                 logic.inventory.insert(AEItemKey.of(Items.OAK_LOG), logsInStock,
                         Actionable.MODULATE);
 
-                var view = jp.main.taikun.insaneae.quantum.ReflectiveCraftingJobView.of(logic);
+                var view = ReflectiveCraftingJobView.of(logic);
                 helper.check(view != null,
                         "自前カウンタ型を持つ CPU がレイアウト検査で弾かれた (Issue #2 の再発)");
 
                 var grid = helper.getGrid(BlockPos.ZERO);
-                int pushed = jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.execute(
+                int pushed = QuantumBulkCrafting.execute(
                         view, (int) requested,
                         (CraftingService) grid.getCraftingService(),
                         grid.getEnergyService(), grid.getPivot().getLevel());
@@ -1005,7 +1017,7 @@ public final class InsaneAETestPlots {
                 state.view.inventory.insert(AEItemKey.of(Items.OAK_LOG), logsInStock,
                         Actionable.MODULATE);
 
-                state.pushed = jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.execute(
+                state.pushed = QuantumBulkCrafting.execute(
                         state.view, (int) requested,
                         (CraftingService) grid.getCraftingService(),
                         grid.getEnergyService(), grid.getPivot().getLevel());
@@ -1150,7 +1162,7 @@ public final class InsaneAETestPlots {
                 state.view.inventory.insert(AEItemKey.of(Items.OAK_LOG), requested,
                         Actionable.MODULATE);
 
-                state.ops = jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.execute(
+                state.ops = QuantumBulkCrafting.execute(
                         state.view, clusterBudget,
                         (CraftingService) grid.getCraftingService(),
                         grid.getEnergyService(), grid.getPivot().getLevel());
@@ -1228,7 +1240,7 @@ public final class InsaneAETestPlots {
                         .cursor(details -> {
                         });
 
-                state.ops = jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.execute(
+                state.ops = QuantumBulkCrafting.execute(
                         state.view, clusterBudget,
                         (CraftingService) grid.getCraftingService(),
                         grid.getEnergyService(), grid.getPivot().getLevel());
@@ -1283,7 +1295,7 @@ public final class InsaneAETestPlots {
                     "Quantum CPU のロジックに ProviderOwnedPatternBatchTarget が生えていない");
 
             // 超強化クリエイティブセルの BigInteger 在庫。読みと書きで窓口が別なので両方見る。
-            var cell = new jp.main.taikun.insaneae.cell.InsaneUltraCreativeCellInventory(
+            var cell = new InsaneUltraCreativeCellInventory(
                     new ItemStack(ModCells.ULTRA_CREATIVE_CELL.get()));
 
             // 読み: ACO 1.5.20 で入った公開契約。スナップショット側はこちらを先に見る。
@@ -1322,7 +1334,7 @@ public final class InsaneAETestPlots {
             // 上限は api.contract.ExactCountLimits (1,048,576 bit) ではなく
             // ACOConfig.bigIntegerMaximumBits (最大 54,427 bit) なので取り違えないこと。
             int ceiling = AcoExactLimits.gameplayMaximumBits();
-            int advertised = jp.main.taikun.insaneae.cell.InsaneUltraCreativeCellInventory
+            int advertised = InsaneUltraCreativeCellInventory
                     .exactAmount().bitLength();
             helper.check(advertised < ceiling,
                     "超強化クリエイティブセルが名乗る量 (" + advertised + " bit) が "
@@ -1343,7 +1355,7 @@ public final class InsaneAETestPlots {
      */
     private static String exactPlanBytes(ICraftingPlan plan) {
         try {
-            return jp.main.taikun.insaneae.integration.aco.AcoBigIntegerPlanBridge.inspect(plan)
+            return AcoBigIntegerPlanBridge.inspect(plan)
                     .map(exact -> exact.exactBytes().toString())
                     .orElse("<BigInteger計画なし>");
         } catch (RuntimeException | LinkageError unavailable) {
@@ -1580,13 +1592,11 @@ public final class InsaneAETestPlots {
             // 足りない (Mixin はメソッドを混ぜてから injector を配線するので、
             // 配線に失敗してもメソッドだけは生える)。
             sequence.thenExecute(() -> {
-                helper.check(jp.main.taikun.insaneae.compat.AaeCompatCounters
-                                .storageSaturations > 0,
+                helper.check(AaeCompatCounters.STORAGE_SATURATIONS.get() > 0,
                         "AdvCraftingCpuStorageMixin が一度も走っていない "
                                 + "(@Redirect の配線に失敗している可能性 — ログの "
                                 + "InvalidInjectionException を確認すること)");
-                helper.check(jp.main.taikun.insaneae.compat.AaeCompatCounters
-                                .budgetCalculations > 0,
+                helper.check(AaeCompatCounters.BUDGET_CALCULATIONS.get() > 0,
                         "AdvCraftingCpuBudgetMixin が一度も走っていない (同上)");
             });
             sequence.thenSucceed();
@@ -1737,7 +1747,7 @@ public final class InsaneAETestPlots {
                 ExecutingCraftingJob job = null;
                 for (var cpu : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
                     if (cpu instanceof CraftingCPUCluster cluster) {
-                        var found = ((jp.main.taikun.insaneae.mixin.CraftingCpuLogicJobAccessor)
+                        var found = ((CraftingCpuLogicJobAccessor)
                                 (Object) cluster.craftingLogic).insaneae$getJob();
                         if (found != null) {
                             job = found;
@@ -1747,7 +1757,7 @@ public final class InsaneAETestPlots {
                 }
                 helper.check(job != null, "投入したはずのジョブが CPU に無い");
                 helper.check(
-                        jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership.isAcoOwned(job),
+                        AcoExactJobOwnership.isAcoOwned(job),
                         "ACO 1.5.23 以降なのに exact ジョブの所有を認識できていない。"
                                 + "ACO 側の判定メソッド名 (aco$isExactJob) が変わった可能性がある。"
                                 + " job=" + job.getClass().getName()
@@ -1778,7 +1788,7 @@ public final class InsaneAETestPlots {
             sequence.thenIdle(5);
             sequence.thenExecute(() -> {
                 // ACO 無しなら long 互換容量が正しい姿なので、何も検査しない。
-                if (jp.main.taikun.insaneae.integration.aco.AcoBigIntegerLimitBridge
+                if (AcoBigIntegerLimitBridge
                         .maximumSupportedAmount().isEmpty()) {
                     if (optionalClass(AcoClassNames.BIG_CRAFTING_ENGINE_API)
                             != null) {
@@ -1792,7 +1802,7 @@ public final class InsaneAETestPlots {
 
                 java.math.BigInteger capacity = null;
                 for (var cpu : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
-                    if (cpu instanceof jp.main.taikun.insaneae.crafting.IBigCraftingCapacity exact) {
+                    if (cpu instanceof IBigCraftingCapacity exact) {
                         capacity = exact.insaneae$exactStorageCapacity();
                         break;
                     }
@@ -1913,7 +1923,7 @@ public final class InsaneAETestPlots {
                 ExecutingCraftingJob job = null;
                 for (var cpu : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
                     if (cpu instanceof CraftingCPUCluster cluster) {
-                        var found = ((jp.main.taikun.insaneae.mixin.CraftingCpuLogicJobAccessor)
+                        var found = ((CraftingCpuLogicJobAccessor)
                                 (Object) cluster.craftingLogic).insaneae$getJob();
                         if (found != null) {
                             job = found;
@@ -1923,7 +1933,7 @@ public final class InsaneAETestPlots {
                 }
                 helper.check(job != null, "投入したはずのジョブが CPU に無い");
                 helper.check(
-                        jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership.isAcoOwned(job),
+                        AcoExactJobOwnership.isAcoOwned(job),
                         "納品先を用意したのに ACO が所有していない (long 窓へ委譲された)。"
                                 + "ACOの判断=" + acoPlanDiagnostics());
             });
@@ -2174,7 +2184,7 @@ public final class InsaneAETestPlots {
                             .append(" busy=").append(cpu.isBusy());
                     // long に飽和した available だけでは足りるか分からないので、
                     // 正確な容量 (こちらの BigInteger 会計) も並べる。
-                    if (cpu instanceof jp.main.taikun.insaneae.crafting.IBigCraftingCapacity exact) {
+                    if (cpu instanceof IBigCraftingCapacity exact) {
                         cpuSizes.append(" exactCapacity=").append(exact.insaneae$exactStorageCapacity());
                     }
                     cpuSizes.append(']');
@@ -2600,7 +2610,7 @@ public final class InsaneAETestPlots {
             var cyclic = graph.getClass().getMethod("isCyclic", Object.class);
 
             var report = new StringBuilder();
-            report.append("craftables=").append(((java.util.Set<?>) craftables.invoke(snapshot)).size());
+            report.append("craftables=").append(((Set<?>) craftables.invoke(snapshot)).size());
             for (var item : keys) {
                 AEKey key = AEItemKey.of(item.asItem());
                 report.append(" | ").append(item.asItem())
@@ -2609,7 +2619,7 @@ public final class InsaneAETestPlots {
                         .append(" incomplete=").append(incomplete.invoke(snapshot, key))
                         .append(" cyclic=").append(cyclic.invoke(graph, key))
                         .append(" rootProgram=")
-                        .append(((java.util.Optional<?>) root.invoke(snapshot, key)).isPresent());
+                        .append(((Optional<?>) root.invoke(snapshot, key)).isPresent());
             }
             return report.toString();
         } catch (ReflectiveOperationException | LinkageError | RuntimeException unavailable) {
@@ -3058,7 +3068,7 @@ public final class InsaneAETestPlots {
                 var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(3, 0, 0));
                 helper.check(cpu.getLogic().getAvailablePatterns().size() == 1,
                         "Quantum CPU がパターンを 1 枚だけ持っている状態にならなかった");
-                state.windowsBefore = jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.bulkWindows;
+                state.windowsBefore = QuantumBulkCrafting.bulkWindows;
                 state.job = new TestCraftingJob(helper, BlockPos.ZERO,
                         AEItemKey.of(Items.OAK_PLANKS), crafts * planksPerCraft);
             });
@@ -3067,7 +3077,7 @@ public final class InsaneAETestPlots {
             sequence.thenIdle(20);
 
             sequence.thenExecute(() -> helper.check(
-                    jp.main.taikun.insaneae.quantum.QuantumBulkCrafting.bulkWindows > state.windowsBefore,
+                    QuantumBulkCrafting.bulkWindows > state.windowsBefore,
                     "実ジョブでまとめ処理が一度も走っていない"
                             + " (executeCrafting への注入が他 Mod に先取りされている可能性)"));
 
@@ -3096,7 +3106,7 @@ public final class InsaneAETestPlots {
         long remaining;
         boolean removed;
         /** null でなければ Exact (BigInteger) 経路を通す。 */
-        jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry.CraftingCursor exactCursor;
+        AcoBigIntegerJobRegistry.CraftingCursor exactCursor;
 
         FakeJobView(IPatternDetails details, long remaining) {
             this.details = details;
@@ -3123,10 +3133,10 @@ public final class InsaneAETestPlots {
         }
 
         @Override
-        public java.util.Optional<
-                jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry.CraftingCursor>
+        public Optional<
+                AcoBigIntegerJobRegistry.CraftingCursor>
                 exactTasks() {
-            return java.util.Optional.ofNullable(exactCursor);
+            return Optional.ofNullable(exactCursor);
         }
 
         @Override
@@ -3170,8 +3180,8 @@ public final class InsaneAETestPlots {
             Item output, long outputAmount) {
         // 19.2 で配列ではなく List を取るようになった。
         return PatternDetailsHelper.encodeProcessingPattern(
-                java.util.List.of(new GenericStack(AEItemKey.of(input), inputAmount)),
-                java.util.List.of(new GenericStack(AEItemKey.of(output), outputAmount)));
+                List.of(new GenericStack(AEItemKey.of(input), inputAmount)),
+                List.of(new GenericStack(AEItemKey.of(output), outputAmount)));
     }
 
     /**
@@ -3269,7 +3279,7 @@ public final class InsaneAETestPlots {
                         "部品を受け付けない: " + cable.supportsBuses(), cablePos);
 
                 var bus = helper.getPart(new BlockPos(3, 0, 0), Direction.NORTH,
-                        appeng.parts.storagebus.StorageBusPart.class);
+                        StorageBusPart.class);
                 helper.check(bus != null,
                         "ストレージバスが超次元ケーブルに貼れていない", new BlockPos(3, 0, 0));
                 helper.check(bus.isActive(),
@@ -3338,7 +3348,7 @@ public final class InsaneAETestPlots {
                         "部品を受け付けない: " + cable.supportsBuses(), cablePos);
 
                 var bus = helper.getPart(new BlockPos(3, 0, 0), Direction.NORTH,
-                        appeng.parts.storagebus.StorageBusPart.class);
+                        StorageBusPart.class);
                 helper.check(bus != null,
                         "ストレージバスが圧縮ケーブルに貼れていない", new BlockPos(3, 0, 0));
                 helper.check(bus.isActive(),

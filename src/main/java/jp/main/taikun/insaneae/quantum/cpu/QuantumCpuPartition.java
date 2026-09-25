@@ -11,6 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
 
 import java.math.BigInteger;
+import jp.main.taikun.insaneae.util.SaturatingMath;
 
 /**
  * Quantum CPU の中の<b>クラフト 1 本ぶんの区画</b>。AE2 のクラスタを 1 個持つ。
@@ -154,7 +155,7 @@ public final class QuantumCpuPartition implements QuantumCpuClusterOwner {
             return;
         }
         CraftingCpuClusterAccessor accessor = (CraftingCpuClusterAccessor) (Object) cluster;
-        accessor.insaneae$setStorage(saturate(allotment));
+        accessor.insaneae$setStorage(SaturatingMath.toLong(allotment));
         accessor.insaneae$setAccelerator((int) Math.min(threads, Integer.MAX_VALUE - 1));
         accessor.insaneae$setName(displayName());
     }
@@ -163,10 +164,6 @@ public final class QuantumCpuPartition implements QuantumCpuClusterOwner {
     Component displayName() {
         Component base = pool.displayName();
         return id <= 1 ? base : base.copy().append(" #" + id);
-    }
-
-    private static long saturate(BigInteger value) {
-        return value.bitLength() >= 64 ? Long.MAX_VALUE : value.longValueExact();
     }
 
     // -------------------------------------------------- QuantumCpuClusterOwner

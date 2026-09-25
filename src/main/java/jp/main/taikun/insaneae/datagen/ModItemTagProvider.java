@@ -12,6 +12,7 @@ import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
 
 import java.util.concurrent.CompletableFuture;
+import net.minecraft.world.level.block.Block;
 
 /**
  * この Mod のアイテムタグ。
@@ -33,7 +34,7 @@ public class ModItemTagProvider extends ItemTagsProvider {
     }
 
     public ModItemTagProvider(PackOutput output, CompletableFuture<HolderLookup.Provider> registries,
-            CompletableFuture<TagLookup<net.minecraft.world.level.block.Block>> blockTags,
+            CompletableFuture<TagLookup<Block>> blockTags,
             ExistingFileHelper existingFiles) {
         super(output, registries, blockTags, InsaneAE.MODID, existingFiles);
     }

@@ -6,6 +6,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 
 import java.util.function.Supplier;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * 「限界突破」クラフト協調処理ユニット (アクセラレータ) の階層。16× 〜 2G×。
@@ -111,7 +112,7 @@ public enum InsaneAcceleratorType implements ICraftingUnitType {
     }
 
     /** formed モデルの ID。ae2 名前空間に置く必要がある → {@link FormedModels}。 */
-    public net.minecraft.resources.ResourceLocation formedModel() {
+    public ResourceLocation formedModel() {
         return FormedModels.of(id + "_accelerator");
     }
 

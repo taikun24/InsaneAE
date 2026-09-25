@@ -7,6 +7,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import jp.main.taikun.insaneae.compat.AaeCompatCounters;
 
 /**
  * Advanced AE のクラフト CPU クラスタで、<b>クラフトストレージ容量が long から溢れない</b>ようにする。
@@ -66,7 +67,7 @@ public abstract class AdvCraftingCpuStorageMixin {
                             + "getStorageBytes()J"),
             require = 0)
     private long insaneae$saturateStorageBytes(@Coerce Object blockEntity) {
-        jp.main.taikun.insaneae.compat.AaeCompatCounters.storageSaturations++;
+        AaeCompatCounters.STORAGE_SATURATIONS.incrementAndGet();
         long bytes = insaneae$storageBytes(blockEntity);
         if (bytes <= 0) {
             return bytes;

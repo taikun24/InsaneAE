@@ -41,6 +41,7 @@ import com.mojang.logging.LogUtils;
 
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * 全レシピの生成元。手書き JSON は置かず、ここから {@code src/generated/resources} に出力する。
@@ -334,7 +335,7 @@ public class ModRecipeProvider extends RecipeProvider {
      * @param cleanId  色落としレシピの ID (ケーブルごとに分ける)
      */
     private static void cableColoring(RecipeOutput consumer,
-            java.util.function.Function<AEColor, ? extends ItemLike> cables,
+            Function<AEColor, ? extends ItemLike> cables,
             TagKey<Item> cableTag, String cleanId) {
         ItemLike fluix = cables.apply(AEColor.TRANSPARENT);
         for (AEColor color : AEColor.values()) {

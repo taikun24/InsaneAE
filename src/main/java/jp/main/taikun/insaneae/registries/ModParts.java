@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * ケーブルに貼れる版 (プレート)。
@@ -128,7 +129,7 @@ public final class ModParts {
     public static void register(IEventBus bus) {
         ITEMS.register(bus);
 
-        List<net.minecraft.resources.ResourceLocation> models = new ArrayList<>();
+        List<ResourceLocation> models = new ArrayList<>();
         models.addAll(InsaneInterfacePart.models());
         models.addAll(InsanePatternProviderPart.models());
         PartModels.registerModels(models);

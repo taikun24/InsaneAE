@@ -28,6 +28,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.math.BigInteger;
 import java.util.List;
+import jp.main.taikun.insaneae.util.SaturatingMath;
 
 /**
  * 16× 以上のクラフト協調処理ユニットを AE2 に受け入れさせ、合計スレッド数を <b>long で</b>数える。
@@ -79,17 +80,9 @@ public abstract class CraftingCPUClusterMixin
     @Unique
     private static final int INT_CAP = Integer.MAX_VALUE - 1;
 
-    /** AE2のクラフトCPU容量として公開できるlongの上限。 */
-    @Unique
-    private static final long STORAGE_CAP = Long.MAX_VALUE;
-
     /** 正確な容量計算へ使うBigIntegerのゼロ値。 */
     @Unique
     private static final BigInteger STORAGE_ZERO = BigInteger.ZERO;
-
-    /** 正確な容量計算へ使うBigIntegerのlong上限。 */
-    @Unique
-    private static final BigInteger STORAGE_MAX = BigInteger.valueOf(Long.MAX_VALUE);
 
     @Shadow
     private int accelerator;
@@ -176,7 +169,7 @@ public abstract class CraftingCPUClusterMixin
     @Inject(method = "getAvailableStorage", at = @At("HEAD"), cancellable = true, require = 0)
     private void insaneae$exposeSaturatedStorage(CallbackInfoReturnable<Long> cir) {
         // AE2のUI・CPU選択・既存ジョブへは、BigIntegerの正本から作った互換longだけを返す。
-        cir.setReturnValue(insaneae$saturatedStorage(insaneae$recountStorage()));
+        cir.setReturnValue(SaturatingMath.toLong(insaneae$recountStorage()));
     }
 
     /** 構成が確定した直後にも数え直し、元のlongフィールドが負値のまま残らないようにする。 */
@@ -297,7 +290,7 @@ public abstract class CraftingCPUClusterMixin
             if (insaneae$countedStorageBlocks != owner.cpuRevision()) {
                 insaneae$exactStorage = owner.cpuExactStorage();
                 insaneae$countedStorageBlocks = owner.cpuRevision();
-                storage = insaneae$saturatedStorage(insaneae$exactStorage);
+                storage = SaturatingMath.toLong(insaneae$exactStorage);
             }
             return insaneae$exactStorage;
         }
@@ -326,7 +319,7 @@ public abstract class CraftingCPUClusterMixin
         insaneae$exactStorage = total;
         insaneae$countedStorageBlocks = blocks;
         // AE2本体のlongフィールドも常に正の互換値へ整え、他Modの直接参照を壊さない。
-        storage = insaneae$saturatedStorage(total);
+        storage = SaturatingMath.toLong(total);
         return total;
     }
 
@@ -339,15 +332,5 @@ public abstract class CraftingCPUClusterMixin
     @Unique
     private QuantumCpuClusterOwner insaneae$quantumOwner() {
         return ((QuantumOwnedCluster) (Object) this).insaneae$getOwner();
-    }
-
-    /** BigInteger容量をAE2のlong境界へ変換する。正確値は呼び出し元で保持する。 */
-    @Unique
-    private static long insaneae$saturatedStorage(BigInteger exactStorage) {
-        // longの範囲内なら無損失で戻し、超過時だけAE2互換上限へ丸める。
-        if (exactStorage.compareTo(STORAGE_MAX) > 0) {
-            return STORAGE_CAP;
-        }
-        return exactStorage.longValueExact();
     }
 }

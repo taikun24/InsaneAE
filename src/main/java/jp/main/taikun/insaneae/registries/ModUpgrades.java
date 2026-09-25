@@ -25,6 +25,8 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import jp.main.taikun.insaneae.integration.appmek.AppMekCells;
+import net.neoforged.fml.ModList;
 
 /**
  * 加速カード (アップグレードカード) の登録。
@@ -121,13 +123,13 @@ public class ModUpgrades {
             addPortableEnergyCards(cell.get(), portables);
         }
         // 化学物質セル (Applied Mekanistics 導入時のみ)。appmek が自分のセルにしている登録と同じ。
-        if (net.neoforged.fml.ModList.get().isLoaded(InsaneAE.APPMEK_MODID)) {
+        if (ModList.get().isLoaded(InsaneAE.APPMEK_MODID)) {
             for (DeferredHolder<Item, Item> cell :
-                    jp.main.taikun.insaneae.integration.appmek.AppMekCells.CHEMICAL_CELLS.values()) {
+                    AppMekCells.CHEMICAL_CELLS.values()) {
                 addFluidCellCards(cell.get(), cells);
             }
             for (DeferredHolder<Item, Item> cell :
-                    jp.main.taikun.insaneae.integration.appmek.AppMekCells.PORTABLE_CHEMICAL_CELLS.values()) {
+                    AppMekCells.PORTABLE_CHEMICAL_CELLS.values()) {
                 addFluidCellCards(cell.get(), portables);
                 addPortableEnergyCards(cell.get(), portables);
             }
@@ -195,7 +197,7 @@ public class ModUpgrades {
     }
 
     private static void registerCompatMachines(String modId, List<String> itemIds) {
-        if (!net.neoforged.fml.ModList.get().isLoaded(modId)) {
+        if (!ModList.get().isLoaded(modId)) {
             return;
         }
         for (String itemId : itemIds) {

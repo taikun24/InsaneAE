@@ -1,5 +1,7 @@
 package jp.main.taikun.insaneae.compat;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
  * Advanced AE 向けの compat Mixin が<b>実際に走ったか</b>を数える。
  *
@@ -25,14 +27,17 @@ package jp.main.taikun.insaneae.compat;
  *
  * <p>そこでハンドラ自身に数えさせ、<b>実際のクラフトを流したあとで 0 でないこと</b>を
  * 検査する。走った証拠はこれしかない。</p>
+ *
+ * <p>{@code volatile long} の {@code ++} は読んで足して書く 3 手なので、クラフト計算スレッドと
+ * サーバースレッドから同時に呼ばれると取りこぼす。{@link AtomicLong} にしてある。</p>
  */
 public final class AaeCompatCounters {
 
     /** {@code AdvCraftingCpuStorageMixin} の容量の飽和が走った回数。 */
-    public static volatile long storageSaturations;
+    public static final AtomicLong STORAGE_SATURATIONS = new AtomicLong();
 
     /** {@code AdvCraftingCpuBudgetMixin} の 1 tick 予算計算が走った回数。 */
-    public static volatile long budgetCalculations;
+    public static final AtomicLong BUDGET_CALCULATIONS = new AtomicLong();
 
     private AaeCompatCounters() {
     }

@@ -33,6 +33,7 @@ import net.neoforged.fml.ModList;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.joml.Vector3f;
+import jp.main.taikun.insaneae.integration.appmek.AppMekCells;
 
 /**
  * クライアント専用のセットアップ。
@@ -138,9 +139,9 @@ public final class InsaneAEClient {
         ModCells.PORTABLE_ITEM_CELLS.values().forEach(cell -> event.register(portable, cell.get()));
         ModCells.PORTABLE_FLUID_CELLS.values().forEach(cell -> event.register(portable, cell.get()));
         if (ModList.get().isLoaded(InsaneAE.APPMEK_MODID)) {
-            jp.main.taikun.insaneae.integration.appmek.AppMekCells.CHEMICAL_CELLS.values()
+            AppMekCells.CHEMICAL_CELLS.values()
                     .forEach(cell -> event.register(basic, cell.get()));
-            jp.main.taikun.insaneae.integration.appmek.AppMekCells.PORTABLE_CHEMICAL_CELLS.values()
+            AppMekCells.PORTABLE_CHEMICAL_CELLS.values()
                     .forEach(cell -> event.register(portable, cell.get()));
         }
     }

@@ -15,6 +15,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import jp.main.taikun.insaneae.util.SaturatingMath;
 
 /**
  * {@link IHugeCellItem} なセルの容量を long で扱えるようにする。
@@ -82,9 +83,10 @@ public abstract class BasicCellInventoryMixin {
         }
         long amountPerByte = cellType.getKeyType().getAmountPerByte();
         long freeBytes = getFreeBytes();
-        long remaining = freeBytes > Long.MAX_VALUE / amountPerByte
-                ? Long.MAX_VALUE
-                : freeBytes * amountPerByte + getUnusedItemCount();
+        // 掛け算だけでなく端数 (getUnusedItemCount) の足し算も溢れうる。
+        // 溢れて負になると下の max で 0 になり、空いているのに満杯と表示される。
+        long remaining = SaturatingMath.add(
+                SaturatingMath.multiply(freeBytes, amountPerByte), getUnusedItemCount());
         cir.setReturnValue(Math.max(remaining, 0));
     }
 

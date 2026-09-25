@@ -20,6 +20,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import appeng.crafting.CraftingCalculation;
 
 /**
  * クラフト計算で「同じパターンを 1 回ずつ」繰り返している部分をまとめて処理させる。
@@ -47,7 +48,7 @@ public abstract class CraftingTreeNodeMixin {
 
     @Shadow
     @Final
-    private appeng.crafting.CraftingCalculation job;
+    private CraftingCalculation job;
 
     /** ループが「あと何個必要としているか」。{@link #insaneae$trackRemaining} が追いかける。 */
     @Unique

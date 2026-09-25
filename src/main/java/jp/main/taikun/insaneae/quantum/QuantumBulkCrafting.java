@@ -22,6 +22,10 @@ import java.math.BigInteger;
 import java.util.Optional;
 import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Set;
+import jp.main.taikun.insaneae.util.SaturatingMath;
 
 /**
  * 同じパターンを 1 tick に何度も処理するときの高速経路。
@@ -157,8 +161,8 @@ public final class QuantumBulkCrafting {
         // 段数のぶんだけ tick を食っていた (実機で「完走はするが遅い」の原因)。
         // 往復の回数ではなく<b>窓の総数</b>で頭打ちにするので、1 tick の重さは変わらない。
         // この呼び出しで触ったプロバイダ。周回の合間に完成品を清算するために覚えておく。
-        java.util.Set<IBulkCraftingProvider> touched =
-                java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        Set<IBulkCraftingProvider> touched =
+                Collections.newSetFromMap(new IdentityHashMap<>());
 
         while (progressed && windows.remaining() > 0) {
             progressed = false;
@@ -404,7 +408,7 @@ public final class QuantumBulkCrafting {
                 if (networkStorage != null && actionSource != null) {
                     long networkAvailable = networkStorage.extract(
                             template.key(), Long.MAX_VALUE, Actionable.SIMULATE, actionSource);
-                    available = saturatedAdd(available, networkAvailable);
+                    available = SaturatingMath.add(available, networkAvailable);
                 }
                 long candidate = available / template.amount();
                 if (candidate > 0) {
@@ -443,7 +447,7 @@ public final class QuantumBulkCrafting {
                     }
                     long available = inventory.extract(template.key(), Long.MAX_VALUE, Actionable.SIMULATE);
                     if (networkStorage != null && actionSource != null) {
-                        available = saturatedAdd(available, networkStorage.extract(
+                        available = SaturatingMath.add(available, networkStorage.extract(
                                 template.key(), Long.MAX_VALUE, Actionable.SIMULATE, actionSource));
                     }
                     if (available / template.amount() > 0) {
@@ -618,14 +622,6 @@ public final class QuantumBulkCrafting {
         long inventory = view.getInventory().extract(key, Long.MAX_VALUE, Actionable.SIMULATE);
         long waitingFor = view.getWaitingFor().extract(key, Long.MAX_VALUE, Actionable.SIMULATE);
         return Math.max(Math.max(inventory, 0L), Math.max(waitingFor, 0L));
-    }
-
-    /** 加算結果を負数へ折り返さず、窓の上限Long.MAX_VALUEへ飽和させる。 */
-    private static long saturatedAdd(long left, long right) {
-        if (right <= 0L) {
-            return left;
-        }
-        return left > Long.MAX_VALUE - right ? Long.MAX_VALUE : left + right;
     }
 
     /** KeyCounterへ追加する前に個別キーのlong境界を検査する。 */

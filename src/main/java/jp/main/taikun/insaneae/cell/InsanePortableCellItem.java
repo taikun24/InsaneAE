@@ -8,6 +8,8 @@ import appeng.menu.me.common.MEStorageMenu;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
+import jp.main.taikun.insaneae.util.TieredNames;
+import net.minecraft.network.chat.Component;
 
 /**
  * 2 GiB を超える容量を持つポータブルセル。
@@ -36,8 +38,8 @@ public class InsanePortableCellItem extends PortableCellItem implements IHugeCel
 
     /** 表示名は階層ごとの lang キーではなく「書式キー + 階層ラベル」で作る。 */
     @Override
-    public net.minecraft.network.chat.Component getName(ItemStack stack) {
-        return jp.main.taikun.insaneae.util.TieredNames.of(nameKey, tierLabel);
+    public Component getName(ItemStack stack) {
+        return TieredNames.of(nameKey, tierLabel);
     }
 
     @Override

@@ -171,7 +171,7 @@ public class ModBlockStateProvider extends BlockStateProvider {
      * <p>formed 側は実ファイルを出さない。{@link jp.main.taikun.insaneae.crafting.FormedModels}
      * のとおり ae2 名前空間の組み込みモデルに差し替わるので、JSON は読まれない。</p>
      */
-    private void craftingUnit(net.minecraft.world.level.block.Block block, String base,
+    private void craftingUnit(Block block, String base,
             ResourceLocation texture, ResourceLocation formedModel) {
         ModelFile unformed = models().cubeAll(base, texture);
 
@@ -183,7 +183,7 @@ public class ModBlockStateProvider extends BlockStateProvider {
     }
 
     /** formedの前後で同じモデルを使う、通常クラフトユニット用のblockstateを生成する。 */
-    private void craftingUnitWithSingleModel(net.minecraft.world.level.block.Block block, ModelFile model) {
+    private void craftingUnitWithSingleModel(Block block, ModelFile model) {
         getVariantBuilder(block)
                 .partialState().with(AbstractCraftingUnitBlock.FORMED, false)
                 .modelForState().modelFile(model).addModel()

@@ -11,6 +11,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import jp.main.taikun.insaneae.integration.appmek.AppMekCells;
 
 /**
  * このMod が公開する capability の登録。
@@ -87,7 +88,7 @@ public final class ModCapabilities {
         ModCells.PORTABLE_ITEM_CELLS.values().forEach(cell -> registerPoweredItem(event, cell.get()));
         ModCells.PORTABLE_FLUID_CELLS.values().forEach(cell -> registerPoweredItem(event, cell.get()));
         if (ModList.get().isLoaded(InsaneAE.APPMEK_MODID)) {
-            jp.main.taikun.insaneae.integration.appmek.AppMekCells.PORTABLE_CHEMICAL_CELLS.values()
+            AppMekCells.PORTABLE_CHEMICAL_CELLS.values()
                     .forEach(cell -> registerPoweredItem(event, cell.get()));
         }
     }

@@ -65,7 +65,7 @@ public abstract class CraftingCpuLogicMixin {
     CraftingCPUCluster cluster;
 
     @Shadow
-    public abstract appeng.crafting.inv.ListCraftingInventory getInventory();
+    public abstract ListCraftingInventory getInventory();
 
     /**
      * まとめ処理の帳簿。3 つの注入で共有する。
