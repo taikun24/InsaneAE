@@ -7,6 +7,8 @@ import net.minecraft.world.item.Items;
 
 import java.math.BigInteger;
 import java.util.function.Supplier;
+import java.util.Locale;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * CrazyAE 相当の「限界突破」クラフトストレージ階層 (1G 〜 8E)。
@@ -77,7 +79,7 @@ public enum InsaneCraftingUnitType implements ExactCraftingUnitType {
 
     /** 表示名に差し込む階層ラベル。例: "1G"。lang は書式キー 1 つで済ませている。 */
     public String label() {
-        return id.toUpperCase(java.util.Locale.ROOT);
+        return id.toUpperCase(Locale.ROOT);
     }
 
     /** ブロック／アイテムの登録名。例: "1g_crafting_storage"。 */
@@ -91,7 +93,7 @@ public enum InsaneCraftingUnitType implements ExactCraftingUnitType {
     }
 
     /** formed モデルの ID。ae2 名前空間に置く必要がある → {@link FormedModels}。 */
-    public net.minecraft.resources.ResourceLocation formedModel() {
+    public ResourceLocation formedModel() {
         return FormedModels.of(id + "_storage");
     }
 

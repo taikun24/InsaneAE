@@ -142,11 +142,11 @@ public final class InsaneCableSprites {
 
     private static Material ae2(String path) {
         return new Material(TextureAtlas.LOCATION_BLOCKS,
-                new ResourceLocation("ae2", path));
+                ResourceLocation.fromNamespaceAndPath("ae2", path));
     }
 
     private static Material ours(Kind kind, String name) {
-        return new Material(TextureAtlas.LOCATION_BLOCKS, new ResourceLocation(
+        return new Material(TextureAtlas.LOCATION_BLOCKS, ResourceLocation.fromNamespaceAndPath(
                 InsaneAE.MODID, "part/cable/" + kind.directory() + "/" + name));
     }
 

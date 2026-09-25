@@ -8,6 +8,8 @@ import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import jp.main.taikun.insaneae.mixin.ExecutingCraftingJobAccessor;
 import jp.main.taikun.insaneae.mixin.TaskProgressAccessor;
+import appeng.api.networking.security.IActionSource;
+import jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership;
 
 /**
  * AE2 本体のクラフト CPU 用の {@link CraftingJobView}。
@@ -18,7 +20,7 @@ import jp.main.taikun.insaneae.mixin.TaskProgressAccessor;
 public final class Ae2CraftingJobView implements CraftingJobView {
 
     private final ExecutingCraftingJobAccessor job;
-    private final appeng.crafting.execution.ExecutingCraftingJob exactJob;
+    private final ExecutingCraftingJob exactJob;
     private final ListCraftingInventory inventory;
     private final CraftingCPUCluster cluster;
 
@@ -58,7 +60,7 @@ public final class Ae2CraftingJobView implements CraftingJobView {
 
     @Override
     public boolean isOwnedByAcoExactExecution() {
-        return jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership.isAcoOwned(exactJob);
+        return AcoExactJobOwnership.isAcoOwned(exactJob);
     }
 
     @Override
@@ -74,7 +76,7 @@ public final class Ae2CraftingJobView implements CraftingJobView {
     }
 
     @Override
-    public appeng.api.networking.security.IActionSource getActionSource() {
+    public IActionSource getActionSource() {
         return cluster.getSrc();
     }
 

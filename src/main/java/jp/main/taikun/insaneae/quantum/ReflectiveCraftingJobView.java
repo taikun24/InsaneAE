@@ -9,6 +9,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership;
 
 /**
  * <b>AE2 のクラフト CPU を複製したクラス</b>向けの {@link CraftingJobView}。
@@ -74,7 +75,7 @@ public final class ReflectiveCraftingJobView implements CraftingJobView {
 
     @Override
     public boolean isOwnedByAcoExactExecution() {
-        return jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership.isAcoOwned(job);
+        return AcoExactJobOwnership.isAcoOwned(job);
     }
 
     @Override

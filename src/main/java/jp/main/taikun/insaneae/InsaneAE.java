@@ -1,6 +1,8 @@
 package jp.main.taikun.insaneae;
 
+import appeng.api.storage.StorageCells;
 import com.mojang.logging.LogUtils;
+import jp.main.taikun.insaneae.cell.InsaneCreativeCellHandler;
 import jp.main.taikun.insaneae.client.InsaneAEClient;
 import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.datagen.ModBlockLootProvider;
@@ -8,15 +10,8 @@ import jp.main.taikun.insaneae.datagen.ModBlockStateProvider;
 import jp.main.taikun.insaneae.datagen.ModItemModelProvider;
 import jp.main.taikun.insaneae.datagen.ModItemTagProvider;
 import jp.main.taikun.insaneae.datagen.ModRecipeProvider;
-import net.minecraft.data.DataGenerator;
-import net.minecraft.data.PackOutput;
-import net.minecraft.data.loot.LootTableProvider;
-import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
-import net.minecraftforge.common.data.ExistingFileHelper;
-import net.minecraftforge.data.event.GatherDataEvent;
-
-import java.util.List;
-import java.util.Set;
+import jp.main.taikun.insaneae.integration.aco.OptionalAcoBigIntegerIntegration;
+import jp.main.taikun.insaneae.integration.appmek.AppMekCells;
 import jp.main.taikun.insaneae.registries.ModBlockEntities;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModCells;
@@ -25,10 +20,17 @@ import jp.main.taikun.insaneae.registries.ModItems;
 import jp.main.taikun.insaneae.registries.ModMenus;
 import jp.main.taikun.insaneae.registries.ModParts;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
+import jp.main.taikun.insaneae.testplots.InsaneAETestPlots;
+import net.minecraft.data.DataGenerator;
+import net.minecraft.data.PackOutput;
+import net.minecraft.data.loot.LootTableProvider;
+import net.minecraft.data.tags.TagsProvider;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.data.ExistingFileHelper;
+import net.minecraftforge.data.event.GatherDataEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -36,29 +38,32 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.slf4j.Logger;
 
-// The value here should match an entry in the META-INF/mods.toml file
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+
 @Mod(InsaneAE.MODID)
 public class InsaneAE {
 
-    // Define mod id in a common place for everything to reference
+    /** {@code META-INF/mods.toml} の modId と一致させること。 */
     public static final String MODID = "insaneae";
     /** 任意依存: Applied Mekanistics。導入時のみ化学物質セルを追加する。 */
     public static final String APPMEK_MODID = "appmek";
-    // Directly reference a slf4j logger
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public InsaneAE(FMLJavaModLoadingContext context) {
         IEventBus bus = context.getModEventBus();
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, InsaneAEConfig.SPEC);
+        context.registerConfig(ModConfig.Type.COMMON, InsaneAEConfig.SPEC);
         ModBlocks.register(bus);
         ModItems.register(bus);
         // ケーブルに貼る版。部品のモデル申告が凍結前に済む必要があるのでここで。
         ModParts.register(bus);
         // appmek 未導入の環境では AppMekCells をロードしてはいけないので、
         // クラス参照ごと分岐の内側に閉じ込める (別クラスなので条件が false ならロードされない)。
+        // import はコンパイル時だけのものなので、import しても実行前にロードされることはない。
         if (ModList.get().isLoaded(APPMEK_MODID)) {
             LOGGER.info("InsaneAE: Applied Mekanistics detected, adding chemical cells.");
-            jp.main.taikun.insaneae.integration.appmek.AppMekCells.register();
+            AppMekCells.register();
         }
         ModCells.register(bus);
         ModUpgrades.register(bus);
@@ -89,8 +94,8 @@ public class InsaneAE {
         // タグはレシピより先に (レシピがタグを材料に使うため、生成の順を揃えておく)。
         generator.addProvider(event.includeServer(), new ModItemTagProvider(output,
                 event.getLookupProvider(),
-                java.util.concurrent.CompletableFuture.completedFuture(
-                        net.minecraft.data.tags.TagsProvider.TagLookup.empty()),
+                CompletableFuture.completedFuture(
+                        TagsProvider.TagLookup.empty()),
                 existingFiles));
         generator.addProvider(event.includeServer(), new ModRecipeProvider(output));
         generator.addProvider(event.includeServer(), new LootTableProvider(output, Set.of(),
@@ -106,18 +111,18 @@ public class InsaneAE {
         event.enqueueWork(ModBlockEntities::bindBlockEntities);
         // 強化クリエイティブセルを ME ドライブ等に認識させる。
         // 判定は自前のアイテムだけなので AE2 側のハンドラとの登録順は問わない。
-        event.enqueueWork(() -> appeng.api.storage.StorageCells.addCellHandler(
-                jp.main.taikun.insaneae.cell.InsaneCreativeCellHandler.INSTANCE));
+        event.enqueueWork(() -> StorageCells.addCellHandler(
+                InsaneCreativeCellHandler.INSTANCE));
         // 加速カードを AE2 の対応機械に登録する。
         event.enqueueWork(ModUpgrades::registerUpgrades);
         // ACO へ「BigInteger 計画を受け取る外部 CPU アドオン」として名乗る。
         event.enqueueWork(
-                jp.main.taikun.insaneae.integration.aco.OptionalAcoBigIntegerIntegration
+                OptionalAcoBigIntegerIntegration
                         ::registerBigIntegerPlanConsumer);
         // 検証用のテストプロット。AE2 のテスト基盤が有効なときだけ載せる
         // (`./gradlew runGameTestServer`)。通常のプレイでは何も登録されない。
         if (Boolean.getBoolean("appeng.tests")) {
-            event.enqueueWork(jp.main.taikun.insaneae.testplots.InsaneAETestPlots::register);
+            event.enqueueWork(InsaneAETestPlots::register);
         }
         LOGGER.info("InsaneAE: {} crafting storage tiers registered.", ModBlocks.CRAFTING_STORAGE.size());
     }

@@ -20,6 +20,9 @@ import jp.main.taikun.insaneae.quantum.batch.QuantumBatchReceipts;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * ACO の craftingtable batch を Quantum CPU で実行する本体。
@@ -61,12 +64,12 @@ public final class QuantumCpuBatchExecutor {
     @Nullable
     private static final Method CAPABILITIES_PEEK = findCapabilitiesPeek();
     /** 一度 WARN で出した拒否理由。同じものを繰り返さないため。 */
-    private static final java.util.Set<String> LOGGED_REFUSALS =
-            java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private static final Set<String> LOGGED_REFUSALS =
+            ConcurrentHashMap.newKeySet();
 
     /** 最初の 1 件を受理したときだけ INFO を出す。連携が生きている証拠になる。 */
-    private static final java.util.concurrent.atomic.AtomicBoolean FIRST_ACCEPT =
-            new java.util.concurrent.atomic.AtomicBoolean();
+    private static final AtomicBoolean FIRST_ACCEPT =
+            new AtomicBoolean();
 
     private QuantumCpuBatchExecutor() {
     }

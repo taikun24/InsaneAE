@@ -12,6 +12,7 @@ import net.minecraft.world.item.Item;
 import net.minecraftforge.common.data.ExistingFileHelper;
 
 import java.util.concurrent.CompletableFuture;
+import net.minecraft.world.level.block.Block;
 
 /**
  * この Mod のアイテムタグ。
@@ -29,11 +30,11 @@ public class ModItemTagProvider extends ItemTagsProvider {
 
     private static TagKey<Item> tag(String name) {
         return TagKey.create(Registries.ITEM,
-                new ResourceLocation(InsaneAE.MODID, name));
+                ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, name));
     }
 
     public ModItemTagProvider(PackOutput output, CompletableFuture<HolderLookup.Provider> registries,
-            CompletableFuture<TagLookup<net.minecraft.world.level.block.Block>> blockTags,
+            CompletableFuture<TagLookup<Block>> blockTags,
             ExistingFileHelper existingFiles) {
         super(output, registries, blockTags, InsaneAE.MODID, existingFiles);
     }

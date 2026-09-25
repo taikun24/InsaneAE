@@ -36,6 +36,7 @@ import com.mojang.logging.LogUtils;
 
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * 全レシピの生成元。手書き JSON は置かず、ここから {@code src/generated/resources} に出力する。
@@ -60,7 +61,7 @@ public class ModRecipeProvider extends RecipeProvider {
      * AE2 自身がケーブルの色落としに使っているものをそのまま借りる。
      */
     private static final TagKey<Item> CAN_REMOVE_COLOR = TagKey.create(Registries.ITEM,
-            new ResourceLocation("ae2", "can_remove_color"));
+            ResourceLocation.fromNamespaceAndPath("ae2", "can_remove_color"));
 
     /**
      * その色の染料タグ。共通タグの名前空間は 1.20.1 では {@code forge}
@@ -68,7 +69,7 @@ public class ModRecipeProvider extends RecipeProvider {
      */
     private static TagKey<Item> dyeTag(AEColor color) {
         return TagKey.create(Registries.ITEM,
-                new ResourceLocation("forge", "dyes/" + color.dye.getName()));
+                ResourceLocation.fromNamespaceAndPath("forge", "dyes/" + color.dye.getName()));
     }
 
     public ModRecipeProvider(PackOutput output) {
@@ -323,7 +324,7 @@ public class ModRecipeProvider extends RecipeProvider {
      * @param cleanId  色落としレシピの ID (ケーブルごとに分ける)
      */
     private static void cableColoring(Consumer<FinishedRecipe> consumer,
-            java.util.function.Function<AEColor, ? extends ItemLike> cables,
+            Function<AEColor, ? extends ItemLike> cables,
             TagKey<Item> cableTag, String cleanId) {
         ItemLike fluix = cables.apply(AEColor.TRANSPARENT);
         for (AEColor color : AEColor.values()) {
@@ -344,7 +345,7 @@ public class ModRecipeProvider extends RecipeProvider {
                 .requires(DifferenceIngredient.of(Ingredient.of(cableTag), Ingredient.of(fluix)))
                 .requires(CAN_REMOVE_COLOR)
                 .unlockedBy("has_component", has(fluix))
-                .save(consumer, new ResourceLocation(InsaneAE.MODID, cleanId));
+                .save(consumer, ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, cleanId));
     }
 
     /** {@link #shaped} の、結果を複数個出す版。 */

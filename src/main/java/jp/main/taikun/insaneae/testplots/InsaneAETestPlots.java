@@ -111,6 +111,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import appeng.parts.storagebus.StorageBusPart;
 
 /**
  * AE2 のテストプロットに相乗りする検証。{@code appeng.tests=true} のときだけ登録する。
@@ -1265,13 +1266,11 @@ public final class InsaneAETestPlots {
             // 足りない (Mixin はメソッドを混ぜてから injector を配線するので、
             // 配線に失敗してもメソッドだけは生える)。
             sequence.thenExecute(() -> {
-                helper.check(AaeCompatCounters
-                                .storageSaturations > 0,
+                helper.check(AaeCompatCounters.STORAGE_SATURATIONS.get() > 0,
                         "AdvCraftingCpuStorageMixin が一度も走っていない "
                                 + "(@Redirect の配線に失敗している可能性 — ログの "
                                 + "InvalidInjectionException を確認すること)");
-                helper.check(AaeCompatCounters
-                                .budgetCalculations > 0,
+                helper.check(AaeCompatCounters.BUDGET_CALCULATIONS.get() > 0,
                         "AdvCraftingCpuBudgetMixin が一度も走っていない (同上)");
             });
             sequence.thenSucceed();
@@ -1560,7 +1559,7 @@ public final class InsaneAETestPlots {
                             : new ItemStack(Items.OAK_PLANKS);
                 }
                 var chestRecipe = helper.getLevel().getRecipeManager()
-                        .byKey(new ResourceLocation("minecraft", "chest"))
+                        .byKey(ResourceLocation.fromNamespaceAndPath("minecraft", "chest"))
                         .orElseThrow(() -> new GameTestAssertException("チェストのレシピが無い"));
                 cpu.getLogic().getPatternInv().addItems(
                         PatternDetailsHelper.encodeCraftingPattern(
@@ -1723,7 +1722,7 @@ public final class InsaneAETestPlots {
                             : new ItemStack(Items.OAK_PLANKS);
                 }
                 var chestRecipe = helper.getLevel().getRecipeManager()
-                        .byKey(new ResourceLocation("minecraft", "chest"))
+                        .byKey(ResourceLocation.fromNamespaceAndPath("minecraft", "chest"))
                         .orElseThrow(() -> new GameTestAssertException("チェストのレシピが無い"));
                 cpu.getLogic().getPatternInv().addItems(
                         PatternDetailsHelper.encodeCraftingPattern(
@@ -3258,7 +3257,7 @@ public final class InsaneAETestPlots {
                         "部品を受け付けない: " + cable.supportsBuses(), cablePos);
 
                 var bus = helper.getPart(new BlockPos(3, 0, 0), Direction.NORTH,
-                        appeng.parts.storagebus.StorageBusPart.class);
+                        StorageBusPart.class);
                 helper.check(bus != null,
                         "ストレージバスが超次元ケーブルに貼れていない", new BlockPos(3, 0, 0));
                 helper.check(bus.isActive(),
@@ -3327,7 +3326,7 @@ public final class InsaneAETestPlots {
                         "部品を受け付けない: " + cable.supportsBuses(), cablePos);
 
                 var bus = helper.getPart(new BlockPos(3, 0, 0), Direction.NORTH,
-                        appeng.parts.storagebus.StorageBusPart.class);
+                        StorageBusPart.class);
                 helper.check(bus != null,
                         "ストレージバスが圧縮ケーブルに貼れていない", new BlockPos(3, 0, 0));
                 helper.check(bus.isActive(),

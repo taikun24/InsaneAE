@@ -7,6 +7,7 @@ import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.util.Map;
 import org.slf4j.Logger;
+import java.util.Optional;
 
 /**
  * ACO (AE2 Crafting Optimizer) の公開 BigInteger 台帳 API を呼ぶ任意連携アダプター。
@@ -58,7 +59,7 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
     }
 
     /** ACO APIが無い、古い、または無効設定ならemptyを返す。 */
-    static java.util.Optional<PendingOutputLedger> tryCreate() {
+    static Optional<PendingOutputLedger> tryCreate() {
         try {
             Class<?> api = Class.forName(AcoClassNames.BIG_CRAFTING_ENGINE_API);
             int apiVersion = api.getField("API_VERSION").getInt(null);
@@ -68,16 +69,16 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
                         "InsaneAE: ACO BigInteger API v{} / amount ledger v{} is too old; using local ledger",
                         apiVersion,
                         ledgerVersion);
-                return java.util.Optional.empty();
+                return Optional.empty();
             }
             if (!(Boolean) api.getMethod("isEnabled").invoke(null)) {
                 LOGGER.info("InsaneAE: ACO BigInteger backend is disabled; using local ledger");
-                return java.util.Optional.empty();
+                return Optional.empty();
             }
 
             Object ledger = api.getMethod("createAeKeyAmountLedger").invoke(null);
             Class<?> type = Class.forName(LEDGER_CLASS);
-            return java.util.Optional.of(new AcoBigIntegerOutputLedger(
+            return Optional.of(new AcoBigIntegerOutputLedger(
                     ledger,
                     findKeyAmountMethod(type, "add", BigInteger.class),
                     findKeyAmountMethod(type, "drain", long.class),
@@ -86,7 +87,7 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
                     type.getMethod("clear")));
         } catch (Throwable failure) {
             LOGGER.warn("InsaneAE: ACO BigInteger API is unavailable; using local ledger", failure);
-            return java.util.Optional.empty();
+            return Optional.empty();
         }
     }
 

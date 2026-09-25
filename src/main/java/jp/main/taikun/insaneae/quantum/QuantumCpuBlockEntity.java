@@ -56,6 +56,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.EnumSet;
 import java.util.List;
 import java.math.BigInteger;
+import java.util.Map;
 
 /**
  * Quantum CPU — パターンプロバイダと分子組立装置を 1 ブロックに合体させたもの。
@@ -236,7 +237,7 @@ public class QuantumCpuBlockEntity extends AENetworkBlockEntity
     }
 
     /** 完成品待ちの現在の中身 (コピー)。ゲームテスト用。 */
-    public java.util.Map<AEKey, BigInteger> getPendingOutputs() {
+    public Map<AEKey, BigInteger> getPendingOutputs() {
         return pendingOutputs.snapshot();
     }
 

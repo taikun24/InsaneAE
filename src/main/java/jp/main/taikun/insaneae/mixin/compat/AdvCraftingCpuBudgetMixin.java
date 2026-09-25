@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import jp.main.taikun.insaneae.compat.AaeCompatCounters;
 
 /**
  * Advanced AE のクラフト CPU にも、<b>1 tick 予算の long 化</b>を入れる。
@@ -67,7 +68,7 @@ public abstract class AdvCraftingCpuBudgetMixin {
                             + "getCoProcessors()I"),
             require = 0)
     private int insaneae$tickBudget(@Coerce Object cluster) {
-        jp.main.taikun.insaneae.compat.AaeCompatCounters.budgetCalculations++;
+        AaeCompatCounters.BUDGET_CALCULATIONS.incrementAndGet();
         insaneae$budgeted = true;
 
         long coProcessors = insaneae$coProcessors(cluster);

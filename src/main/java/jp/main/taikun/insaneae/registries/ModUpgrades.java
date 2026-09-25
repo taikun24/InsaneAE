@@ -23,6 +23,9 @@ import net.minecraftforge.registries.RegistryObject;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import jp.main.taikun.insaneae.integration.appmek.AppMekCells;
+import net.minecraft.world.item.Items;
+import net.minecraftforge.fml.ModList;
 
 /**
  * 加速カード (アップグレードカード) の登録。
@@ -120,12 +123,12 @@ public class ModUpgrades {
     }
 
     private static void registerCompatMachines(String modId, List<String> itemIds) {
-        if (!net.minecraftforge.fml.ModList.get().isLoaded(modId)) {
+        if (!ModList.get().isLoaded(modId)) {
             return;
         }
         for (String itemId : itemIds) {
-            Item machine = ForgeRegistries.ITEMS.getValue(new ResourceLocation(modId, itemId));
-            if (machine != null && machine != net.minecraft.world.item.Items.AIR) {
+            Item machine = ForgeRegistries.ITEMS.getValue(ResourceLocation.fromNamespaceAndPath(modId, itemId));
+            if (machine != null && machine != Items.AIR) {
                 for (InsaneSpeedCardType type : InsaneSpeedCardType.values()) {
                     Upgrades.add(type.item(), machine, MAX_INSTALLED,
                             "insaneae.upgrade_group." + modId);
@@ -167,13 +170,13 @@ public class ModUpgrades {
             addPortableEnergyCards(cell.get(), portables);
         }
         // 化学物質セル (Applied Mekanistics 導入時のみ)。appmek が自分のセルにしている登録と同じ。
-        if (net.minecraftforge.fml.ModList.get().isLoaded(InsaneAE.APPMEK_MODID)) {
+        if (ModList.get().isLoaded(InsaneAE.APPMEK_MODID)) {
             for (RegistryObject<Item> cell :
-                    jp.main.taikun.insaneae.integration.appmek.AppMekCells.CHEMICAL_CELLS.values()) {
+                    AppMekCells.CHEMICAL_CELLS.values()) {
                 addFluidCellCards(cell.get(), cells);
             }
             for (RegistryObject<Item> cell :
-                    jp.main.taikun.insaneae.integration.appmek.AppMekCells.PORTABLE_CHEMICAL_CELLS.values()) {
+                    AppMekCells.PORTABLE_CHEMICAL_CELLS.values()) {
                 addFluidCellCards(cell.get(), portables);
                 addPortableEnergyCards(cell.get(), portables);
             }

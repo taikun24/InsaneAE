@@ -6,6 +6,7 @@ import appeng.api.upgrades.IUpgradeableObject;
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import jp.main.taikun.insaneae.util.SaturatingMath;
 
 /**
  * 取り付けられている加速カードから機械の速度倍率を求めるヘルパー。Mixin から呼ばれる。
@@ -110,9 +111,6 @@ public final class SpeedBoost {
 
     /** long 版。 */
     public static long saturatingMultiply(long value, int multiplier) {
-        if (multiplier != 0 && value > Long.MAX_VALUE / multiplier) {
-            return Long.MAX_VALUE;
-        }
-        return value * multiplier;
+        return SaturatingMath.multiply(value, multiplier);
     }
 }

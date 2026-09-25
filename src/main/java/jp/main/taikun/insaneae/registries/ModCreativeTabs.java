@@ -9,6 +9,7 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
+import jp.main.taikun.insaneae.integration.appmek.AppMekCells;
 
 public class ModCreativeTabs {
     private static final DeferredRegister<CreativeModeTab> TABS =
@@ -43,7 +44,7 @@ public class ModCreativeTabs {
                 output.accept(ModCells.CREATIVE_CELL.get());
                 output.accept(ModCells.ULTRA_CREATIVE_CELL.get());
                 if (ModList.get().isLoaded(InsaneAE.APPMEK_MODID)) {
-                    jp.main.taikun.insaneae.integration.appmek.AppMekCells.addToCreativeTab(output::accept);
+                    AppMekCells.addToCreativeTab(output::accept);
                 }
             })
             .build());

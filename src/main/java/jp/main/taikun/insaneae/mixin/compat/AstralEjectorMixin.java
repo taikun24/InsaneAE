@@ -34,6 +34,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import java.util.function.Predicate;
 
 /**
  * Astral Mekanism &amp; Energistics の自動搬出を、<b>ME インターフェイス相手のときだけ</b>
@@ -170,7 +171,7 @@ public abstract class AstralEjectorMixin {
      */
     @Unique
     private Set<Direction> insaneae$pushSides(Set<Direction> sides, BlockEntity from,
-            java.util.function.Predicate<Direction> handler) {
+            Predicate<Direction> handler) {
         if (!InsaneAEConfig.astralNetworkEject() || from.getLevel() == null
                 || from.getLevel().isClientSide()) {
             return sides;

@@ -20,6 +20,7 @@ import net.minecraftforge.registries.RegistryObject;
 
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Applied Mekanistics ({@code appmek}) が導入されている場合だけ追加される化学物質セル。
@@ -75,7 +76,7 @@ public final class AppMekCells {
     }
 
     /** クリエイティブタブへの追加 (appmek 導入時のみ呼ばれる)。 */
-    public static void addToCreativeTab(java.util.function.Consumer<Item> output) {
+    public static void addToCreativeTab(Consumer<Item> output) {
         CHEMICAL_CELLS.values().forEach(cell -> output.accept(cell.get()));
         PORTABLE_CHEMICAL_CELLS.values().forEach(cell -> output.accept(cell.get()));
     }
