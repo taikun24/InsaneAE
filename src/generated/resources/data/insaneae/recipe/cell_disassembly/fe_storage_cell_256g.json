@@ -1,0 +1,20 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "appflux"
+    }
+  ],
+  "type": "ae2:storage_cell_disassembly",
+  "cell": "insaneae:fe_storage_cell_256g",
+  "cell_disassembly_items": [
+    {
+      "count": 1,
+      "id": "insaneae:cell_component_256g"
+    },
+    {
+      "count": 1,
+      "id": "appflux:fe_cell_housing"
+    }
+  ]
+}

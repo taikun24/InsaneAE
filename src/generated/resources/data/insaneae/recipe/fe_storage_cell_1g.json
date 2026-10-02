@@ -1,0 +1,22 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "appflux"
+    }
+  ],
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "appflux:fe_cell_housing"
+    },
+    {
+      "item": "insaneae:cell_component_1g"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "insaneae:fe_storage_cell_1g"
+  }
+}

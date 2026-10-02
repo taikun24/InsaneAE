@@ -67,12 +67,14 @@ neoForge {
 
         data {
             data()
-            // --existing-mod: 流用している AE2 / MEGA Cells のテクスチャを
+            // --existing-mod: 流用している AE2 / MEGA Cells / AppliedFlux のテクスチャを
             // ExistingFileHelper に見せるため (無いとモデル生成時に存在チェックで落ちる)。
             programArguments.addAll '--mod', project.mod_id, '--all',
                     '--output', file('src/generated/resources/').getAbsolutePath(),
                     '--existing', file('src/main/resources/').getAbsolutePath(),
-                    '--existing-mod', 'ae2', '--existing-mod', 'megacells'
+                    '--existing-mod', 'ae2', '--existing-mod', 'megacells',
+                    // FE セルの筐体は AppliedFlux のテクスチャを借りている。
+                    '--existing-mod', 'appflux'
         }
 
         configureEach {
@@ -168,6 +170,17 @@ dependencies {
         // 放射性化学物質セルのレシピが reactor_glass を要求するので dev 実行時に要る
         // (無いと runData / runServer のたびにレシピの解析エラーが出る)。
         localRuntime "curse.maven:mekanism-generators-268566:${mekanism_generators_file}"
+    }
+
+    // AppliedFlux — FE ストレージセル用の【任意】依存 (appmek と同じ扱い)。
+    // FE セルは AppliedFlux の IFluxCell を実装し、セルの中身は AppliedFlux 自身の
+    // セルハンドラが扱うので、型を見るために compileOnly が要る。
+    compileOnly "curse.maven:applied-flux-965012:${appflux_file}"
+    // -PwithAppFlux=false を付けると dev 実行から外れる (未導入時の動作確認用)。
+    if (project.findProperty('withAppFlux') != 'false') {
+        localRuntime "curse.maven:applied-flux-965012:${appflux_file}"
+        // AppliedFlux の mandatory 依存 (作者の共通ライブラリ)。
+        localRuntime "curse.maven:glodium-957920:${glodium_file}"
     }
 
     // AE2 Crafting Optimizer。

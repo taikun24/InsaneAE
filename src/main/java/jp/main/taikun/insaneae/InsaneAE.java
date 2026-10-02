@@ -11,7 +11,7 @@ import jp.main.taikun.insaneae.datagen.ModItemModelProvider;
 import jp.main.taikun.insaneae.datagen.ModItemTagProvider;
 import jp.main.taikun.insaneae.datagen.ModRecipeProvider;
 import jp.main.taikun.insaneae.integration.aco.OptionalAcoBigIntegerIntegration;
-import jp.main.taikun.insaneae.integration.appmek.AppMekCells;
+import jp.main.taikun.insaneae.integration.AddonIntegrations;
 import jp.main.taikun.insaneae.registries.ModBlockEntities;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModCapabilities;
@@ -30,7 +30,6 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -48,8 +47,6 @@ public class InsaneAE {
 
     /** {@code META-INF/neoforge.mods.toml} の modId と一致させること。 */
     public static final String MODID = "insaneae";
-    /** 任意依存: Applied Mekanistics。導入時のみ化学物質セルを追加する。 */
-    public static final String APPMEK_MODID = "appmek";
     private static final Logger LOGGER = LogUtils.getLogger();
 
     // NeoForge の Mod コンストラクタは (IEventBus, ModContainer) を受け取る。
@@ -61,13 +58,9 @@ public class InsaneAE {
         ModItems.register(bus);
         // ケーブルに貼る版。部品のモデル申告が凍結前に済む必要があるのでここで。
         ModParts.register(bus);
-        // appmek 未導入の環境では AppMekCells をロードしてはいけないので、
-        // クラス参照ごと分岐の内側に閉じ込める (別クラスなので条件が false ならロードされない)。
-        // import はコンパイル時だけのものなので、import しても実行前にロードされることはない。
-        if (ModList.get().isLoaded(APPMEK_MODID)) {
-            LOGGER.info("InsaneAE: Applied Mekanistics detected, adding chemical cells.");
-            AppMekCells.register();
-        }
+        // 他の AE2 アドオンとの連携 (化学物質セル・FE セル・他 Mod の機械への加速カードなど)。
+        // 入っているものだけ有効にする。セルは ModCells の登録に相乗りするので、その前に。
+        AddonIntegrations.init();
         ModCells.register(bus);
         ModUpgrades.register(bus);
         ModBlockEntities.register(bus);

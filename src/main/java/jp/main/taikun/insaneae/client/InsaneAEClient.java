@@ -10,7 +10,6 @@ import appeng.init.client.InitScreens;
 import appeng.items.storage.BasicStorageCell;
 import appeng.items.tools.powered.AbstractPortableCell;
 import com.mojang.math.Transformation;
-import jp.main.taikun.insaneae.InsaneAE;
 import jp.main.taikun.insaneae.charger.ImprovedChargerBlockEntity;
 import jp.main.taikun.insaneae.crafting.InsaneAcceleratorType;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
@@ -29,11 +28,11 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModList;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.joml.Vector3f;
-import jp.main.taikun.insaneae.integration.appmek.AppMekCells;
+import jp.main.taikun.insaneae.integration.AddonIntegration;
+import jp.main.taikun.insaneae.integration.AddonIntegrations;
 
 /**
  * クライアント専用のセットアップ。
@@ -138,11 +137,10 @@ public final class InsaneAEClient {
         ModCells.FLUID_CELLS.values().forEach(cell -> event.register(basic, cell.get()));
         ModCells.PORTABLE_ITEM_CELLS.values().forEach(cell -> event.register(portable, cell.get()));
         ModCells.PORTABLE_FLUID_CELLS.values().forEach(cell -> event.register(portable, cell.get()));
-        if (ModList.get().isLoaded(InsaneAE.APPMEK_MODID)) {
-            AppMekCells.CHEMICAL_CELLS.values()
-                    .forEach(cell -> event.register(basic, cell.get()));
-            AppMekCells.PORTABLE_CHEMICAL_CELLS.values()
-                    .forEach(cell -> event.register(portable, cell.get()));
+        // 他アドオンのセル (化学物質セル・FE セルなど) も同じ色付け。
+        for (AddonIntegration addon : AddonIntegrations.active()) {
+            addon.storageCells().forEach(cell -> event.register(basic, cell));
+            addon.portableCells().forEach(cell -> event.register(portable, cell));
         }
     }
 

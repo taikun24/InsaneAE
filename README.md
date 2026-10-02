@@ -27,6 +27,7 @@ Minecraft のバージョンごとにブランチを分けています。**不�
 | [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) | 19.2.17 以上 (必須) |
 | [MEGA Cells](https://github.com/62832/MEGACells) | 4.11 以上 (必須) |
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) | 1.6 以上 (任意 / 化学物質セル用) |
+| [AppliedFlux](https://www.curseforge.com/minecraft/mc-mods/applied-flux) | 1.21-2.1.6 以上 (任意 / FE セル用) |
 | [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) | 1.5.12 以上、**1.5.18 以上を推奨** (任意 / BigInteger量会計・厳密計算連携用) |
 
 AE2 が [GuideME](https://github.com/AppliedEnergistics/GuideME) を必須依存として要求します (1.20.1 では AE2 に同梱されていました)。
@@ -48,8 +49,10 @@ AE2 のバージョン範囲は実際に検証した `[19.2.17,20)` に固定し
 
 ## 追加されるもの
 
-- **ストレージセル** — アイテム / 液体 / 化学物質 (Applied Mekanistics 導入時) の 1G 〜 8E セル。
-  同階層のポータブルセル、クリエイティブセルもあります。
+- **ストレージセル** — アイテム / 液体 / 化学物質 (Applied Mekanistics 導入時) /
+  FE (AppliedFlux 導入時) の 1G 〜 8E セル。同階層のポータブルセル、クリエイティブセルもあります。
+  FE セルは AppliedFlux の容量計算 (バイト × 1 バイトあたりの FE、既定 1,048,576) が long なので
+  16T までで、16T だけ容量は 8T です (既定設定でちょうど約 922 京 FE)。
 - **クラフトストレージ** — 1G 〜 8E。AE2 のバイト表示が 32bit で溢れる問題を Mixin で回避しています。
   同じCPUに複数の4E以上を接続した合計は、longへ丸める前にBigIntegerで再計算します。
   AE2互換のlong getterはLong.MAX_VALUEへ飽和しますが、連携Modは

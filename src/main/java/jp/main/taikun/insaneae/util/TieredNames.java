@@ -25,6 +25,8 @@ public final class TieredNames {
     public static final String PORTABLE_ITEM_CELL = "item.insaneae.portable_item_cell";
     public static final String PORTABLE_FLUID_CELL = "item.insaneae.portable_fluid_cell";
     public static final String PORTABLE_CHEMICAL_CELL = "item.insaneae.portable_chemical_cell";
+    public static final String FE_STORAGE_CELL = "item.insaneae.fe_storage_cell";
+    public static final String PORTABLE_FE_CELL = "item.insaneae.portable_fe_cell";
 
     private TieredNames() {
     }

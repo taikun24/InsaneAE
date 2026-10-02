@@ -35,7 +35,8 @@ import net.neoforged.neoforge.common.conditions.ModLoadedCondition;
 import net.neoforged.neoforge.common.crafting.DifferenceIngredient;
 
 import java.util.concurrent.CompletableFuture;
-import net.neoforged.fml.ModList;
+import jp.main.taikun.insaneae.integration.AddonIntegration;
+import jp.main.taikun.insaneae.integration.AddonIntegrations;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
@@ -83,10 +84,10 @@ public class ModRecipeProvider extends RecipeProvider {
 
     @Override
     protected void buildRecipes(RecipeOutput consumer) {
-        boolean appMek = ModList.get().isLoaded(InsaneAE.APPMEK_MODID);
-        if (!appMek) {
-            LOGGER.warn("Applied Mekanistics not present: 化学物質セルのレシピは生成されません。"
-                    + " 完全なデータを作るには appmek を入れた状態で runData すること。");
+        List<String> missingAddons = AddonIntegrations.missingModIds();
+        if (!missingAddons.isEmpty()) {
+            LOGGER.warn("Addons not present: {}. それらの連携が足すレシピ (化学物質セル・FE セルなど) は"
+                    + "生成されません。完全なデータを作るには全部入れた状態で runData すること。", missingAddons);
         }
 
         InsaneCraftingUnitType[] tiers = InsaneCraftingUnitType.values();
@@ -119,26 +120,22 @@ public class ModRecipeProvider extends RecipeProvider {
             shapeless(consumer, ModBlocks.CRAFTING_STORAGE.get(tier).get(), component,
                     b -> b.requires(MEGABlocks.MEGA_CRAFTING_UNIT).requires(component));
 
-            // 通常セル: ハウジング + コンポーネント
-            shapeless(consumer, ModCells.ITEM_CELLS.get(tier).get(), component,
-                    b -> b.requires(MEGAItems.MEGA_ITEM_CELL_HOUSING).requires(component));
-            shapeless(consumer, ModCells.FLUID_CELLS.get(tier).get(), component,
-                    b -> b.requires(MEGAItems.MEGA_FLUID_CELL_HOUSING).requires(component));
-
-            // 分解 (空のセルを右クリックでコンポーネント + ハウジングに戻す)。
-            cellDisassembly(consumer, ModCells.ITEM_CELLS.get(tier).get(),
-                    component, MEGAItems.MEGA_ITEM_CELL_HOUSING);
-            cellDisassembly(consumer, ModCells.FLUID_CELLS.get(tier).get(),
-                    component, MEGAItems.MEGA_FLUID_CELL_HOUSING);
+            // 通常セル: ハウジング + コンポーネント (と、空のセルを右クリックしたときの分解)
+            storageCell(consumer, ModCells.ITEM_CELLS.get(tier).get(), component,
+                    MEGAItems.MEGA_ITEM_CELL_HOUSING);
+            storageCell(consumer, ModCells.FLUID_CELLS.get(tier).get(), component,
+                    MEGAItems.MEGA_FLUID_CELL_HOUSING);
 
             // ポータブルセル: ME チェスト + コンポーネント + 高密度エネルギーセル + ハウジング
-            shapeless(consumer, ModCells.PORTABLE_ITEM_CELLS.get(tier).get(), component,
-                    b -> portable(b, component, MEGAItems.MEGA_ITEM_CELL_HOUSING));
-            shapeless(consumer, ModCells.PORTABLE_FLUID_CELLS.get(tier).get(), component,
-                    b -> portable(b, component, MEGAItems.MEGA_FLUID_CELL_HOUSING));
+            portableCell(consumer, ModCells.PORTABLE_ITEM_CELLS.get(tier).get(), component,
+                    MEGAItems.MEGA_ITEM_CELL_HOUSING);
+            portableCell(consumer, ModCells.PORTABLE_FLUID_CELLS.get(tier).get(), component,
+                    MEGAItems.MEGA_FLUID_CELL_HOUSING);
 
-            if (appMek) {
-                AppMekRecipes.build(consumer, tier, component);
+            // 他アドオンのセル。相手が居ないワールドでは無効になるよう mod_loaded 条件を付ける。
+            for (AddonIntegration addon : AddonIntegrations.active()) {
+                addon.buildRecipes(consumer.withConditions(new ModLoadedCondition(addon.modId())),
+                        tier, component);
             }
         }
 
@@ -280,15 +277,22 @@ public class ModRecipeProvider extends RecipeProvider {
                         .requires(SINGULARITY, 2));
     }
 
-    private static void portable(ShapelessRecipeBuilder builder, ItemLike component, ItemLike housing) {
-        builder.requires(AEBlocks.ME_CHEST)
+    /** 通常セル (ハウジング + コンポーネント) と、その分解レシピを出す。 */
+    public static void storageCell(RecipeOutput consumer, ItemLike cell, ItemLike component, ItemLike housing) {
+        shapeless(consumer, cell, component, b -> b.requires(housing).requires(component));
+        cellDisassembly(consumer, cell, component, housing);
+    }
+
+    /** ポータブルセル (ME チェスト + コンポーネント + 高密度エネルギーセル + ハウジング) を出す。 */
+    public static void portableCell(RecipeOutput consumer, ItemLike cell, ItemLike component, ItemLike housing) {
+        shapeless(consumer, cell, component, b -> b.requires(AEBlocks.ME_CHEST)
                 .requires(component)
                 .requires(AEBlocks.DENSE_ENERGY_CELL)
-                .requires(housing);
+                .requires(housing));
     }
 
     /** 素材を組み立てて shapeless レシピを 1 件出す (解禁条件は素材のコンポーネント)。 */
-    static void shapeless(RecipeOutput consumer, ItemLike result, ItemLike unlockedBy,
+    public static void shapeless(RecipeOutput consumer, ItemLike result, ItemLike unlockedBy,
             Consumer<ShapelessRecipeBuilder> ingredients) {
         ShapelessRecipeBuilder builder = ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, result);
         ingredients.accept(builder);
@@ -390,23 +394,10 @@ public class ModRecipeProvider extends RecipeProvider {
      * 渡していたが、AE2 19.2 で {@code StorageCellDisassemblyRecipe} というデータ駆動レシピに
      * 変わったため、datagen 側で出す必要がある。これを出さないとセルを分解できなくなる。</p>
      */
-    static void cellDisassembly(RecipeOutput consumer, ItemLike cell, ItemLike... results) {
+    public static void cellDisassembly(RecipeOutput consumer, ItemLike cell, ItemLike... results) {
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(cell.asItem()).withPrefix("cell_disassembly/");
         List<ItemStack> stacks = Arrays.stream(results).map(ItemStack::new).toList();
         // 分解レシピはクラフト台に出ないので進捗 (advancement) は付けない。
         consumer.accept(id, new StorageCellDisassemblyRecipe(cell.asItem(), stacks), null);
-    }
-
-    /** appmek 導入時のみ有効な条件付きレシピを出す。 */
-    static void conditionalShapeless(RecipeOutput consumer, ItemLike result, ItemLike unlockedBy,
-            Consumer<ShapelessRecipeBuilder> ingredients) {
-        ResourceLocation id = BuiltInRegistries.ITEM.getKey(result.asItem());
-        // NeoForge では ConditionalRecipe のビルダーが廃止され、
-        // RecipeOutput#withConditions で「条件つきの出力先」を作って普通に save する方式になった。
-        // 進捗 (advancement) も条件つきで一緒に出るので generateAdvancement() 相当は不要。
-        RecipeOutput conditional = consumer.withConditions(new ModLoadedCondition(InsaneAE.APPMEK_MODID));
-        ShapelessRecipeBuilder builder = ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, result);
-        ingredients.accept(builder);
-        builder.unlockedBy("has_component", has(unlockedBy)).save(conditional, id);
     }
 }

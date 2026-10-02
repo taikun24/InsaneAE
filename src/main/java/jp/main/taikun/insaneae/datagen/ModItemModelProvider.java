@@ -6,6 +6,7 @@ import jp.main.taikun.insaneae.energy.InsaneEnergyCellTier;
 import jp.main.taikun.insaneae.energy.SolarPanelTier;
 import jp.main.taikun.insaneae.upgrade.InsaneSpeedCardType;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
+import jp.main.taikun.insaneae.integration.appflux.FluxTiers;
 import appeng.api.util.AEColor;
 import net.minecraft.core.Direction;
 import net.minecraft.data.PackOutput;
@@ -37,7 +38,7 @@ import java.util.Locale;
  * 一番上に来て他のレイヤを全部隠し、そのうえ染色色 (既定は白) で塗られるので、
  * ポータブルセルが真っ白な塊になる。</b></p>
  *
- * <p>化学物質セルは Applied Mekanistics 未導入だとアイテム自体が登録されないが、
+ * <p>化学物質セル / FE セルは Applied Mekanistics / AppliedFlux 未導入だとアイテム自体が登録されないが、
  * モデルは名前だけで生成できるので常に出力しておく (使われないだけで害はない)。</p>
  */
 public class ModItemModelProvider extends ItemModelProvider {
@@ -72,6 +73,15 @@ public class ModItemModelProvider extends ItemModelProvider {
     private static final ResourceLocation PORTABLE_ITEM_HOUSING = mega("megacells", "item/portable_cell_item_housing");
     private static final ResourceLocation PORTABLE_FLUID_HOUSING = mega("megacells", "item/portable_cell_fluid_housing");
     private static final ResourceLocation PORTABLE_HOUSING = mega("megacells", "item/portable_cell_chemical_housing");
+    /**
+     * FE セル (AppliedFlux 連携) の筐体。AppliedFlux のものを借りる。
+     *
+     * <p>AppliedFlux 2.1.x の FE セルは MEGA 4.x と<b>同じ形の窓</b> (同じ 3 階調の色) を使っているので、
+     * 階層色レイヤ ({@code standardCell} / {@code portableSide}) はそのまま重なる
+     * (jar のテクスチャと 1 ドットずつ突き合わせて確認済み)。</p>
+     */
+    private static final ResourceLocation FE_HOUSING = mega("appflux", "item/fe_cell_housing");
+    private static final ResourceLocation PORTABLE_FE_HOUSING = mega("appflux", "item/portable_cell_fe_housing");
     private static final ResourceLocation SPEED_CARD = mega("ae2", "item/card_speed");
     /** AE2 の {@code InitItemModelsProperties} が登録するエネルギーセルの残量プロパティ。 */
     private static final ResourceLocation ENERGY_FILL_LEVEL = mega("ae2", "fill_level");
@@ -117,6 +127,14 @@ public class ModItemModelProvider extends ItemModelProvider {
                     PORTABLE_FLUID_HOUSING, PORTABLE_LED, PORTABLE_FLUID_SCREEN, portableSide(id));
             layered("portable_chemical_cell_" + id,
                     PORTABLE_HOUSING, PORTABLE_LED, PORTABLE_ITEM_SCREEN, portableSide(id));
+        }
+
+        // FE セルは AppliedFlux の容量計算が long なので 16T までしか出さない (FluxTiers)。
+        for (InsaneCraftingUnitType tier : FluxTiers.TIERS) {
+            String id = tier.id();
+            layered("fe_storage_cell_" + id, FE_HOUSING, CELL_LED, standardCell(id));
+            layered("portable_fe_cell_" + id,
+                    PORTABLE_FE_HOUSING, PORTABLE_LED, PORTABLE_ITEM_SCREEN, portableSide(id));
         }
 
         simple("creative_cell");

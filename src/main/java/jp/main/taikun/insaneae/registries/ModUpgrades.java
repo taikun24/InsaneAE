@@ -25,8 +25,8 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import jp.main.taikun.insaneae.integration.appmek.AppMekCells;
-import net.neoforged.fml.ModList;
+import jp.main.taikun.insaneae.integration.AddonIntegration;
+import jp.main.taikun.insaneae.integration.AddonIntegrations;
 
 /**
  * 加速カード (アップグレードカード) の登録。
@@ -87,7 +87,7 @@ public class ModUpgrades {
         Upgrades.add(TASK_FUSION_CARD.get(), ModBlocks.QUANTUM_CPU.get(), 1);
 
         registerCellUpgrades();
-        registerCompatMachines();
+        AddonIntegrations.active().forEach(AddonIntegration::registerUpgrades);
     }
 
     /**
@@ -122,18 +122,6 @@ public class ModUpgrades {
             addFluidCellCards(cell.get(), portables);
             addPortableEnergyCards(cell.get(), portables);
         }
-        // 化学物質セル (Applied Mekanistics 導入時のみ)。appmek が自分のセルにしている登録と同じ。
-        if (ModList.get().isLoaded(InsaneAE.APPMEK_MODID)) {
-            for (DeferredHolder<Item, Item> cell :
-                    AppMekCells.CHEMICAL_CELLS.values()) {
-                addFluidCellCards(cell.get(), cells);
-            }
-            for (DeferredHolder<Item, Item> cell :
-                    AppMekCells.PORTABLE_CHEMICAL_CELLS.values()) {
-                addFluidCellCards(cell.get(), portables);
-                addPortableEnergyCards(cell.get(), portables);
-            }
-        }
         // 強化クリエイティブセルは AE2 のクリエイティブセルと同じくカード無し。
     }
 
@@ -145,19 +133,19 @@ public class ModUpgrades {
      * 効き目は AE2 の {@code PortableCellItem} 側が面倒を見るので、
      * <b>挿せるようにするだけで容量が増える</b> (MEGA Cells は必須依存なので分岐は要らない)。</p>
      */
-    private static void addPortableEnergyCards(ItemLike cell, String tooltipGroup) {
+    public static void addPortableEnergyCards(ItemLike cell, String tooltipGroup) {
         Upgrades.add(AEItems.ENERGY_CARD, cell, 2, tooltipGroup);
         Upgrades.add(MEGAItems.GREATER_ENERGY_CARD, cell, 2, tooltipGroup);
     }
 
     /** アイテムを入れるセルが受けるカード。 */
-    private static void addItemCellCards(ItemLike cell, String tooltipGroup) {
+    public static void addItemCellCards(ItemLike cell, String tooltipGroup) {
         Upgrades.add(AEItems.FUZZY_CARD, cell, 1, tooltipGroup);
         addFluidCellCards(cell, tooltipGroup);
     }
 
     /** 液体・化学物質のセルが受けるカード (あいまいカードはスタック NBT の概念が無いので除く)。 */
-    private static void addFluidCellCards(ItemLike cell, String tooltipGroup) {
+    public static void addFluidCellCards(ItemLike cell, String tooltipGroup) {
         Upgrades.add(AEItems.INVERTER_CARD, cell, 1, tooltipGroup);
         Upgrades.add(AEItems.EQUAL_DISTRIBUTION_CARD, cell, 1, tooltipGroup);
         Upgrades.add(AEItems.VOID_CARD, cell, 1, tooltipGroup);
@@ -165,6 +153,7 @@ public class ModUpgrades {
 
     /**
      * 他 Mod の「AE2 の加速カードが挿せる機械」にもこちらの加速カードを挿せるようにする。
+     * 各アドオン連携 ({@code integration/}) の {@code registerUpgrades} から呼ぶ。
      *
      * <p>挿せるだけでは意味が無いので、対象は<b>速度倍率の Mixin を用意した機械だけ</b>
      * (mixin/compat の Ex〜・AAE〜 を参照。バス系は AE2 の基底クラスの Mixin がそのまま効く)。
@@ -172,34 +161,7 @@ public class ModUpgrades {
      * アイテムが見つからない場合 (相手の改名など) は静かに飛ばす —
      * カードが挿せないだけで、壊れはしない。</p>
      */
-    private static void registerCompatMachines() {
-        // ExtendedAE (1.21 の modid は extendedae。1.20.1 は expatternprovider だった)。
-        registerCompatMachines("extendedae", List.of(
-                "ex_import_bus_part",       // 基底 IOBusPart の Mixin が効く
-                "ex_export_bus_part",
-                "tag_export_bus",
-                "mod_export_bus",
-                "precise_export_bus",
-                "threshold_export_bus",
-                "active_formation_plane",   // ExFormationPlaneMixin
-                "ex_molecular_assembler",   // ExCraftingThreadMixin
-                "ex_inscriber",             // ExInscriberThreadMixin
-                "ex_io_port",               // ExIOPortMixin
-                "circuit_cutter",           // ExCircuitCutterMixin
-                "crystal_assembler"));      // ExCrystalAssemblerMixin (1.21 で追加された機械)
-        // Advanced AE。バス 3 種は AE2 の ExportBusPart/IOBusPart 経由で効く。
-        registerCompatMachines("advanced_ae", List.of(
-                "stock_export_bus_part",
-                "import_export_bus_part",
-                "advanced_io_bus_part",
-                "quantum_crafter",          // AAEQuantumCrafterMixin
-                "reaction_chamber"));       // AAEReactionChamberMixin
-    }
-
-    private static void registerCompatMachines(String modId, List<String> itemIds) {
-        if (!ModList.get().isLoaded(modId)) {
-            return;
-        }
+    public static void allowSpeedCards(String modId, List<String> itemIds) {
         for (String itemId : itemIds) {
             Item machine = BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath(modId, itemId));
             if (machine != Items.AIR) {

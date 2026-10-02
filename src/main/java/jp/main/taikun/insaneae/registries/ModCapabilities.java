@@ -4,14 +4,12 @@ import appeng.api.AECapabilities;
 import appeng.api.implementations.items.IAEItemPowerStorage;
 import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.items.tools.powered.powersink.PoweredItemCapabilities;
-import jp.main.taikun.insaneae.InsaneAE;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
-import jp.main.taikun.insaneae.integration.appmek.AppMekCells;
+import jp.main.taikun.insaneae.integration.AddonIntegrations;
 
 /**
  * このMod が公開する capability の登録。
@@ -87,10 +85,9 @@ public final class ModCapabilities {
         // これが無くても充電できるが、他 Mod の充電器や FE 表示はこの capability を見る)。
         ModCells.PORTABLE_ITEM_CELLS.values().forEach(cell -> registerPoweredItem(event, cell.get()));
         ModCells.PORTABLE_FLUID_CELLS.values().forEach(cell -> registerPoweredItem(event, cell.get()));
-        if (ModList.get().isLoaded(InsaneAE.APPMEK_MODID)) {
-            AppMekCells.PORTABLE_CHEMICAL_CELLS.values()
-                    .forEach(cell -> registerPoweredItem(event, cell.get()));
-        }
+
+        // 他アドオンのセル (化学物質セル・FE セルなど) は各連携が自分で登録する。
+        AddonIntegrations.active().forEach(addon -> addon.registerCapabilities(event));
     }
 
     /**
@@ -107,7 +104,7 @@ public final class ModCapabilities {
     }
 
     /** {@link IAEItemPowerStorage} なアイテムを NeoForge のエネルギー貯蔵として見せる。 */
-    private static void registerPoweredItem(RegisterCapabilitiesEvent event, Item item) {
+    public static void registerPoweredItem(RegisterCapabilitiesEvent event, Item item) {
         if (item instanceof IAEItemPowerStorage powered) {
             event.registerItem(Capabilities.EnergyStorage.ITEM,
                     (stack, context) -> new PoweredItemCapabilities(stack, powered), item);

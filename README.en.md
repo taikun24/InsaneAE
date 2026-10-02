@@ -27,6 +27,7 @@ This branch is **1.21.1 (NeoForge)**.
 | [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) | 19.2.17 or later (required) |
 | [MEGA Cells](https://github.com/62832/MEGACells) | 4.11 or later (required) |
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) | 1.6 or later (optional, for chemical cells) |
+| [AppliedFlux](https://www.curseforge.com/minecraft/mc-mods/applied-flux) | 1.21-2.1.6 or later (optional, for FE cells) |
 | [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) | 1.5.12 or later, **1.5.18+ recommended** (optional, for BigInteger accounting and exact planning) |
 
 AE2 requires [GuideME](https://github.com/AppliedEnergistics/GuideME) as a hard dependency (on 1.20.1 it was bundled with AE2).
@@ -52,8 +53,10 @@ NeoForge version.
 
 ## What it adds
 
-- **Storage cells** — 1G to 8E cells for items, fluids and chemicals (chemicals need Applied
-  Mekanistics). Portable and creative cells exist at the same tiers.
+- **Storage cells** — 1G to 8E cells for items, fluids, chemicals (needs Applied Mekanistics) and
+  FE (needs AppliedFlux). Portable and creative cells exist at the same tiers. FE cells stop at
+  16T, and the 16T one holds 8T: AppliedFlux computes capacity as bytes × "FE per byte" (default
+  1,048,576) in a long, which 8T just fits (about 9.2 quintillion FE).
 - **Crafting storage** — 1G to 8E. A Mixin works around AE2 displaying byte counts as 32-bit.
   When several 4E-or-larger units share a CPU, the total is recomputed in BigInteger before being
   rounded to a long. The AE2-compatible long getter saturates at `Long.MAX_VALUE`, but other mods
