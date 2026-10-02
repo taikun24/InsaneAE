@@ -6,6 +6,7 @@ import jp.main.taikun.insaneae.energy.InsaneEnergyCellTier;
 import jp.main.taikun.insaneae.energy.SolarPanelTier;
 import jp.main.taikun.insaneae.upgrade.InsaneSpeedCardType;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
+import jp.main.taikun.insaneae.integration.appflux.FluxTiers;
 import appeng.api.util.AEColor;
 import net.minecraft.core.Direction;
 import net.minecraft.data.PackOutput;
@@ -51,6 +52,16 @@ public class ModItemModelProvider extends ItemModelProvider {
     private static final ResourceLocation PORTABLE_FLUID_HOUSING = mega("ae2", "item/portable_cell_fluid_housing");
     /** 化学物質のポータブルセル用。AE2 に専用の筐体が無いので汎用のものを使う。 */
     private static final ResourceLocation PORTABLE_HOUSING = mega("ae2", "item/portable_cell_housing");
+    /**
+     * FE セル (AppliedFlux 連携) の筐体と画面。AppliedFlux の 1M〜256M (MEGA 版) のものを借りる。
+     *
+     * <p>筐体の形は MEGA の化学物質セル筐体と同じなので、階層色レイヤ ({@code standardCell}) が
+     * そのまま重なる (jar のテクスチャで確認済み)。ポータブルも AppliedFlux 自身が AE2 の側面帯を
+     * 重ねているので {@code portableSide} がそのまま合う。</p>
+     */
+    private static final ResourceLocation FE_HOUSING = mega("appflux", "item/mega_fe_cell_housing");
+    private static final ResourceLocation PORTABLE_FE_SCREEN = mega("appflux", "item/portable_mega_cell_screen");
+    private static final ResourceLocation PORTABLE_FE_HOUSING = mega("appflux", "item/portable_mega_cell_fe_housing");
     private static final ResourceLocation SPEED_CARD = mega("ae2", "item/card_speed");
     /** AE2 の {@code InitItemModelsProperties} が登録するエネルギーセルの残量プロパティ。 */
     private static final ResourceLocation ENERGY_FILL_LEVEL = mega("ae2", "fill_level");
@@ -95,6 +106,14 @@ public class ModItemModelProvider extends ItemModelProvider {
                     PORTABLE_FLUID_SCREEN, PORTABLE_LED, PORTABLE_FLUID_HOUSING, portableSide(id));
             layered("portable_chemical_cell_" + id,
                     PORTABLE_ITEM_SCREEN, PORTABLE_LED, PORTABLE_HOUSING, portableSide(id));
+        }
+
+        // FE セルは AppliedFlux の容量計算が long なので 16T までしか出さない (FluxTiers)。
+        for (InsaneCraftingUnitType tier : FluxTiers.TIERS) {
+            String id = tier.id();
+            layered("fe_storage_cell_" + id, FE_HOUSING, CELL_LED, standardCell(id));
+            layered("portable_fe_cell_" + id,
+                    PORTABLE_FE_SCREEN, PORTABLE_LED, PORTABLE_FE_HOUSING, portableSide(id));
         }
 
         simple("creative_cell");

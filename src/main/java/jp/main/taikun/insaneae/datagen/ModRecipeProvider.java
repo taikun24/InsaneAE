@@ -29,11 +29,13 @@ import net.minecraft.world.level.ItemLike;
 import net.minecraftforge.common.crafting.ConditionalRecipe;
 import net.minecraftforge.common.crafting.DifferenceIngredient;
 import net.minecraftforge.common.crafting.conditions.ModLoadedCondition;
-import net.minecraftforge.fml.ModList;
+import jp.main.taikun.insaneae.integration.AddonIntegration;
+import jp.main.taikun.insaneae.integration.AddonIntegrations;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -78,10 +80,10 @@ public class ModRecipeProvider extends RecipeProvider {
 
     @Override
     protected void buildRecipes(Consumer<FinishedRecipe> consumer) {
-        boolean appMek = ModList.get().isLoaded(InsaneAE.APPMEK_MODID);
-        if (!appMek) {
-            LOGGER.warn("Applied Mekanistics not present: 化学物質セルのレシピは生成されません。"
-                    + " 完全なデータを作るには appmek を入れた状態で runData すること。");
+        List<String> missingAddons = AddonIntegrations.missingModIds();
+        if (!missingAddons.isEmpty()) {
+            LOGGER.warn("Addons not present: {}. それらの連携が足すレシピ (化学物質セル・FE セルなど) は"
+                    + "生成されません。完全なデータを作るには全部入れた状態で runData すること。", missingAddons);
         }
 
         InsaneCraftingUnitType[] tiers = InsaneCraftingUnitType.values();
@@ -115,19 +117,20 @@ public class ModRecipeProvider extends RecipeProvider {
                     b -> b.requires(MEGABlocks.MEGA_CRAFTING_UNIT).requires(component));
 
             // 通常セル: ハウジング + コンポーネント
-            shapeless(consumer, ModCells.ITEM_CELLS.get(tier).get(), component,
-                    b -> b.requires(MEGAItems.MEGA_ITEM_CELL_HOUSING).requires(component));
-            shapeless(consumer, ModCells.FLUID_CELLS.get(tier).get(), component,
-                    b -> b.requires(MEGAItems.MEGA_FLUID_CELL_HOUSING).requires(component));
+            storageCell(consumer, ModCells.ITEM_CELLS.get(tier).get(), component,
+                    MEGAItems.MEGA_ITEM_CELL_HOUSING);
+            storageCell(consumer, ModCells.FLUID_CELLS.get(tier).get(), component,
+                    MEGAItems.MEGA_FLUID_CELL_HOUSING);
 
             // ポータブルセル: ME チェスト + コンポーネント + 高密度エネルギーセル + ハウジング
-            shapeless(consumer, ModCells.PORTABLE_ITEM_CELLS.get(tier).get(), component,
-                    b -> portable(b, component, MEGAItems.MEGA_ITEM_CELL_HOUSING));
-            shapeless(consumer, ModCells.PORTABLE_FLUID_CELLS.get(tier).get(), component,
-                    b -> portable(b, component, MEGAItems.MEGA_FLUID_CELL_HOUSING));
+            portableCell(consumer, ModCells.PORTABLE_ITEM_CELLS.get(tier).get(), component,
+                    MEGAItems.MEGA_ITEM_CELL_HOUSING);
+            portableCell(consumer, ModCells.PORTABLE_FLUID_CELLS.get(tier).get(), component,
+                    MEGAItems.MEGA_FLUID_CELL_HOUSING);
 
-            if (appMek) {
-                AppMekRecipes.build(consumer, tier, component);
+            // 他アドオンのセル。相手が居ないワールドでは無効になるよう mod_loaded 条件で包む。
+            for (AddonIntegration addon : AddonIntegrations.active()) {
+                addon.buildRecipes(whenModLoaded(consumer, addon.modId()), tier, component);
             }
         }
 
@@ -269,15 +272,26 @@ public class ModRecipeProvider extends RecipeProvider {
                         .requires(SINGULARITY, 2));
     }
 
-    private static void portable(ShapelessRecipeBuilder builder, ItemLike component, ItemLike housing) {
-        builder.requires(AEBlocks.CHEST)
+    /**
+     * 通常セル (ハウジング + コンポーネント) を出す。分解 (コンポーネント + ハウジングに戻る) は
+     * 1.20.1 ではセルのアイテム側が持っているのでレシピは要らない (1.21.1 版は分解レシピも出す)。
+     */
+    public static void storageCell(Consumer<FinishedRecipe> consumer, ItemLike cell, ItemLike component,
+            ItemLike housing) {
+        shapeless(consumer, cell, component, b -> b.requires(housing).requires(component));
+    }
+
+    /** ポータブルセル (ME チェスト + コンポーネント + 高密度エネルギーセル + ハウジング) を出す。 */
+    public static void portableCell(Consumer<FinishedRecipe> consumer, ItemLike cell, ItemLike component,
+            ItemLike housing) {
+        shapeless(consumer, cell, component, b -> b.requires(AEBlocks.CHEST)
                 .requires(component)
                 .requires(AEBlocks.DENSE_ENERGY_CELL)
-                .requires(housing);
+                .requires(housing));
     }
 
     /** 素材を組み立てて shapeless レシピを 1 件出す (解禁条件は素材のコンポーネント)。 */
-    static void shapeless(Consumer<FinishedRecipe> consumer, ItemLike result, ItemLike unlockedBy,
+    public static void shapeless(Consumer<FinishedRecipe> consumer, ItemLike result, ItemLike unlockedBy,
             Consumer<ShapelessRecipeBuilder> ingredients) {
         ShapelessRecipeBuilder builder = ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, result);
         ingredients.accept(builder);
@@ -372,18 +386,17 @@ public class ModRecipeProvider extends RecipeProvider {
         builder.unlockedBy("has_component", has(unlockedBy)).save(consumer);
     }
 
-    /** appmek 導入時のみ有効な条件付きレシピを出す。 */
-    static void conditionalShapeless(Consumer<FinishedRecipe> consumer, ItemLike result, ItemLike unlockedBy,
-            Consumer<ShapelessRecipeBuilder> ingredients) {
-        ResourceLocation id = ForgeRegistries.ITEMS.getKey(result.asItem());
-        ConditionalRecipe.builder()
-                .addCondition(new ModLoadedCondition(InsaneAE.APPMEK_MODID))
-                .addRecipe(wrapped -> {
-                    ShapelessRecipeBuilder builder = ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, result);
-                    ingredients.accept(builder);
-                    builder.unlockedBy("has_component", has(unlockedBy)).save(wrapped, id);
-                })
+    /**
+     * 渡したレシピを 1 件ずつ {@code forge:conditional} + {@code forge:mod_loaded} で包む出力口。
+     *
+     * <p>1.21.1 の {@code RecipeOutput#withConditions} 相当。1.20.1 は出力口に条件を付けられないので、
+     * 出来上がった {@link FinishedRecipe} を受け取ってから包み直す (ID も進捗もそのまま)。</p>
+     */
+    static Consumer<FinishedRecipe> whenModLoaded(Consumer<FinishedRecipe> consumer, String modId) {
+        return recipe -> ConditionalRecipe.builder()
+                .addCondition(new ModLoadedCondition(modId))
+                .addRecipe(recipe)
                 .generateAdvancement()
-                .build(consumer, id);
+                .build(consumer, recipe.getId());
     }
 }

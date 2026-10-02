@@ -6,10 +6,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
-import jp.main.taikun.insaneae.integration.appmek.AppMekCells;
+import jp.main.taikun.insaneae.integration.AddonIntegration;
+import jp.main.taikun.insaneae.integration.AddonIntegrations;
 
 public class ModCreativeTabs {
     private static final DeferredRegister<CreativeModeTab> TABS =
@@ -43,8 +43,10 @@ public class ModCreativeTabs {
                 ModCells.PORTABLE_FLUID_CELLS.values().forEach(cell -> output.accept(cell.get()));
                 output.accept(ModCells.CREATIVE_CELL.get());
                 output.accept(ModCells.ULTRA_CREATIVE_CELL.get());
-                if (ModList.get().isLoaded(InsaneAE.APPMEK_MODID)) {
-                    AppMekCells.addToCreativeTab(output::accept);
+                // 他アドオンのセル (化学物質セル・FE セルなど)。
+                for (AddonIntegration addon : AddonIntegrations.active()) {
+                    addon.storageCells().forEach(output::accept);
+                    addon.portableCells().forEach(output::accept);
                 }
             })
             .build());

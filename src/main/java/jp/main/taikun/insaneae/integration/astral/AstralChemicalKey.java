@@ -1,8 +1,8 @@
 package jp.main.taikun.insaneae.integration.astral;
 
 import appeng.api.stacks.AEKey;
-import jp.main.taikun.insaneae.InsaneAE;
 import mekanism.api.chemical.ChemicalStack;
+import jp.main.taikun.insaneae.integration.appmek.AppMekIntegration;
 import net.minecraftforge.fml.ModList;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,7 +16,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class AstralChemicalKey {
 
-    private static final boolean APPMEK_LOADED = ModList.get().isLoaded(InsaneAE.APPMEK_MODID);
+    private static final boolean APPMEK_LOADED = ModList.get().isLoaded(AppMekIntegration.MODID);
 
     private AstralChemicalKey() {
     }

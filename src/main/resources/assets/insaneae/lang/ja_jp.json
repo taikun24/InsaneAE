@@ -8,6 +8,8 @@
   "item.insaneae.portable_fluid_cell": "%s ポータブル液体セル",
   "item.insaneae.portable_chemical_cell": "%s ポータブル化学物質セル",
   "item.insaneae.chemical_storage_cell": "%s ME化学物質ストレージセル",
+  "item.insaneae.fe_storage_cell": "%s ME FEストレージセル",
+  "item.insaneae.portable_fe_cell": "%s ポータブルFEセル",
   "block.insaneae.crafting_accelerator": "%s× 並列クラフトユニット",
   "item.insaneae.turbo_card": "ターボ加速カード",
   "item.insaneae.overclock_card": "オーバークロック加速カード",

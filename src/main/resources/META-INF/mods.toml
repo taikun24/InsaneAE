@@ -86,6 +86,14 @@ mandatory = false
 versionRange = "[1.4,)"
 ordering = "AFTER"
 side = "BOTH"
+# AppliedFlux - 任意。導入されている場合のみ FE ストレージセルを追加する。
+# FE セルは AppliedFlux のセルクラスを継承しているので、確認済みの 1.3.7 以降に絞る。
+[[dependencies."${mod_id}"]]
+modId = "appflux"
+mandatory = false
+versionRange = "[1.20-1.3.7-forge,)"
+ordering = "AFTER"
+side = "BOTH"
 # AE2 Crafting Optimizer - 任意。導入時は公開BigInteger APIを通常クラフトCPUの
 # 正確な容量とQuantum CPUの完成品待ち台帳へ接続する。未導入時はlong容量と内蔵台帳へ戻る。
 [[dependencies."${mod_id}"]]

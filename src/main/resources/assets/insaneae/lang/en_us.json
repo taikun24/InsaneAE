@@ -8,6 +8,8 @@
   "item.insaneae.portable_fluid_cell": "%s Portable Fluid Cell",
   "item.insaneae.portable_chemical_cell": "%s Portable Chemical Cell",
   "item.insaneae.chemical_storage_cell": "%s ME Chemical Storage Cell",
+  "item.insaneae.fe_storage_cell": "%s ME FE Storage Cell",
+  "item.insaneae.portable_fe_cell": "%s Portable FE Cell",
   "block.insaneae.crafting_accelerator": "%s× Crafting Co-Processing Unit",
   "item.insaneae.turbo_card": "Turbo Acceleration Card",
   "item.insaneae.overclock_card": "Overclock Acceleration Card",

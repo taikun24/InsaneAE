@@ -10,7 +10,6 @@ import appeng.init.client.InitScreens;
 import appeng.items.storage.BasicStorageCell;
 import appeng.items.tools.powered.AbstractPortableCell;
 import com.mojang.math.Transformation;
-import jp.main.taikun.insaneae.InsaneAE;
 import jp.main.taikun.insaneae.charger.ImprovedChargerBlockEntity;
 import jp.main.taikun.insaneae.crafting.InsaneAcceleratorType;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
@@ -27,11 +26,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.joml.Vector3f;
-import jp.main.taikun.insaneae.integration.appmek.AppMekCells;
+import jp.main.taikun.insaneae.integration.AddonIntegration;
+import jp.main.taikun.insaneae.integration.AddonIntegrations;
 
 /**
  * クライアント専用のセットアップ。
@@ -124,11 +123,10 @@ public final class InsaneAEClient {
                 .forEach(cell -> event.register(AbstractPortableCell::getColor, cell.get()));
         ModCells.PORTABLE_FLUID_CELLS.values()
                 .forEach(cell -> event.register(AbstractPortableCell::getColor, cell.get()));
-        if (ModList.get().isLoaded(InsaneAE.APPMEK_MODID)) {
-            AppMekCells.CHEMICAL_CELLS.values()
-                    .forEach(cell -> event.register(BasicStorageCell::getColor, cell.get()));
-            AppMekCells.PORTABLE_CHEMICAL_CELLS.values()
-                    .forEach(cell -> event.register(AbstractPortableCell::getColor, cell.get()));
+        // 他アドオンのセル (化学物質セル・FE セルなど) も同じ色付け。
+        for (AddonIntegration addon : AddonIntegrations.active()) {
+            addon.storageCells().forEach(cell -> event.register(BasicStorageCell::getColor, cell));
+            addon.portableCells().forEach(cell -> event.register(AbstractPortableCell::getColor, cell));
         }
     }
 }

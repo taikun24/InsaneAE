@@ -21,5 +21,6 @@ public final class InsaneAETestPlots {
         TestPlots.addPlotClass(AcoPlots.class);
         TestPlots.addPlotClass(AdvancedAePlots.class);
         TestPlots.addPlotClass(LongOverflowCraftPlots.class);
+        TestPlots.addPlotClass(AddonPlots.class);
     }
 }

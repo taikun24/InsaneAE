@@ -122,11 +122,13 @@ minecraft {
             workingDirectory project.file('run-data')
 
             // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
-            // --existing-mod: 流用している AE2 / MEGA Cells のテクスチャを
+            // --existing-mod: 流用している AE2 / MEGA Cells / AppliedFlux のテクスチャを
             // ExistingFileHelper に見せるため (無いとモデル生成時に存在チェックで落ちる)。
             args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'),
                     '--existing', file('src/main/resources/'),
-                    '--existing-mod', 'ae2', '--existing-mod', 'megacells'
+                    '--existing-mod', 'ae2', '--existing-mod', 'megacells',
+                    // FE セルの筐体は AppliedFlux のテクスチャを借りている。
+                    '--existing-mod', 'appflux'
         }
     }
 }
@@ -236,6 +238,17 @@ dependencies {
     if (project.findProperty('withAppMek') != 'false') {
         runtimeOnly fg.deobf("curse.maven:mekanism-268560:6552911")
         runtimeOnly fg.deobf("curse.maven:applied-mekanistics-574300:7244744")
+    }
+    // AppliedFlux — FE ストレージセル用の【任意】依存 (appmek と同じ扱い)。
+    // FE セルは AppliedFlux の IFluxCell を実装し、セルの中身は AppliedFlux 自身の
+    // セルハンドラが扱うので、型を見るために compileOnly が要る。
+    compileOnly fg.deobf("curse.maven:applied-flux-965012:7651647")
+    // -PwithAppFlux=false を付けると dev 実行から外れる (未導入時の動作確認用)。
+    // (-PwithAstral=true でも同じものが入る。座標が同じなので重複はしない)
+    if (project.findProperty('withAppFlux') != 'false') {
+        runtimeOnly fg.deobf("curse.maven:applied-flux-965012:7651647")
+        // AppliedFlux の mandatory 依存 (作者の共通ライブラリ)。
+        runtimeOnly fg.deobf("curse.maven:glodium-957920:5226922")
     }
     runtimeOnly fg.deobf("curse.maven:guideme-1173950:8204776")
     // AE2 Crafting Optimizer。
