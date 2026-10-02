@@ -67,6 +67,8 @@ NeoForge version.
 - **Quantum CPU** — a dedicated CPU for processing bulk crafts in one go, with its own GUI.
   It needs **Insane Processors**, made in the inscriber (press: accumulation press + quantum
   entangled singularity + logic press; circuit: a singularity; processor: an accumulation processor).
+  AE2 19.x has no JEI support, so InsaneAE shows the inscriber and charger recipes in JEI itself
+  (skipped when EMI is installed, which already shows them).
 - **BigInteger crafting CPU** — crafting storage with a theoretical-maximum capacity that slots
   into a standard AE2 crafting CPU structure. It is not a Quantum CPU variant: no dedicated GUI,
   no ticker, no parallelism. With ACO installed it uses the public API's ceiling as its exact
