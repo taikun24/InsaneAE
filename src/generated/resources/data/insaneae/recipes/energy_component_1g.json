@@ -1,0 +1,40 @@
+{
+  "type": "forge:conditional",
+  "recipes": [
+    {
+      "conditions": [
+        {
+          "type": "forge:mod_loaded",
+          "modid": "appflux"
+        }
+      ],
+      "recipe": {
+        "type": "minecraft:crafting_shaped",
+        "category": "misc",
+        "key": {
+          "A": {
+            "item": "ae2:matter_ball"
+          },
+          "B": {
+            "item": "appflux:energy_processor"
+          },
+          "C": {
+            "item": "appflux:core_256m"
+          },
+          "D": {
+            "item": "ae2:quartz_vibrant_glass"
+          }
+        },
+        "pattern": [
+          "ABA",
+          "CDC",
+          "ACA"
+        ],
+        "result": {
+          "item": "insaneae:energy_component_1g"
+        },
+        "show_notification": true
+      }
+    }
+  ]
+}

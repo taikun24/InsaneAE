@@ -50,12 +50,15 @@ AE2の厳密なBigInteger計算境界をACOへ委譲します。InsaneAEの計�
   同階層のポータブルセル、クリエイティブセルもあります。FE セル (AppliedFlux 導入時) は
   AppliedFlux の容量計算 (バイト × 1 バイトあたりの FE、既定 4,194,304) が long なので 16T までで、
   16T だけ容量は 8T です。既定設定では 2T 以上がどれも約 922 京 FE (long の上限) で頭打ちになります。
+  芯は AppliedFlux と同じく専用のエネルギーストレージコンポーネント (1G〜16T、AppliedFlux の 256M の続き) です。
 - **クラフトストレージ** — 1G 〜 8E。AE2 のバイト表示が 32bit で溢れる問題を Mixin で回避しています。
   同じCPUに複数の4E以上を接続した合計は、longへ丸める前にBigIntegerで再計算します。
   AE2互換のlong getterはLong.MAX_VALUEへ飽和しますが、連携Modは
   `IBigCraftingCapacity#insaneae$exactStorageCapacity()`から正確な容量を取得できます。
 - **クラフト協調処理ユニット** — 16x 〜 2G。AE2 の 16 スレッド上限を外し、1 ブロックで多数の並列クラフトを担当します。
 - **Quantum CPU** — 大量クラフトを一括処理するための専用 CPU。専用の GUI 付き。
+  材料の **Insane プロセッサ** は刻印機で作ります (金型は集積回路の金型 + 量子もつれ特異点 +
+  論理回路の金型、回路は特異点、プロセッサは集積プロセッサが芯)。
 - **BigInteger クラフト CPU** — AE2標準クラフトCPU構造へ組み込む、理論上限容量の
   クラフトストレージです。Quantum CPU派生ではなく、専用GUI・ticker・並列性能を持ちません。
   ACO導入時は公開APIの上限を正確な容量として使い、未導入時はlong上限へ戻ります。

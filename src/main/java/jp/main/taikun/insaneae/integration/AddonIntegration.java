@@ -28,6 +28,11 @@ public interface AddonIntegration {
     default void registerContent() {
     }
 
+    /** 追加した素材 (コンポーネントなど)。クリエイティブタブでセルより前に並ぶ。 */
+    default List<? extends ItemLike> materials() {
+        return List.of();
+    }
+
     /**
      * 追加した通常セル。AE2 の {@code BasicStorageCell} と同じ色付け
      * (layer1 = 中身の量の LED) が掛かり、クリエイティブタブにも並ぶ。

@@ -16,6 +16,9 @@ gen_crafting_textures.py 側だけを書き換えて両方流し直すこと。
     cell/standard/storage_cell_<tier>.png         通常セルの階層色レイヤ (窓 + 左面の帯)
     cell/portable/portable_cell_side_<tier>.png   ポータブルセルの側面 (階層色の帯)
 
+加えて 1G〜16T だけ energy_component_<tier>.png (AppliedFlux 連携の FE セル用の
+エネルギーストレージコンポーネント。形は通常のコンポーネントと同じで、枠が階層色・線が赤)。
+
 見た目は AE2 / MEGA Cells の流儀に合わせてある。**筐体 (ハウジング)・LED・画面は
 階層に依らないので MEGA / AE2 のテクスチャをレイヤで重ね、ここで生成するのは
 階層で色が変わる部分だけ** ({@code ModItemModelProvider} がレイヤを組む)。
@@ -82,6 +85,21 @@ CELL_TIERS = ["1g", "4g", "16g", "64g", "256g",
               "1t", "4t", "16t", "64t", "256t",
               "1p", "4p", "16p", "64p", "256p",
               "1e", "4e", "8e"]
+
+# エネルギーストレージコンポーネント (AppliedFlux 連携の FE セル用) を出す階層。
+# FE セルは 16T までなので (FluxTiers.TOP) 、それに合わせる。
+ENERGY_TIERS = CELL_TIERS[:CELL_TIERS.index("16t") + 1]
+
+# エネルギーコンポーネントの線と点の色。AppliedFlux のエネルギーコンポーネントの赤に寄せた固定色で、
+# 階層では変えない (「FE 用」だと一目で分かるのが優先)。階層は枠の色で見分ける。
+ENERGY_RED = (0xd8, 0x2a, 0x2a)
+
+# 枠をどれだけ階層色に寄せるか (明るい画素ほど強く寄せる)。
+ENERGY_FRAME_TINT = 0.75
+# 枠の明るさの下限。1.20.1 (AE2 15.x) のコンポーネントは地が暗い丸なので、明度をそのまま掛けると
+# 階層色が沈んで見分けが付かない。暗い画素でもこの明るさまでは階層色を乗せる
+# (1.21.1 版は地が明るい銀の枠なので 0 = 下限なし)。
+ENERGY_FRAME_FLOOR = 0.55
 
 # 単色ではなく虹色にする階層。x+y で色相を一周させる (最上段の特別扱い)。
 RAINBOW_TIERS = {"8e"}
@@ -351,6 +369,33 @@ class Templates:
     def portable_side(self, tier: str, color) -> Image.Image:
         return paint(self.side, tier, color)
 
+    def energy_component(self, tier: str, color) -> Image.Image:
+        """エネルギーストレージコンポーネント。
+
+        通常のコンポーネントと同じ 5 パターンの形だが、<b>色の付け方を逆にする</b>:
+        通常は「銀の枠 + 階層色の線」なのに対し、こちらは「階層色の枠 + 赤の線」。
+        線まで階層色にすると通常のコンポーネントと区別が付かず、
+        AppliedFlux の「エネルギー = 赤」も失われるため。
+        """
+        comp = self.components[pattern_index(tier)]
+        base, lines = comp.base, comp.color
+        if base is None:
+            base, lines = split_by_saturation(lines)
+        frame = base.copy()
+        px = frame.load()
+        for y in range(frame.height):
+            for x in range(frame.width):
+                r, g, b, a = px[x, y]
+                if a == 0:
+                    continue
+                v = max(r, g, b) / 255
+                lift = max(v, ENERGY_FRAME_FLOOR)
+                k = ENERGY_FRAME_TINT * lift
+                px[x, y] = tuple(round(c * (1 - k) + t * k * lift)
+                                 for c, t in zip((r, g, b), color)) + (a,)
+        frame.alpha_composite(hue_rotate(lines, ENERGY_RED))
+        return frame
+
 
 def write(relative: str, image: Image.Image) -> None:
     path = os.path.join(OUT_DIR, relative)
@@ -431,7 +476,9 @@ def main() -> None:
         mark = " (虹)" if tier in RAINBOW_TIERS else ""
         print(f"{tier:>5s}  #{color[0]:02x}{color[1]:02x}{color[2]:02x}"
               f"  pattern={pattern_index(tier)}{mark}")
-    print(f"\n{len(CELL_TIERS) * 3} 枚 -> {OUT_DIR}")
+    for tier in ENERGY_TIERS:
+        write(f"energy_component_{tier}.png", templates.energy_component(tier, tier_color(tier)))
+    print(f"\n{len(CELL_TIERS) * 3 + len(ENERGY_TIERS)} 枚 -> {OUT_DIR}")
 
 
 if __name__ == "__main__":

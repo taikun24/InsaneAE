@@ -9,8 +9,8 @@ import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.datagen.ModRecipeProvider;
 import jp.main.taikun.insaneae.integration.AddonIntegration;
 import jp.main.taikun.insaneae.registries.ModCells;
-import jp.main.taikun.insaneae.registries.ModItems;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
+import jp.main.taikun.insaneae.util.TieredItem;
 import jp.main.taikun.insaneae.util.TieredNames;
 import net.minecraft.data.recipes.FinishedRecipe;
 import net.minecraft.world.item.Item;
@@ -24,7 +24,8 @@ import java.util.function.Consumer;
 
 /**
  * AppliedFlux 連携: 1G〜16T の FE ストレージセル (通常 / ポータブル) を足す
- * (16T だけ容量 8T。理由は {@link FluxTiers})。
+ * (16T だけ容量 8T。理由は {@link FluxTiers})。芯は AppliedFlux と同じく専用の
+ * エネルギーストレージコンポーネントで、これも 1G〜16T を足す (AppliedFlux の 256M の続き)。
  *
  * <p>セルは AppliedFlux の {@link IFluxCell} 実装なので、ME ドライブ等に挿したときの中身は
  * AppliedFlux 自身のセルハンドラ ({@code FECellHandler}、{@code IFluxCell} なら誰のアイテムでも拾う)
@@ -41,6 +42,9 @@ public final class AppFluxIntegration implements AddonIntegration {
     /** AppliedFlux が自分のポータブル FE セルに渡している画面の色。 */
     private static final int PORTABLE_SCREEN_COLOR = 0xDDDDDD;
 
+    /** 各階層のエネルギーストレージコンポーネント (FE セルの芯。AppliedFlux の 1k〜256M の続き)。 */
+    private final Map<InsaneCraftingUnitType, RegistryObject<Item>> components =
+            new EnumMap<>(InsaneCraftingUnitType.class);
     private final Map<InsaneCraftingUnitType, RegistryObject<Item>> cells =
             new EnumMap<>(InsaneCraftingUnitType.class);
     private final Map<InsaneCraftingUnitType, RegistryObject<Item>> portableCells =
@@ -54,7 +58,10 @@ public final class AppFluxIntegration implements AddonIntegration {
     @Override
     public void registerContent() {
         for (InsaneCraftingUnitType tier : FluxTiers.TIERS) {
-            ItemLike component = () -> ModItems.CELL_COMPONENTS.get(tier).get();
+            RegistryObject<Item> core = ModCells.register("energy_component_" + tier.id(),
+                    () -> new TieredItem(new Item.Properties(), TieredNames.ENERGY_COMPONENT, tier.label()));
+            components.put(tier, core);
+            ItemLike component = core::get;
             long bytes = FluxTiers.bytes(tier);
             cells.put(tier, ModCells.register("fe_storage_cell_" + tier.id(),
                     () -> new InsaneFECellItem(component, bytes, ModCells.idleDrain(tier),
@@ -63,6 +70,11 @@ public final class AppFluxIntegration implements AddonIntegration {
                     () -> new InsanePortableFECellItem(bytes, PORTABLE_SCREEN_COLOR,
                             TieredNames.PORTABLE_FE_CELL, tier.label())));
         }
+    }
+
+    @Override
+    public List<Item> materials() {
+        return components.values().stream().map(RegistryObject::get).toList();
     }
 
     @Override
@@ -95,13 +107,22 @@ public final class AppFluxIntegration implements AddonIntegration {
     }
 
     @Override
-    public void buildRecipes(Consumer<FinishedRecipe> output, InsaneCraftingUnitType tier, ItemLike component) {
+    public void buildRecipes(Consumer<FinishedRecipe> output, InsaneCraftingUnitType tier, ItemLike cellComponent) {
         if (!cells.containsKey(tier)) {
             return;  // FluxTiers.TOP より上の階層は出していない
         }
-        // MEGA の FE セル筐体 (AppliedFlux の 1M〜256M と同じ)。分解でもこれに戻る。
+        // エネルギーコンポーネント: 通常のセルコンポーネントと同じ形で、プロセッサが
+        // AppliedFlux のエネルギープロセッサ。最下段 (1G) は AppliedFlux の 256M から作る。
+        ItemLike core = components.get(tier).get();
+        ItemLike lower = tier.ordinal() == 0
+                ? AFItemAndBlock.CORE_256M
+                : components.get(InsaneCraftingUnitType.values()[tier.ordinal() - 1]).get();
+        ModRecipeProvider.tieredComponent(output, core, lower, AFItemAndBlock.ENERGY_PROCESSOR, tier);
+
+        // FE セル: MEGA の FE セル筐体 (AppliedFlux の 1M〜256M と同じ) + エネルギーコンポーネント。
+        // 分解でもこの 2 つに戻る。引数の cellComponent (通常のセルコンポーネント) は使わない。
         ItemLike housing = AFItemAndBlock.MEGA_FE_HOUSING;
-        ModRecipeProvider.storageCell(output, cells.get(tier).get(), component, housing);
-        ModRecipeProvider.portableCell(output, portableCells.get(tier).get(), component, housing);
+        ModRecipeProvider.storageCell(output, cells.get(tier).get(), core, housing);
+        ModRecipeProvider.portableCell(output, portableCells.get(tier).get(), core, housing);
     }
 }

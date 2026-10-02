@@ -53,7 +53,8 @@ disabled setting all fall back to the built-in path as before.
   Mekanistics). Portable and creative cells exist at the same tiers. FE cells (needs AppliedFlux)
   stop at 16T, and the 16T one holds 8T: AppliedFlux computes capacity as bytes × "FE per byte"
   (default 4,194,304) in a long, so with the default setting everything from 2T up is capped at
-  about 9.2 quintillion FE.
+  about 9.2 quintillion FE. Like AppliedFlux, they are built from dedicated Energy Storage
+  Components (1G–16T, continuing from AppliedFlux's 256M).
 - **Crafting storage** — 1G to 8E. A Mixin works around AE2 displaying byte counts as 32-bit.
   When several 4E-or-larger units share a CPU, the total is recomputed in BigInteger before being
   rounded to a long. The AE2-compatible long getter saturates at `Long.MAX_VALUE`, but other mods
@@ -61,6 +62,8 @@ disabled setting all fall back to the built-in path as before.
 - **Co-processing units** — 16x to 2G. Lifts AE2's 16-thread ceiling, so a single block can drive
   a large number of parallel crafts.
 - **Quantum CPU** — a dedicated CPU for processing bulk crafts in one go, with its own GUI.
+  It needs **Insane Processors**, made in the inscriber (press: accumulation press + quantum
+  entangled singularity + logic press; circuit: a singularity; processor: an accumulation processor).
 - **BigInteger crafting CPU** — crafting storage with a theoretical-maximum capacity that slots
   into a standard AE2 crafting CPU structure. It is not a Quantum CPU variant: no dedicated GUI,
   no ticker, no parallelism. With ACO installed it uses the public API's ceiling as its exact
