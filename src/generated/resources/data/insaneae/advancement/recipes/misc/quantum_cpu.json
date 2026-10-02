@@ -5,7 +5,7 @@
       "conditions": {
         "items": [
           {
-            "items": "megacells:accumulation_processor"
+            "items": "insaneae:insane_processor"
           }
         ]
       },

@@ -1,0 +1,33 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "appflux"
+    }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "ae2:matter_ball"
+    },
+    "B": {
+      "item": "appflux:energy_processor"
+    },
+    "C": {
+      "item": "insaneae:energy_component_1g"
+    },
+    "D": {
+      "item": "ae2:quartz_vibrant_glass"
+    }
+  },
+  "pattern": [
+    "ABA",
+    "CDC",
+    "ACA"
+  ],
+  "result": {
+    "count": 1,
+    "id": "insaneae:energy_component_4g"
+  }
+}

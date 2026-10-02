@@ -1,4 +1,4 @@
-// 1.21.1	2026-10-02T15:09:58.7000771	Item Models: insaneae
+// 1.21.1	2026-10-02T16:36:03.2998904	Item Models: insaneae
 f529f4a37c476252be1cb472861b0a1e9db434ff assets/insaneae/models/item/16g_crafting_storage.json
 b8297d2e4d0e57b588bb33a68b7cbbec467a6a8e assets/insaneae/models/item/16k_crafting_accelerator.json
 401cf74a997cde406b246a8d310885200181f7ae assets/insaneae/models/item/16m_crafting_accelerator.json
@@ -83,6 +83,14 @@ e68e56d7a99239465fb62b994968df8cb5c08364 assets/insaneae/models/item/cyan_compre
 1fac9074a50278167723d041264464e9d160a372 assets/insaneae/models/item/cyan_hyper_cable.json
 7ee6f470a8e4519d73889522daa26ca52e7893d3 assets/insaneae/models/item/degenerate_energy_cell.json
 c2a15f97590879cdf0d0e17e292a7e2083e94bf3 assets/insaneae/models/item/elite_solar_panel.json
+7badab8fa91502618fec534db45a0fd31d638815 assets/insaneae/models/item/energy_component_16g.json
+957f601dcf7f19d65e31097b884cb0a87776e2bd assets/insaneae/models/item/energy_component_16t.json
+78c9a47287ef93292986728db264ab2eda0a1ddd assets/insaneae/models/item/energy_component_1g.json
+8362b893b4d9dfc30f1c1500239e4c2f484644cb assets/insaneae/models/item/energy_component_1t.json
+2c5201dc3609debad93e9520b615c5bc52ef33fa assets/insaneae/models/item/energy_component_256g.json
+5365181d138a48d31438893b55a66ca1a05b4ebd assets/insaneae/models/item/energy_component_4g.json
+e39d3435ce858f47544bdb64ea380c1d19cf7f58 assets/insaneae/models/item/energy_component_4t.json
+5ae35023afc9009e51f07a838e40c8ed764ba561 assets/insaneae/models/item/energy_component_64g.json
 6ad1044bef635f768ce33170460e59d8e4226d17 assets/insaneae/models/item/fe_storage_cell_16g.json
 3326a8ab91c411288bbdbea13d102c3e785f4753 assets/insaneae/models/item/fe_storage_cell_16t.json
 9327923907ee9144b39e7749cb7ea9f450a232da assets/insaneae/models/item/fe_storage_cell_1g.json
@@ -124,6 +132,8 @@ abb1d6feea9d7be6692b9893c10b8899b105862c assets/insaneae/models/item/hypersonic_
 356e192e4fb3346f21e50c801a81513349f6b42c assets/insaneae/models/item/insane_interface_part.json
 954e41bd135c07e950689bb925d1ca79e5d2123e assets/insaneae/models/item/insane_pattern_provider.json
 a53803e8bedaa2e235dc331a1b52bd4fb987f9b0 assets/insaneae/models/item/insane_pattern_provider_part.json
+dcf5ca9ac49893825e658d6d661fde8cebe2864a assets/insaneae/models/item/insane_processor.json
+3338f6d5a62d071782dd03313f28650319ca7978 assets/insaneae/models/item/insane_processor_press.json
 a696c9145830ffe41edeb43123d5b0768d49f434 assets/insaneae/models/item/item_storage_cell_16g.json
 7647fe2ceaeee030a6eae8fd4c09e5d205c103f9 assets/insaneae/models/item/item_storage_cell_16p.json
 1cca228659fed4c316f1ea15142c34599c94e8ae assets/insaneae/models/item/item_storage_cell_16t.json
@@ -219,6 +229,7 @@ dee5bebda05f6db006ca2f042062d142d6f3efd5 assets/insaneae/models/item/portable_it
 60e921f5d1612806f0ec10c0838496ef3423e5de assets/insaneae/models/item/portable_item_cell_64p.json
 a3402728b602b51d8324b3cc246d16447f47051d assets/insaneae/models/item/portable_item_cell_64t.json
 7876cdd0bcba478fedc2d1c6d55a80f92b693d25 assets/insaneae/models/item/portable_item_cell_8e.json
+bfeaeb3966f5bc9dc0930e13f2ff99210a118aa5 assets/insaneae/models/item/printed_insane_processor.json
 de7f9de95379d91bd2661335d65cbe4e752fdd9b assets/insaneae/models/item/pulsar_energy_cell.json
 235d9c30a46add78855423928a3e7ab0b0acd3cc assets/insaneae/models/item/purple_compressed_dense_cable.json
 b9ed0d2558499bfcb14abeb211653ff94a71589a assets/insaneae/models/item/purple_hyper_cable.json

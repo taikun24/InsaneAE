@@ -36,6 +36,9 @@ public class ModCreativeTabs {
                 ModBlocks.allEnergyCells().forEach(cell -> cell.addToMainCreativeTab(params, output));
                 ModBlocks.allSolarPanels().forEach(output::accept);
                 ModUpgrades.SPEED_CARDS.values().forEach(card -> output.accept(card.get()));
+                output.accept(ModItems.INSANE_PROCESSOR_PRESS.get());
+                output.accept(ModItems.PRINTED_INSANE_PROCESSOR.get());
+                output.accept(ModItems.INSANE_PROCESSOR.get());
                 ModItems.CELL_COMPONENTS.values().forEach(item -> output.accept(item.get()));
                 ModCells.ITEM_CELLS.values().forEach(cell -> output.accept(cell.get()));
                 ModCells.FLUID_CELLS.values().forEach(cell -> output.accept(cell.get()));
@@ -45,6 +48,7 @@ public class ModCreativeTabs {
                 output.accept(ModCells.ULTRA_CREATIVE_CELL.get());
                 // 他アドオンのセル (化学物質セル・FE セルなど)。
                 for (AddonIntegration addon : AddonIntegrations.active()) {
+                    addon.materials().forEach(output::accept);
                     addon.storageCells().forEach(output::accept);
                     addon.portableCells().forEach(output::accept);
                 }

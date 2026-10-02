@@ -1,0 +1,19 @@
+{
+  "type": "ae2:inscriber",
+  "ingredients": {
+    "bottom": {
+      "item": "ae2:printed_silicon"
+    },
+    "middle": {
+      "item": "megacells:accumulation_processor"
+    },
+    "top": {
+      "item": "insaneae:printed_insane_processor"
+    }
+  },
+  "mode": "press",
+  "result": {
+    "count": 1,
+    "id": "insaneae:insane_processor"
+  }
+}

@@ -3,6 +3,9 @@ package jp.main.taikun.insaneae.datagen;
 import java.util.List;
 import java.util.Arrays;
 import appeng.recipes.game.StorageCellDisassemblyRecipe;
+import appeng.recipes.handlers.InscriberProcessType;
+import appeng.recipes.handlers.InscriberRecipeBuilder;
+import net.minecraft.world.item.Items;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.TagKey;
@@ -102,19 +105,7 @@ public class ModRecipeProvider extends RecipeProvider {
             // セルコンポーネント: 下位 ×4
             // shapeless(consumer, component, lower, b -> b.requires(lower, 4));
 
-            ItemLike baseMaterial = MATTER_BALL;
-            if (tier.getStorageBytes() > InsaneCraftingUnitType.STORAGE_256G.getStorageBytes()){
-                baseMaterial = SINGULARITY;
-            }
-
-            shaped(consumer, component, lower, new String[]{"ABA", "CDC", "ACA"},
-                    Map.of(
-                            'A', baseMaterial,
-                            'B', ACCUMULATION_PROCESSOR,
-                            'C', lower,
-                            'D', QUARTZ_VIBRANT_GLASS
-                    ));
-
+            tieredComponent(consumer, component, lower, ACCUMULATION_PROCESSOR, tier);
 
             // クラフトストレージ: MEGA のクラフトユニット + コンポーネント
             shapeless(consumer, ModBlocks.CRAFTING_STORAGE.get(tier).get(), component,
@@ -160,11 +151,13 @@ public class ModRecipeProvider extends RecipeProvider {
                     b -> b.requires(lower, 4).requires(ACCUMULATION_PROCESSOR));
         }
 
-        // Quantum CPU: パターンプロバイダ 1 + 分子組立装置 4 + 集積プロセッサ 4。
-        shaped(consumer, ModBlocks.QUANTUM_CPU.get(), ACCUMULATION_PROCESSOR,
+        insaneProcessor(consumer);
+
+        // Quantum CPU: パターンプロバイダ 1 + 分子組立装置 4 + Insane プロセッサ 4。
+        shaped(consumer, ModBlocks.QUANTUM_CPU.get(), ModItems.INSANE_PROCESSOR.get(),
                 new String[]{"ABA", "BCB", "ABA"},
                 Map.of(
-                        'A', ACCUMULATION_PROCESSOR,
+                        'A', ModItems.INSANE_PROCESSOR.get(),
                         'B', AEBlocks.MOLECULAR_ASSEMBLER,
                         'C', AEBlocks.PATTERN_PROVIDER
                 ));
@@ -275,6 +268,64 @@ public class ModRecipeProvider extends RecipeProvider {
                 ModUpgrades.QUANTUM_ACCELERATION_CARD.get(),
                 b -> b.requires(ModUpgrades.QUANTUM_ACCELERATION_CARD.get(), 2)
                         .requires(SINGULARITY, 2));
+    }
+
+    /**
+     * Insane プロセッサ一式 (刻印機)。MEGA の集積プロセッサと同じ組み立てで、1 段ずつ重い:
+     *
+     * <pre>
+     * 金型   : 上 集積回路の金型 / 中 量子もつれ特異点 / 下 論理回路の金型 (press: 金型 2 枚を潰す)
+     * 金型複製: 上 Insane 金型 / 中 鉄ブロック (inscribe: 金型は残る)
+     * 回路   : 上 Insane 金型 / 中 特異点 (inscribe)
+     * 本体   : 上 Insane 回路 / 中 集積プロセッサ / 下 シリコン回路 (press)
+     * </pre>
+     */
+    private static void insaneProcessor(RecipeOutput consumer) {
+        Item press = ModItems.INSANE_PROCESSOR_PRESS.get();
+        Item printed = ModItems.PRINTED_INSANE_PROCESSOR.get();
+        InscriberRecipeBuilder.inscribe(AEItems.QUANTUM_ENTANGLED_SINGULARITY, press, 1)
+                .setTop(Ingredient.of(MEGAItems.ACCUMULATION_PROCESSOR_PRESS))
+                .setBottom(Ingredient.of(AEItems.LOGIC_PROCESSOR_PRESS))
+                .setMode(InscriberProcessType.PRESS)
+                .save(consumer, inscriberId("insane_processor_press"));
+        InscriberRecipeBuilder.inscribe(Items.IRON_BLOCK, press, 1)
+                .setTop(Ingredient.of(press))
+                .setMode(InscriberProcessType.INSCRIBE)
+                .save(consumer, inscriberId("insane_processor_press_extra"));
+        InscriberRecipeBuilder.inscribe(AEItems.SINGULARITY, printed, 1)
+                .setTop(Ingredient.of(press))
+                .setMode(InscriberProcessType.INSCRIBE)
+                .save(consumer, inscriberId("printed_insane_processor"));
+        InscriberRecipeBuilder.inscribe(ACCUMULATION_PROCESSOR, ModItems.INSANE_PROCESSOR.get(), 1)
+                .setTop(Ingredient.of(printed))
+                .setBottom(Ingredient.of(AEItems.SILICON_PRINT))
+                .setMode(InscriberProcessType.PRESS)
+                .save(consumer, inscriberId("insane_processor"));
+    }
+
+    private static ResourceLocation inscriberId(String name) {
+        return ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "inscriber/" + name);
+    }
+
+    /**
+     * 階層つきコンポーネント 1 個のレシピ (下位 ×3 + プロセッサ + 振動水晶ガラス + 物質/特異点 ×4)。
+     * セルコンポーネントと、他アドオン連携のコンポーネント (FE 用のエネルギーコンポーネントなど) で共通。
+     *
+     * @param processor 真ん中上に置くプロセッサ (セル用は集積プロセッサ)
+     */
+    public static void tieredComponent(RecipeOutput consumer, ItemLike component, ItemLike lower,
+            ItemLike processor, InsaneCraftingUnitType tier) {
+        // 256G までは物質ボール、それより上は特異点。
+        ItemLike baseMaterial = tier.getStorageBytes() > InsaneCraftingUnitType.STORAGE_256G.getStorageBytes()
+                ? SINGULARITY
+                : MATTER_BALL;
+        shaped(consumer, component, lower, new String[]{"ABA", "CDC", "ACA"},
+                Map.of(
+                        'A', baseMaterial,
+                        'B', processor,
+                        'C', lower,
+                        'D', QUARTZ_VIBRANT_GLASS
+                ));
     }
 
     /** 通常セル (ハウジング + コンポーネント) と、その分解レシピを出す。 */

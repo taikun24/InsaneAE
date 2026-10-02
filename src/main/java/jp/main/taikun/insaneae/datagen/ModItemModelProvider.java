@@ -132,6 +132,7 @@ public class ModItemModelProvider extends ItemModelProvider {
         // FE セルは AppliedFlux の容量計算が long なので 16T までしか出さない (FluxTiers)。
         for (InsaneCraftingUnitType tier : FluxTiers.TIERS) {
             String id = tier.id();
+            layered("energy_component_" + id, modLoc("item/energy_component_" + id));
             layered("fe_storage_cell_" + id, FE_HOUSING, CELL_LED, standardCell(id));
             layered("portable_fe_cell_" + id,
                     PORTABLE_FE_HOUSING, PORTABLE_LED, PORTABLE_ITEM_SCREEN, portableSide(id));
@@ -145,6 +146,9 @@ public class ModItemModelProvider extends ItemModelProvider {
         for (InsaneSpeedCardType card : InsaneSpeedCardType.values()) {
             simple(card.id());
         }
+        simple("insane_processor_press");
+        simple("printed_insane_processor");
+        simple("insane_processor");
         simple("quantum_acceleration_card");
         simple("task_fusion_card");
 

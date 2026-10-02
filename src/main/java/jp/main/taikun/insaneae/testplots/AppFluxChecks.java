@@ -65,6 +65,13 @@ final class AppFluxChecks {
                         ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "fe_storage_cell_64t")),
                 "16T より上の FE セルが登録されている");
 
+        // FE セルの芯のエネルギーコンポーネントも同じ階層ぶん。
+        item(helper, "energy_component_1g");
+        item(helper, "energy_component_16t");
+        helper.check(!BuiltInRegistries.ITEM.containsKey(
+                        ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "energy_component_64t")),
+                "16T より上のエネルギーコンポーネントが登録されている");
+
         // カード: AppliedFlux が自分の FE セルにしているのと同じ顔ぶれ。
         Item cell = item(helper, "fe_storage_cell_1g");
         Item portable = item(helper, "portable_fe_cell_1g");
