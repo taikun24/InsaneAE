@@ -198,6 +198,9 @@ jobs:
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: |
+          # 依存関係 (CurseForge の Relations)。mods.toml の dependencies と揃えること。
+          # slug を 1 つでも間違えるとアップロードごと 400 で落ちる
+          # (slug は curseforge.com/minecraft/mc-mods/<slug> の部分)。
           jq -n \
             --rawfile changelog changelog.md \
             --arg name "InsaneAE ${{ steps.meta.outputs.version }} (${{ matrix.mc }})" \
@@ -208,7 +211,16 @@ jobs:
                changelogType: "markdown",
                displayName:   $name,
                gameVersions:  $versions,
-               releaseType:   $type
+               releaseType:   $type,
+               relations: {
+                 projects: [
+                   { slug: "applied-energistics-2",  type: "requiredDependency" },
+                   { slug: "mega-cells",             type: "requiredDependency" },
+                   { slug: "applied-mekanistics",    type: "optionalDependency" },
+                   { slug: "applied-flux",           type: "optionalDependency" },
+                   { slug: "ae2-crafting-optimizer", type: "optionalDependency" }
+                 ]
+               }
              }' > metadata.json
           cat metadata.json
 
