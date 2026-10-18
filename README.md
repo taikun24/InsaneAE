@@ -24,7 +24,7 @@ Minecraft のバージョンごとにブランチを分けています。**不�
 |---|---|
 | Minecraft | 1.21.1 |
 | NeoForge | 21.1.0 以上 |
-| [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) | 19.2.17 以上 (必須) |
+| [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) | 19.2.15 以上 (必須) |
 | [MEGA Cells](https://github.com/62832/MEGACells) | 4.11 以上 (必須) |
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) | 1.6 以上 (任意 / 化学物質セル用) |
 | [AppliedFlux](https://www.curseforge.com/minecraft/mc-mods/applied-flux) | 1.21-2.1.6 以上 (任意 / FE セル用) |
@@ -45,7 +45,7 @@ ACOが無い場合、または連携プロファイルが無効な場合は、�
 この連携はACOを必須依存にしません。両Modのバージョンと対応するNeoForge版を揃えてください。
 
 AE2 の内部 (`BasicCellInventory`、`CraftingCPUCluster`、ツールチップ描画など) に Mixin で踏み込んでいるため、
-AE2 のバージョン範囲は実際に検証した `[19.2.17,20)` に固定しています。
+AE2 のバージョン範囲は実際に検証した `[19.2.15,20)` に固定しています。
 
 ## 追加されるもの
 

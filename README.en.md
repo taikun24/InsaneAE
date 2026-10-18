@@ -24,7 +24,7 @@ This branch is **1.21.1 (NeoForge)**.
 |---|---|
 | Minecraft | 1.21.1 |
 | NeoForge | 21.1.0 or later |
-| [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) | 19.2.17 or later (required) |
+| [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) | 19.2.15 or later (required) |
 | [MEGA Cells](https://github.com/62832/MEGACells) | 4.11 or later (required) |
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) | 1.6 or later (optional, for chemical cells) |
 | [AppliedFlux](https://www.curseforge.com/minecraft/mc-mods/applied-flux) | 1.21-2.1.6 or later (optional, for FE cells) |
@@ -39,7 +39,7 @@ format is the same either way.
 
 Because InsaneAE reaches into AE2 internals with Mixins (`BasicCellInventory`,
 `CraftingCPUCluster`, tooltip rendering and more), the AE2 version range is pinned to
-`[19.2.17,20)` — the range that has actually been tested.
+`[19.2.15,20)` — the range that has actually been tested.
 
 ### ACO integration (optional)
 
