@@ -55,7 +55,7 @@ public final class TickBoost {
      * AE2 が 1 回 tick したあとに呼ばれ、必要なら<b>同じ tick の中で追加の tick を回す</b>。
      *
      * @param first AE2 本来の tick の戻り値
-     * @return 最後に回した tick の戻り値 (追い tick をしなかったなら {@code first} そのまま)
+     * @return 仕事をした tick のうち最も急ぎの戻り値 (追い tick をしなかったなら {@code first} そのまま)
      */
     public static TickRateModulation burst(IGridTickable tickable, IGridNode node, TickRateModulation first) {
         if (tickable == null || node == null || !hasMoreWork(first)) {
@@ -71,7 +71,7 @@ public final class TickBoost {
         // 回数の上限は設定で決める。刻印機は 1 個作るのに 16 tick 要るので、
         // 既定の 256 でも 1 tick に 16 個 (＝素の 16 tick に 1 個の 256 倍) まで出る。
         int extra = Math.min(multiplier, InsaneAEConfig.machineTickBurst()) - 1;
-        TickRateModulation last = first;
+        TickRateModulation best = first;
         for (int i = 0; i < extra; i++) {
             if (!node.isActive()) {
                 break;
@@ -79,14 +79,21 @@ public final class TickBoost {
             // 追い tick は「1 tick 経った」ぶんとして回す。元の ticksSinceLastCall を
             // そのまま渡すと、tick 間隔を見て進む機械で倍率が二重に掛かってしまう。
             TickRateModulation result = tickable.tickingRequest(node, 1);
-            if (result != null) {
-                last = result;
-            }
             if (!hasMoreWork(result)) {
                 break;  // 材料切れ・出力満杯。これ以上回しても無駄。
             }
+            best = moreUrgent(best, result);
         }
-        return last;
+        // 最後の追い tick が返す SLEEP / SLOWER は「この tick の中で材料が尽きた」だけで、
+        // 機械が暇になったわけではない。それを AE2 へ返すと tick 間隔が延び、材料が少しずつ
+        // 届く使い方 (パターンプロバイダーからの搬入) で最長 20 tick に 1 回まで落ちる (issue #15)。
+        // 次の材料が届くまでの待ち方は、仕事をした tick の戻り値に任せる。
+        return best;
+    }
+
+    /** AE2 の列挙は SLEEP, IDLE, SLOWER, SAME, FASTER, URGENT の順に急ぎになる。 */
+    private static TickRateModulation moreUrgent(TickRateModulation a, TickRateModulation b) {
+        return b.ordinal() > a.ordinal() ? b : a;
     }
 
     /** まだ仕事が残っている (＝もう 1 回回す価値がある) か。 */
