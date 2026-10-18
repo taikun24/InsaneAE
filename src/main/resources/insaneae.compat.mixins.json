@@ -25,7 +25,8 @@
     "compat.ExCraftingThreadMixin",
     "compat.ExFormationPlaneMixin",
     "compat.ExIOPortMixin",
-    "compat.ExInscriberThreadMixin"
+    "compat.ExInscriberThreadMixin",
+    "PatternProviderDecodeCacheMixin"
   ],
   "client": [
     "ScreenStyleMixin"

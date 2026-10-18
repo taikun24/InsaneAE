@@ -33,10 +33,12 @@ import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -929,5 +931,64 @@ public final class QuantumCpuPlots {
                 }
             };
         }
+    }
+
+    /**
+     * パターンを 1 枚変えても、<b>変わっていない枠はデコードし直さない</b>こと (issue #16)。
+     *
+     * <p>AE2 は 1 枚の出し入れのたびに全枠をデコードし直し、1620 枠では 1 回 30ms ほどかかっていた。
+     * 記憶したデコード結果が使われていれば、変えていない枠のパターンは<b>同じオブジェクト</b>のまま残る
+     * (デコードし直すと、equals は同じでも別のオブジェクトになる)。
+     * {@code PatternProviderDecodeCacheMixin} が黙って当たらなくなった場合もここで落ちる。</p>
+     */
+    @TestPlot("insaneae_pattern_decode_cache")
+    public static void patternDecodeCache(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,1] 0 0");
+        plot.blockState("2 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        var pos = new BlockPos(2, 0, 0);
+        var logs = new Item[] {
+                Items.OAK_LOG, Items.BIRCH_LOG, Items.SPRUCE_LOG, Items.JUNGLE_LOG};
+        var before = new ArrayList<IPatternDetails>();
+
+        plot.test(helper -> {
+            var sequence = helper.startSequence();
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(pos);
+                for (var log : logs) {
+                    cpu.getLogic().getPatternInv().addItems(
+                            CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                                    new ItemStack(log)));
+                }
+            });
+            sequence.thenIdle(2);
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(pos);
+                before.addAll(cpu.getLogic().getAvailablePatterns());
+                helper.check(before.size() == logs.length, "パターンが " + logs.length + " 枚になっていない");
+                // 1 枚目だけ別のレシピに差し替える
+                var inv = cpu.getLogic().getPatternInv();
+                inv.extractItem(0, 1, false);
+                inv.insertItem(0, CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
+                        new ItemStack(Items.ACACIA_LOG)), false);
+            });
+            sequence.thenIdle(2);
+            sequence.thenExecute(() -> {
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(pos);
+                var after = cpu.getLogic().getAvailablePatterns();
+                helper.check(after.size() == logs.length, "差し替え後のパターンが " + after.size() + " 枚");
+                helper.check(after.stream().noneMatch(p -> p == before.get(0)), "抜いたパターンが残っている");
+                helper.check(after.stream().anyMatch(p -> p.getPrimaryOutput().what()
+                                .equals(AEItemKey.of(Items.ACACIA_PLANKS))),
+                        "差し替えたパターンが読まれていない");
+                for (int i = 1; i < before.size(); i++) {
+                    var kept = before.get(i);
+                    helper.check(after.stream().anyMatch(p -> p == kept),
+                            "変えていない枠までデコードし直している (記憶が使われていない): " + kept);
+                }
+            });
+            sequence.thenSucceed();
+        });
     }
 }
