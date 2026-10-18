@@ -22,7 +22,13 @@ public final class HugeByteAmounts {
     /** AE2 が正しく扱える上限。これ以上で AE2 の getByteAmount が配列外になる。 */
     public static final long AE2_LIMIT = 1000L * GIB;
 
-    /** {@code Tooltips.units} における "G" の位置。 */
+    /**
+     * AE2 の {@code Tooltips.units} と同じ並び。AE2 19.2.18 で向こうが private になり
+     * 直接読むと {@code IllegalAccessError} で落ちるため、こちらで持つ (issue #17)。
+     */
+    private static final String[] UNITS = {"k", "M", "G", "T", "P", "E"};
+
+    /** {@link #UNITS} における "G" の位置。 */
     private static final int GIB_UNIT_INDEX = 2;
 
     private HugeByteAmounts() {
@@ -37,10 +43,10 @@ public final class HugeByteAmounts {
         long divisor = GIB;
         int unit = GIB_UNIT_INDEX;
         // units の最後 ("E") まで進める。Long.MAX_VALUE (8 EiB) でも収まる。
-        while (unit < Tooltips.units.length - 1 && bytes / divisor >= 1000) {
+        while (unit < UNITS.length - 1 && bytes / divisor >= 1000) {
             divisor *= 1024L;
             unit++;
         }
-        return new Tooltips.Amount(Tooltips.getAmount(bytes, divisor), Tooltips.units[unit]);
+        return new Tooltips.Amount(Tooltips.getAmount(bytes, divisor), UNITS[unit]);
     }
 }
