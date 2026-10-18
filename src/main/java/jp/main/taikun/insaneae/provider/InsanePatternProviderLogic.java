@@ -1,21 +1,28 @@
 package jp.main.taikun.insaneae.provider;
 
 import appeng.api.crafting.IPatternDetails;
+import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.IManagedGridNode;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import jp.main.taikun.insaneae.menu.PatternPagingHandshake;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * 大量のパターン枠を持つプロバイダ用の {@link PatternProviderLogic}。
  * 特大パターンプロバイダーと Quantum CPU ({@code QuantumCpuLogic}) が共用する。
  *
- * <p>AE2 のままでは 1620 枠に耐えないので 2 点変えてある:</p>
+ * <p>AE2 のままでは 1620 枠に耐えないので 3 点変えてある:</p>
  * <ul>
  *   <li>AE2 はパターンを<b>1 枚出し入れするたび</b>に {@link #updatePatterns()} を呼び、
  *       全スロットのデコードとグリッドのクラフト索引の再構築を行う。パターン端末や
@@ -24,6 +31,8 @@ import java.util.Set;
  *   <li>「持っているか」の判定 ({@link #hasPattern}) を<b>ハッシュ集合</b>にして、
  *       1 クラフトあたりの線形探索を無くしている。AE2 の {@link #getAvailablePatterns()} は
  *       {@code ArrayList} をそのまま返すので {@code contains} がパターン数に比例する。</li>
+ *   <li>再読み込みのたびの全枠デコードを、変わっていないパターンについては省く
+ *       ({@link #decodeCached})。</li>
  * </ul>
  *
  * <p>遅れは最大 1 tick。ホストの {@code serverTick()} が毎 tick 流すほか、
@@ -94,10 +103,60 @@ public class InsanePatternProviderLogic extends PatternProviderLogic {
         // 先に印を進めること。super.updatePatterns() の中から戻ってきても、
         // 同じ tick なら溜めるだけになって再帰しない。
         lastFlushTick = currentTick();
+        nextDecodeCache.clear();
         super.updatePatterns();
+        // 今回出てきたパターンだけを次へ持ち越す (抜いたパターンの記憶が溜まらない)。
+        var used = nextDecodeCache;
+        nextDecodeCache = decodeCache;
+        decodeCache = used;
+        nextDecodeCache.clear();
         patternSet.clear();
         patternSet.addAll(super.getAvailablePatterns());
         onPatternsFlushed();
+    }
+
+    /**
+     * パターンのデコード結果を覚えておく表 (issue #16)。
+     *
+     * <p>AE2 は 1 枚変わるたびに全枠をデコードし直す。1620 枠ではそれだけで 1 回 30ms ほどかかり、
+     * パターンを続けて出し入れすると毎回引っかかる。変わっていない枠は前回の結果をそのまま返す。
+     * null (デコード失敗) も覚える。</p>
+     *
+     * <p>鍵は枠に入っている {@link ItemStack} <b>そのもの</b> (同一性)。中身で引く
+     * ({@code AEItemKey.of}) と NBT の複製が全枠ぶん走り、それだけで半分近く食う。
+     * 枠の中で中身だけ書き換えられた場合に備えて、中身のハッシュも一緒に照合する。</p>
+     *
+     * <p>{@code super.updatePatterns()} の中から {@code PatternProviderDecodeCacheMixin} 経由で呼ばれる。
+     * Mixin が当たっていなければ呼ばれず、表は空のまま (毎回デコードする元の動作)。</p>
+     */
+    private Map<ItemStack, Decoded> decodeCache = new IdentityHashMap<>();
+    private Map<ItemStack, Decoded> nextDecodeCache = new IdentityHashMap<>();
+
+    private record Decoded(int contentHash, @Nullable IPatternDetails details) {
+    }
+
+    /** 表を作ったときのレシピ一覧。/reload で入れ物ごと替わるので、そのときは表を捨てる。 */
+    @Nullable
+    private RecipeManager decodeCacheRecipes;
+
+    /** {@code PatternDetailsHelper.decodePattern} の記憶つき版。 */
+    @Nullable
+    public IPatternDetails decodeCached(ItemStack stack, @Nullable Level level) {
+        if (level == null || stack.isEmpty()) {
+            return PatternDetailsHelper.decodePattern(stack, level);
+        }
+        RecipeManager recipes = level.getRecipeManager();
+        if (recipes != decodeCacheRecipes) {
+            decodeCache.clear();
+            decodeCacheRecipes = recipes;
+        }
+        int contentHash = ItemStack.hashItemAndComponents(stack);
+        Decoded decoded = decodeCache.get(stack);
+        if (decoded == null || decoded.contentHash() != contentHash) {
+            decoded = new Decoded(contentHash, PatternDetailsHelper.decodePattern(stack, level));
+        }
+        nextDecodeCache.put(stack, decoded);
+        return decoded.details();
     }
 
     /**
