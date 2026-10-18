@@ -24,7 +24,7 @@ This branch is **1.20.1 (Forge)**.
 |---|---|
 | Minecraft | 1.20.1 |
 | Forge | 47.4.20 or later |
-| [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) | 15.4.10 or later (required) |
+| [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) | 15.2.15 or later (required) |
 | [MEGA Cells](https://github.com/62832/MEGACells) | 2.4.6 or later (required) |
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) | 1.4 or later (optional, for chemical cells) |
 | [AppliedFlux](https://www.curseforge.com/minecraft/mc-mods/applied-flux) | 1.20-1.3.7 or later (optional, for FE cells) |
@@ -33,7 +33,7 @@ This branch is **1.20.1 (Forge)**.
 
 Because InsaneAE reaches into AE2 internals with Mixins (`BasicCellInventory`,
 `CraftingCPUCluster`, tooltip rendering and more), the AE2 version range is pinned to
-`[15.4.10,16)` — the range that has actually been tested.
+`[15.2.15,16)` — the range that has actually been tested.
 
 AE2 Crafting Optimizer is not required. When it is installed and its BigInteger backend is
 enabled, the Quantum CPU's pending-output ledger and its exact calculation plans are wired to

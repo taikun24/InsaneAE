@@ -25,13 +25,13 @@ MEGA Cells 的存储容量上限为 256M，而 InsaneAE 在此基础上进一步
 | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | Minecraft                                                                                     | 1.20.1                                                           |
 | Forge                                                                                         | 47.4.20 或更高版本                                                    |
-| [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2)          | 15.4.10 或更高版本（必需）                                                |
+| [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2)          | 15.2.15 或更高版本（必需）                                                |
 | [MEGA Cells](https://github.com/62832/MEGACells)                                              | 2.4.6 或更高版本（必需）                                                  |
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics)                         | 1.4 或更高版本（可选，用于化学物质存储元件）                                         |
 | [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer)                 | 1.5.12 或更高版本，**推荐使用 1.5.18 或更高版本**（可选，用于 BigInteger 账目管理和精确计算规划） |
 | [Astral Mekanism & Energistics](https://www.curseforge.com/minecraft/mc-mods/astral-mekanism) | 1.8 或更高版本（可选，用于整合并批量自动输出至 ME 接口的功能）                              |
 
-由于 InsaneAE 通过 Mixin 深入修改 AE2 的内部实现，包括 `BasicCellInventory`、`CraftingCPUCluster` 和工具提示渲染等，因此 AE2 的兼容版本范围被限定为经过实际测试的 `[15.4.10,16)`。
+由于 InsaneAE 通过 Mixin 深入修改 AE2 的内部实现，包括 `BasicCellInventory`、`CraftingCPUCluster` 和工具提示渲染等，因此 AE2 的兼容版本范围被限定为经过实际测试的 `[15.2.15,16)`。
 
 ### AE2 Crafting Optimizer 联动说明
 

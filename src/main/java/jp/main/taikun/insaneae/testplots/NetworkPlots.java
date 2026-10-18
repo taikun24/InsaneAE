@@ -4,6 +4,7 @@ import static jp.main.taikun.insaneae.testplots.TestPlotSupport.processingPatter
 
 import appeng.api.behaviors.GenericInternalInventory;
 import appeng.api.config.Actionable;
+import appeng.api.networking.GridHelper;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.pathing.ChannelMode;
@@ -20,6 +21,7 @@ import appeng.core.definitions.AEBlocks;
 import appeng.core.definitions.AEItems;
 import appeng.core.definitions.AEParts;
 import appeng.core.definitions.ItemDefinition;
+import appeng.me.helpers.IGridConnectedBlockEntity;
 import appeng.menu.locator.MenuLocators;
 import appeng.parts.storagebus.StorageBusPart;
 import appeng.server.testplots.CraftingPatternHelper;
@@ -492,7 +494,19 @@ public final class NetworkPlots {
 
     /** その位置のノードのチャンネル上限。 */
     private static int maxChannels(PlotTestHelper helper, BlockPos pos) {
-        IGridNode node = helper.getGridNode(pos);
+        // PlotTestHelper#getGridNode と同じことを直接書く (古い AE2 15.x には無いため)。
+        // ケーブルはブロックエンティティではなく面ごとのノードを持つので、向きを順に見る。
+        IGridNode node = null;
+        if (helper.getBlockEntity(pos) instanceof IGridConnectedBlockEntity connected) {
+            node = connected.getMainNode().getNode();
+        } else {
+            var host = GridHelper.getNodeHost(helper.getLevel(), helper.absolutePos(pos));
+            for (var side : Direction.values()) {
+                if (host != null && node == null) {
+                    node = host.getGridNode(side);
+                }
+            }
+        }
         return node == null ? -1 : node.getMaxChannels();
     }
 
