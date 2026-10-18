@@ -123,6 +123,49 @@ public final class SpeedCardPlots {
         });
     }
 
+    /**
+     * 材料が<b>少しずつ届く</b>ときも追い tick で遅くならないこと (issue #15)。
+     *
+     * <p>パターンプロバイダーからの搬入のように材料が 1 個ずつ届く場合、追い tick の途中で
+     * 材料が尽きる。そのとき機械が返す SLEEP / SLOWER をそのまま AE2 へ返すと、
+     * 仕事をした 1 回目の URGENT が上書きされて tick 間隔が延びてしまう。</p>
+     *
+     * <p>毎 tick、入力が空なら 1 個入れて出力を回収する。追い tick で 1 個を 1 tick で
+     * 刻み切れるので、200 tick あれば 150 個以上は刻めているはず。</p>
+     */
+    @TestPlot("insaneae_inscriber_trickle_feed")
+    public static void inscriberTrickleFeed(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("0 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.INSCRIBER, inscriber -> {
+            inscriber.getUpgrades().addItems(new ItemStack(
+                    ModUpgrades.SPEED_CARDS.get(InsaneSpeedCardType.WARP).get()));
+            inscriber.getInternalInventory().setItemDirect(INSCRIBER_TOP, AEItems.SILICON_PRESS.stack());
+        });
+
+        final int feedTicks = 200;
+        final int expected = 150;
+        plot.test(helper -> {
+            var pos = new BlockPos(1, 0, 0);
+            long[] made = {0};
+            var sequence = helper.startSequence();
+
+            sequence.thenIdle(20);  // グリッドの起動
+            sequence.thenExecuteFor(feedTicks, () -> {
+                var inv = ((InscriberBlockEntity) helper.getBlockEntity(pos)).getInternalInventory();
+                made[0] += inv.extractItem(INSCRIBER_OUTPUT, 64, false).getCount();
+                if (inv.getStackInSlot(INSCRIBER_INPUT).isEmpty()) {
+                    inv.insertItem(INSCRIBER_INPUT, AEItems.SILICON.stack(1), false);
+                }
+            });
+            sequence.thenExecute(() -> helper.check(made[0] >= expected,
+                    feedTicks + " tick で " + made[0] + " 個しか刻めていない (期待 " + expected
+                            + " 個以上)。追い tick の戻り値で tick 間隔が延びている", pos));
+
+            sequence.thenSucceed();
+        }).maxTicks(feedTicks + 60);
+    }
+
     private static long countInNetwork(PlotTestHelper helper,
             Item item) {
         var counter = new KeyCounter();
