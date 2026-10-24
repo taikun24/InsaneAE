@@ -5,6 +5,7 @@ import appeng.api.networking.security.IActionSource;
 import appeng.api.storage.StorageCells;
 import appeng.api.storage.cells.CellState;
 import appeng.api.storage.cells.StorageCell;
+import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.Upgrades;
 import appeng.core.definitions.AEItems;
 import appeng.server.testworld.PlotTestHelper;
@@ -14,6 +15,10 @@ import com.glodblock.github.appflux.common.me.key.FluxKey;
 import com.glodblock.github.appflux.common.me.key.type.EnergyType;
 import com.glodblock.github.appflux.common.me.key.type.FluxKeyType;
 import jp.main.taikun.insaneae.InsaneAE;
+import jp.main.taikun.insaneae.iface.InsaneInterfacePart;
+import jp.main.taikun.insaneae.provider.InsanePatternProviderPart;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -87,6 +92,42 @@ final class AppFluxChecks {
                 "FE セルに FE の capability が無い");
         helper.check(new ItemStack(portable).getCapability(Capabilities.EnergyStorage.ITEM) != null,
                 "ポータブル FE セルに FE の capability が無い");
+    }
+
+    /**
+     * 誘導カード: 超次元版の 4 つ (インターフェイス / パターンプロバイダー × ブロック / 部品) に挿せて、
+     * 挿すと FE の capability が現れて受電できること。
+     *
+     * <p>FE の口は AppliedFlux が {@code GENERIC_INTERNAL_INV} を包んで出すもので、
+     * 「誘導カードが挿さっているか」を見てから開く ({@code AFUtil#shouldTryCast})。
+     * カードの登録 ({@code UpgradeMirrors}) と部品の capability ({@code ModCapabilities#registerParts}) の
+     * どちらが欠けても、ここで null のままになる。座標は {@link AddonPlots#appFluxInductionCard} を参照。</p>
+     */
+    static void inductionCard(PlotTestHelper helper) {
+        BlockPos cable = new BlockPos(2, 0, 0);
+        checkInduction(helper, "超特大インターフェイス", new BlockPos(0, 1, 0), Direction.UP,
+                (IUpgradeableObject) helper.getBlockEntity(new BlockPos(0, 1, 0)));
+        checkInduction(helper, "特大パターンプロバイダー", new BlockPos(1, 1, 0), Direction.UP,
+                (IUpgradeableObject) (Object) helper.getBlockEntity(new BlockPos(1, 1, 0)));
+        checkInduction(helper, "超特大インターフェイス (部品)", cable, Direction.UP,
+                helper.getPart(cable, Direction.UP, InsaneInterfacePart.class));
+        checkInduction(helper, "特大パターンプロバイダー (部品)", cable, Direction.NORTH,
+                (IUpgradeableObject) (Object) helper.getPart(cable, Direction.NORTH, InsanePatternProviderPart.class));
+    }
+
+    private static void checkInduction(PlotTestHelper helper, String name, BlockPos pos, Direction side,
+            IUpgradeableObject host) {
+        helper.check(host != null, name + " が見つからない", pos);
+        helper.check(helper.getCapability(pos, Capabilities.EnergyStorage.BLOCK, side) == null,
+                name + " に誘導カード無しで FE の口が開いている", pos);
+
+        ItemStack rest = host.getUpgrades().addItems(new ItemStack(AFSingletons.INDUCTION_CARD));
+        helper.check(rest.isEmpty(), name + " に誘導カードが挿さらない", pos);
+
+        var energy = helper.getCapability(pos, Capabilities.EnergyStorage.BLOCK, side);
+        helper.check(energy != null, name + " に誘導カードを挿しても FE の口が開かない", pos);
+        int received = energy.receiveEnergy(1000, true);
+        helper.check(received > 0, name + " が FE を受け取らない: " + received, pos);
     }
 
     private static Item item(PlotTestHelper helper, String id) {

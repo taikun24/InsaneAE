@@ -3,13 +3,16 @@ package jp.main.taikun.insaneae.registries;
 import appeng.api.AECapabilities;
 import appeng.api.implementations.items.IAEItemPowerStorage;
 import appeng.api.networking.IInWorldGridNodeHost;
+import appeng.api.parts.RegisterPartCapabilitiesEvent;
 import appeng.items.tools.powered.powersink.PoweredItemCapabilities;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import jp.main.taikun.insaneae.iface.InsaneInterfacePart;
 import jp.main.taikun.insaneae.integration.AddonIntegrations;
+import jp.main.taikun.insaneae.provider.InsanePatternProviderPart;
 
 /**
  * このMod が公開する capability の登録。
@@ -88,6 +91,29 @@ public final class ModCapabilities {
 
         // 他アドオンのセル (化学物質セル・FE セルなど) は各連携が自分で登録する。
         AddonIntegrations.active().forEach(addon -> addon.registerCapabilities(event));
+    }
+
+    /**
+     * ケーブルに貼る版 (部品) の capability。
+     *
+     * <p>AE2 の部品の capability は<b>部品のクラスの完全一致</b>で引かれる
+     * ({@code RegisterPartCapabilitiesEvent} の中で {@code parts.get(part.getClass())})。
+     * {@code InterfacePart} / {@code PatternProviderPart} 向けの AE2 の登録は、
+     * それを継承したこちらの部品には効かないので、同じものを登録し直す。
+     * これが無いと、パイプや他 Mod の機械から部品の中身が見えない。</p>
+     *
+     * <p>中身はブロック版と同じ。{@code GENERIC_INTERNAL_INV} を出しておけば、
+     * AE2 / Applied Mekanistics / AppliedFlux がケーブルバス越しに
+     * IItemHandler / IFluidHandler / 化学物質 / FE のアダプタを足してくれる
+     * (AppliedFlux の誘導カードの受電もこの口を通る)。</p>
+     */
+    public static void registerParts(RegisterPartCapabilitiesEvent event) {
+        event.register(AECapabilities.GENERIC_INTERNAL_INV,
+                (part, context) -> part.getExposedInventory(), InsaneInterfacePart.class);
+        event.register(AECapabilities.ME_STORAGE,
+                (part, context) -> part.getInterfaceLogic().getInventory(), InsaneInterfacePart.class);
+        event.register(AECapabilities.GENERIC_INTERNAL_INV,
+                (part, context) -> part.getLogic().getReturnInv(), InsanePatternProviderPart.class);
     }
 
     /**

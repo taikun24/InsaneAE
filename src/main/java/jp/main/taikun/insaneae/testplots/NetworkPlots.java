@@ -40,11 +40,16 @@ import jp.main.taikun.insaneae.registries.ModCells;
 import jp.main.taikun.insaneae.registries.ModParts;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.registries.DeferredItem;
+
+import java.util.List;
 
 /**
  * ケーブル・部品・インターフェイス・チャンネルなど、グリッドまわりの検証。
@@ -352,8 +357,74 @@ public final class NetworkPlots {
                         "ケーブル版パターンプロバイダーがグリッドに入っていない", pos);
             });
 
+            // 部品の中身が外から見えること。AE2 は部品の capability をクラスの完全一致で引くので、
+            // ModCapabilities#registerParts が抜けると AE2 の InterfacePart 向けの登録も効かず、
+            // パイプや他 Mod の機械から何も見えなくなる。
+            sequence.thenExecute(() -> {
+                var ifaceInv = helper.getCapability(pos, AECapabilities.GENERIC_INTERNAL_INV, Direction.UP);
+                helper.check(ifaceInv != null,
+                        "ケーブル版インターフェイスが GENERIC_INTERNAL_INV を公開していない", pos);
+                helper.check(ifaceInv.size() == InsaneInterfaceBlockEntity.SLOTS,
+                        "ケーブル版インターフェイスの外向きの枠数が違う: " + ifaceInv.size(), pos);
+                helper.check(helper.getCapability(pos, AECapabilities.ME_STORAGE, Direction.UP) != null,
+                        "ケーブル版インターフェイスが ME_STORAGE を公開していない", pos);
+                helper.check(helper.getCapability(pos, Capabilities.ItemHandler.BLOCK, Direction.UP) != null,
+                        "ケーブル版インターフェイスに IItemHandler のアダプタが付いていない", pos);
+                helper.check(helper.getCapability(pos, AECapabilities.GENERIC_INTERNAL_INV, Direction.NORTH) != null,
+                        "ケーブル版パターンプロバイダーが返却インベントリを公開していない", pos);
+
+                // 未設定の枠に入れたぶんは、ブロック版と同じくネットワークへ直送される。
+                long inserted = ifaceInv.insert(0, AEItemKey.of(Items.IRON_INGOT), 100, Actionable.MODULATE);
+                helper.check(inserted == 100, "ケーブル版インターフェイスに入らない: " + inserted, pos);
+            });
+
             sequence.thenSucceed();
         });
+    }
+
+    /**
+     * AE2 の機械に登録されたアップグレードカードが、<b>超次元版にも同じ枚数で登録されている</b>こと
+     * ({@code UpgradeMirrors} / {@code UpgradesMixin} の回帰テスト)。
+     *
+     * <p>AE2 自身のカード (インターフェイスのクラフトカード・あいまいカード) に加えて、
+     * 他アドオンが AE2 の機械に登録したカード (AppliedFlux の誘導カードなど) も全部見る。
+     * 実際にインターフェイスのアップグレード枠へ挿せるところまで確かめる。</p>
+     */
+    @TestPlot("insaneae_insane_machine_upgrades")
+    public static void insaneMachineUpgrades(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.blockState("0 0 0", ModBlocks.INSANE_INTERFACE.get().defaultBlockState());
+        plot.test(helper -> helper.succeedIf(() -> {
+            var pairs = List.<ItemLike[]>of(
+                    new ItemLike[] {AEBlocks.INTERFACE, ModBlocks.INSANE_INTERFACE.get()},
+                    new ItemLike[] {AEParts.INTERFACE, ModParts.INSANE_INTERFACE.get()},
+                    new ItemLike[] {AEBlocks.PATTERN_PROVIDER, ModBlocks.INSANE_PATTERN_PROVIDER.get()},
+                    new ItemLike[] {AEParts.PATTERN_PROVIDER, ModParts.INSANE_PATTERN_PROVIDER.get()});
+            for (ItemLike[] pair : pairs) {
+                for (Item card : BuiltInRegistries.ITEM) {
+                    int original = Upgrades.getMaxInstallable(card, pair[0]);
+                    if (original > 0) {
+                        int mirrored = Upgrades.getMaxInstallable(card, pair[1]);
+                        helper.check(mirrored == original,
+                                BuiltInRegistries.ITEM.getKey(card) + " が "
+                                        + BuiltInRegistries.ITEM.getKey(pair[1].asItem()) + " に "
+                                        + mirrored + " 枚 (" + BuiltInRegistries.ITEM.getKey(pair[0].asItem())
+                                        + " は " + original + " 枚)");
+                    }
+                }
+            }
+            // AE2 自身のカードは必ずある (写す仕組みが丸ごと動いていない場合に気付けるように)。
+            helper.check(Upgrades.getMaxInstallable(AEItems.CRAFTING_CARD, ModBlocks.INSANE_INTERFACE.get()) > 0,
+                    "超特大インターフェイスにクラフトカードが登録されていない (UpgradesMixin が当たっていない?)");
+            helper.check(Upgrades.getMaxInstallable(AEItems.FUZZY_CARD, ModParts.INSANE_INTERFACE.get()) > 0,
+                    "ケーブル版インターフェイスにあいまいカードが登録されていない");
+
+            var be = (InsaneInterfaceBlockEntity) helper.getBlockEntity(BlockPos.ZERO);
+            ItemStack rest = be.getInterfaceLogic().getUpgrades().addItems(new ItemStack(AEItems.FUZZY_CARD));
+            helper.check(rest.isEmpty(), "超特大インターフェイスのアップグレード枠にあいまいカードが挿さらない");
+            helper.check(be.getInterfaceLogic().getUpgrades().isInstalled(AEItems.FUZZY_CARD),
+                    "挿したあいまいカードが認識されない");
+        }));
     }
 
     /**

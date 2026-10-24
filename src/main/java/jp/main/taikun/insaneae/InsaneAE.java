@@ -73,6 +73,8 @@ public class InsaneAE {
         // (1.20.1 のように BlockEntity#getCapability を override して継承させる方式は廃止された)。
         // AE2 の一括登録は AE2 自身の型しか見ないので、自前の型はここで全部登録し直す。
         bus.addListener(ModCapabilities::register);
+        // ケーブルに貼る版は AE2 の部品用イベントで登録する (AE2 の登録はクラスの完全一致でしか効かない)。
+        bus.addListener(ModCapabilities::registerParts);
 
         // formed モデルの組み込み登録は ModelBakery より前に済ませる必要があるため、
         // client でのみ Mod 構築時に行う (AE2 の AppEngClient コンストラクタと同タイミング)。

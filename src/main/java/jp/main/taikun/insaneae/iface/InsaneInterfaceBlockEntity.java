@@ -1,27 +1,14 @@
 package jp.main.taikun.insaneae.iface;
 
-import appeng.api.config.Actionable;
-import appeng.api.networking.IGrid;
-import appeng.api.networking.IManagedGridNode;
-import appeng.api.networking.security.IActionSource;
-import appeng.api.stacks.AEKeyType;
-import appeng.api.stacks.AEKeyTypes;
-import appeng.api.stacks.GenericStack;
-import appeng.api.storage.MEStorage;
-import appeng.api.storage.StorageHelper;
 import appeng.blockentity.misc.InterfaceBlockEntity;
 import appeng.helpers.InterfaceLogic;
-import appeng.helpers.InterfaceLogicHost;
 import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
-import appeng.util.ConfigInventory;
 import jp.main.taikun.insaneae.menu.InsaneInterfaceMenu;
-import jp.main.taikun.insaneae.mixin.ConfigInventoryAccessor;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -85,14 +72,14 @@ public class InsaneInterfaceBlockEntity extends InterfaceBlockEntity {
      * <p>super のコンストラクタ (= {@link #createLogic()}) より後に初期化されるので、
      * ここでは {@code getInterfaceLogic()} を安全に触れる。</p>
      */
-    private final InterfaceOverflowInventory exposedInventory = new InterfaceOverflowInventory(this);
+    private final InterfaceOverflowInventory exposedInventory = new InterfaceOverflowInventory(getMainNode(), this);
 
     public InsaneInterfaceBlockEntity(BlockEntityType<?> blockEntityType, BlockPos pos, BlockState blockState) {
         super(blockEntityType, pos, blockState);
     }
 
     /**
-     * 枠数と 1 枠あたりの上限を引き上げた {@link InterfaceLogic} を作る。
+     * 枠数と 1 枠あたりの上限を引き上げた {@link InterfaceLogic} を作る → {@link InsaneInterfaces}。
      *
      * <p><b>これは super のフィールド初期化子から呼ばれる。</b>
      * この時点でこのクラスのフィールドはまだ初期化されていないので、
@@ -100,41 +87,7 @@ public class InsaneInterfaceBlockEntity extends InterfaceBlockEntity {
      */
     @Override
     protected InterfaceLogic createLogic() {
-        return createInsaneLogic(getMainNode(), this, getItemFromBlockEntity());
-    }
-
-    /**
-     * 枠数と 1 枠あたりの上限を引き上げた {@link InterfaceLogic} を作る。
-     *
-     * <p>ブロック版 ({@link #createLogic()}) とケーブル版 ({@link InsaneInterfacePart}) の
-     * 共通部分。<b>どちらも相手のコンストラクタ途中から呼ばれる</b>ので、
-     * 引数以外のインスタンス状態に触ってはいけない。</p>
-     */
-    static InterfaceLogic createInsaneLogic(IManagedGridNode mainNode, InterfaceLogicHost host,
-            Item icon) {
-        // 枠数はコンストラクタ引数で受け付けている (AE2 の既定は 9)。
-        InterfaceLogic logic = new InterfaceLogic(mainNode, host, icon, SLOTS);
-        widen(logic.getConfig());
-        widen(logic.getStorage());
-        return logic;
-    }
-
-    /**
-     * 1 枠あたりの上限を引き上げる。
-     *
-     * <p>{@code InterfaceLogic} のコンストラクタが {@code useRegisteredCapacities()} で
-     * 既定値 (アイテム 99・液体 4000mB・化学物質 4000mB) を入れているので、上書きする。
-     * <b>それだけではアイテムには効かない</b>: {@code getMaxAmount} は
-     * {@code min(アイテムの最大スタック数, 容量)} を返すため、{@code allowOverstacking} も
-     * 立てる必要がある → {@link ConfigInventoryAccessor}。</p>
-     */
-    private static void widen(ConfigInventory inv) {
-        ((ConfigInventoryAccessor) inv).insaneae$setAllowOverstacking(true);
-        // 未登録の型は容量が Long.MAX_VALUE 扱いになり int の範囲を超えてしまうので、
-        // 「今あるものを上書きする」のではなく登録済みの型を全部明示的に設定する。
-        for (AEKeyType type : AEKeyTypes.getAll()) {
-            inv.setCapacity(type, MAX_PER_SLOT);
-        }
+        return InsaneInterfaces.createLogic(getMainNode(), this, getItemFromBlockEntity());
     }
 
     /** 他 Mod のアダプタに見せるインベントリ ({@code GENERIC_INTERNAL_INV})。 */
@@ -143,42 +96,15 @@ public class InsaneInterfaceBlockEntity extends InterfaceBlockEntity {
     }
 
     /**
-     * 壊されたときは<b>中身をまず ME ネットワークに戻す</b>。
-     *
-     * <p>AE2 の既定はドロップに変換するだけだが、{@code AEItemKey#addDrops} は
-     * <b>1000 スタックを超えたぶんを警告 1 行だけ出して捨てる</b>。
-     * 通常のインターフェイス (1 枠 64 個 × 9 枠) なら当たらない上限だが、
-     * こちらは 1 枠 21 億 × 81 枠なので、うっかり壊すと簡単に踏む。</p>
+     * 壊されたときは<b>中身をまず ME ネットワークに戻す</b> → {@link InsaneInterfaces#returnStorageToNetwork}。
      *
      * <p>{@code AEBaseEntityBlock#onRemove} はブロックを消す<b>前</b>に呼ぶので、
-     * この時点ではまだグリッドに繋がっている。ネットワークが無い・電力が無い・
-     * 在庫が満杯といった理由で戻せなかったぶんは、これまでどおりドロップに回る。</p>
+     * この時点ではまだグリッドに繋がっている。戻せなかったぶんはこれまでどおりドロップに回る。</p>
      */
     @Override
     public void addAdditionalDrops(Level level, BlockPos pos, List<ItemStack> drops) {
-        returnStorageToNetwork();
+        InsaneInterfaces.returnStorageToNetwork(getMainNode(), getInterfaceLogic());
         super.addAdditionalDrops(level, pos, drops);
-    }
-
-    private void returnStorageToNetwork() {
-        IGrid grid = getMainNode().getGrid();
-        if (grid == null) {
-            return;
-        }
-        ConfigInventory storage = getInterfaceLogic().getStorage();
-        MEStorage networkInv = grid.getStorageService().getInventory();
-        IActionSource source = IActionSource.ofMachine(getInterfaceLogic());
-        for (int slot = 0; slot < storage.size(); slot++) {
-            GenericStack stack = storage.getStack(slot);
-            if (stack == null) {
-                continue;
-            }
-            long moved = StorageHelper.poweredInsert(grid.getEnergyService(), networkInv,
-                    stack.what(), stack.amount(), source);
-            if (moved > 0) {
-                storage.extract(slot, stack.what(), moved, Actionable.MODULATE);
-            }
-        }
     }
 
     // ---------------------------------------------------------------- 画面まわり

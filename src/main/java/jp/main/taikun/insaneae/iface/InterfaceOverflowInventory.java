@@ -3,11 +3,13 @@ package jp.main.taikun.insaneae.iface;
 import appeng.api.behaviors.GenericInternalInventory;
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGrid;
+import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.GenericStack;
 import appeng.api.storage.StorageHelper;
+import appeng.helpers.InterfaceLogicHost;
 import appeng.util.ConfigInventory;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,10 +38,15 @@ import org.jetbrains.annotations.Nullable;
  * <p>取り出し側は枠の中身だけ。ネットワークの中身をここから抜けるようにすると、
  * 隣にホッパーを置くだけでネットワークが空になってしまう
  * (AE2 が {@code GENERIC_INTERNAL_INV} に在庫インベントリしか出していないのと同じ理由)。</p>
+ *
+ * <p>ブロック版 ({@link InsaneInterfaceBlockEntity}) とケーブル版 ({@link InsaneInterfacePart}) の
+ * 両方が同じものを出す。どちらも {@link InterfaceLogicHost} とグリッドノードを持つので、
+ * その 2 つだけを受け取る。</p>
  */
 public class InterfaceOverflowInventory implements GenericInternalInventory {
 
-    private final InsaneInterfaceBlockEntity host;
+    private final IManagedGridNode mainNode;
+    private final InterfaceLogicHost host;
 
     /**
      * ネットワークへの流し込みが自分に戻ってきたときに止めるための印。
@@ -49,7 +56,8 @@ public class InterfaceOverflowInventory implements GenericInternalInventory {
      */
     private boolean insertingIntoNetwork;
 
-    public InterfaceOverflowInventory(InsaneInterfaceBlockEntity host) {
+    public InterfaceOverflowInventory(IManagedGridNode mainNode, InterfaceLogicHost host) {
+        this.mainNode = mainNode;
         this.host = host;
     }
 
@@ -80,10 +88,10 @@ public class InterfaceOverflowInventory implements GenericInternalInventory {
     }
 
     private long insertIntoNetwork(AEKey what, long amount, Actionable mode) {
-        if (!host.getMainNode().isActive()) {
+        if (!mainNode.isActive()) {
             return 0;
         }
-        IGrid grid = host.getMainNode().getGrid();
+        IGrid grid = mainNode.getGrid();
         if (grid == null) {
             return 0;
         }

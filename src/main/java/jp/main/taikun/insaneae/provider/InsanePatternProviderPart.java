@@ -33,10 +33,10 @@ import java.util.List;
  * (溜まるのは「同じ tick に 2 回以上いじったとき」だけで、次の読み出しで解消する)。</p>
  *
  * <h2>ブロック版との違い</h2>
- * <p>返却インベントリを外の機械へ見せる {@code GENERIC_INTERNAL_INV} は
- * <b>ブロックの面</b>に出しているもので、ケーブルバスの部品には同じ口が無い。
- * 押し出し先は AE2 の部品と同じく<b>取り付けた面の隣</b>だけになる
- * (ブロック版は 6 方向すべて)。</p>
+ * <p>押し出し先は AE2 の部品と同じく<b>取り付けた面の隣</b>だけになる
+ * (ブロック版は 6 方向すべて)。返却インベントリ ({@code GENERIC_INTERNAL_INV}) は
+ * ブロック版と同じく外へ見せる。AE2 の {@code PatternProviderPart} 向けの登録は
+ * クラスの完全一致でしか効かないので、{@code ModCapabilities#registerParts} で登録し直している。</p>
  */
 public class InsanePatternProviderPart extends PatternProviderPart {
 
