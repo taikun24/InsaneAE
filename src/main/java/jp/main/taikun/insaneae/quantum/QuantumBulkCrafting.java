@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
+import jp.main.taikun.insaneae.util.LogOnce;
 import jp.main.taikun.insaneae.util.SaturatingMath;
 
 /**
@@ -457,8 +458,7 @@ public final class QuantumBulkCrafting {
                 }
                 if (chosen == null) {
                     // 1) の見積もりと食い違った: 何も無かったことにして通常経路に任せる。
-                    LOGGER.warn("InsaneAE: bulk crafting could not gather ingredients for {}, falling back.",
-                            details.getDefinition());
+                    logFallback("could not gather ingredients", details);
                     rollbackInputs(view, holder, networkInputs);
                     return null;
                 }
@@ -494,16 +494,14 @@ public final class QuantumBulkCrafting {
                 }
                 if (needed > 0) {
                     // 1) の見積もりと食い違った: 何も無かったことにして通常経路に任せる。
-                    LOGGER.warn("InsaneAE: bulk crafting could not gather ingredients for {}, falling back.",
-                            details.getDefinition());
+                    logFallback("could not gather ingredients", details);
                     rollbackInputs(view, holder, networkInputs);
                     return null;
                 }
             }
         } catch (ArithmeticException overflow) {
             // 実際に選ばれた候補の掛け算がlongへ戻らない窓は、材料を戻して次tickへ回す。
-            LOGGER.warn("InsaneAE: bulk crafting window exceeded the AE2 long boundary for {}, falling back.",
-                    details.getDefinition());
+            logFallback("window exceeded the AE2 long boundary", details);
             rollbackInputs(view, holder, networkInputs);
             return null;
         }
@@ -649,5 +647,20 @@ public final class QuantumBulkCrafting {
             }
         }
         return null;
+    }
+
+    /**
+     * まとめ処理を諦めて通常経路に戻したことを残す。
+     *
+     * <p>クラフト 1 回ごとに通り得るので、理由ごとに<b>最初の 1 回だけ WARN</b>、
+     * 以降は DEBUG に落とす (同じ理由で毎 tick 失敗するとログが埋まるため)。</p>
+     */
+    private static void logFallback(String reason, IPatternDetails details) {
+        if (LogOnce.first("bulk-crafting-fallback:" + reason)) {
+            LOGGER.warn("InsaneAE: bulk crafting {} for {}, falling back (further occurrences are logged at DEBUG).",
+                    reason, details.getDefinition());
+        } else {
+            LOGGER.debug("InsaneAE: bulk crafting {} for {}, falling back.", reason, details.getDefinition());
+        }
     }
 }

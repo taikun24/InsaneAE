@@ -18,11 +18,9 @@ import java.util.UUID;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import jp.main.taikun.insaneae.quantum.QuantumCpuLogic;
 import jp.main.taikun.insaneae.quantum.batch.QuantumBatchReceipts;
+import jp.main.taikun.insaneae.util.LogOnce;
 import net.minecraft.world.item.ItemStack;
 import org.slf4j.Logger;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * ACO の craftingtable batch を Quantum CPU で実行する本体。
@@ -53,14 +51,6 @@ public final class QuantumCpuBatchExecutor {
 
     /** これ未満の craftingtable API では受けない。 */
     private static final int REQUIRED_CRAFTING_TABLE_API = 1;
-
-    /** 一度 WARN で出した拒否理由。同じものを繰り返さないため。 */
-    private static final Set<String> LOGGED_REFUSALS =
-            ConcurrentHashMap.newKeySet();
-
-    /** 最初の 1 件を受理したときだけ INFO を出す。連携が生きている証拠になる。 */
-    private static final AtomicBoolean FIRST_ACCEPT =
-            new AtomicBoolean();
 
     private QuantumCpuBatchExecutor() {
     }
@@ -118,8 +108,9 @@ public final class QuantumCpuBatchExecutor {
                 request.payloadDigest(), QuantumBatchReceipts.State.OUTPUT_READY, scaled));
         if (stored) {
             host.saveChanges();
-            if (FIRST_ACCEPT.compareAndSet(false, true)) {
-                // 「呼ばれてすらいない」と「断っている」を切り分けるための 1 行。
+            if (LogOnce.first("aco-batch-first-accept")) {
+                // 「呼ばれてすらいない」と「断っている」を切り分けるための 1 行
+                // (最初の 1 件を受理したときだけ。連携が生きている証拠になる)。
                 LOGGER.info("InsaneAE: Quantum CPU at {} accepted its first ACO batch "
                         + "({} mode, {} executions in one assemble)",
                         host.getBlockPos(), request.mode(), request.executions());
@@ -176,7 +167,7 @@ public final class QuantumCpuBatchExecutor {
      * ごとに何度でも聞きに来るので、そのまま出すとログが埋まる。</p>
      */
     private static boolean refuse(QuantumCpuBlockEntity host, String reason) {
-        if (LOGGED_REFUSALS.add(reason)) {
+        if (LogOnce.first("aco-batch-refused:" + reason)) {
             LOGGER.warn("InsaneAE: Quantum CPU at {} refused an ACO batch: {}", host.getBlockPos(), reason);
         } else {
             LOGGER.debug("InsaneAE: Quantum CPU at {} refused an ACO batch: {}", host.getBlockPos(), reason);
