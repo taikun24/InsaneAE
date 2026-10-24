@@ -32,9 +32,9 @@ import java.util.Locale;
  * <b>tintindex 1 を中身の量の色</b>、ポータブルはさらに <b>tintindex 2 を画面の色</b>として塗る。
  * したがってレイヤの順番は AE2 / MEGA 本体のモデルと 1 ドットも違えてはならない。</p>
  *
- * <p>ポータブルセルの順番は <b>ハウジング → LED → 画面 → 側面</b>。
- * 1.20.1 では画面が layer0・ハウジングが layer2 だったが、AE2 19.2 で入れ替わった
- * ({@code ae2:item/portable_item_cell_1k} 参照)。<b>古い順番のままだと不透明なハウジングが
+ * <p>ポータブルセルの順番は <b>ハウジング、LED、画面、側面</b>で、
+ * AE2 19.2 の {@code ae2:item/portable_item_cell_1k} がこの順になっている。
+ * <b>画面を先頭にしてハウジングを後ろに置くと、不透明なハウジングが
  * 一番上に来て他のレイヤを全部隠し、そのうえ染色色 (既定は白) で塗られるので、
  * ポータブルセルが真っ白な塊になる。</b></p>
  *
@@ -54,9 +54,8 @@ public class ModItemModelProvider extends ItemModelProvider {
     /**
      * ポータブルセルの画面部分。
      *
-     * <p>MEGA Cells 4.x でアイテム用 / 液体用に分かれていた
-     * {@code megacells:item/cell/portable/portable_cell_*_screen} が無くなり、
-     * MEGA 自身のポータブルセルも AE2 の汎用テクスチャ 1 枚を使うようになったので、そちらに合わせる。</p>
+     * <p>MEGA Cells 4.x のポータブルセルは AE2 の汎用テクスチャ 1 枚を使っているので、
+     * アイテム用と液体用の両方をそれに合わせる。</p>
      */
     private static final ResourceLocation PORTABLE_ITEM_SCREEN = mega("ae2", "item/portable_cell_screen");
     private static final ResourceLocation PORTABLE_FLUID_SCREEN = PORTABLE_ITEM_SCREEN;
@@ -64,11 +63,10 @@ public class ModItemModelProvider extends ItemModelProvider {
      * ポータブルセルの筐体。<b>MEGA のものを使う</b> (AE2 のものではない)。
      *
      * <p>AE2 19.2 の {@code ae2:item/portable_cell_*_housing} は<b>ほぼ真っ白なグレースケール</b>
-     * になっている。1.20.1 では濃いグレーで描かれていたので AE2 のものをそのまま借りていたが、
-     * そのまま 1.21.1 に持ってくるとポータブルセルが真っ白な塊になってしまう。
+     * になっているので、借りるとポータブルセルが真っ白な塊になる。
      * MEGA は 4.x でも自前の濃い筐体を持っているので、通常セル (mega_*_cell_housing) と揃えて
-     * そちらを使う。化学物質用は 1.20.1 の時点で既に MEGA のものを使っていた
-     * (AE2 19.2 で汎用の {@code ae2:item/portable_cell_housing} が無くなったため)。</p>
+     * そちらを使う。化学物質用は AE2 19.2 に汎用の {@code ae2:item/portable_cell_housing} が
+     * 無いため、同じく MEGA のものを使う。</p>
      */
     private static final ResourceLocation PORTABLE_ITEM_HOUSING = mega("megacells", "item/portable_cell_item_housing");
     private static final ResourceLocation PORTABLE_FLUID_HOUSING = mega("megacells", "item/portable_cell_fluid_housing");
@@ -120,7 +118,6 @@ public class ModItemModelProvider extends ItemModelProvider {
             layered("fluid_storage_cell_" + id, FLUID_HOUSING, CELL_LED, standardCell(id));
             layered("chemical_storage_cell_" + id, CHEMICAL_HOUSING, CELL_LED, standardCell(id));
 
-            // ハウジング → LED → 画面 (layer2 が染色色で塗られる) → 階層色、の順。
             layered("portable_item_cell_" + id,
                     PORTABLE_ITEM_HOUSING, PORTABLE_LED, PORTABLE_ITEM_SCREEN, portableSide(id));
             layered("portable_fluid_cell_" + id,
@@ -268,9 +265,7 @@ public class ModItemModelProvider extends ItemModelProvider {
                 .texture("sides", ResourceLocation.parse(sides))
                 .texture("back", ResourceLocation.parse(back))
                 .texture("particle", modLoc("block/" + blockTexture));
-        // 本体の板。
         partPlate(builder, 2, 2, 7, 14, 14, 9, 0, 0, 16, 16);
-        // 中央の出っ張り 2 段。
         partPlate(builder, 5, 5, 10, 11, 11, 11, 4, 4, 12, 12);
         partPlate(builder, 5, 5, 9, 11, 11, 10, 4, 4, 12, 12);
     }
@@ -320,7 +315,6 @@ public class ModItemModelProvider extends ItemModelProvider {
         return mega(InsaneAE.MODID, "item/cell/portable/portable_cell_side_" + tier);
     }
 
-    /** {@code item/generated} + レイヤ指定のモデルを 1 件出す。 */
     private void layered(String name, ResourceLocation... layers) {
         ItemModelBuilder builder = getBuilder(name).parent(GENERATED);
         for (int layer = 0; layer < layers.length; layer++) {

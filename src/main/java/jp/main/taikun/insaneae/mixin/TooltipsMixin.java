@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * {@code ArrayIndexOutOfBoundsException} を投げる問題への対処。
  *
  * <p>クラフト CPU 一覧のツールチップ ({@code CPUSelectionList.getTooltip} → {@code ofBytes})
- * などが呼ぶため、1T 以上の CPU にカーソルを合わせるとゲームがクラッシュしていた。
+ * などが呼ぶため、1T 以上の CPU にカーソルを合わせるとゲームがクラッシュする。
  * 詳細は {@link HugeByteAmounts} を参照。</p>
  *
  * <p>AE2 は自前 Mod なので難読化されておらず {@code remap = false}。</p>

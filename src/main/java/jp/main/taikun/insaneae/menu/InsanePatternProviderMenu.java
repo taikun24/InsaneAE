@@ -19,9 +19,8 @@ import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
  * 特大パターンプロバイダーの画面。
  *
  * <p>中身は {@link QuantumCpuMenu} そのまま (パターン枠のページ送り・全枠 Shift クリック・
- * アップグレード枠のガードはホストが {@code IUpgradeableObject} のときだけ効く)。
- * 別クラスにしているのは {@code MenuType} を分けるためで、
- * パターン枠のページングは {@link QuantumCpuMenu} のコンストラクタでそのまま効く。</p>
+ * アップグレード枠のガードは、ホストが {@code IUpgradeableObject} のときだけ働く)。
+ * 別クラスにしているのは {@code MenuType} を分けるため。</p>
  */
 public class InsanePatternProviderMenu extends QuantumCpuMenu {
 

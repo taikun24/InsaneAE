@@ -180,7 +180,7 @@ public final class InsaneCableSprites {
      * 印が立っている間だけ、対応表に載っているスプライトを差し替える。
      *
      * <p>載っていないもの (ファサードなど) はそのまま返すので、
-     * 差し替えが効く範囲は<b>このケーブル自身の板だけ</b>。</p>
+     * 差し替わるのは<b>このケーブル自身の板だけ</b>。</p>
      */
     public static TextureAtlasSprite swap(TextureAtlasSprite sprite) {
         Kind kind = CURRENT.get();

@@ -36,9 +36,8 @@ public class InsaneCreativeCellItem extends Item implements ICellWorkbenchItem {
         return CellConfig.create(is);
     }
 
-    // 1.20.5 で ItemStack の NBT がデータコンポーネントに置き換わったため、
-    // ファジー設定は AE2 のセルと同じコンポーネント (AEComponents.STORAGE_CELL_FUZZY_MODE) に持つ。
-    // 値の検証とコーデックは AE2 側が持っているので、壊れた値を握り潰す処理は不要になった。
+    // ファジー設定は AE2 のセルと同じコンポーネント (AEComponents.STORAGE_CELL_FUZZY_MODE) に保存する。
+    // 値の検証とコーデックは AE2 側にあるので、壊れた値を握り潰す処理は要らない。
     @Override
     public FuzzyMode getFuzzyMode(ItemStack is) {
         return is.getOrDefault(AEComponents.STORAGE_CELL_FUZZY_MODE, FuzzyMode.IGNORE_ALL);

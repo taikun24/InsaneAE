@@ -88,7 +88,7 @@ public interface CraftingJobView {
     TaskCursor tasks();
 
     /**
-     * タスクの表を舐めるためのカーソル。{@link java.util.Iterator} と同じ約束で、
+     * タスクの表を走査するためのカーソル。{@link java.util.Iterator} と同じ約束で、
      * {@link #remove()} は<b>直前に {@link #next()} が返したタスク</b>を表から外す。
      */
     interface TaskCursor {
@@ -105,7 +105,10 @@ public interface CraftingJobView {
         /** 今のタスクの残り回数を書き換える。 */
         void setRemaining(long value);
 
-        /** 今のタスクを表から外す。 */
+        /**
+         * 今のタスクを終わったものとして扱う。表から実際に抜くかどうかは実装による
+         * ({@code MapTaskCursor} は残りを 0 にするだけで、抜くのは CPU 本体のループに任せる)。
+         */
         void remove();
     }
 }

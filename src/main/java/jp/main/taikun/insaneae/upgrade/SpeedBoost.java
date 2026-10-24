@@ -109,7 +109,6 @@ public final class SpeedBoost {
         return (int) Math.min(result, Integer.MAX_VALUE);
     }
 
-    /** long 版。 */
     public static long saturatingMultiply(long value, int multiplier) {
         return SaturatingMath.multiply(value, multiplier);
     }

@@ -48,9 +48,9 @@ public class QuantumCpuBlock extends AEBaseEntityBlock<QuantumCpuBlockEntity> {
         }
     }
 
-    // 1.20.5 でブロックの右クリックは「手に持っている場合 (useItemOn)」と
-    // 「素手の場合 (useWithoutItem)」に分割され、AE2 の onActivated も無くなった。
-    // どちらも画面を開くだけなので、実処理は openScreen() に寄せてある。
+    // ブロックの右クリックは、手に持っている場合 (useItemOn) と素手の場合 (useWithoutItem) に
+    // 分かれていて、AE2 の onActivated は無い。
+    // どちらも画面を開くだけなので、実処理は openScreen() にまとめてある。
 
     @Override
     protected ItemInteractionResult useItemOn(ItemStack heldItem, BlockState state, Level level, BlockPos pos,

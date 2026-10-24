@@ -6,8 +6,8 @@ import org.apache.commons.lang3.tuple.Pair;
 /**
  * InsaneAE の設定 ({@code config/insaneae-common.toml})。
  *
- * <p>ここに並ぶのは<b>軽量化まわりの切り替え</b>だけ。どれも既定は有効で、
- * 挙動が変わったり他 Mod と噛み合わなかったりしたときに個別で切れるようにしてある。</p>
+ * <p>ここに並ぶのは<b>軽量化の切り替え</b>だけ。どれも既定は有効で、
+ * 動作が変わったり他 Mod と噛み合わなかったりしたときに個別で切れるようにしてある。</p>
  *
  * <p>設定の読み出しは<b>実行時</b>に行うこと (Mixin の適用可否には使わない)。
  * 設定ファイルの読み込みは Mod 構築より後なので、
@@ -27,7 +27,6 @@ public final class InsaneAEConfig {
     private InsaneAEConfig() {
     }
 
-    /** クラフト計算のまとめ処理を使うか。 */
     public static boolean batchCraftingCalculation() {
         return get(COMMON.batchCraftingCalculation, true);
     }
@@ -40,16 +39,15 @@ public final class InsaneAEConfig {
         COMMON.batchCraftingCalculation.set(value);
     }
 
-    /** 何クラフト以上をまとめて処理するか。これ未満は AE2 本来の 1 回ずつに任せる。 */
     public static int maxCraftingWindowsPerTick() {
         return get(COMMON.maxCraftingWindowsPerTick, 1024);
     }
 
+    /** この回数以上まとめられるクラフトだけまとめて処理する。これ未満は AE2 本来の 1 回ずつに任せる。 */
     public static int craftingBatchThreshold() {
         return get(COMMON.craftingBatchThreshold, 16);
     }
 
-    /** Quantum CPU のパターン枠をサーバ側でページ分割するか。 */
     public static boolean serverSidePatternPaging() {
         return get(COMMON.serverSidePatternPaging, true);
     }

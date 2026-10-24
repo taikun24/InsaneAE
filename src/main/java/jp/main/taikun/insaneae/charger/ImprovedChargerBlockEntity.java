@@ -90,9 +90,8 @@ public class ImprovedChargerBlockEntity extends AENetworkedInvBlockEntity implem
         return working;
     }
 
-    // 1.20.5 で ItemStack の読み書きは FriendlyByteBuf のメソッドではなく StreamCodec 経由になり、
-    // データコンポーネントを解決するためバッファ自体もレジストリ参照つきになった。
-    // 空スタックを許すので OPTIONAL_STREAM_CODEC を使う (旧 readItem/writeItem と同じ挙動)。
+    // ItemStack の読み書きは StreamCodec 経由で、データコンポーネントを解決するためバッファも
+    // レジストリ参照つき (RegistryFriendlyByteBuf) になる。空スタックを許すので OPTIONAL_STREAM_CODEC を使う。
     @Override
     protected boolean readFromStream(RegistryFriendlyByteBuf data) {
         boolean changed = super.readFromStream(data);
@@ -192,7 +191,7 @@ public class ImprovedChargerBlockEntity extends AENetworkedInvBlockEntity implem
         }
         ItemStack output = inv.getStackInSlot(OUTPUT_SLOT);
         int outputSpace = SLOT_CAPACITY - output.getCount();
-        // AE2 19.2 で ChargerRecipe#result は Item から ItemStack になった。
+        // ChargerRecipe#result は ItemStack なので、アイテムだけでなくコンポーネントも比べる。
         if (!output.isEmpty() && !ItemStack.isSameItemSameComponents(output, recipe.result)) {
             outputSpace = 0;
         }

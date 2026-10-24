@@ -6,9 +6,9 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * {@code Map<IPatternDetails, TaskProgress>} を舐めるカーソル。
+ * {@code Map<IPatternDetails, TaskProgress>} を走査するカーソル。
  *
- * <p>AE2 も、それを複製した CPU も、タスクを<b>この形の表</b>で持っている。
+ * <p>AE2 も、それを複製した CPU も、タスクを<b>この形の Map</b>で持っている。
  * 違うのは値の型 (それぞれ自前の {@code TaskProgress}) だけなので、
  * 残り回数の読み書きだけを {@link #read} / {@link #write} に切り出してある。</p>
  */

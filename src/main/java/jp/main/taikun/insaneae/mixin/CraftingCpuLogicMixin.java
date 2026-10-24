@@ -147,7 +147,6 @@ public abstract class CraftingCpuLogicMixin {
     @Inject(method = "cancel", at = @At("HEAD"))
     private void insaneae$removeAcoPlanOnCancel(CallbackInfo ci) {
         if (job != null) {
-            // 既存Jobのキャンセルだけを対象にし、新しいJobが無い状態は何もしない。
             AcoBigIntegerJobRegistry.remove(job);
         }
     }
@@ -243,7 +242,7 @@ public abstract class CraftingCpuLogicMixin {
      * 唯一のループなので、打ち切ると<b>同じジョブに含まれる他のパターン
      * (機械に投げる加工パターンなど) がその tick はまったく処理されない</b>。
      * Quantum CPU の予算は毎 tick 補充されるため、Quantum CPU に仕事がある限り
-     * 他のプロバイダが永久に飢える (1.0.2 までの不具合)。</p>
+     * 他のプロバイダが永久に飢える。</p>
      *
      * <p>そこで、予算を使い切ったときだけ打ち切り、そうでなければ
      * 残りの予算で AE2 の処理を続行させる。</p>
@@ -264,7 +263,7 @@ public abstract class CraftingCpuLogicMixin {
     /**
      * まとめ処理で使ったぶんを AE2 の予算から引く。
      *
-     * <p>この注入が効かなかった場合 (順序の都合で {@link #insaneae$bulkCrafting} より先に走った場合を含む)
+     * <p>この注入が適用されなかった場合 (順序の都合で {@link #insaneae$bulkCrafting} より先に走った場合を含む)
      * は 0 が引かれるだけで、その tick の操作数がまとめ処理のぶんだけ多くなるにとどまる。</p>
      */
     @ModifyVariable(method = "executeCrafting", at = @At("HEAD"), argsOnly = true, ordinal = 0, require = 0)

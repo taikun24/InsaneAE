@@ -17,7 +17,7 @@ import net.minecraft.world.item.ItemStack;
  * 毎 tick サーバスレッドに乗ることになる。</p>
  *
  * <p>そこでメニューには 1 ページぶん (54 枠) だけ置き、ページ送りは
- * この窓の {@link #setPage} を動かして中身を差し替える形にする。同期コストは 1/30 になる。</p>
+ * この窓の {@link #setPage} を動かして中身を差し替えるようにする。同期コストは 1/30 になる。</p>
  *
  * <p>窓はメニュー 1 つにつき 1 個なので、同じ Quantum CPU を複数人が開いても
  * ページは各自独立している。</p>
@@ -52,7 +52,7 @@ public final class PagedPatternInventory implements InternalInventory {
         this.page = Mth.clamp(page, 0, getPageCount() - 1);
     }
 
-    /** 窓のスロット番号 → 本体のスロット番号。本体の範囲外なら -1。 */
+    /** 窓のスロット番号を本体のスロット番号に直す。本体の範囲外なら -1。 */
     private int backingSlot(int slotIndex) {
         if (slotIndex < 0 || slotIndex >= pageSize) {
             return -1;

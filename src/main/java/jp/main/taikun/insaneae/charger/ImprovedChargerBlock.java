@@ -25,7 +25,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * Improved Crystal Charger のブロック。中身は {@link ImprovedChargerBlockEntity}。
  *
  * <p>AE2 のチャージャーと同じく GUI は持たず、右クリックで出し入れする。
- * 自動化する場合は入出力とも Forge のアイテムハンドラ (ホッパー / インポートバス等) 経由。</p>
+ * 自動化する場合は入出力とも NeoForge のアイテムハンドラ (ホッパー / インポートバス等) 経由。</p>
  *
  * <p>向き・当たり判定も AE2 のチャージャーに合わせてある
  * ({@link #getOrientationStrategy()} / {@link #getShape}) — 見た目が同じ形なので、
@@ -114,9 +114,8 @@ public class ImprovedChargerBlock extends AEBaseEntityBlock<ImprovedChargerBlock
         return 2;
     }
 
-    // 1.20.5 でブロックの右クリックは「手に持っている場合 (useItemOn)」と
-    // 「素手の場合 (useWithoutItem)」に分割され、AE2 の onActivated も無くなった。
-    // どちらも同じ「入れる／取り出す」を行うので、実処理は activate() に寄せてある。
+    // 右クリックは「手に持っている場合 (useItemOn)」と「素手の場合 (useWithoutItem)」に分かれている。
+    // どちらも同じ「入れる／取り出す」を行うので、実処理は activate() にまとめてある。
 
     @Override
     protected ItemInteractionResult useItemOn(ItemStack heldItem, BlockState state, Level level, BlockPos pos,

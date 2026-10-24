@@ -34,7 +34,6 @@ public enum InsaneSpeedCardType {
         return id;
     }
 
-    /** 何倍速か。 */
     public int multiplier() {
         return multiplier;
     }

@@ -7,7 +7,7 @@ import net.neoforged.fml.ModList;
 import org.slf4j.Logger;
 
 /**
- * ACOの計算境界を任意依存のまま確認する入口。
+ * ACOの計算境界を、任意依存のまま確認する。
  *
  * <p>InsaneAEはACOへコンパイル依存しない。ACOが無い場合やAPIが古い場合は
  * falseを返し、従来のInsaneAE計算バッチへ戻る。クラス参照はこのクラス内の

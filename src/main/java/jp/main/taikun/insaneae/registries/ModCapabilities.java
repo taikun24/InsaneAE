@@ -30,7 +30,7 @@ import jp.main.taikun.insaneae.provider.InsanePatternProviderPart;
  *
  * <p>とくに {@link AECapabilities#IN_WORLD_GRID_NODE_HOST} が抜けていると、
  * {@code GridHelper.getNodeHost} ({@code Level#getCapability} 一発) がノードを見つけられず、
- * <b>ブロックがネットワークに繋がらない</b>。「置いてもケーブルが接続しない」形で出る。</p>
+ * <b>ブロックがネットワークに繋がらない</b>。「置いてもケーブルが接続しない」という症状になる。</p>
  */
 public final class ModCapabilities {
 

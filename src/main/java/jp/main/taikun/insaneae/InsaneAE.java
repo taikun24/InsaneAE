@@ -49,10 +49,7 @@ public class InsaneAE {
     public static final String MODID = "insaneae";
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    // NeoForge の Mod コンストラクタは (IEventBus, ModContainer) を受け取る。
-    // 1.20.1 の Forge では FMLJavaModLoadingContext 経由だった。
     public InsaneAE(IEventBus bus, ModContainer container) {
-        // 設定の登録先も ModLoadingContext から ModContainer に移った。
         container.registerConfig(ModConfig.Type.COMMON, InsaneAEConfig.SPEC);
         ModBlocks.register(bus);
         ModItems.register(bus);
@@ -69,9 +66,8 @@ public class InsaneAE {
 
         bus.addListener(this::commonSetup);
         bus.addListener(this::gatherData);
-        // NeoForge では capability は BlockEntityType / Item ごとに専用イベントで登録する
-        // (1.20.1 のように BlockEntity#getCapability を override して継承させる方式は廃止された)。
-        // AE2 の一括登録は AE2 自身の型しか見ないので、自前の型はここで全部登録し直す。
+        // NeoForge では capability を BlockEntityType / Item ごとに専用イベントで登録する。
+        // AE2 の一括登録は AE2 自身の型しか見ないので、自前の型はここで全部登録する。
         bus.addListener(ModCapabilities::register);
         // ケーブルに貼る版は AE2 の部品用イベントで登録する (AE2 の登録はクラスの完全一致でしか効かない)。
         bus.addListener(ModCapabilities::registerParts);
@@ -92,7 +88,7 @@ public class InsaneAE {
         DataGenerator generator = event.getGenerator();
         PackOutput output = generator.getPackOutput();
         ExistingFileHelper existingFiles = event.getExistingFileHelper();
-        // 1.21 でレシピ・ドロップ系のプロバイダは HolderLookup.Provider を要求するようになった
+        // レシピ・ドロップ系のプロバイダは HolderLookup.Provider を要求する
         // (タグやデータコンポーネントをレジストリ越しに引くため)。
         CompletableFuture<HolderLookup.Provider> registries = event.getLookupProvider();
 
@@ -118,14 +114,13 @@ public class InsaneAE {
         // 判定は自前のアイテムだけなので AE2 側のハンドラとの登録順は問わない。
         event.enqueueWork(() -> StorageCells.addCellHandler(
                 InsaneCreativeCellHandler.INSTANCE));
-        // 加速カードを AE2 の対応機械に登録する。
         event.enqueueWork(ModUpgrades::registerUpgrades);
         // ACO へ「BigInteger 計画を受け取る外部 CPU アドオン」として名乗る。
         event.enqueueWork(
                 OptionalAcoBigIntegerIntegration
                         ::registerBigIntegerPlanConsumer);
         // 検証用のテストプロット (`./gradlew runGameTestServer`) は
-        // @TestPlotClass 経由で AE2 が自動的に拾うので、ここでの登録は不要になった。
+        // @TestPlotClass 経由で AE2 が自動的に拾うので、ここで登録する必要はない。
         LOGGER.info("InsaneAE: {} crafting storage tiers registered.", ModBlocks.CRAFTING_STORAGE.size());
     }
 }

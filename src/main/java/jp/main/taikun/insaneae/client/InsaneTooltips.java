@@ -67,7 +67,6 @@ public final class InsaneTooltips {
     private static void onTooltip(ItemTooltipEvent event) {
         Item item = event.getItemStack().getItem();
         Description description = descriptionFor(item);
-        // 説明キーがあるアイテムだけ、翻訳済みの複数行説明を追加する。
         if (description != null) {
             String text = Component.translatable(description.key(), description.args()).getString();
             // lang内の改行を、Minecraftの独立したTooltip行へ変換する。
@@ -85,7 +84,7 @@ public final class InsaneTooltips {
                         BIG_INTEGER_CPU_CAPACITY, capacity).withStyle(ChatFormatting.AQUA)));
     }
 
-    /** そのアイテムに出す説明。個別 → 階層共通 の順で探す。無ければ null。 */
+    /** そのアイテムに出す説明。個別、階層共通の順で探す。無ければ null。 */
     private static Description descriptionFor(Item item) {
         String own = item.getDescriptionId() + SUFFIX;
         if (Language.getInstance().has(own)) {

@@ -23,13 +23,11 @@ public final class BigIntegerCapacityDisplayMarker {
     }
 
     public static Component mark(Component name, BigInteger capacity) {
-        // 名前や容量が未確定なら、元の名前をそのまま返して表示を壊さない。
         if (name == null || capacity == null || capacity.signum() < 0) {
             return name;
         }
 
         BigIntegerCapacityDisplayValue value = BigIntegerCapacityDisplayValue.capture(capacity);
-        // 同じ容量のマーカーが既にあればComponentの兄弟を増やさない。
         if (read(name).filter(value::equals).isPresent()) {
             return name;
         }
@@ -43,7 +41,6 @@ public final class BigIntegerCapacityDisplayMarker {
     }
 
     public static Optional<BigIntegerCapacityDisplayValue> read(Component component) {
-        // 通常CPU名にはマーカーがないため、表示上書きを行わない。
         if (component == null) {
             return Optional.empty();
         }
@@ -69,7 +66,6 @@ public final class BigIntegerCapacityDisplayMarker {
         return Optional.ofNullable(latest);
     }
 
-    /** マーカーの値をCPU一覧・ツールチップへ表示する。 */
     public static String format(BigIntegerCapacityDisplayValue value) {
         return value.format();
     }

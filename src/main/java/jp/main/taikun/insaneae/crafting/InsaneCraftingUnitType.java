@@ -19,7 +19,7 @@ import net.minecraft.resources.ResourceLocation;
  * その上 (1G〜) だけを担当する。</p>
  *
  * <p>容量は 1 段ごとに 4 倍 (2 ビットシフト)。最上段の {@link #STORAGE_8E} は
- * AE2へ返す単体long互換値だけ{@code Long.MAX_VALUE}へ飽和させ、正本は
+ * AE2へ返す単体long互換値だけ{@code Long.MAX_VALUE}へ飽和させ、正確な値は
  * {@code 2^63 B = 8 EiB}として保持する。複数ブロックの合計はInsaneAEの
  * クラスタMixinがBigIntegerで計算するため、8Eを2個接続すれば正確に16Eになる。</p>
  *
@@ -49,7 +49,7 @@ public enum InsaneCraftingUnitType implements ExactCraftingUnitType {
     STORAGE_256P("256p", 1L << 58),
     STORAGE_1E("1e", 1L << 60),
     STORAGE_4E("4e", 1L << 62),
-    /** AE2互換値はlong上限、BigInteger正本は2^63バイトの正確な8 EiB。 */
+    /** AE2互換値はlong上限、BigIntegerの値は2^63バイト (正確な8 EiB)。 */
     STORAGE_8E("8e", Long.MAX_VALUE, BigInteger.ONE.shiftLeft(63));
 
     /** 全階層で流用している AE2 の見た目 (専用アート未用意のため)。 */
@@ -92,7 +92,7 @@ public enum InsaneCraftingUnitType implements ExactCraftingUnitType {
         return "cell_component_" + id;
     }
 
-    /** formed モデルの ID。ae2 名前空間に置く必要がある → {@link FormedModels}。 */
+    /** formed モデルの ID。ae2 名前空間に置く必要がある。理由は {@link FormedModels} を参照。 */
     public ResourceLocation formedModel() {
         return FormedModels.of(id + "_storage");
     }
@@ -117,7 +117,6 @@ public enum InsaneCraftingUnitType implements ExactCraftingUnitType {
 
     @Override
     public int getAcceleratorThreads() {
-        // ストレージユニットは加速スレッドを提供しない。
         return 0;
     }
 

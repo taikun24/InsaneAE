@@ -59,7 +59,7 @@ public abstract class ScreenStyleMixin {
     @Inject(method = "getWidget", at = @At("HEAD"), cancellable = true, require = 0)
     private void insaneae$tolerateUnknownWidget(String id, CallbackInfoReturnable<WidgetStyle> cir) {
         if (widgets.containsKey(id) || !widgets.containsKey(INSANEAE_MARKER)) {
-            return;   // 定義済み、または自前以外の画面 → AE2 の挙動のまま
+            return;
         }
         if (INSANEAE_REPORTED.add(id)) {
             INSANEAE_LOG.warn("InsaneAE: 自前の画面スタイルに widget \"{}\" が無い"

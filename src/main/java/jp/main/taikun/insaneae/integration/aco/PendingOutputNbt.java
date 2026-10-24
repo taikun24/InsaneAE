@@ -30,7 +30,7 @@ public final class PendingOutputNbt {
     private static final String NBT_KEY = "key";
     private static final String NBT_AMOUNT = "amount";
 
-    /** 1 エントリの量の上限ビット数。壊れた NBT を無制限に展開しないための歯止め。 */
+    /** 1 エントリの量の上限ビット数。壊れた NBT を無制限に展開しないための上限。 */
     private static final int MAXIMUM_BITS = 1_048_576;
     /** エントリ数の上限。同上。 */
     private static final int MAX_ENTRIES = 1_048_576;

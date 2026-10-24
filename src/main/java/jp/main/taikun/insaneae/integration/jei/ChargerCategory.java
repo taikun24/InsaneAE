@@ -13,7 +13,7 @@ import mezz.jei.api.recipe.category.IRecipeCategory;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
-/** チャージャーのレシピ (入力 → 結果)。改良チャージャーも同じレシピを使う。 */
+/** チャージャーのレシピ (入力と結果)。改良チャージャーも同じレシピを使う。 */
 class ChargerCategory implements IRecipeCategory<RecipeHolder<ChargerRecipe>> {
 
     private final IDrawable icon;

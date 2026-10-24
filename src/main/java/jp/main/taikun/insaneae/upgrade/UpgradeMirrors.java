@@ -24,12 +24,12 @@ import java.util.Map;
  * アドオンごとに登録を書き足す代わりに、{@code Upgrades.add} 自体を見張って
  * ({@code mixin/UpgradesMixin})、写し元への登録をこちらにも複製する。</p>
  *
- * <h2>挿したカードが効くかどうか</h2>
+ * <h2>挿したカードが動くかどうか</h2>
  * <p>超次元版の中身は AE2 のクラス ({@code InterfaceLogic} / {@code PatternProviderLogic} の派生)
  * なので、<b>そのクラスにカードの処理を持たせているアドオンなら挿すだけで動く</b>
  * (AppliedFlux の誘導カードはこの形)。ブロックや部品のクラス
  * ({@code PatternProviderBlockEntity} など) に処理を足しているアドオンのカードは、
- * 挿せても効かないことがある。そういうものは連携 ({@code integration/}) で個別に補う。</p>
+ * 挿せても動かないことがある。そういうものは連携 ({@code integration/}) で個別に補う。</p>
  *
  * <h2>登録の順番</h2>
  * <p>{@code Upgrades.add} は各 Mod の commonSetup から呼ばれ、こちらより先に来ることも後に来ることもある。
@@ -44,7 +44,7 @@ public final class UpgradeMirrors {
 
     private static final List<Added> PENDING = new ArrayList<>();
 
-    /** 写し元 → 写し先。{@link #enable()} までは null。 */
+    /** 写し元から写し先への対応。{@link #enable()} までは null。 */
     @Nullable
     private static Map<Item, List<Item>> mirrors;
 
@@ -64,10 +64,7 @@ public final class UpgradeMirrors {
         return table;
     }
 
-    /**
-     * {@code Upgrades.add} の直後に呼ばれる ({@code mixin/UpgradesMixin})。
-     * 写し元の機械への登録なら、写し先にも同じ内容で登録する。
-     */
+    /** {@code Upgrades.add} の直後に {@code mixin/UpgradesMixin} から呼ばれる。 */
     public static synchronized void onUpgradeAdded(ItemLike card, ItemLike machine, int maxSupported,
             @Nullable String tooltipGroup) {
         Item cardItem = card.asItem();

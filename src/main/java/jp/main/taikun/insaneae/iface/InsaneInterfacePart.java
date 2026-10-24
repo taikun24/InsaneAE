@@ -24,7 +24,7 @@ import java.util.List;
  * 1 枠 {@value InsaneInterfaceBlockEntity#MAX_PER_SLOT} 個</b>。
  * 枠を広げているのは {@code InterfaceLogic} なので、AE2 の {@link InterfacePart} を継承して
  * <b>{@link #createLogic()} だけ差し替えれば</b>ブロック版とまったく同じ挙動になる
- * (グリッドノード・NBT・ドロップ・メモリーカードは AE2 側の実装がそのまま効く)。</p>
+ * (グリッドノード・NBT・ドロップ・メモリーカードは AE2 側の実装がそのまま使われる)。</p>
  *
  * <h2>ブロック版と共通の処理</h2>
  * <ul>
@@ -32,7 +32,7 @@ import java.util.List;
  *       <b>未設定の枠に来たぶんを ME ネットワークへ直送する</b>
  *       {@link InterfaceOverflowInventory}。登録は {@code ModCapabilities#registerParts}。
  *       AE2 は部品の capability を<b>クラスの完全一致</b>で引くので、
- *       AE2 の {@code InterfacePart} 向けの登録はこの部品には効かない。</li>
+ *       AE2 の {@code InterfacePart} 向けの登録はこの部品には適用されない。</li>
  *   <li>取り外したときは在庫をまず ME ネットワークに戻す ({@link #addAdditionalDrops})。</li>
  * </ul>
  * <p>中身の処理は {@link InsaneInterfaces} にまとめてあり、ブロック版と同じものを呼んでいる。</p>

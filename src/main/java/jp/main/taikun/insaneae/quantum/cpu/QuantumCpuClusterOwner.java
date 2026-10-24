@@ -27,14 +27,14 @@ public interface QuantumCpuClusterOwner {
     void cpuMarkDirty();
 
     /**
-     * 合計バイト数の正本。
+     * 合計バイト数の正確な値。
      *
      * <p>InsaneAE の上位階層は 1 個で 2^63 バイトあり long に収まらないので、
-     * AE2 の {@code storage} フィールド (long) ではなくこちらが正本になる。</p>
+     * AE2 の {@code storage} フィールド (long) ではなくこちらを基準にする。</p>
      */
     java.math.BigInteger cpuExactStorage();
 
-    /** 合計スレッド数。AE2 の {@code accelerator} は int なので、正本はこちら。 */
+    /** 合計スレッド数。AE2 の {@code accelerator} は int なので、基準にするのはこちら。 */
     long cpuCoProcessors();
 
     /**

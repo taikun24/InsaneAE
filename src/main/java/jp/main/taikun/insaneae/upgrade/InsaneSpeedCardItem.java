@@ -9,12 +9,7 @@ import net.minecraft.world.item.TooltipFlag;
 
 import java.util.List;
 
-/**
- * 何倍速かをツールチップに出す加速カード。
- *
- * <p>AE2 の {@link UpgradeCardItem} を継承しているので、対応機械の一覧表示や
- * 右クリックでの取り付けといった挙動はそのまま使える。</p>
- */
+/** 何倍速かをツールチップに出す加速カード。 */
 public class InsaneSpeedCardItem extends UpgradeCardItem {
 
     private final InsaneSpeedCardType type;

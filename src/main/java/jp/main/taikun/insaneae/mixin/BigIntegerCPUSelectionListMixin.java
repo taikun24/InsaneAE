@@ -52,7 +52,6 @@ public abstract class BigIntegerCPUSelectionListMixin {
             int mouseY,
             CallbackInfoReturnable<Tooltip> cir) {
         CraftingCpuListEntry entry = insaneae$hitTestCpu(new Point(mouseX, mouseY));
-        // CPU行の外側では、AE2の既存Tooltipを変更しない。
         if (entry == null) {
             return;
         }
@@ -60,7 +59,6 @@ public abstract class BigIntegerCPUSelectionListMixin {
                 .map(BigIntegerCapacityDisplayMarker::format)
                 .orElse(null);
         Tooltip tooltip = cir.getReturnValue();
-        // 正確なマーカーがない通常CPUも、AE2本来の表示へ戻す。
         if (capacity == null || tooltip == null) {
             return;
         }

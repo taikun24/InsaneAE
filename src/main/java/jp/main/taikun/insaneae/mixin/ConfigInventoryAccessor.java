@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
  * <p>これが立っていないと {@code getMaxAmount} が
  * {@code min(アイテムの最大スタック数, 容量)} を返すので、<b>容量をいくら上げても
  * アイテムは 1 スロット 64 個で頭打ち</b>になる (液体や化学物質はスタック数の概念が無いので
- * 容量がそのまま効く)。</p>
+ * 容量がそのまま反映される)。</p>
  *
  * <p>フラグは {@code ConfigInventory.Builder#allowOverstacking} でしか渡せず、
  * インベントリを作るのは {@code InterfaceLogic} のコンストラクタの中なので、

@@ -26,9 +26,8 @@ import java.util.List;
  * 走らせ方: {@code ./gradlew runGameTestServer} (AE2 のテストも一緒に走る)。
  * テスト名は AE2 のアダプタ経由なので {@code ae2.insaneae_crafting_batch} のようになる。</p>
  *
- * <p>プロットクラスには {@code @TestPlotClass} を付けるだけでよい。AE2 19.2 では
- * {@code TestPlots.addPlotClass()} による手動登録が廃止され、FML のスキャンデータから自動で拾う
- * (1.20.1 / AE2 15.x の main ブランチは手動登録のまま)。</p>
+ * <p>プロットクラスには {@code @TestPlotClass} を付けるだけでよい。AE2 19.2 は
+ * FML のスキャンデータから自動で拾う (1.20.1 / AE2 15.x の main ブランチは手動登録が必要)。</p>
  */
 final class TestPlotSupport {
 
@@ -93,7 +92,6 @@ final class TestPlotSupport {
 
     static ItemStack processingPattern(Item input, long inputAmount,
             Item output, long outputAmount) {
-        // 19.2 で配列ではなく List を取るようになった。
         return PatternDetailsHelper.encodeProcessingPattern(
                 List.of(new GenericStack(AEItemKey.of(input), inputAmount)),
                 List.of(new GenericStack(AEItemKey.of(output), outputAmount)));

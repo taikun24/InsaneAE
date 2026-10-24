@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *
  * <p>ここが「ワールドの描画がこの Mod のケーブルだと気付く」唯一の場所。
  * AE2 はこの後 {@code AECableType} と色しか見ないので、
- * <b>種類はここで拾っておかないと二度と分からない</b>。</p>
+ * <b>種類はここで記録しておかないと二度と分からない</b>。</p>
  */
 @Mixin(value = CableBusContainer.class, remap = false)
 public abstract class CableBusContainerRenderStateMixin {

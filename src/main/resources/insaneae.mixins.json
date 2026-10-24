@@ -3,7 +3,7 @@
   "minVersion": "0.8",
   "package": "jp.main.taikun.insaneae.mixin",
   "compatibilityLevel": "JAVA_21",
-  "_comment": "壊れると危険な注入 (容量・スレッド上限・ツールチップ) はこちら。required=true なので失敗したら起動時に落ちる。NeoForge は実行時も Mojang 公式マッピングなので refmap は不要 (1.20.1 では insaneae.refmap.json が要った)。",
+  "_comment": "壊れると危険な注入 (容量・スレッド上限・ツールチップ) はこちら。required=true なので失敗したら起動時に落ちる。NeoForge は実行時も Mojang 公式マッピングなので refmap は不要。",
   "mixins": [
     "BasicCellInventoryMixin",
     "CraftingCPUClusterMixin",

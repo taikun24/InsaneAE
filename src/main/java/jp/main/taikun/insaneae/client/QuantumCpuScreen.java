@@ -190,8 +190,8 @@ public class QuantumCpuScreen<C extends QuantumCpuMenu> extends PatternProviderS
      *
      * <p>サーバ側でページ分割されている場合 ({@link QuantumCpuMenu#isServerPaged()})、
      * メニューには 1 ページぶんのスロットしか無いので素直に並べるだけ。
-     * サーバ側のページングを切っている場合は全枠 (1620) 並んでいるので、
-     * 表示するページぶんだけ位置を決めて残りは非表示にする<b>旧来のやり方</b>に落ちる。</p>
+     * サーバ側のページングを切っている場合は全枠 (1620) が並んでいるので、
+     * 表示するページぶんだけ位置を決めて残りは非表示にする。</p>
      */
     private void layoutSlots() {
         layoutUnitSlots(QuantumCpuMenu.CRAFTING_UNIT, STORAGE_UNITS_TOP, showingUnits);
@@ -220,7 +220,7 @@ public class QuantumCpuScreen<C extends QuantumCpuMenu> extends PatternProviderS
     }
 
     @Override
-    // 1.21 で横スクロール (scrollX) が引数に加わった。ページ送りは縦だけ見る。
+    // ページ送りは縦スクロール (wheelDelta) だけを見る。横スクロール (scrollX) は使わない。
     public boolean mouseScrolled(double x, double y, double scrollX, double wheelDelta) {
         if (super.mouseScrolled(x, y, scrollX, wheelDelta)) {
             return true;

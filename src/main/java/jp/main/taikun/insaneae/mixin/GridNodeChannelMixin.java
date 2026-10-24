@@ -19,14 +19,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * したがってここだけを差し替えれば、経路計算・表示・ツールチップまで全部追従する
  * (どこを見て確かめたかは {@link HyperNetwork} に書いてある)。</p>
  *
- * <h2>効く条件を狭く保つ</h2>
+ * <h2>対象を狭く保つ</h2>
  * <p>{@code getMaxChannels()} は<b>経路計算のたびに全ノードで呼ばれる</b>ので、
  * 最初の {@code instanceof} で落ちる形にしてある。グリッドを引く処理まで進むのは
  * 超次元ケーブルのノードだけ。</p>
  *
  * <p>条件はそれだけで、<b>ネットワークに何が在るかは見ない</b>。超次元ケーブルは
- * 置いた時点で常にこの本数を運ぶ (以前は専用コントローラを解錠キーにしていたが、
- * コントローラ側はチャンネルを運ばないので本数の話とは噛み合わなかった → {@link HyperNetwork})。</p>
+ * 置いた時点で常にこの本数を運ぶ。コントローラのノードはチャンネルを運ばないので、
+ * コントローラの有無で本数を変える意味は無い ({@link HyperNetwork})。</p>
  */
 @Mixin(value = GridNode.class, remap = false)
 public abstract class GridNodeChannelMixin {

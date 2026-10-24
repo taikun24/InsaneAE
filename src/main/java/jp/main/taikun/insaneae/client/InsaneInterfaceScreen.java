@@ -126,7 +126,7 @@ public class InsaneInterfaceScreen extends UpgradeableScreen<InsaneInterfaceMenu
     }
 
     @Override
-    // 1.21 で横スクロール (scrollX) が引数に加わった。ページ送りは縦だけ見る。
+    // ページ送りは縦スクロール (wheelDelta) だけを見る。横スクロール (scrollX) は使わない。
     public boolean mouseScrolled(double x, double y, double scrollX, double wheelDelta) {
         if (super.mouseScrolled(x, y, scrollX, wheelDelta)) {
             return true;

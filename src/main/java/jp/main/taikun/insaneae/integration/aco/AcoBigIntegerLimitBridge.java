@@ -111,7 +111,7 @@ public final class AcoBigIntegerLimitBridge {
 
             Method maximumAmount = api.getMethod(MAXIMUM_AMOUNT_METHOD);
             Object value = maximumAmount.invoke(null);
-            // 公開APIの戻り値が契約と異なる場合は、推測で変換しない。
+            // 公開APIの戻り値が想定と異なる場合は、推測で変換しない。
             if (!(value instanceof BigInteger maximum) || maximum.signum() <= 0) {
                 return unsupported(MAXIMUM_AMOUNT_METHOD + " returned " + value);
             }

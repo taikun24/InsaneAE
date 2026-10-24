@@ -25,8 +25,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *
  * <p>Quantum CPU の内蔵 CPU は AE2 の<b>本物の {@code CraftingCPUCluster}</b> を使う。
  * こうすると実行エンジン ({@code CraftingCpuLogic}) も、クラフト端末の CPU 一覧も、
- * ジョブ投入も AE2 のものがそのまま動き、既存の最適化 Mixin も効いたままになる。
- * ただ 1 点だけ噛み合わないのが「クラスタは構成ブロックの集まりである」という前提で、
+ * ジョブ投入も AE2 のものがそのまま動き、既存の最適化 Mixin も適用されたままになる。
+ * ただ 1 点だけ合わないのが「クラスタは構成ブロックの集まりである」という前提で、
  * AE2 は次の 3 メソッドで代表ブロック ({@code getCore()}) を辿る。</p>
  *
  * <ul>

@@ -7,7 +7,7 @@ import java.math.BigInteger;
  *
  * <p>AE2本体の{@code CraftingCPUCluster#getAvailableStorage()}はlong固定なので、
  * クラスタ合計が{@link Long#MAX_VALUE}を超えた後も計算を続けられるよう、
- * BigIntegerの正本を別経路で公開する。</p>
+ * BigIntegerの正確な値を別経路で公開する。</p>
  *
  * <p>Mixinが適用されない環境でも落ちないよう、利用側は必ず{@code instanceof}で
  * 確認してからキャストする。</p>

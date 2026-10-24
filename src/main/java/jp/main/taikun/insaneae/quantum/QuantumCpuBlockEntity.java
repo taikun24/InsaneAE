@@ -58,7 +58,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Quantum CPU — パターンプロバイダと分子組立装置を 1 ブロックに合体させたもの。
+ * Quantum CPU は、パターンプロバイダと分子組立装置を 1 ブロックに合体させたもの。
  *
  * <p>ネットワークからはパターンプロバイダとして見えるが、クラフトテーブル用パターンを
  * 隣の分子組立装置に渡すのではなく<b>自分で組み立てて完成品を ME に戻す</b>。
@@ -194,8 +194,8 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
     /**
      * 加速カードが満載か。1 tick のうちに同じパターンの窓を何度でも回してよい。
      *
-     * <p>満載だと {@link #getCraftsPerTick()} は long の上限に張り付くので、
-     * <b>予算はもう制約になっていない</b>。実際に効いているのは 1 窓あたりの long 会計
+     * <p>満載だと {@link #getCraftsPerTick()} は long の上限に達するので、
+     * <b>予算はもう制約になっていない</b>。実際に上限になっているのは 1 窓あたりの long 会計
      * (完成品 {@code Long.MAX_VALUE / 出力数}、材料の取り出し) のほうなので、
      * 窓を重ねられるようにしないと BigInteger 級の注文が終わらない。</p>
      */
@@ -262,7 +262,7 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
      *
      * <p>毎 tick の {@link #serverTick()} からだけでなく、加速カード満載時は
      * <b>まとめ処理の窓と窓の間</b>からも呼ばれる ({@code QuantumBulkCrafting})。
-     * ネットワークへ入れた瞬間にクラフト CPU が完成待ちから差し引くので、
+     * ネットワークへ入れた時点でクラフト CPU が完成待ちから差し引くので、
      * これを挟むと 1 tick の合計が long を超えても帳簿が溢れない。</p>
      *
      * @return 流すものがあったか (無ければ保存も要らない)
@@ -297,7 +297,7 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
      *
      * <p>{@code saveChanges()} はチャンクに dirty を立てるので、
      * 毎 tick 呼ぶと<b>オートセーブのたびに 1620 枠ぶんのパターン NBT を書き出す</b>ことになる。
-     * 普段は溜めた完成品をその tick のうちに全部 ME に入れられる = 保存すべき内容が
+     * 普段は溜めた完成品をその tick のうちに全部 ME に入れられ、保存すべき内容が
      * 「空のまま」で変わらないので、保存自体が要らない。</p>
      *
      * <p>入りきらずに残っている間だけ保存し (詰まっている間は {@value #PENDING_SAVE_INTERVAL} tick に 1 回)、
@@ -332,7 +332,7 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
      *
      * <p>クラフトストレージが 1 個も入っていない間は CPU として名乗らない
      * ({@code QuantumCraftingCpu#isFormed})。パターンプロバイダ兼分子組立装置としての
-     * 従来の働きは、ユニットを 1 個も挿さなくてもこれまでどおり動く。</p>
+     * 働きは、ユニットを 1 個も挿さなくても動く。</p>
      */
     public QuantumCraftingCpu getCraftingCpu() {
         return craftingCpu;
@@ -366,7 +366,6 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
         }
     }
 
-    /** {@link InternalInventoryHost}: 中身が変わったので保存する。 */
     @Override
     public void saveChangedInventory(AppEngInternalInventory inv) {
         saveChanges();
@@ -460,8 +459,8 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
         return AECableType.SMART;
     }
 
-    // 1.20.5 以降、NBT の読み書きにはレジストリ参照 (HolderLookup.Provider) が要る。
-    // データコンポーネントを含む ItemStack をタグ化するのにレジストリが必要になったため。
+    // NBT の読み書きにはレジストリ参照 (HolderLookup.Provider) が要る。
+    // データコンポーネントを含む ItemStack をタグ化するのにレジストリが必要なため。
     @Override
     public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
         super.saveAdditional(data, registries);
@@ -566,7 +565,7 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
      *
      * <p>ストレージ枠に紛れている協調処理ユニットを協調処理枠へ移す
      * (逆向きは起こり得ない。分ける前は全部ストレージ枠のキーに入っていたため)。
-     * 移し切れないぶんは元の枠に残す — 捨てるよりは、フィルタ違いのまま持っているほうがよい。</p>
+     * 移し切れないぶんは元の枠に残す。捨てるよりは、フィルタ違いのまま置いておくほうがよい。</p>
      */
     private void migrateMixedUnits() {
         for (int slot = 0; slot < craftingUnits.size(); slot++) {

@@ -88,10 +88,6 @@ public final class InsaneAEClient {
                 })));
     }
 
-    /**
-     * Quantum CPU の画面を登録する。レイアウト JSON は {@code StyleManager} が
-     * {@code ae2} 名前空間固定で読むため、こちらの分も {@code assets/ae2/screens/insaneae/} に置いている。
-     */
     private static void clientSetup(FMLClientSetupEvent event) {
         // AE2 は自分のクラフトユニットを cutout で描いている (InitRenderTypes)。
         // 登録しないと solid になり、formed の枠テクスチャの透明部分が正しく抜けない。
@@ -100,9 +96,12 @@ public final class InsaneAEClient {
     }
 
     /**
-     * 画面の登録。1.20.5 で専用イベント {@link RegisterMenuScreensEvent} が新設され、
-     * {@code FMLClientSetupEvent} からの登録はできなくなった
-     * (AE2 の {@code InitScreens#register} もイベントを第 1 引数に取るようになっている)。
+     * 画面の登録。専用イベント {@link RegisterMenuScreensEvent} で行い、
+     * {@code FMLClientSetupEvent} からは登録できない
+     * (AE2 の {@code InitScreens#register} もイベントを第 1 引数に取る)。
+     *
+     * <p>レイアウト JSON は {@code StyleManager} が {@code ae2} 名前空間固定で読むため、
+     * こちらの分も {@code assets/ae2/screens/insaneae/} に置いている。</p>
      */
     private static void registerScreens(RegisterMenuScreensEvent event) {
         InitScreens.register(event,
@@ -137,7 +136,6 @@ public final class InsaneAEClient {
         ModCells.FLUID_CELLS.values().forEach(cell -> event.register(basic, cell.get()));
         ModCells.PORTABLE_ITEM_CELLS.values().forEach(cell -> event.register(portable, cell.get()));
         ModCells.PORTABLE_FLUID_CELLS.values().forEach(cell -> event.register(portable, cell.get()));
-        // 他アドオンのセル (化学物質セル・FE セルなど) も同じ色付け。
         for (AddonIntegration addon : AddonIntegrations.active()) {
             addon.storageCells().forEach(cell -> event.register(basic, cell));
             addon.portableCells().forEach(cell -> event.register(portable, cell));
@@ -151,17 +149,16 @@ public final class InsaneAEClient {
      * 色を付けないレイヤに {@code 0xFFFFFF} を返す。これは ARGB として見ると
      * <b>アルファが 0</b> であり、NeoForge 1.21.1 の {@code ItemRenderer#renderQuadList} は</p>
      *
-     * <pre>float f = FastColor.ARGB32.alpha(色) / 255.0F;   // ← 1.20.1 には無かった
+     * <pre>float f = FastColor.ARGB32.alpha(色) / 255.0F;
      *buffer.putBulkData(pose, quad, r, g, b, f, ...);</pre>
      *
      * <p>と<b>戻り値のアルファを頂点に掛ける</b>ので、そのまま登録すると全レイヤの
      * アルファが 0 になり、アイテムが完全に透明になって見えなくなる
      * ({@code item/generated} は layerN に tintindex N を振るため、
-     * 筐体も階層色も例外なく色ハンドラを通る)。1.20.1 の {@code ItemRenderer} は
-     * アルファを 1.0 固定にしていたので、これは 1.21.1 で初めて出る問題。</p>
+     * 筐体も階層色も例外なく色ハンドラを通る)。</p>
      *
      * <p>色ハンドラを登録していないアイテム (セルコンポーネントなど) は既定値 {@code -1}
-     * = {@code 0xFFFFFFFF} が使われるので影響を受けない。<b>セルだけが消えていたのはこのため。</b></p>
+     * = {@code 0xFFFFFFFF} が使われるので影響を受けない。</p>
      *
      * <p>AE2 自身も {@code InitItemColors#makeOpaque} で同じ処理をしてから登録しているが、
      * private で借りられないのでこちらで用意する。</p>

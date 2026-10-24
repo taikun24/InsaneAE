@@ -18,7 +18,6 @@ public abstract class CraftingCPUNameMixin {
     @Inject(method = "getName", at = @At("RETURN"), cancellable = true, require = 0)
     private void insaneae$syncExactCapacity(CallbackInfoReturnable<Component> cir) {
         Object target = this;
-        // InsaneAEのMixinが適用されていない環境では、CPU名を変更しない。
         if (!(target instanceof IBigCraftingCapacity capacity)) {
             return;
         }

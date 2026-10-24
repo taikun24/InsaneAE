@@ -4,20 +4,20 @@ import appeng.api.inventories.InternalInventory;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 
 /**
- * メニューを組み立てている間だけ、パターン枠を<b>1 ページぶんの窓</b>に見せるための受け渡し。
+ * メニューを組み立てている間だけ、パターン枠を 1 ページぶんの窓に見せるための受け渡し。
  *
  * <h2>なぜこんな形なのか</h2>
  * <p>{@code PatternProviderMenu} のコンストラクタは {@code logic.getPatternInv()} の枠数だけ
  * スロットを並べる。Quantum CPU は 1620 枠あるので、そのままだとバニラの毎 tick の同期処理が
  * 1620 枠ぶん走る ({@link PagedPatternInventory} の説明を参照)。</p>
  *
- * <p>以前はここを {@code PatternProviderMenu} への {@code @Redirect} ですり替えていたが、
+ * <p>{@code PatternProviderMenu} への {@code @Redirect} では差し替えない。
  * <b>他 Mod が同じ {@code getPatternInv()} 呼び出しを {@code @Redirect} すると、
- * 優先度の高い方しか成立せずこちらが黙って外れる</b> (ExtendedAE Plus 1.6 の
+ * 優先度の高い方しか成立せず、こちらが気づかないうちに外れる</b> (ExtendedAE Plus 1.6 の
  * {@code PatternProviderMenuUpgradesMixin} が優先度 2000 で実際にそうなる)。
- * 優先度を上げ返すのは相手の機能を壊すだけなので、<b>命令の取り合いから降りて</b>
+ * 優先度を上げ返すと相手の機能を壊すので、{@code @Redirect} の取り合いには加わらず、
  * こちらのロジック ({@link jp.main.taikun.insaneae.provider.InsanePatternProviderLogic})
- * 側の override で返す形にした。Mixin を使わないので、今後どの Mod とも競合しない。</p>
+ * の override で窓を返す。Mixin を使わないので、他の Mod とも競合しない。</p>
  *
  * <h2>受け渡しの流れ</h2>
  * <ol>

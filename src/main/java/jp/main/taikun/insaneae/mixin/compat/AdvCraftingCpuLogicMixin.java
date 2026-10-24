@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * <p>Advanced AE は AE2 のクラフト CPU を使わず、{@code AdvCraftingCPULogic} という
  * <b>自前の複製</b>を用意して、{@code CraftingService} への Mixin ({@code tickAdvClusters}) で
  * 自分でティックを回している。そのため {@code CraftingCpuLogicMixin} (AE2 用) は素通りされ、
- * Quantum CPU が<b>1 クラフトずつの遅い経路</b>に落ちていた。
+ * Quantum CPU が<b>1 クラフトずつの遅い経路</b>に落ちてしまう。
  * Advanced Quantum Engineering のような「AAE の部品を強化する」アドオンも
  * 独自の CPU 系統は作らないので、ここ 1 か所で全部まかなえる。</p>
  *
@@ -28,7 +28,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * <p>{@link Pseudo} が付いているので、対象クラスが見つからなければ<b>この Mixin だけが
  * 黙って読み飛ばされる</b>。コンパイル依存もランタイム依存も要らない。
  * 登録先の {@code insaneae.compat.mixins.json} は {@code required=false} なので、
- * 注入に失敗してもゲームは起動する (まとめ処理が効かなくなるだけ)。</p>
+ * 注入に失敗してもゲームは起動する (まとめ処理が働かなくなるだけ)。</p>
  *
  * <h2>他の Mod と先頭を取り合う件</h2>
  * <p>AE2 Crafting Optimizer も同じ {@code executeCrafting} の先頭に打ち切り付きで注入している。

@@ -48,7 +48,6 @@ public final class BigIntegerCraftingUnitType implements ExactCraftingUnitType {
 
     @Override
     public int getAcceleratorThreads() {
-        // 通常クラフトストレージなので、並列処理能力は提供しない。
         return 0;
     }
 

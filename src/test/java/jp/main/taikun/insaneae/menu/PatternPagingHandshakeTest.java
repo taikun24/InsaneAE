@@ -13,14 +13,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * メニュー組み立て中だけパターン枠を窓にすり替える受け渡しの検証。
  *
  * <p>ここが壊れると Quantum CPU の GUI を開いた人 1 人につき毎 tick 1620 枠ぶんの
- * スロット同期がサーバに乗る (以前は Mixin でやっていて、ExtendedAE Plus 1.6 の
- * {@code @Redirect} に取られて黙って外れた)。窓の有効範囲が広がりすぎていないかも見る。</p>
+ * スロット同期がサーバに乗る (Mixin で窓に差し替えると ExtendedAE Plus 1.6 の
+ * {@code @Redirect} に取られて外れるため、受け渡しで行っている)。
+ * 窓の有効範囲が広がりすぎていないかも見る。</p>
  *
  * <p><b>本物のインベントリは用意しない。</b>単体テストのクラスパスに Minecraft 本体は無く、
  * {@code InternalInventory} を実装 (や {@code Proxy} 化) しようとすると
- * {@code ItemStack} の初期化 → レジストリのブートストラップまで引きずり込まれる。
- * この受け渡しは中身を一切触らないので {@code null} を通しても意味は変わらない —
- * 「窓 ({@link PagedPatternInventory}) を返したか、渡されたものをそのまま返したか」だけを見る。</p>
+ * {@code ItemStack} の初期化とレジストリのブートストラップが必要になる。
+ * この受け渡しは中身を一切触らないので {@code null} を通しても意味は変わらない。
+ * 見るのは「窓 ({@link PagedPatternInventory}) を返したか、渡されたものをそのまま返したか」だけ。</p>
  */
 class PatternPagingHandshakeTest {
 

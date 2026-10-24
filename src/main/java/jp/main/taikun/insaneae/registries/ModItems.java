@@ -23,13 +23,12 @@ public class ModItems {
     private static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(Registries.ITEM, InsaneAE.MODID);
 
-    /** 各階層 → セルコンポーネント。 */
     public static final Map<InsaneCraftingUnitType, DeferredHolder<Item, Item>> CELL_COMPONENTS =
             new EnumMap<>(InsaneCraftingUnitType.class);
 
     /**
      * Insane プロセッサの金型。MEGA の集積回路の金型と同じく、既存の金型 2 枚を
-     * 刻印機で潰して作る (中段は量子もつれ特異点)。鉄ブロックで複製できる。
+     * 刻印機にかけて作る (中段は量子もつれ特異点)。鉄ブロックで複製できる。
      */
     public static final DeferredHolder<Item, Item> INSANE_PROCESSOR_PRESS =
             ITEMS.register("insane_processor_press", () -> new Item(new Item.Properties()));
@@ -45,7 +44,7 @@ public class ModItems {
 
     static {
         for (InsaneCraftingUnitType type : InsaneCraftingUnitType.values()) {
-            // 表示名は階層ごとの lang キーではなく「書式キー + 階層ラベル」で作る → TieredNames。
+            // 表示名は階層ごとの lang キーではなく「書式キー + 階層ラベル」で作る (TieredNames を参照)。
             CELL_COMPONENTS.put(type, ITEMS.register(type.cellComponentId(),
                     () -> new TieredItem(new Item.Properties(), TieredNames.CELL_COMPONENT, type.label())));
         }

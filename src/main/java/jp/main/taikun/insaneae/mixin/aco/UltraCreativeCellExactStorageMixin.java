@@ -13,10 +13,10 @@ import org.spongepowered.asm.mixin.Unique;
  * 超強化クリエイティブセルに「BigInteger の在庫を名乗る窓口」を生やす。
  *
  * <h2>これは<b>書き込み側</b>の担当</h2>
- * <p>在庫を<b>読む</b>のは公開契約
- * ({@link UltraCreativeCellExactAmountProviderMixin}) に移した。ACO 1.5.20 で
+ * <p>在庫を<b>読む</b>側は公開契約
+ * ({@link UltraCreativeCellExactAmountProviderMixin}) が担当する。ACO 1.5.20 で
  * {@code ExactStorageAmountProvider} が入り、スナップショット側は
- * そちらを先に見るようになったため。</p>
+ * そちらを先に見るため。</p>
  *
  * <p>残っているのは<b>在庫を減らす側</b>。{@code ExactNetworkStorageBridge} は
  * 1.5.22 でもこの {@code ExtendedAePlusBigIntegerCellInventoryAccess} しか知らず、

@@ -15,7 +15,7 @@ import java.util.stream.Stream;
  */
 public class ModBlockLootProvider extends BlockLootSubProvider {
 
-    // 1.21 から BlockLootSubProvider はレジストリ参照 (HolderLookup.Provider) を要求する。
+    // BlockLootSubProvider はレジストリ参照 (HolderLookup.Provider) を要求する。
     public ModBlockLootProvider(HolderLookup.Provider registries) {
         super(Set.of(), FeatureFlags.REGISTRY.allFlags(), registries);
     }

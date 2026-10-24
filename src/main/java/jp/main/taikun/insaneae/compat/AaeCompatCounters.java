@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * <p>「注入したメソッドがクラスに生えているか」を名前で見る検査では<b>足りない</b>。
  * Mixin はメソッドを先に混ぜてから injector を配線するので、
- * <b>配線に失敗してもメソッドだけは生えている</b>。実際 2026-08-15 に、
+ * <b>配線に失敗してもメソッドだけは生えている</b>。実際に、
  * {@code @Redirect} のハンドラ引数を {@code Object} で書いていたせいで</p>
  *
  * <pre>

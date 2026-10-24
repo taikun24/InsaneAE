@@ -49,12 +49,10 @@ public class ModCells {
     /**
      * ポータブルセルの画面 (上面) の色。<b>種類に依らず全部これ</b>。
      *
-     * <p>{@code AbstractPortableCell#getColor} がこの値を tintindex 2 = 画面レイヤに塗る。
-     * こちらは 1.20.1 から種類ごとに違う色を渡していた (アイテム {@code 0x353535} /
-     * 液体 {@code 0xF1C5} / 化学物質 {@code 0x33528D}) が、AE2 19.2・MEGA Cells 4.11・
-     * Applied Mekanistics 1.6.3 の<b>いずれもこの水色 1 色に統一している</b>ので揃える
-     * (3 つとも同じ定数 {@code 8440575} を渡していることを jar で確認済み)。
-     * とくにアイテム用の {@code 0x353535} は画面が黒く潰れていた。
+     * <p>{@code AbstractPortableCell#getColor} がこの値を tintindex 2 (画面レイヤ) に塗る。
+     * AE2 19.2・MEGA Cells 4.11・Applied Mekanistics 1.6.3 は<b>いずれも種類によらず
+     * この水色 1 色</b> (定数 {@code 8440575}) を渡しているので、それに揃える
+     * (3 つの jar で確認済み)。暗い色 ({@code 0x353535} など) を渡すと画面が黒く見える。</p>
      *
      * <p>種類の区別は画面の色ではなく<b>筐体テクスチャ</b>のほうで付いている
      * ({@code megacells:item/portable_cell_item/fluid/chemical_housing})。</p>
@@ -102,7 +100,7 @@ public class ModCells {
                     clampBytes(tier.getStorageBytes()), idleDrain, component::asItem);
             TIERS.put(tier, storageTier);
 
-            // 表示名は階層ごとの lang キーではなく「書式キー + 階層ラベル」で作る → TieredNames。
+            // 表示名は階層ごとの lang キーではなく「書式キー + 階層ラベル」で作る (TieredNames を参照)。
             ITEM_CELLS.put(tier, register("item_storage_cell_" + tier.id(),
                     () -> new InsaneStorageCellItem(new Item.Properties().stacksTo(1), component,
                             MEGAItems.MEGA_ITEM_CELL_HOUSING, idleDrain, tier.getStorageBytes(),

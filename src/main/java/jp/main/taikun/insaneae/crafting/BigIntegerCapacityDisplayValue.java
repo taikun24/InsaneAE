@@ -7,9 +7,7 @@ import java.util.Optional;
 public record BigIntegerCapacityDisplayValue(int decimalDigits, String leadingDigits) {
     /** 16Eなど通常のクラスタ容量を正確な二進単位へ戻せるよう保持する最大桁数。 */
     private static final int LEADING_DIGITS = 64;
-    /** 科学表記へ使う有効数字の数。 */
     private static final int SCIENTIFIC_SIGNIFICANT_DIGITS = 4;
-    /** 1 EiBを表すバイト数。 */
     private static final BigInteger EIB_BYTES = BigInteger.ONE.shiftLeft(60);
     /** UI幅を守りつつ整数E表記を使える最大桁数。 */
     private static final int MAX_EIB_INTEGER_DIGITS = 6;
@@ -61,7 +59,6 @@ public record BigIntegerCapacityDisplayValue(int decimalDigits, String leadingDi
     /** CPU一覧・ツールチップへ表示する短い容量文字列を返す。 */
     public String format() {
         String exactEib = formatExactEib();
-        // 正確なEiB整数へ戻せる容量は、16Eのような短いカタログ表記を優先する。
         if (exactEib != null) {
             return exactEib;
         }
@@ -86,7 +83,6 @@ public record BigIntegerCapacityDisplayValue(int decimalDigits, String leadingDi
         }
         BigInteger exact = new BigInteger(leadingDigits);
         BigInteger[] quotientAndRemainder = exact.divideAndRemainder(EIB_BYTES);
-        // EiBの整数倍でなければ、科学表記へ戻す。
         if (quotientAndRemainder[1].signum() != 0) {
             return null;
         }

@@ -12,7 +12,7 @@ import net.minecraft.network.chat.MutableComponent;
  *
  * <p>実装は各アイテム／ブロックの {@code getName} の上書き。
  * {@code getDescriptionId()} は階層ごとに固有のまま (lang には載せない) なので、
- * ツールチップの説明キー ({@code <翻訳キー>.desc}) は今までどおり階層ごとに書ける。</p>
+ * ツールチップの説明キー ({@code <翻訳キー>.desc}) は階層ごとに書ける。</p>
  */
 public final class TieredNames {
 
@@ -32,7 +32,6 @@ public final class TieredNames {
     private TieredNames() {
     }
 
-    /** 書式キーに階層ラベルを流し込んだ表示名。 */
     public static MutableComponent of(String nameKey, String tierLabel) {
         return Component.translatable(nameKey, tierLabel);
     }

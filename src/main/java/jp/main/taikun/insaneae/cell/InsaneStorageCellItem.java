@@ -27,9 +27,9 @@ public class InsaneStorageCellItem extends BasicStorageCell implements IHugeCell
     public InsaneStorageCellItem(Item.Properties props, ItemLike coreItem, ItemLike housingItem,
             double idleDrain, long totalBytes, int bytesPerType, int totalTypes, AEKeyType keyType,
             String nameKey, String tierLabel) {
-        // AE2 19.2 でセルの分解 (右クリックでコンポーネント + ハウジングに戻る) は
-        // コンストラクタ引数ではなく StorageCellDisassemblyRecipe というデータ駆動のレシピになった。
-        // core/housing はここでは保持だけして、datagen 側で分解レシピを吐くのに使う。
+        // AE2 19.2 のセル分解 (右クリックでコンポーネント + ハウジングに戻る) は
+        // コンストラクタ引数ではなく StorageCellDisassemblyRecipe というデータ駆動のレシピで定義する。
+        // core/housing はここでは保持だけして、datagen 側で分解レシピを出力するのに使う。
         super(props, idleDrain, toKilobytes(totalBytes), bytesPerType, totalTypes, keyType);
         this.totalBytesLong = totalBytes;
         this.nameKey = nameKey;

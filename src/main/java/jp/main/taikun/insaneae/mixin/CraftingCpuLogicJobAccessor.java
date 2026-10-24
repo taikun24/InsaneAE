@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 /**
- * クラフト CPU が今抱えている実行中ジョブへの入口。
+ * クラフト CPU が今抱えている実行中ジョブを読み出すためのアクセサ。
  *
  * <p>ゲームテストから「そのジョブを ACO の exact 実行が所有しているか」を
  * 直接確かめるために要る ({@code insaneae_aco_exact_ownership})。

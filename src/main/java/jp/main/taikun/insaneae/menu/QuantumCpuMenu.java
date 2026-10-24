@@ -204,7 +204,6 @@ public class QuantumCpuMenu extends PatternProviderMenu {
         return semantic == SlotSemantics.PLAYER_INVENTORY || semantic == SlotSemantics.PLAYER_HOTBAR;
     }
 
-    // 1.20.5 で画面を開くときのバッファがレジストリ参照つき (RegistryFriendlyByteBuf) になった。
     private static QuantumCpuMenu fromNetwork(int containerId, Inventory playerInventory,
             RegistryFriendlyByteBuf buf) {
         MenuHostLocator locator = MenuLocators.readFromPacket(buf);
@@ -233,8 +232,6 @@ public class QuantumCpuMenu extends PatternProviderMenu {
             menu.setLocator(locator);
             return menu;
         }, title);
-        // NetworkHooks は NeoForge で廃止され、ServerPlayer#openMenu が
-        // 追加データ書き込み用のコールバックを直接受け取るようになった。
         serverPlayer.openMenu(provider, buf -> {
             MenuLocators.writeToPacket(buf, locator);
             buf.writeBoolean(fromSubMenu);

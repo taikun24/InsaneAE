@@ -9,10 +9,10 @@ import jp.main.taikun.insaneae.registries.ModParts;
  *
  * <p>太さ・部品の可否・色塗りは {@link ThinDenseCablePart} と共通で、
  * 違うのは<b>本数だけ</b>。{@code GridNodeChannelMixin} が
- * 「オーナーがこのクラスなら」上限を引き上げる → {@link HyperNetwork}。
- * <b>解錠の条件は無く、置いた時点で常に既定 128 本</b>運ぶ。</p>
+ * 「オーナーがこのクラスなら」上限を引き上げる ({@link HyperNetwork})。
+ * 置いた時点で、条件なしに常に既定 128 本運ぶ。</p>
  *
- * <p>ミックスインが効かない場面 ({@code ChannelMode.INFINITE} など) では
+ * <p>Mixin が適用されない場面 ({@code ChannelMode.INFINITE} など) では
  * 親が立てている {@code DENSE_CAPACITY} の 32 本 (= {@link CompressedCablePart} と同じ) に落ちる。</p>
  */
 public class HyperCablePart extends ThinDenseCablePart {

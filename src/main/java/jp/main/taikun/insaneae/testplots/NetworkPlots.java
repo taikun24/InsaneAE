@@ -201,10 +201,10 @@ public final class NetworkPlots {
      *       (出ていないと外の機械から中身が見えない)。</li>
      *   <li>1 枠の上限が {@code Integer.MAX_VALUE} = 21 億であること。
      *       容量を上げるだけでは<b>アイテムはスタック数 (64) で頭打ちになる</b>ので、
-     *       {@code ConfigInventoryAccessor} (allowOverstacking) が効いているかの回帰テストでもある。</li>
+     *       {@code ConfigInventoryAccessor} (allowOverstacking) が反映されているかの回帰テストでもある。</li>
      *   <li>1 枠に入り切らない量を 1 回で入れても<b>取りこぼさない</b>こと。
      *       Mekanism 系の化学物質は long で来るので、ここで頭打ちにすると
-     *       溢れたぶんが機械側に押し戻される → {@code InterfaceOverflowInventory}。</li>
+     *       溢れたぶんが機械側に押し戻されるので、{@code InterfaceOverflowInventory} で受ける。</li>
      * </ol>
      */
     @TestPlot("insaneae_insane_interface")
@@ -299,7 +299,7 @@ public final class NetworkPlots {
      * ケーブル版 (プレート) がブロック版と同じ中身を持ち、グリッドにも入ることの検証。
      *
      * <p>部品は AE2 の {@code InterfacePart} / {@code PatternProviderPart} を継承して
-     * {@code createLogic()} だけ差し替えている。<b>差し替えが効いていないと
+     * {@code createLogic()} だけ差し替えている。<b>差し替えが反映されていないと
      * 静かに AE2 の既定 (9 枠 / 36 枠) に戻る</b>ので、枠数と 1 枠の上限をここで押さえる。</p>
      *
      * <p>あわせて「ケーブルに貼れて、チャネルが通り、電力が来ている」ことも見る。
@@ -584,7 +584,7 @@ public final class NetworkPlots {
         return node == null ? -1 : node.getMaxChannels();
     }
 
-    /** 高密度ケーブル相当の上限 (ChannelMode の倍率込み)。解錠前の期待値。 */
+    /** 高密度ケーブル相当の上限 (ChannelMode の倍率込み)。 */
     private static int denseChannels(PlotTestHelper helper, BlockPos pos) {
         ChannelMode mode = helper.getGrid(pos).getPathingService().getChannelMode();
         return 32 * mode.getCableCapacityFactor();

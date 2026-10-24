@@ -103,9 +103,7 @@ public abstract class BasicCellInventoryMixin {
         }
     }
 
-    // 1.20.1 (AE2 15.2.16) にはここに getStoredItemTypes への注入があった。
-    // 当時 AE2 の storedItems が short だったため 32767 種で桁あふれして
-    // 使用バイト数と残り型数が壊れていたのを、NBT のキー配列長から数え直していた。
-    // AE2 19.2 で storedItems は int になり、値も NBT 直読みではなく
-    // getStoredStacks().size() から入るようになったので、この回避策は不要になった。
+    // getStoredItemTypes には注入しない。AE2 19.2 の storedItems は int で、
+    // 値も getStoredStacks().size() から入るので、32767 種を超えても桁あふれしない
+    // (AE2 15.2.16 の storedItems は short なので、1.20.1 側では注入している)。
 }

@@ -27,13 +27,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Quantum CPU に内蔵されるクラフト CPU —<b>容量を切り分けて何本も同時に受ける</b>。
+ * Quantum CPU に内蔵されるクラフト CPU。<b>容量を切り分けて何本も同時に受ける</b>。
  *
  * <h2>なぜ切り分けるのか</h2>
  * <p>AE2 のクラフト CPU は<b>1 台につきジョブ 1 本</b>で、実行中は「使用中」として
  * CPU 選択から外れる。容量が 64K 程度なら妥当だが、Quantum CPU は上位階層の
  * クラフトストレージを何個も挿せるので、そのままだと<b>1000K 挿してあっても
- * 100K のクラフトを 1 本始めた瞬間に残り 900K が丸ごと遊ぶ</b>。</p>
+ * 100K のクラフトを 1 本始めた時点で残り 900K が丸ごと使われなくなる</b>。</p>
  *
  * <p>そこで AE2 のクラスタを 1 個に固定せず、<b>発注のたびに区画
  * ({@link QuantumCpuPartition}) を切り出す</b>。</p>
@@ -50,7 +50,7 @@ import java.util.List;
  *
  * <h2>スレッドの分け方</h2>
  * <p>協調処理スレッドは<b>実行中のジョブで均等に分ける</b>。区画を増やしても
- * 合計の処理能力は変わらない = 分割は「容量を遊ばせない」ためのものであって、
+ * 合計の処理能力は変わらない。分割は「容量を余らせない」ためのものであって、
  * <b>速度を増やす裏技にはならない</b>。</p>
  *
  * <p>同時に受けられる本数の上限は設定 ({@link InsaneAEConfig#quantumCpuMaxJobs()}) で、
@@ -68,10 +68,9 @@ public class QuantumCraftingCpu {
      */
     private final List<QuantumCpuPartition> partitions = new ArrayList<>();
 
-    /** 内部スロットの中身から数えた合計バイト数 (正本)。 */
+    /** 内部スロットの中身から数えた合計バイト数。 */
     private BigInteger totalStorage = BigInteger.ZERO;
 
-    /** 内部スロットの中身から数えた合計スレッド数。 */
     private long totalThreads;
 
     public QuantumCraftingCpu(QuantumCpuBlockEntity owner) {
@@ -101,7 +100,7 @@ public class QuantumCraftingCpu {
      * 空き区画のクラスタ。
      *
      * <p>「この Quantum CPU の CPU」を 1 つ指したい場面 (ゲームテストなど) 用。
-     * 実行中のジョブはここには居ない — 発注を受けた区画は別に切り出されている。</p>
+     * 実行中のジョブはここには居ない。発注を受けた区画は別に切り出されている。</p>
      */
     public CraftingCPUCluster cluster() {
         redistribute();
@@ -224,14 +223,12 @@ public class QuantumCraftingCpu {
         }
     }
 
-    /** 番号の空きを拾って区画を作る。 */
     private QuantumCpuPartition newPartition() {
         QuantumCpuPartition partition = new QuantumCpuPartition(this, nextId());
         partitions.add(partition);
         return partition;
     }
 
-    /** まだ使われていない一番小さい番号。 */
     private int nextId() {
         int id = 1;
         boolean used = true;
@@ -248,7 +245,6 @@ public class QuantumCraftingCpu {
         return id;
     }
 
-    /** 同時に受けられるジョブの本数。 */
     private static int maxJobs() {
         return Math.max(1, InsaneAEConfig.quantumCpuMaxJobs());
     }
@@ -292,7 +288,7 @@ public class QuantumCraftingCpu {
         if (changed) {
             redistribute();
             // CPU 一覧を組み直させる。これを出さないと、
-            // 挿した瞬間には CPU が現れず次の構成変更まで反映されない。
+            // 挿した時点では CPU が現れず次の構成変更まで反映されない。
             notifyGrid();
         }
     }
@@ -335,7 +331,7 @@ public class QuantumCraftingCpu {
      * その階層 1 個ぶんの正確なバイト数。
      *
      * <p>InsaneAE の上位階層は long では表せない ({@code 8E} は 2^63) ので、
-     * BigInteger の正本を持つ型ならそちらを使う → {@link ExactCraftingUnitType}。</p>
+     * 正確な値を BigInteger で持つ型 ({@link ExactCraftingUnitType}) ならそちらを使う。</p>
      */
     private static BigInteger exactBytes(ICraftingUnitType type) {
         if (type instanceof ExactCraftingUnitType exact) {
@@ -347,12 +343,10 @@ public class QuantumCraftingCpu {
 
     // ------------------------------------------------------------ 集計値の公開
 
-    /** 挿してあるクラフトストレージの合計。 */
     public BigInteger totalStorage() {
         return totalStorage;
     }
 
-    /** 挿してある協調処理ユニットの合計スレッド数。 */
     public long totalThreads() {
         return totalThreads;
     }
@@ -368,7 +362,6 @@ public class QuantumCraftingCpu {
         return running;
     }
 
-    /** まだ発注に使えるバイト数。 */
     public BigInteger freeStorage() {
         redistribute();
         QuantumCpuPartition free = freePartition();

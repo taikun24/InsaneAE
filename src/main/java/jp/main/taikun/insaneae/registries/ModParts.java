@@ -27,8 +27,8 @@ import net.minecraft.resources.ResourceLocation;
  * <p>AE2 の「ME インターフェイス」と「ME パターンプロバイダ」にブロック版とケーブル版が
  * あるのと同じで、こちらの超特大インターフェイス / 特大パターンプロバイダーにも
  * ケーブル版を用意する。中身はブロック版とまったく同じロジックで、
- * 器がブロックか部品かだけが違う → {@link InsaneInterfacePart} /
- * {@link InsanePatternProviderPart}。</p>
+ * 器がブロックか部品かだけが違う
+ * (部品側は {@link InsaneInterfacePart} / {@link InsanePatternProviderPart})。</p>
  *
  * <h2>部品は「ブロック」ではなく「アイテム」として登録する</h2>
  * <p>AE2 の部品はワールド上ではケーブルバス ({@code ae2:cable_bus}) の一部で、
@@ -53,11 +53,9 @@ public final class ModParts {
 
     private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(InsaneAE.MODID);
 
-    /** 超特大インターフェイスのケーブル版。 */
     public static final DeferredItem<InsaneInterfacePartItem> INSANE_INTERFACE =
             ITEMS.registerItem("insane_interface_part", InsaneInterfacePartItem::new);
 
-    /** 特大パターンプロバイダーのケーブル版。 */
     public static final DeferredItem<PartItem<InsanePatternProviderPart>> INSANE_PATTERN_PROVIDER =
             ITEMS.registerItem("insane_pattern_provider_part",
                     props -> new PartItem<>(props, InsanePatternProviderPart.class,
@@ -73,7 +71,7 @@ public final class ModParts {
      * <p>色を変える経路は 2 つあり、どちらも<b>アイテムを差し替える</b>方式:
      * 色塗り器 / ペイントボールは {@link HyperCablePart#changeColor}、
      * クラフトは染料レシピ ({@code ModRecipeProvider})。したがって
-     * <b>ここの 17 種が揃っていないと色替えが黙って失敗する</b>。</p>
+     * <b>ここの 17 種が揃っていないと色替えが失敗する</b>。</p>
      *
      * <p>ケーブルは他の部品と違って {@link PartModels} への申告が要らない。
      * ワールド上の描画は部品のモデルではなく AE2 の {@code CableBuilder} が
@@ -86,7 +84,7 @@ public final class ModParts {
      * 圧縮 ME 高密度スマートケーブル。超次元 ME ケーブルと同じく<b>17 色</b>を出す。
      *
      * <p>登録名は {@code <色>_compressed_dense_cable}。本数は高密度ケーブルと同じ 32 本で、
-     * 違うのは<b>細くて部品が貼れる</b>こと → {@link CompressedCablePart}。</p>
+     * 違うのは<b>細くて部品が貼れる</b>こと ({@link CompressedCablePart})。</p>
      */
     public static final Map<AEColor, DeferredItem<ColoredPartItem<CompressedCablePart>>> COMPRESSED_CABLES =
             new EnumMap<>(AEColor.class);

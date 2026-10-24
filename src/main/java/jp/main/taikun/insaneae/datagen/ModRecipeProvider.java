@@ -54,7 +54,7 @@ import java.util.function.Function;
  *
  * <p>階層ごとに次の 8 種類 (化学物質系 2 種は Applied Mekanistics 導入時のみ有効な
  * 条件付きレシピ) を出す。レシピ ID は結果アイテムの登録名と同じになるため、
- * ポータブルセルの分解処理 ({@code getRecipeId()}) ともそのまま噛み合う。</p>
+ * ポータブルセルの分解処理 ({@code getRecipeId()}) ともそのまま一致する。</p>
  */
 public class ModRecipeProvider extends RecipeProvider {
 
@@ -73,8 +73,7 @@ public class ModRecipeProvider extends RecipeProvider {
             ResourceLocation.fromNamespaceAndPath("ae2", "can_remove_color"));
 
     /**
-     * その色の染料タグ。1.21 で共通タグの名前空間が {@code forge} から {@code c} に変わっているので、
-     * <b>1.20.1 側へ移植するときはここを {@code forge} に直すこと</b>。
+     * その色の染料タグ。共通タグの名前空間は 1.21 では {@code c} (1.20.1 では {@code forge})。
      */
     private static TagKey<Item> dyeTag(AEColor color) {
         return TagKey.create(Registries.ITEM,
@@ -102,22 +101,16 @@ public class ModRecipeProvider extends RecipeProvider {
                     ? MEGAItems.CELL_COMPONENT_256M
                     : ModItems.CELL_COMPONENTS.get(tiers[index - 1]).get();
 
-            // セルコンポーネント: 下位 ×4
-            // shapeless(consumer, component, lower, b -> b.requires(lower, 4));
-
             tieredComponent(consumer, component, lower, ACCUMULATION_PROCESSOR, tier);
 
-            // クラフトストレージ: MEGA のクラフトユニット + コンポーネント
             shapeless(consumer, ModBlocks.CRAFTING_STORAGE.get(tier).get(), component,
                     b -> b.requires(MEGABlocks.MEGA_CRAFTING_UNIT).requires(component));
 
-            // 通常セル: ハウジング + コンポーネント (と、空のセルを右クリックしたときの分解)
             storageCell(consumer, ModCells.ITEM_CELLS.get(tier).get(), component,
                     MEGAItems.MEGA_ITEM_CELL_HOUSING);
             storageCell(consumer, ModCells.FLUID_CELLS.get(tier).get(), component,
                     MEGAItems.MEGA_FLUID_CELL_HOUSING);
 
-            // ポータブルセル: ME チェスト + コンポーネント + 高密度エネルギーセル + ハウジング
             portableCell(consumer, ModCells.PORTABLE_ITEM_CELLS.get(tier).get(), component,
                     MEGAItems.MEGA_ITEM_CELL_HOUSING);
             portableCell(consumer, ModCells.PORTABLE_FLUID_CELLS.get(tier).get(), component,
@@ -142,7 +135,6 @@ public class ModRecipeProvider extends RecipeProvider {
                     b -> b.requires(lower, tier.lowerCount()));
         }
 
-        // 加速カード: 下位カード ×4 + 集積プロセッサ (最下段は AE2 の加速カード ×4)。
         InsaneSpeedCardType[] cards = InsaneSpeedCardType.values();
         for (int index = 0; index < cards.length; index++) {
             InsaneSpeedCardType card = cards[index];
@@ -153,7 +145,6 @@ public class ModRecipeProvider extends RecipeProvider {
 
         insaneProcessor(consumer);
 
-        // Quantum CPU: パターンプロバイダ 1 + 分子組立装置 4 + Insane プロセッサ 4。
         shaped(consumer, ModBlocks.QUANTUM_CPU.get(), ModItems.INSANE_PROCESSOR.get(),
                 new String[]{"ABA", "BCB", "ABA"},
                 Map.of(
@@ -227,7 +218,6 @@ public class ModRecipeProvider extends RecipeProvider {
                     Map.of('A', lower, 'B', ACCUMULATION_PROCESSOR));
         }
 
-        // Improved Crystal Charger: AE2 のチャージャー + 集積プロセッサ + 帯電水晶。
         shaped(consumer, ModBlocks.IMPROVED_CHARGER.get(), ACCUMULATION_PROCESSOR,
                 new String[]{"ABA", "BCB", "ABA"},
                 Map.of(
@@ -237,7 +227,7 @@ public class ModRecipeProvider extends RecipeProvider {
                 ));
 
         // ソーラーパネル: 最下段だけ素材から、以降は下位 ×8 + 中央の「核」。
-        // 発電量が 1 段で 256 倍 (2^8-1 → 2^32-1) 伸びるので、核も段ごとに重くしてある。
+        // 発電量が 1 段で約 4096 倍 (2^12 倍) 伸びるので、核も段ごとに重くしてある。
         SolarPanelTier[] panels = SolarPanelTier.values();
         ItemLike[] cores = {ModBlocks.ENERGY_CELLS.get(InsaneEnergyCellTier.DEGENERATE).get(), ModBlocks.ENERGY_CELLS.get(InsaneEnergyCellTier.QUASAR).get(), ModBlocks.ENERGY_CELLS.get(InsaneEnergyCellTier.GALACTIC).get()};
         for (int index = 0; index < panels.length; index++) {
@@ -258,12 +248,10 @@ public class ModRecipeProvider extends RecipeProvider {
             }
         }
 
-        // Quantum CPU 用加速カード: 最上位の加速カード ×4 + 特異点。
         ItemLike topSpeedCard = cards[cards.length - 1].item();
         shapeless(consumer, ModUpgrades.QUANTUM_ACCELERATION_CARD.get(), topSpeedCard,
                 b -> b.requires(topSpeedCard, 4).requires(SINGULARITY));
 
-        // タスク統合カード: 加速カード ×2 + 特異点 ×2 (タスクを 1 つに融合するイメージ)。
         shapeless(consumer, ModUpgrades.TASK_FUSION_CARD.get(),
                 ModUpgrades.QUANTUM_ACCELERATION_CARD.get(),
                 b -> b.requires(ModUpgrades.QUANTUM_ACCELERATION_CARD.get(), 2)
@@ -315,7 +303,6 @@ public class ModRecipeProvider extends RecipeProvider {
      */
     public static void tieredComponent(RecipeOutput consumer, ItemLike component, ItemLike lower,
             ItemLike processor, InsaneCraftingUnitType tier) {
-        // 256G までは物質ボール、それより上は特異点。
         ItemLike baseMaterial = tier.getStorageBytes() > InsaneCraftingUnitType.STORAGE_256G.getStorageBytes()
                 ? SINGULARITY
                 : MATTER_BALL;
@@ -328,13 +315,11 @@ public class ModRecipeProvider extends RecipeProvider {
                 ));
     }
 
-    /** 通常セル (ハウジング + コンポーネント) と、その分解レシピを出す。 */
     public static void storageCell(RecipeOutput consumer, ItemLike cell, ItemLike component, ItemLike housing) {
         shapeless(consumer, cell, component, b -> b.requires(housing).requires(component));
         cellDisassembly(consumer, cell, component, housing);
     }
 
-    /** ポータブルセル (ME チェスト + コンポーネント + 高密度エネルギーセル + ハウジング) を出す。 */
     public static void portableCell(RecipeOutput consumer, ItemLike cell, ItemLike component, ItemLike housing) {
         shapeless(consumer, cell, component, b -> b.requires(AEBlocks.ME_CHEST)
                 .requires(component)
@@ -441,9 +426,8 @@ public class ModRecipeProvider extends RecipeProvider {
     /**
      * セルの分解レシピ。空のセルを右クリックすると、ここで指定したアイテムに戻る。
      *
-     * <p>1.20.1 (AE2 15.2.16) では戻すアイテムを {@code BasicStorageCell} のコンストラクタに
-     * 渡していたが、AE2 19.2 で {@code StorageCellDisassemblyRecipe} というデータ駆動レシピに
-     * 変わったため、datagen 側で出す必要がある。これを出さないとセルを分解できなくなる。</p>
+     * <p>AE2 19.2 では分解結果が {@code StorageCellDisassemblyRecipe} というデータ駆動レシピで
+     * 決まるため、datagen 側で出す必要がある。これを出さないとセルを分解できなくなる。</p>
      */
     public static void cellDisassembly(RecipeOutput consumer, ItemLike cell, ItemLike... results) {
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(cell.asItem()).withPrefix("cell_disassembly/");

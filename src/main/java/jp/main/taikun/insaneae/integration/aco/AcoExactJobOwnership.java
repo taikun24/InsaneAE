@@ -15,17 +15,17 @@ import org.jetbrains.annotations.Nullable;
  * {@code executeCrafting} を @HEAD で 0 に打ち切り、{@code insert} も 0 で拒否して、
  * 実行と納品を丸ごと自分の {@code PhysicalCraftingTreeTransaction} で持つ。</p>
  *
- * <p>ところが<b>同じ @HEAD にこちらのまとめ処理も刺さっている</b>。実機のスタックトレースで
+ * <p>ところが<b>同じ @HEAD にこちらのまとめ処理も注入されている</b>。実機のスタックトレースで
  * 確認した Mixin の適用順は</p>
  * <pre>insaneae:CraftingCpuLogicMixin → insaneae:CraftingCpuBudgetMixin → aco:Ae2ExactCraftingLogicMixin</pre>
  * <p>で、<b>こちらのほうが先に走る</b>。ACO が打ち切る前にタスクを進めてしまうと、
- * ACO の台帳に無い実行になって二重計上・隔離のもとになる。所有者が居るなら降りる。</p>
+ * ACO の台帳に無い実行になって二重計上・隔離のもとになる。所有者が居るなら処理を ACO に任せる。</p>
  *
  * <h2>なぜ反射なのか</h2>
  * <p>ACO の型を名指ししたくないのが半分。もう半分は<b>相手のインタフェースが 2 つある</b>から:
  * AE2 のジョブは {@code access.ExactCraftingJobAccess}、Advanced AE のジョブは
  * {@code access.AdvancedAeExactCraftingJobAccess} を実装する。<b>メソッド名は同じ</b>
- * ({@code aco$isExactJob}) なので、名前で引けば両方に効く。</p>
+ * ({@code aco$isExactJob}) なので、名前で引けば両方に使える。</p>
  *
  * <p>ACO が居ない・古い環境ではメソッドが生えていないので、常に false を返す
  * (= 従来どおりこちらが実行する)。解決はクラスごとに 1 回だけ覚える。</p>

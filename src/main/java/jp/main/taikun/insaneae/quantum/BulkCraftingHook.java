@@ -42,7 +42,7 @@ public final class BulkCraftingHook {
             IEnergyService energyService, Level level) {
         // ACO 1.5.23 以降、exact ジョブの実行と納品は ACO が丸ごと所有する。
         // <b>同じ @HEAD でこちらのほうが先に走る</b>ので、ACO が打ち切る前に降りること。
-        // 0 を返して打ち切るのは ACO 自身の挙動と同じ — AE2 本来の long タスクを
+        // 0 を返して打ち切るのは ACO 自身の挙動と同じで、AE2 本来の long タスクを
         // 走らせてはいけない (ACO が渡した 1 回実行 facade を実行してしまう)。
         if (view != null && view.isOwnedByAcoExactExecution()) {
             return 0;
@@ -58,7 +58,6 @@ public final class BulkCraftingHook {
             return -1;
         }
         if (done >= maxPatterns) {
-            // 予算を使い切ったので、この tick に CPU がやることはもう無い。
             return done;
         }
         // <b>ここで打ち切ってはいけない。</b>executeCrafting は「その tick にジョブ内の全パターンを

@@ -116,13 +116,13 @@ SIZE = 16
 # --------------------------------------------------------------------------------------
 
 # 通常セルの色レイヤ。MEGA のハウジング (mega_item/fluid/chemical_cell_housing) に
-# 開いた窓をなぞったマスクで、<b>MEGA 4.11 の storage_cell_side_<tier>.png を
-# 1 ドットずつ写したもの</b> (MEGA は全階層でこの形を共通に使い、色だけ変えている)。
+# 開いた窓をなぞったマスクで、MEGA 4.11 の storage_cell_side_<tier>.png を
+# 1 ドットずつ写したもの (MEGA は全階層でこの形を共通に使い、色だけ変えている)。
 #
-# <b>MEGA は 4.x でセルの絵を描き直した。</b>3.x (1.20.1) はハウジングと色が 1 枚に
-# 焼かれていて (megacells:item/cell/standard/item_storage_cell_1m)、窓の位置も違う。
+# MEGA 3.x (1.20.1) はハウジングと色が 1 枚に焼かれていて
+# (megacells:item/cell/standard/item_storage_cell_1m)、窓の位置も 4.x とは違う。
 # 1.20.1 側のマスクをそのまま持ってくると、色がハウジングの窓から外れて
-# 「地の金属の上に模様が乗っているだけ」になるので、ここはバージョンごとに合わせること。
+# 「地の金属の上に模様が乗っているだけ」になるので、マスクはバージョンごとに合わせること。
 #
 # 'L' = 一番明るい / 'M' = 中間 / 'D' = 一番暗い / '.' = 透明。
 # LED は AE2 の LED レイヤが乗るので必ず空けておくこと。
@@ -223,7 +223,7 @@ def pattern_index(tier: str) -> int:
 
 
 def paint(template: Image.Image, tier: str, color) -> Image.Image:
-    """グレースケールのテンプレートを階層色に染める (虹色の階層も面倒を見る)。"""
+    """グレースケールのテンプレートを階層色に染める (虹色の階層を含む)。"""
     return rainbow_recolor(template, color) if tier in RAINBOW_TIERS else recolor(template, color)
 
 
@@ -291,7 +291,7 @@ class Component:
     color だけが階層色に染まる。地に若干色が付いていても base に置いてあれば
     染まらないので、「無彩色で描かないと地まで染まってしまう」問題が起きない。
 
-    1 枚版 (component_p<N>.png) しか無ければ従来どおり、
+    1 枚版 (component_p<N>.png) しか無ければ、
     <b>彩度で地と色を見分ける</b>方式で動く (彩度 MIN_SAT 未満は地とみなす)。
     """
 
@@ -431,10 +431,9 @@ def dump_templates(directory: str | list[str]) -> None:
         base_path = os.path.join(out, f"component_p{i}_base.png")
         color_path = os.path.join(out, f"component_p{i}_color.png")
         if os.path.isfile(base_path) or os.path.isfile(color_path):
-            continue                        # 既にある 2 枚方式の下敷きは潰さない
+            continue                        # 既にある 2 枚方式の下敷きは上書きしない
         single = load_template(directory, f"component_p{i}.png")
         if single is not None:
-            # 1 枚版があれば、彩度で地と色に分けた叩き台を書き出す。
             base, color = split_by_saturation(single)
         else:
             base = draw_component_fallback("base")

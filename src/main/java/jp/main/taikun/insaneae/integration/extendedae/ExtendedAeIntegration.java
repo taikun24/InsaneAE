@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * ExtendedAE の機械にこちらの加速カードを挿せるようにする。
  *
- * <p>効かせる側は mixin/compat の {@code Ex〜Mixin} (@Pseudo)。ここは「挿せる」ようにするだけで、
+ * <p>加速を実際に反映する側は mixin/compat の {@code Ex〜Mixin} (@Pseudo)。ここは「挿せる」ようにするだけで、
  * ExtendedAE のクラスは参照しない (登録名からアイテムを引く)。</p>
  */
 public final class ExtendedAeIntegration implements AddonIntegration {
@@ -24,7 +24,7 @@ public final class ExtendedAeIntegration implements AddonIntegration {
     @Override
     public void registerUpgrades() {
         ModUpgrades.allowSpeedCards(MODID, List.of(
-                "ex_import_bus_part",       // 基底 IOBusPart の Mixin が効く
+                "ex_import_bus_part",       // 基底 IOBusPart の Mixin が適用される
                 "ex_export_bus_part",
                 "tag_export_bus",
                 "mod_export_bus",

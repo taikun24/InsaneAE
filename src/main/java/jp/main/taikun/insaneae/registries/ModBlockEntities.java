@@ -123,7 +123,7 @@ public class ModBlockEntities {
     /**
      * 登録済みの BlockEntityType を全部返す。capability の登録に使う ({@link ModCapabilities})。
      *
-     * <p>個別に並べるとブロックを増やしたときに<b>登録漏れが黙って起きる</b> (ネットワークに
+     * <p>個別に並べるとブロックを増やしたときに<b>登録漏れに気づけない</b> (ネットワークに
      * 繋がらないブロックができる) ので、DeferredRegister の中身をそのまま回す。
      * レジストリ凍結後に呼ぶこと (capability の登録イベントはその後に来る)。</p>
      */
