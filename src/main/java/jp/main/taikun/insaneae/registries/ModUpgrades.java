@@ -31,7 +31,7 @@ import net.minecraft.world.item.Items;
 /**
  * 加速カード (アップグレードカード) の登録。
  *
- * <p>取り付け可能な機械は AE2 の加速カードと同じ顔ぶれのうち、
+ * <p>取り付けられる機械は、AE2 の加速カードを挿せる機械のうち
  * 速度倍率を実装済みのものに限っている ({@link #SUPPORTED_MACHINES})。</p>
  */
 public class ModUpgrades {
@@ -101,8 +101,8 @@ public class ModUpgrades {
      * <p>挿せるだけでは意味が無いので、対象は<b>速度倍率の Mixin を用意した機械だけ</b>
      * (mixin/compat の Ex〜・AAE〜 を参照。バス系は AE2 の基底クラスの Mixin がそのまま効く)。
      * どの Mod もコンパイル依存には入れず、登録名からアイテムを引く。
-     * アイテムが見つからない場合 (相手の改名など) は静かに飛ばす —
-     * カードが挿せないだけで、壊れはしない。</p>
+     * アイテムが見つからない場合 (相手の改名など) は無視する。
+     * カードが挿せないだけで、ほかに影響はない。</p>
      */
     public static void allowSpeedCards(String modId, List<String> itemIds) {
         for (String itemId : itemIds) {
@@ -128,7 +128,7 @@ public class ModUpgrades {
      *
      * <p>ツールチップの行 (第 4 引数) も AE2 と同じグループ名にまとめる。
      * まとめないと、カード側のツールチップに<b>セル 1 種類につき 1 行</b>
-     * (階層 × 種別ぶん) がずらずら並ぶ。</p>
+     * (階層 × 種別ぶん) が並んでしまう。</p>
      */
     private static void registerCellUpgrades() {
         String cells = GuiText.StorageCells.getTranslationKey();
@@ -156,7 +156,7 @@ public class ModUpgrades {
      * <b>MEGA Cells の Greater Energy Card</b> も受ける。
      *
      * <p>枚数 (2) もツールチップのまとめ先も MEGA が自分のポータブルセルにしている登録と同じ。
-     * 効き目は AE2 の {@code PortableCellItem} 側が面倒を見るので、
+     * カードの効果は AE2 の {@code PortableCellItem} 側が処理するので、
      * <b>挿せるようにするだけで容量が増える</b> (MEGA Cells は必須依存なので分岐は要らない)。</p>
      */
     public static void addPortableEnergyCards(ItemLike cell, String tooltipGroup) {

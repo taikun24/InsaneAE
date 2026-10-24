@@ -27,7 +27,7 @@ import java.util.List;
  * 1 枠 {@value InsaneInterfaceBlockEntity#MAX_PER_SLOT} 個</b>。
  * 枠を広げているのは {@code InterfaceLogic} なので、AE2 の {@link InterfacePart} を継承して
  * <b>{@link #createLogic()} だけ差し替えれば</b>ブロック版とまったく同じ挙動になる
- * (グリッドノード・NBT・ドロップ・メモリーカードは AE2 側の実装がそのまま効く)。</p>
+ * (グリッドノード・NBT・ドロップ・メモリーカードは AE2 側の実装がそのまま使われる)。</p>
  *
  * <h2>ブロック版と共通の処理</h2>
  * <ul>

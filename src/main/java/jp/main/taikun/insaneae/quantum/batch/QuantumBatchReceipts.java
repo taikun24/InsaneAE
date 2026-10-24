@@ -11,7 +11,7 @@ import net.minecraft.nbt.Tag;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * ACO の craftingtable batch で受け取った取引の<b>レシート台帳</b>。
+ * ACO の craftingtable batch で受け取った取引の<b>レシートの記録</b>。
  *
  * <p>ACO の手引き ({@code docs/BATCH_API.md}) が第三者連携に要求しているのは
  * 「自前の<b>永続的な</b>ターゲットレシートと、コピーワールドでの kill/restart 試験」。
@@ -46,7 +46,7 @@ public final class QuantumBatchReceipts {
     /**
      * 1 取引ぶん。
      *
-     * @param digest       ACO が付けた payload digest。<b>照合に使う</b> —
+     * @param digest       ACO が付けた payload digest。<b>照合に使う</b>。
      *                     同じ UUID でも digest が違えば別物として拒否する。
      * @param exactOutputs 完成品の正確な量 (BigInteger)。long へ丸めない。
      */
@@ -99,7 +99,7 @@ public final class QuantumBatchReceipts {
         return true;
     }
 
-    /** 台帳から消す (ACO が credit 済みで forget を呼んだとき)。 */
+    /** 記録から消す (ACO が credit 済みで forget を呼んだとき)。 */
     public boolean forget(UUID transactionId, String digest) {
         if (get(transactionId, digest) == null) {
             return false;

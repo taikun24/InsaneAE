@@ -20,7 +20,7 @@ import java.util.Set;
  *
  * <p>出し入れは元から無制限 (設定済みの種類なら要求量をそのまま返す) なので、
  * 変わるのは端末の表示とクラフト計算が見る「在庫量」。
- * 21 億を超える数量を 1 回のクラフトで要求する場合はここが効いてくる。</p>
+ * 21 億を超える数量を 1 回のクラフトで要求する場合に、この差が出る。</p>
  */
 public class InsaneCreativeCellInventory implements StorageCell {
 

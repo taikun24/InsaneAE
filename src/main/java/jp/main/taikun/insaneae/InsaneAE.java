@@ -106,7 +106,6 @@ public class InsaneAE {
         // 判定は自前のアイテムだけなので AE2 側のハンドラとの登録順は問わない。
         event.enqueueWork(() -> StorageCells.addCellHandler(
                 InsaneCreativeCellHandler.INSTANCE));
-        // 加速カードを AE2 の対応機械に登録する。
         event.enqueueWork(ModUpgrades::registerUpgrades);
         // ACO へ「BigInteger 計画を受け取る外部 CPU アドオン」として名乗る。
         event.enqueueWork(

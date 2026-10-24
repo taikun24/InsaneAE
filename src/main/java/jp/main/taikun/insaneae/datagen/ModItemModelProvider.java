@@ -278,7 +278,6 @@ public class ModItemModelProvider extends ItemModelProvider {
         return mega(InsaneAE.MODID, "item/cell/portable/portable_cell_side_" + tier);
     }
 
-    /** {@code item/generated} + レイヤ指定のモデルを 1 件出す。 */
     private void layered(String name, ResourceLocation... layers) {
         ItemModelBuilder builder = getBuilder(name).parent(GENERATED);
         for (int layer = 0; layer < layers.length; layer++) {

@@ -35,7 +35,7 @@ public final class AcoBigIntegerJobRegistry {
         install(job, plan.patternTimes());
     }
 
-    /** NBT からの復元にも使う入口。残数 0 以下の Pattern は載せない。 */
+    /** NBT からの復元にも使う。残数 0 以下の Pattern は載せない。 */
     public static synchronized void install(
             ExecutingCraftingJob job,
             Map<IPatternDetails, BigInteger> patternTimes) {
@@ -66,7 +66,6 @@ public final class AcoBigIntegerJobRegistry {
         JOBS.remove(job);
     }
 
-    /** Exact task state for one ordinary AE2 job. */
     public static final class Job {
         private final ExecutingCraftingJob owner;
         private final Map<IPatternDetails, BigInteger> remaining;
@@ -132,7 +131,7 @@ public final class AcoBigIntegerJobRegistry {
         }
 
         /**
-         * 先頭から舐め直す。
+         * 先頭からたどり直す。
          *
          * <p>1 tick のうちに木を下から上へ何度も往復するために使う。
          * 次の {@link #next()} で今の残りを取り直すので、直前の周回で

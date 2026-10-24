@@ -41,7 +41,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * <ol>
  *   <li>{@link #insaneae$tickBudget} が {@code getCoProcessors()} の戻り値を
  *       「long で計算した予算 - 1」にすり替える。</li>
- *   <li>{@link #insaneae$rollUsedOps} が毎 tick 末に AE2 の {@code usedOps} を 0 に均す。</li>
+ *   <li>{@link #insaneae$rollUsedOps} が毎 tick 末に AE2 の {@code usedOps} を 0 に戻す。</li>
  * </ol>
  * <p>結果、AE2 の式は {@code (予算 - 1) + 1 - 0 = 予算} に退化する。
  * 元の計算式・元の実行フローはそのままに、桁あふれだけが消える。</p>
@@ -75,7 +75,7 @@ public abstract class CraftingCpuBudgetMixin {
     /**
      * 1 tick の予算を long で計算し、<b>「予算 - 1」</b>を {@code getCoProcessors()} の戻り値として渡す。
      * 直後に AE2 が {@code + 1 - (usedOps の合計)} を足すが、{@code usedOps} は
-     * {@link #insaneae$rollUsedOps} が 0 に均してあるので、結果はちょうど予算になる。
+     * {@link #insaneae$rollUsedOps} が 0 に戻してあるので、結果はちょうど予算になる。
      */
     @Redirect(method = "tickCraftingLogic",
             at = @At(value = "INVOKE",

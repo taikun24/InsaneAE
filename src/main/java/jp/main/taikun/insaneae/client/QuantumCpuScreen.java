@@ -192,8 +192,8 @@ public class QuantumCpuScreen<C extends QuantumCpuMenu> extends PatternProviderS
      *
      * <p>サーバ側でページ分割されている場合 ({@link QuantumCpuMenu#isServerPaged()})、
      * メニューには 1 ページぶんのスロットしか無いので素直に並べるだけ。
-     * サーバ側のページングを切っている場合は全枠 (1620) 並んでいるので、
-     * 表示するページぶんだけ位置を決めて残りは非表示にする<b>旧来のやり方</b>に落ちる。</p>
+     * サーバ側のページングを切っている場合は全枠 (1620) が並んでいるので、
+     * 表示するページぶんだけ位置を決めて残りは非表示にする。</p>
      */
     private void layoutSlots() {
         layoutUnitSlots(QuantumCpuMenu.CRAFTING_UNIT, STORAGE_UNITS_TOP, showingUnits);

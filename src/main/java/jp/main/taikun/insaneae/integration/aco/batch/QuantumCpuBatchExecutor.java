@@ -57,7 +57,8 @@ public final class QuantumCpuBatchExecutor {
      *
      * <p><b>1.20.1 版の ACO には {@code api.contract} がまだ無い</b> (1.5.19 時点。
      * 1.21.1 版にはある) ので、直接参照するとコンパイルが通らない。
-     * 向こうに入ったら自動でバージョン交渉が効くよう、反射で拾っておく。</p>
+     * 1.20.1 版の ACO に {@code api.contract} が入ったら、そのままバージョン交渉が行われるよう、
+     * 反射で取得しておく。</p>
      */
     @Nullable
     private static final Method CAPABILITIES_PEEK = findCapabilitiesPeek();
@@ -78,8 +79,8 @@ public final class QuantumCpuBatchExecutor {
      * ACO 側の API バージョンが足りているか。足りなければ<b>一切受けない</b>。
      *
      * <p>交渉の窓口がまだ無い版 (1.20.1) では、そもそも申告する仕組みが無いので
-     * 「{@code CraftingTableBatchTarget} が在ること」だけを条件にする
-     * — この経路がコンパイルできている時点で在る。</p>
+     * 「{@code CraftingTableBatchTarget} が在ること」だけを条件にする。
+     * この経路がコンパイルできている時点で在る。</p>
      */
     public static boolean isSupported() {
         if (CAPABILITIES_PEEK == null) {

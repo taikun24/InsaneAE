@@ -54,7 +54,7 @@ public final class AcoPlots {
      *
      * <p>ACO は「{@code ICraftingProvider} が {@code ProviderOwnedPatternBatchTarget} で、
      * 返した BlockEntity が {@code CraftingTableBatchTarget}」という形でターゲットを探す。
-     * <b>どちらか片方でも欠けると候補にすら入らず、黙って別の経路に落ちる</b>ので、
+     * <b>どちらか片方でも欠けると候補にすら入らず、エラーも出ずに別の経路へ回る</b>ので、
      * ここで両方が生えていることを見張る。</p>
      *
      * <p>ACO が無ければ何も検査せず成功する (Mixin ごと適用されないのが正しい)。
@@ -84,7 +84,7 @@ public final class AcoPlots {
                     "Quantum CPU のロジックに ProviderOwnedPatternBatchTarget が生えていない");
 
             // 超強化クリエイティブセルの BigInteger 在庫。ACO 内部の access に乗っているので、
-            // 向こうの名前が変わると<b>黙って効かなくなる</b> — ここで気付けるようにする。
+            // 向こうの名前が変わると<b>エラーなしで効かなくなる</b> — ここで気付けるようにする。
             Class<?> exactStorage = optionalClass("com.syaru.ae2craftingoptimizer.access"
                     + ".ExtendedAePlusBigIntegerCellInventoryAccess");
             helper.check(exactStorage != null,
@@ -121,70 +121,13 @@ public final class AcoPlots {
     }
 
     /**
-     * <b>long を超える要求が BigInteger 経路で実際に走り出すか。</b>
-     *
-     * <p>{@link #craftFromCreativeCell} は long に収まる規模なので、AE2 本来の経路しか
-     * 通らない。報告されている症状は<b>そこを超えた規模でだけ</b>出るので、
-     * こちらは要求を {@code Long.MAX_VALUE} にして ACO の exact 経路を必ず踏ませる。</p>
-     *
-     * <p>2 段のツリー (ボタン &lt;- 板材 &lt;- 原木) なので、パターン実行回数の合計は
-     * 要求量の 1.25 倍ほどになり、<b>合計が long に収まらない</b>。
-     * ACO はここで {@code hasAggregatePastLong()} を見て wide plan へ切り替える。</p>
-     *
-     * <h2>何を検査するか</h2>
-     * <p>この規模は<b>完了しなくて当たり前</b>なので、完了は見ない。見るのは</p>
-     * <ol>
-     *   <li>投入が通ること (「failed to submit job」にならない)</li>
-     *   <li><b>実際に完成品が増え続けること</b> — 「進行中のまま何も起きない」を捕まえる</li>
-     * </ol>
-     *
-     * <p>クラフト CPU は InsaneAE の BigInteger クラフト CPU (理論上限容量)。
-     * 普通のクラフトストレージだと、この規模は容量不足で投入前に弾かれてしまう。</p>
-     *
-     * <h2>2026-08-15 時点の結果と、分かったこと</h2>
-     * <p><b>このテストは失敗する。</b>投入が {@code CPU_TOO_SMALL} で断られるが、
-     * <b>容量の問題ではない</b> — 必要 bytes も CPU の空きも同じ {@code Long.MAX_VALUE} で、
-     * AE2 自身の判定 ({@code available >= bytes}) は通っている。
-     * 返しているのは ACO の {@code CraftingCpuClusterBigCapacityGuardMixin} で、
-     * 「wide plan なのに BigInteger の裏付けが無い」ときに <b>CPU_TOO_SMALL を騙る</b>。</p>
-     *
-     * <p>裏付けが無い理由は ACO の診断が教えてくれる: <b>{@code NO_COMPILED_PROGRAM}</b>。
-     * {@code CompiledRootProgram} が組めていない。
-     * {@code Ae2CompiledPatternFactory} は各パターンの「完全さ」を
-     * {@code IPatternDetails.supportsPushInputsToExternalInventory()} で決めており、
-     * <b>クラフトテーブル用パターンはこれが false</b> (組み立てるものであって
-     * 外部インベントリへ押し出すものではないため)。
-     * 不完全なパターンに触れる木は {@code rootProgram} が空になる。</p>
-     *
-     * <p><b>この見立ては対照実験 ({@link #craftPastLongProcessing}) で否定された。</b>
-     * 同じ木を加工パターンで組んでも、まったく同じ {@code NO_COMPILED_PROGRAM} で断られる。
-     * パターンの種類は関係ない。</p>
-     *
-     * <p>さらに {@link #insaneae$acoGraphProbe} で ACO の compiled graph を直接覗くと、
-     * 木は<b>完全に健全</b>だった:</p>
-     *
-     * <pre>
-     * oak_button: patterns=1 oneFullyCompiled=true incomplete=false cyclic=false rootProgram=true
-     * oak_planks: patterns=1 oneFullyCompiled=true incomplete=false cyclic=false rootProgram=true
-     * </pre>
-     *
-     * <p>断り文句は {@code getOrCompile(grid, level).rootProgram(what).isEmpty()} が
-     * 真だったという意味なのに、<b>同じ呼び出しをこちらでやると present が返る</b>。
-     * つまり<b>ACO 自身の判断と ACO 自身の graph が食い違っている</b>。
-     * ここから先は ACO 側の問題で、InsaneAE のパターンや在庫の出し方の話ではない。</p>
-     *
-     * <p><b>注意: ACO を載せるには {@code -PwithAco=true} と書くこと。</b>
-     * {@code -PwithAco} だけだと値が空文字になり、build.gradle の {@code == 'true'} が
-     * 偽になって<b>黙って ACO 無しで走る</b> (テストは通ってしまう)。</p>
-     */
-    /**
      * ACO 1.5.23 以降、exact ジョブの実行を ACO が所有していることを<b>こちらが認識できる</b>か。
      *
-     * <p>{@code executeCrafting} の @HEAD にはこちらのまとめ処理と ACO の打ち切りが両方刺さって
+     * <p>{@code executeCrafting} の @HEAD にはこちらのまとめ処理と ACO の打ち切りが両方注入されて
      * いて、実機の適用順ではこちらが先に走る。ACO の所有を見落とすと、ACO の台帳に無い実行を
      * 1 回進めてしまう。ここで検査するのは<b>判定そのもの</b> — ACO が生やすメソッド名
      * ({@code aco$isExactJob}) は相手の都合で変わりうるのに、変わっても<b>エラーにならず
-     * 黙って false になる</b>ため、注入の有無ではなく実ジョブに対する戻り値で見張る。</p>
+     * false が返るだけ</b>になるため、注入の有無ではなく実ジョブに対する戻り値で見張る。</p>
      *
      * <p>ACO が古い (1.5.22 以下) 環境では共通契約のクラスが無いので何も検査しない。</p>
      */
@@ -290,9 +233,9 @@ public final class AcoPlots {
      *
      * <p>容量は {@code AcoBigIntegerLimitBridge} が ACO の公開 API
      * ({@code CAPACITY_LIMIT_API_VERSION} / {@code maximumSupportedAmount}) を反射で
-     * 読んで決める。API が引けないと<b>例外を握り潰して long 互換容量へ静かに退避</b>し、
+     * 読んで決める。API が引けないと<b>例外を握り潰して long 互換容量へ退避</b>し、
      * long 超の注文が「容量不足」で弾かれる。実際 ACO の mc/1.21.1 にはこの API が
-     * 移植されておらず、実機でそれを踏んだ。ACO 導入時だけ、退避していないことを見る。</p>
+     * 移植されておらず、実機でそれが発生した。ACO 導入時だけ、退避していないことを見る。</p>
      */
     @TestPlot("insaneae_biginteger_cpu_capacity")
     public static void bigIntegerCpuCapacity(PlotBuilder plot) {
@@ -335,18 +278,6 @@ public final class AcoPlots {
         }).maxTicks(60);
     }
 
-    /**
-     * <b>中間素材の必要数が long を超える木を、最後まで作り切れること。</b>
-     *
-     * <p>{@link #craftPastLong} との違いは<b>どこが long を超えるか</b>。あちらは
-     * 完成品の要求数だけが大きく、木を下りるほど数が減る (ボタン→板→原木)。
-     * こちらは<b>途中の段が要求数より多くなる</b> (チェスト 1 個 = 板 8 枚) ので、
-     * 完成品が long 内でも<b>中間素材が long を超える</b>。</p>
-     *
-     * <p>実機で 8 倍ずつ 100 段重ねた鎖を頼んだとき、<b>中間段が long を超える
-     * ちょうどそこから</b>完成しなくなる症状が出た (22 段までは完走、23 段から停止)。
-     * 既存のテストはどれも中間段が long 内なので、この形だけ穴になっていた。</p>
-     */
     /**
      * <b>ACO 自身に BigInteger のまま実行させたとき、同じ木が完走すること。</b>
      *

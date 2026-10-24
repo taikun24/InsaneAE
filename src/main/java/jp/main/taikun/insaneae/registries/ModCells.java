@@ -87,7 +87,7 @@ public class ModCells {
                     clampBytes(tier.getStorageBytes()), idleDrain, component::asItem);
             TIERS.put(tier, storageTier);
 
-            // 表示名は階層ごとの lang キーではなく「書式キー + 階層ラベル」で作る → TieredNames。
+            // 表示名は階層ごとの lang キーではなく「書式キー + 階層ラベル」で作る (TieredNames を参照)。
             ITEM_CELLS.put(tier, register("item_storage_cell_" + tier.id(),
                     () -> new InsaneStorageCellItem(new Item.Properties().stacksTo(1), component,
                             MEGAItems.MEGA_ITEM_CELL_HOUSING, idleDrain, tier.getStorageBytes(),

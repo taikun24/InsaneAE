@@ -223,8 +223,8 @@ public final class ReflectiveCraftingJobView implements CraftingJobView {
 
         /**
          * 名前でフィールドを引く (継承をたどる)。{@code expected} が {@code Object} 以外なら
-         * 型も確かめる。<b>型が違うなら黙って使わない</b>のが要点で、
-         * 名前だけ合っている無関係なフィールドを掴むと後で不可解に壊れる。
+         * 型も確かめる。<b>型が違うなら使わない</b>。
+         * 名前だけ合っている無関係なフィールドを使うと、後で原因の分かりにくい不具合になる。
          */
         private static Field field(Class<?> owner, String name, Class<?> expected)
                 throws ReflectiveOperationException {

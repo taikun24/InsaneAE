@@ -26,7 +26,7 @@ public final class ExactCraftingCapacityPolicy {
      * ログ用の短い表記。正確な値は{@code 10進16,384桁}まで伸びうるので展開しない。
      *
      * <p>拒否理由を読むのに必要なのは「どれだけ足りないか」の桁感だけなので、
-     * long内はそのまま、それ以上は有効数字4桁の科学表記へ落とす。</p>
+     * long内はそのまま、それ以上は有効数字4桁の科学表記にする。</p>
      */
     public static String describe(BigInteger amount) {
         Objects.requireNonNull(amount, "amount");

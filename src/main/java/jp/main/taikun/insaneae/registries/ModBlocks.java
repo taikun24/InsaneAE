@@ -37,19 +37,15 @@ public class ModBlocks {
     private static final DeferredRegister<Item> BLOCK_ITEMS =
             DeferredRegister.create(ForgeRegistries.ITEMS, InsaneAE.MODID);
 
-    /** 各クラフトストレージ階層 → 登録済みブロック。 */
     public static final Map<InsaneCraftingUnitType, RegistryObject<CraftingUnitBlock>> CRAFTING_STORAGE =
             new EnumMap<>(InsaneCraftingUnitType.class);
 
-    /** 各クラフト協調処理ユニット (アクセラレータ) 階層 → 登録済みブロック。 */
     public static final Map<InsaneAcceleratorType, RegistryObject<CraftingUnitBlock>> CRAFTING_ACCELERATOR =
             new EnumMap<>(InsaneAcceleratorType.class);
 
-    /** 各エネルギーセル階層 → 登録済みブロック。 */
     public static final Map<InsaneEnergyCellTier, RegistryObject<EnergyCellBlock>> ENERGY_CELLS =
             new EnumMap<>(InsaneEnergyCellTier.class);
 
-    /** 各ソーラーパネル階層 → 登録済みブロック。 */
     public static final Map<SolarPanelTier, RegistryObject<SolarPanelBlock>> SOLAR_PANELS =
             new EnumMap<>(SolarPanelTier.class);
 
@@ -75,7 +71,7 @@ public class ModBlocks {
             BLOCKS.register("insane_pattern_provider", InsanePatternProviderBlock::new);
 
     static {
-        // 表示名は階層ごとの lang キーではなく「書式キー + 階層ラベル」で作る → TieredNames。
+        // 表示名は階層ごとの lang キーではなく「書式キー + 階層ラベル」で作る (TieredNames を参照)。
         for (InsaneCraftingUnitType type : InsaneCraftingUnitType.values()) {
             RegistryObject<CraftingUnitBlock> block = BLOCKS.register(type.blockId(),
                     () -> new InsaneCraftingUnitBlock(type, TieredNames.CRAFTING_STORAGE, type.label()));
@@ -132,12 +128,10 @@ public class ModBlocks {
                 .toList();
     }
 
-    /** 全階層のエネルギーセルブロック。 */
     public static List<EnergyCellBlock> allEnergyCells() {
         return ENERGY_CELLS.values().stream().map(RegistryObject::get).toList();
     }
 
-    /** 全階層のソーラーパネルブロック。 */
     public static List<SolarPanelBlock> allSolarPanels() {
         return SOLAR_PANELS.values().stream().map(RegistryObject::get).toList();
     }

@@ -206,7 +206,6 @@ def hue_rotate(template: Image.Image, target, rainbow: bool = False,
     ref_h, _, ref_v = dominant_hue(src, min_sat)
     tgt_h, tgt_s, tgt_v = colorsys.rgb_to_hsv(*[c / 255 for c in target])
     delta = tgt_h - ref_h
-    # gain = tgt_v / ref_v if ref_v > 0 else 1.0
     gain = 1
     out = []
     width = src.width
@@ -241,7 +240,7 @@ def rainbow_recolor(template: Image.Image, target, step: float | None = None) ->
 
 
 def paint(template: Image.Image, tier: str, color) -> Image.Image:
-    """グレースケールのテンプレートを階層色に染める (虹色の階層も面倒を見る)。"""
+    """グレースケールのテンプレートを階層色に染める (虹色の階層を含む)。"""
     return rainbow_recolor(template, color) if tier in RAINBOW_TIERS else recolor(template, color)
 
 
@@ -316,7 +315,7 @@ class Component:
     color だけが階層色に染まる。地に若干色が付いていても base に置いてあれば
     染まらないので、「無彩色で描かないと地まで染まってしまう」問題が起きない。
 
-    1 枚版 (component_p<N>.png) しか無ければ従来どおり、
+    1 枚版 (component_p<N>.png) しか無ければ、
     <b>彩度で地と色を見分ける</b>方式で動く (彩度 MIN_SAT 未満は地とみなす)。
     """
 
@@ -434,10 +433,9 @@ def dump_templates(directory: str) -> None:
         base_path = os.path.join(directory, f"component_p{i}_base.png")
         color_path = os.path.join(directory, f"component_p{i}_color.png")
         if os.path.isfile(base_path) or os.path.isfile(color_path):
-            continue                        # 既にある 2 枚方式の下敷きは潰さない
+            continue                        # 既にある 2 枚方式の下敷きは上書きしない
         single = load_template(directory, f"component_p{i}.png")
         if single is not None:
-            # 1 枚版があれば、彩度で地と色に分けた叩き台を書き出す。
             base, color = split_by_saturation(single)
         else:
             base = draw_component_fallback("base")

@@ -158,8 +158,8 @@ public final class QuantumBulkCrafting {
         boolean progressed = true;
 
         // 加速カード満載 + タスク統合のときは、木の下から上へ<b>何度も往復</b>する。
-        // 1 周では「下の段を作る → 上の段が使う」の 1 段ぶんしか進まないので、
-        // 段数のぶんだけ tick を食っていた (実機で「完走はするが遅い」の原因)。
+        // 1 周では「下の段を作ってから上の段が使う」という 1 段ぶんしか進まないので、
+        // 往復しないと段数のぶんだけ tick がかかる。
         // 往復の回数ではなく<b>窓の総数</b>で頭打ちにするので、1 tick の重さは変わらない。
         // この呼び出しで触ったプロバイダ。周回の合間に完成品を清算するために覚えておく。
         Set<IBulkCraftingProvider> touched =
@@ -191,7 +191,7 @@ public final class QuantumBulkCrafting {
                 }
                 // タスク統合 (fusesOperations): 通常経路と同じく、まとめ 1 回を CPU 予算の
                 // 1 操作として数え、回数はプロバイダ自身の予算に任せる。
-                // BigInteger 経路こそ 1 窓が大きいので、ここを飛ばすと統合カードが効かない。
+                // BigInteger 経路こそ 1 窓が大きいので、ここを飛ばすと統合カードが反映されない。
                 // 直前の窓で組んだぶんが保留のままだと、プロバイダは「取り込み中」を名乗って
                 // 予算 0 を返す。周回のたびに清算しておかないと 1 tick に 1 窓しか進まない。
                 if (touched.contains(provider)) {
@@ -275,10 +275,10 @@ public final class QuantumBulkCrafting {
      * こうするとどの瞬間の帳簿も long に収まったまま、1 tick の合計だけが long を超えられる。</p>
      *
      * <p><b>タスク統合カードが要る。</b>統合していないと 1 クラフト = 1 操作なので、
-     * 窓を重ねた瞬間にクラスタの 1 tick 予算 (int) を踏み越えてしまう。</p>
+     * 窓を重ねた時点でクラスタの 1 tick 予算 (int) を超えてしまう。</p>
      *
      * <p>窓の数は {@code maxCraftingWindowsPerTick} で頭打ちにする。ここが無いと
-     * 「終わるまで回す」= <b>サーバが 1 tick から戻ってこない</b>になりうる。
+     * 終わるまで回し続けて、<b>サーバが 1 tick から戻ってこなくなる</b>おそれがある。
      * 途中で完成品が入らなくなった (電力・在庫・ジョブ完了) ときも打ち切る。</p>
      *
      * @return 削り切れずに残った回数
@@ -600,7 +600,6 @@ public final class QuantumBulkCrafting {
                 return 0L;
             }
             long headroom = Long.MAX_VALUE - heldForOutput(view, output.what());
-            // 抱えている数が上限に達している間は、この窓では 1 回も組まない。
             if (headroom <= 0L) {
                 return 0L;
             }

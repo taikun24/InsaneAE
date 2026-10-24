@@ -4,7 +4,7 @@ import com.mojang.logging.LogUtils;
 import net.minecraftforge.fml.ModList;
 import org.slf4j.Logger;
 
-/** ACOが導入・有効な場合だけ公開BigInteger APIを選ぶ入口。 */
+/** ACOが導入・有効な場合だけ公開BigInteger APIを選ぶ連携クラス。 */
 public final class OptionalAcoBigIntegerIntegration {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String ACO_MOD_ID = "ae2_crafting_optimizer";
@@ -17,7 +17,7 @@ public final class OptionalAcoBigIntegerIntegration {
      *
      * <p>ACO の設定 {@code enableExternalBigCraftingProfile} の説明どおり
      * 「アドオン側が公開 API で明示的に登録する」必要がある。名乗っていないと
-     * {@code CraftingCpuClusterBigCapacityGuardMixin} が wide plan の投入を蹴るため、
+     * {@code CraftingCpuClusterBigCapacityGuardMixin} が wide plan の投入を拒否するため、
      * 標準の AE2 クラフト CPU 経由で 922京超の注文を出したときに<b>理由の分からない失敗</b>になる。</p>
      *
      * <p>反射で呼ぶのは、ACO が無い環境でこのクラスが読めなくならないようにするため
@@ -42,7 +42,7 @@ public final class OptionalAcoBigIntegerIntegration {
      *
      * <p>実体 (ACO の台帳か内蔵の台帳か) は、<b>最初に何かを積むときに</b>選ぶ
      * ({@link LazyFailsafeLedger})。ブロックエンティティを作るだけでは ACO に触らず、
-     * ログも出さない (issue #18: 作られるたびに INFO が出てコンソールが埋まっていた)。</p>
+     * ログも出さない (issue #18: 作られるたびに INFO が出るとコンソールが埋まる)。</p>
      */
     public static PendingOutputLedger createOutputLedger() {
         return new LazyFailsafeLedger(OptionalAcoBigIntegerIntegration::openBackingLedger);

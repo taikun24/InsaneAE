@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
  * 直接入れたいので、書き込み口だけを開ける ({@link jp.main.taikun.insaneae.quantum.cpu.QuantumCraftingCpu})。</p>
  *
  * <p>読み出し側 ({@code getAvailableStorage} / {@code getCoProcessors} / {@code getName} /
- * {@code getSrc}) は<b>どれも素のフィールド返しなので、ここに入れておけばそのまま効く</b>。
+ * {@code getSrc}) は<b>どれも素のフィールド返しなので、ここに入れておけばそのまま反映される</b>。
  * 注入が要るのは「構成ブロックを辿る」3 メソッドだけ
  * ({@code CraftingCpuClusterOwnerMixin})。</p>
  */

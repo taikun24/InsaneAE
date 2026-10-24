@@ -45,7 +45,7 @@ public class InsaneCreativeCellItem extends Item implements ICellWorkbenchItem {
             try {
                 return FuzzyMode.valueOf(tag.getString(FUZZY_MODE_TAG));
             } catch (IllegalArgumentException ignored) {
-                // 壊れた NBT は既定値に倒す
+                // 壊れた NBT は既定値として扱う
             }
         }
         return FuzzyMode.IGNORE_ALL;

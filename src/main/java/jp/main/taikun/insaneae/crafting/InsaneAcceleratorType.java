@@ -111,7 +111,7 @@ public enum InsaneAcceleratorType implements ICraftingUnitType {
         return id + "_crafting_accelerator";
     }
 
-    /** formed モデルの ID。ae2 名前空間に置く必要がある → {@link FormedModels}。 */
+    /** formed モデルの ID。ae2 名前空間に置く必要がある。理由は {@link FormedModels} を参照。 */
     public ResourceLocation formedModel() {
         return FormedModels.of(id + "_accelerator");
     }
@@ -126,7 +126,6 @@ public enum InsaneAcceleratorType implements ICraftingUnitType {
 
     @Override
     public long getStorageBytes() {
-        // 加速ユニットはストレージを提供しない。
         return 0;
     }
 

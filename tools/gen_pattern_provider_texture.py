@@ -8,9 +8,9 @@
 
     src/main/resources/assets/insaneae/textures/block/insane_pattern_provider.png
 
-下敷きは tools/textures/[<mc version>/]pattern_provider_base.png (= AE2 のパターンプロバイダの
-テクスチャそのもの)。仕組みは gen_interface_texture.py と同じで、彩度のある画素の色相だけを
-限界突破ブロック色 (紫) に回す。keep_luma で元の明るさを保つので模様はそのまま残る。
+下敷きは tools/textures/pattern_provider_base.png (= AE2 のパターンプロバイダの
+テクスチャそのもの)。彩度のある画素の色相だけを限界突破ブロック色 (紫) に回す。
+keep_luma で元の明るさを保つので模様はそのまま残る。
 """
 
 from __future__ import annotations

@@ -12,7 +12,7 @@ import appeng.core.localization.Tooltips;
  * {@code ArrayIndexOutOfBoundsException} で落ちる。</p>
  *
  * <p>InsaneAE の 1T (2^40 = 1024 GiB) 以上の階層、および複数ユニットの合算で
- * 1000 GiB を超えた CPU がこれを踏むため、{@code TooltipsMixin} 経由でこちらに肩代わりさせる。
+ * 1000 GiB を超えた CPU がこの例外に当たるため、{@code TooltipsMixin} 経由でこちらに肩代わりさせる。
  * 1000 GiB 未満は AE2 本来の処理をそのまま通すので、既存の表示は一切変わらない。</p>
  */
 public final class HugeByteAmounts {

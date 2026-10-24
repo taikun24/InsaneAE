@@ -62,19 +62,6 @@ public final class LongOverflowCraftPlots {
     }
 
     /**
-     * <b>実際のジョブ</b>でまとめ処理が発火することを確かめる (同居 Mod に対する回帰テスト)。
-     *
-     * <p>他のまとめ処理テストは {@code QuantumBulkCrafting.execute} を直接呼んでいるので、
-     * <b>クラフト CPU の tick から本当に呼ばれているか</b>は見ていない。
-     * {@code executeCrafting} の先頭には打ち切り付きで注入している Mod が他にもいる
-     * (AE2 Crafting Optimizer がそう) ため、先を越されるとまとめ処理は<b>黙って</b>
-     * 素の 1 回ずつに戻る — 結果は同じで遅くなるだけなので、カウンタでしか気付けない。</p>
-     *
-     * <p>タスク統合カードを挿してあるので、まとめ処理が効いていれば
-     * {@code crafts} 回は数 tick で終わる。効いていなければクラスタ予算 (1 tick に数回) で
-     * 刻まれるため、待ち時間の側でも差が出る。</p>
-     */
-    /**
      * <b>クリエイティブセルから材料を供給したクラフトが、最後まで終わるか。</b>
      *
      * <p>「クラフトは進行中のままタスクが空になり、いつまでも完了しない」という症状を
@@ -116,8 +103,8 @@ public final class LongOverflowCraftPlots {
      * {@code Long.MAX_VALUE} で申告するので、素朴に足すと 2 枚目で折り返す。
      * 負の在庫を見た ACO は「正確値を復元できない」として計画ごと降りるため
      * ({@code WidePlanUnavailableException: BigInteger inventory sidecar is incomplete})、
-     * <b>セルを 1 枚足しただけであらゆるクラフトが失敗する</b>。実機で
-     * ExtendedAE Plus の Infinity セルと同居させて踏んだ。</p>
+     * <b>セルを 1 枚足しただけであらゆるクラフトが失敗する</b>。実機では
+     * ExtendedAE Plus の Infinity セルと同居させたときに発生した。</p>
      */
     @TestPlot("insaneae_creative_cell_no_overflow")
     public static void creativeCellNoOverflow(PlotBuilder plot) {
@@ -143,6 +130,18 @@ public final class LongOverflowCraftPlots {
         }).maxTicks(60);
     }
 
+    /**
+     * <b>中間素材の必要数が long を超える木を、最後まで作り切れること。</b>
+     *
+     * <p>{@link #craftPastLong} との違いは<b>どこが long を超えるか</b>。あちらは
+     * 完成品の要求数だけが大きく、木を下りるほど数が減る (ボタン→板→原木)。
+     * こちらは<b>途中の段が要求数より多くなる</b> (チェスト 1 個 = 板 8 枚) ので、
+     * 完成品が long 内でも<b>中間素材が long を超える</b>。</p>
+     *
+     * <p>実機で 8 倍ずつ 100 段重ねた鎖を頼んだとき、<b>中間段が long を超える
+     * ちょうどそこから</b>完成しなくなる症状が出た (22 段までは完走、23 段から停止)。
+     * 既存のテストはどれも中間段が long 内なので、この形だけ穴になっていた。</p>
+     */
     @TestPlot("insaneae_craft_past_long_intermediate")
     public static void craftPastLongIntermediate(PlotBuilder plot) {
         // チェスト 1 個 = 板 8 枚、原木 1 本 = 板 4 枚。
@@ -178,7 +177,6 @@ public final class LongOverflowCraftPlots {
 
             sequence.thenExecute(() -> {
                 var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(3, 0, 0));
-                // 原木 1 → 板 4。
                 cpu.getLogic().getPatternInv().addItems(
                         CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
                                 new ItemStack(Items.OAK_LOG)));
@@ -240,7 +238,7 @@ public final class LongOverflowCraftPlots {
 
             // <b>tick 数まで見る。</b>加速カード満載 + タスク統合なら、この規模は
             // 数 tick で終わるのが仕様 (窓は 1 tick に 1024 枚使える)。段ごとに
-            // tick を消費していた頃はここが 4 tick あたり 1 段しか進まなかった。
+            // tick を消費する実装だと 4 tick あたり 1 段しか進まず、この待ち時間では終わらない。
             sequence.thenIdle(2);
             sequence.thenExecute(() ->
                     state.firstSample = storedAmount(helper, Items.CHEST));
@@ -261,6 +259,43 @@ public final class LongOverflowCraftPlots {
         }).maxTicks(600);
     }
 
+    /**
+     * <b>long を超える要求が BigInteger 経路で実際に走り出すか。</b>
+     *
+     * <p>{@link #craftFromCreativeCell} は long に収まる規模なので、AE2 本来の経路しか
+     * 通らない。報告されている症状は<b>そこを超えた規模でだけ</b>出るので、
+     * こちらは要求を {@code Long.MAX_VALUE} にして ACO の exact 経路を必ず踏ませる。</p>
+     *
+     * <p>2 段のツリー (ボタン &lt;- 板材 &lt;- 原木) なので、パターン実行回数の合計は
+     * 要求量の 1.25 倍ほどになり、<b>合計が long に収まらない</b>。
+     * ACO はここで {@code hasAggregatePastLong()} を見て wide plan へ切り替える。</p>
+     *
+     * <h2>何を検査するか</h2>
+     * <p>この規模は<b>完了しなくて当たり前</b>なので、完了は見ない。見るのは</p>
+     * <ol>
+     *   <li>投入が通ること (「failed to submit job」にならない)</li>
+     *   <li><b>実際に完成品が増え続けること</b> — 「進行中のまま何も起きない」を捕まえる</li>
+     * </ol>
+     *
+     * <p>クラフト CPU は InsaneAE の BigInteger クラフト CPU (理論上限容量)。
+     * 普通のクラフトストレージだと、この規模は容量不足で投入前に弾かれてしまう。</p>
+     *
+     * <h2>ACO 込みで落ちるとき</h2>
+     * <p>ACO の版によっては、投入が {@code CPU_TOO_SMALL} で断られて落ちる。容量の問題ではなく、
+     * 必要 bytes も CPU の空きも同じ {@code Long.MAX_VALUE} で、AE2 自身の判定
+     * ({@code available >= bytes}) は通っている。断っているのは ACO の
+     * {@code CraftingCpuClusterBigCapacityGuardMixin} で、wide plan に BigInteger の裏付けが無いときに
+     * {@code CPU_TOO_SMALL} を返す。ACO の診断には理由が {@code NO_COMPILED_PROGRAM} と出る。</p>
+     *
+     * <p>パターンの種類 (クラフト / 加工) を変えても同じ理由で断られる ({@link #craftPastLongProcessing})。
+     * {@link #acoGraphProbe} で ACO の compiled graph を直接読むと木は健全で ({@code rootProgram=true})、
+     * 同じ {@code rootProgram(what)} の呼び出しもこちらでは値を返す。ACO の判断と ACO 自身の graph が
+     * 食い違っているので、原因は ACO 側にあり、InsaneAE のパターンや在庫の出し方ではない。</p>
+     *
+     * <p><b>注意: ACO を載せるには {@code -PwithAco=true} と書くこと。</b>
+     * {@code -PwithAco} だけだと値が空文字になり、build.gradle の {@code == 'true'} が
+     * 偽になって<b>エラーなしで ACO 無しのまま走る</b> (テストは通ってしまう)。</p>
+     */
     @TestPlot("insaneae_craft_past_long")
     public static void craftPastLong(PlotBuilder plot) {
         // 要求量。完了判定にも使うので 1 か所にまとめる。
@@ -358,7 +393,6 @@ public final class LongOverflowCraftPlots {
                                         Items.OAK_BUTTON, Items.OAK_PLANKS, Items.OAK_LOG));
             });
 
-            // 走り出しているか。
             sequence.thenIdle(20);
             sequence.thenExecute(() -> {
                 state.firstSample = storedAmount(helper, Items.OAK_BUTTON);
@@ -383,8 +417,8 @@ public final class LongOverflowCraftPlots {
                                 + "要求は " + requested + " なので未完了)");
             });
             sequence.thenSucceed();
-        // 既定の制限時間だと足りない。投入が通るようになったぶん
-        // 最後まで走るので、待ち time の合計 (60 + 計算 + 20 + 40) を賄う。
+        // 既定の制限時間だと足りない。最後まで走るので、
+        // 待ち時間の合計 (60 + 計算 + 20 + 40) を賄う。
         }).maxTicks(400);
     }
 
@@ -485,8 +519,7 @@ public final class LongOverflowCraftPlots {
                                 + "正確な必要bytes=" + exactPlanBytes(plan) + ")");
             });
             sequence.thenSucceed();
-        // 既定の制限時間だと足りない。投入が通るようになったぶん
-        // 最後まで走るので、待ち time の合計 (60 + 計算 + 20 + 40) を賄う。
+        // 既定の制限時間だと足りない。待ち 60 tick と計算の時間を賄う。
         }).maxTicks(400);
     }
 
@@ -517,20 +550,18 @@ public final class LongOverflowCraftPlots {
      * System</b> と見ている (build.gradle の withAcc の説明を参照)。そこでこちらは
      * Quantum CPU を置かず、パターンを NeoECO のパターンバスへ入れて同じ注文を投げる。</p>
      *
-     * <p><b>2026-08-21 の決着:</b> 対照実験の結果は「こちらも止まる」だった。
-     * 計装ビルドで読んだ停止理由から、#125 の芯は<b>「exact 実行の入出力は
-     * 監査済み exact セルしか通れないのに、経路が成立しない盤面でも所有権を取り、
-     * 理由も出さず永久待機する」</b>ことと判明。ACO への修正 (境界 route の事前検証)
-     * を書いた後、このプロットの正しい結末は変わった:</p>
+     * <p>#125 の原因は、exact 実行の入出力は監査済み exact セルしか通れないのに、
+     * 経路が成立しない盤面でも ACO が所有権を取り、理由も出さず永久待機することだった。
+     * ACO 側の修正 (境界 route の事前検証) が入った状態では、このプロットの結末は次のとおり。</p>
      * <ul>
-     *   <li>完成品の exact 受け皿が無い → ACO は所有せず外部コンシューマへ委譲</li>
-     *   <li>このグリッドには Quantum CPU も無い → こちらの
-     *       {@code supportsQuantumCpu} ゲートが {@code INCOMPLETE_PLAN} で明確に断る</li>
+     *   <li>完成品の exact 受け皿が無いので、ACO は所有せず外部コンシューマへ委譲する</li>
+     *   <li>このグリッドには Quantum CPU も無いので、こちらの
+     *       {@code supportsQuantumCpu} の判定が {@code INCOMPLETE_PLAN} で明確に断る</li>
      * </ul>
      *
      * <p>つまり<b>「受けられない注文は黙って止まるのではなく、投入時点で断られる」</b>
      * ことがこのプロットの検査対象。修正前の ACO (素の 1.5.23/1.5.24) では投入が
-     * 通ってしまい赤になる — それは #125 が直っていないという正しい赤。</p>
+     * 通ってしまい赤になる。これは #125 が直っていないことを示す正しい赤である。</p>
      *
      * <p>(NeoECO Vector 実行系そのものを完走させる検査は、無限に受けられる
      * exact 受け皿 (ExtendedAE Plus の実セル相当) が要るため、ここでは扱わない。)</p>

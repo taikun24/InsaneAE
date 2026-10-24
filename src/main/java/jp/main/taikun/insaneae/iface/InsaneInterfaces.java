@@ -48,7 +48,7 @@ public final class InsaneInterfaces {
      *
      * <p>{@code InterfaceLogic} のコンストラクタが既定値 (アイテム 99・液体 4000mB など) を
      * 入れているので、上書きする。
-     * <b>それだけではアイテムには効かない</b>: {@code getMaxAmount} は
+     * <b>それだけではアイテムの上限は上がらない</b>: {@code getMaxAmount} は
      * {@code min(アイテムの最大スタック数, 容量)} を返すため、{@code allowOverstacking} も
      * 立てる必要がある → {@link ConfigInventoryAccessor}。</p>
      */
@@ -67,7 +67,7 @@ public final class InsaneInterfaces {
      * <p>AE2 の既定はドロップに変換するだけだが、{@code AEItemKey#addDrops} は
      * <b>1000 スタックを超えたぶんを警告 1 行だけ出して捨てる</b>。
      * 通常のインターフェイス (1 枠 64 個 × 9 枠) なら当たらない上限だが、
-     * こちらは 1 枠 21 億 × 81 枠なので、うっかり壊すと簡単に踏む。</p>
+     * こちらは 1 枠 21 億 × 81 枠なので、うっかり壊すと簡単に超えてしまう。</p>
      *
      * <p>ネットワークが無い・電力が無い・在庫が満杯といった理由で戻せなかったぶんは
      * 枠に残るので、呼び出し元がこれまでどおりドロップに回す。</p>

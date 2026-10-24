@@ -53,16 +53,13 @@ public class InsaneInterfaceBlockEntity extends InterfaceBlockEntity {
 
     /** 枠の横並び数。画面のレイアウトもこの値に合わせてある。 */
     public static final int COLUMNS = 9;
-    /** 枠の段数。 */
     public static final int ROWS = 9;
     /** 設定枠・在庫枠それぞれの総数。 */
     public static final int SLOTS = COLUMNS * ROWS;
 
     /** 1 ページに出す段数 (残りはページ送りで見る)。 */
     public static final int ROWS_PER_PAGE = 3;
-    /** 1 ページに出す枠数。 */
     public static final int SLOTS_PER_PAGE = COLUMNS * ROWS_PER_PAGE;
-    /** ページ数。 */
     public static final int PAGES = SLOTS / SLOTS_PER_PAGE;
 
     /**
@@ -128,8 +125,6 @@ public class InsaneInterfaceBlockEntity extends InterfaceBlockEntity {
         InsaneInterfaces.returnStorageToNetwork(getMainNode(), getInterfaceLogic());
         super.addAdditionalDrops(level, pos, drops);
     }
-
-    // ---------------------------------------------------------------- 画面まわり
 
     // AE2 の InterfaceLogicHost の既定実装は ae2:interface の画面を開いてしまうので、
     // 自前の MenuType に差し替える (枠数もレイアウトも違うため)。

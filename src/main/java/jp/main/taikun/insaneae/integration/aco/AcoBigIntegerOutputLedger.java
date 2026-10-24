@@ -28,12 +28,12 @@ import org.slf4j.Logger;
  *
  * <h2>解決は 1 回だけ</h2>
  * <p>台帳は Quantum CPU 1 台につき 1 つ作るが、API の解決 (クラスとメソッドの検索・
- * 版の確認) とログは<b>プロセスで 1 回だけ</b>にしている。以前は台帳を作るたびに
- * 解決とログの出力をしており、Quantum CPU の多いワールドではブロックエンティティが
- * 作られるたびに INFO が 1 行出てコンソールが埋まった (issue #18)。</p>
+ * バージョンの確認) とログは<b>プロセスで 1 回だけ</b>にしている。台帳を作るたびに
+ * 解決とログの出力をすると、Quantum CPU の多いワールドではブロックエンティティが
+ * 作られるたびに INFO が 1 行出てコンソールが埋まる (issue #18)。</p>
  *
- * <p>実行時に ACO 側が例外を投げた場合の面倒 (ローカル台帳への退避) は
- * {@link LazyFailsafeLedger} が見る。ここでは {@link IllegalStateException} に包んで投げ上げるだけ。</p>
+ * <p>実行時に ACO 側が例外を投げた場合のローカル台帳への退避は
+ * {@link LazyFailsafeLedger} が受け持つ。ここでは {@link IllegalStateException} に包んで投げ上げるだけ。</p>
  */
 final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
     private static final Logger LOGGER = LogUtils.getLogger();

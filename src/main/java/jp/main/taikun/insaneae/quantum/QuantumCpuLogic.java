@@ -43,19 +43,19 @@ import java.math.BigInteger;
  * <b>同じパターンに同じ材料が並んだ場合は最初の 1 回だけ実際に組み立て、
  * 以降は記憶した結果を使い回して個数を足すだけ</b>にしている
  * (記憶は<b>パターンごと</b>。1 枠しか持たないと、同時に走る小レシピが交互に来たときに
- * 毎回無効化されて意味を成さない → {@link #assemblyCache})。
+ * 毎回無効化されて意味を成さない。{@link #assemblyCache} を参照)。
  * さらに完成品はその場でネットワークに入れず {@link QuantumCpuBlockEntity} 側に貯め、
  * <b>1 tick に 1 回だけまとめて挿入</b>する (ME への挿入が一番重いため)。</p>
  *
  * <p>1620 枠に耐えるためのパターン管理 (更新の 1 tick へのまとめ・ハッシュ集合での照合) は
- * 特大パターンプロバイダーと共通 → {@link InsanePatternProviderLogic}。</p>
+ * 特大パターンプロバイダーと共通で、{@link InsanePatternProviderLogic} にある。</p>
  *
  * <h2>加工パターンは受け付けない</h2>
  * <p>自分で組めるのはクラフトテーブル系のパターンだけなので、
  * <b>加工 (処理) パターンはパターン枠に入れられない</b> (コンストラクタのフィルタ)。
  * 加工パターンは特大パターンプロバイダーに入れること。
- * この制限より前に入れてあった加工パターンは、取り出せるし従来どおり
- * 隣接インベントリへの押し出しも動く ({@link #pushPattern} のフォールバック) —
+ * 既にパターン枠に入っている加工パターンは、取り出せるし、
+ * 隣接インベントリへの押し出しも動く ({@link #pushPattern} のフォールバック)。
  * 中身を消したり動作を止めたりはしない。</p>
  */
 public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulkCraftingProvider {
@@ -76,11 +76,10 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
     /**
      * 実際に組み立てた結果を<b>パターンごとに</b>覚えておく表。
      *
-     * <p>以前はここが 1 枠しか無く、直前に組んだパターンとしか照合できなかった。
-     * ところが 1 つのクラフトジョブには普通いくつもの小レシピが同時に走っていて、
-     * CPU 側はタスクの表を舐めながら順に押し出してくる。<b>別のパターンが交互に来ると
-     * 1 枠のキャッシュは毎回無効化される</b>ので、命中率が 0 に落ちて
-     * {@link #assembleAndCache} を毎クラフト走らせていた (レシピの実行と
+     * <p>パターンごとに覚えるのは、1 つのクラフトジョブでは普通いくつもの小レシピが同時に走り、
+     * CPU 側がタスクの表を走査しながら順に押し出してくるため。<b>別のパターンが交互に来ると
+     * 1 枠のキャッシュは毎回無効化される</b>ので、命中率が 0 になって
+     * {@link #assembleAndCache} が毎クラフト走る (レシピの実行と
      * {@code fireAutoCraftingEvent} の発火が丸ごと乗る)。</p>
      *
      * <p>上限付きの LRU にしてある。パターンは 1620 枠あるが、<b>同時に走る小レシピは
@@ -221,9 +220,9 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
 
         Assembly assembly = resolveAssembly(details, pattern, level);
         if (assembly == null) {
-            // 組立失敗時はpushPatternBulkの外側が材料を戻すため、ここでは
-            // inputHolderを呼出し前の状態へ戻し、グリッドを空にする。
-            // 一部だけをネットワークへ返すと、外側のRollbackと二重計上になる。
+            // 組み立てに失敗したときは pushPatternBulk の外側が材料を戻すため、ここでは
+            // inputHolder を呼び出し前の状態に戻し、グリッドを空にする。
+            // 一部だけをネットワークへ返すと、外側のロールバックと二重計上になる。
             restoreInputHolder(inputHolder, originalInputs);
             clearCraftingGrid();
             return 0;
@@ -300,7 +299,7 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
         RETURN,
         /**
          * <b>そのまま残す。</b>まとめ処理では残り = まだ組んでいない {@code times - 1} 回ぶんなので、
-         * 組み立てが成功して初めて「消費済み」になる。<b>先に捨ててはいけない</b> —
+         * 組み立てが成功して初めて「消費済み」になる。<b>先に捨ててはいけない。</b>
          * 捨ててから組み立てに失敗すると、呼び出し側が戻そうとしても中身が無く、
          * {@code times - 1} 回ぶんが消滅する。
          */
@@ -338,7 +337,7 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
      *
      * <p>ACO の正確な BigInteger 実行では、要求回数ぶんループを回さない。
      * 1 回ぶんの結果に係数を掛けるのが正しい形なので、その「1 回」をここで提供する。
-     * <b>在庫・予算・完成品台帳には一切触らない</b> — 材料の出納と完成品の計上は
+     * <b>在庫・予算・完成品台帳には一切触らない。</b>材料の出納と完成品の計上は
      * ACO 側が escrow で持つため、ここは純粋にレシピを回すだけ。</p>
      *
      * @param inputsPerExecution 1 回ぶんの材料 (スロットごと)。呼び出し側が所有する。
@@ -364,7 +363,7 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
         return new OneCraft(assembly.output().copy(), List.copyOf(assembly.remainders()));
     }
 
-    /** ACO がターゲットとして掴む BlockEntity ({@code ProviderOwnedPatternBatchTarget})。 */
+    /** ACO がターゲットとして使う BlockEntity ({@code ProviderOwnedPatternBatchTarget})。 */
     public QuantumCpuBlockEntity getHostBlockEntity() {
         return host;
     }
@@ -457,7 +456,7 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
         return copy;
     }
 
-    /** 呼出し前の入力へ戻し、BulkCraftingHook側のRollbackへ所有権を返す。 */
+    /** 呼び出し前の入力へ戻し、BulkCraftingHook側のRollbackへ所有権を返す。 */
     private static void restoreInputHolder(KeyCounter[] inputHolder, KeyCounter[] originalInputs) {
         for (int index = 0; index < inputHolder.length; index++) {
             inputHolder[index].reset();

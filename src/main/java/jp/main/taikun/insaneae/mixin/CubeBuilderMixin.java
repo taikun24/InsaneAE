@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
  * 呼び出し側 1 つ 1 つに手を入れるより<b>ここ 1 箇所</b>で受ける方が、
  * AE2 の内部が変わっても壊れにくい。</p>
  *
- * <p>効くのは {@code CableBusBakedModelMixin} が印を立てている間だけで、
+ * <p>差し替えが働くのは {@code CableBusBakedModelMixin} が印を立てている間だけで、
  * そのときでも<b>対応表に載っているスプライトしか</b>差し替わらない。</p>
  */
 @Mixin(targets = "appeng.client.render.cablebus.CubeBuilder", remap = false)

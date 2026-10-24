@@ -19,11 +19,9 @@ public final class BigIntegerCapacityDisplayMarker {
     private static final String PREFIX = "insaneae:big_integer_capacity_v1=";
     /** Componentツリーを無制限にたどらないための走査上限。 */
     private static final int MAX_COMPONENTS_TO_SCAN = 64;
-    /** 科学表記へ使う有効数字の数。 */
     private static final int SCIENTIFIC_SIGNIFICANT_DIGITS = 4;
     /** 16Eなど通常のクラスタ容量を正確な二進単位へ戻せるよう保持する最大桁数。 */
     private static final int LEADING_DIGITS = 64;
-    /** 1 EiBを表すバイト数。 */
     private static final BigInteger EIB_BYTES = BigInteger.ONE.shiftLeft(60);
     /** UI幅を守りつつ整数E表記を使える最大桁数。 */
     private static final int MAX_EIB_INTEGER_DIGITS = 6;
@@ -32,13 +30,11 @@ public final class BigIntegerCapacityDisplayMarker {
     }
 
     public static Component mark(Component name, BigInteger capacity) {
-        // 名前や容量が未確定なら、元の名前をそのまま返して表示を壊さない。
         if (name == null || capacity == null || capacity.signum() < 0) {
             return name;
         }
 
         DisplayValue value = DisplayValue.capture(capacity);
-        // 同じ容量のマーカーが既にあればComponentの兄弟を増やさない。
         if (read(name).filter(value::equals).isPresent()) {
             return name;
         }
@@ -52,7 +48,6 @@ public final class BigIntegerCapacityDisplayMarker {
     }
 
     public static Optional<DisplayValue> read(Component component) {
-        // 通常CPU名にはマーカーがないため、表示上書きを行わない。
         if (component == null) {
             return Optional.empty();
         }
@@ -78,10 +73,8 @@ public final class BigIntegerCapacityDisplayMarker {
         return Optional.ofNullable(latest);
     }
 
-    /** マーカーの値をCPU一覧・ツールチップへ表示する。 */
     public static String format(DisplayValue value) {
         String exactEib = formatExactEib(value);
-        // 正確なEiB整数へ戻せる容量は、16Eのような短いカタログ表記を優先する。
         if (exactEib != null) {
             return exactEib;
         }
@@ -107,7 +100,6 @@ public final class BigIntegerCapacityDisplayMarker {
         }
         BigInteger exact = new BigInteger(value.leadingDigits());
         BigInteger[] quotientAndRemainder = exact.divideAndRemainder(EIB_BYTES);
-        // EiBの整数倍でなければ、従来の科学表記へ戻す。
         if (quotientAndRemainder[1].signum() != 0) {
             return null;
         }

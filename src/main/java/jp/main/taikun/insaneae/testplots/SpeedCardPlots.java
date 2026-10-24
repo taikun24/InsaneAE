@@ -20,7 +20,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 /**
- * 加速カードの倍率が機械に効いているか。
+ * 加速カードの倍率が機械に反映されているか。
  *
  * <p>走らせ方は {@link TestPlotSupport} を参照。</p>
  */
@@ -86,7 +86,7 @@ public final class SpeedCardPlots {
      * <p>AE2 の刻印機は加工そのものが 1 tick で終わっても、そのあとプレス動作の 16 tick が
      * 必ず挟まる。つまり加速カードで速度値をいくら上げても<b>16 tick に 1 個</b>が上限で、
      * シリコン 64 個を刻むのに 1000 tick 以上かかる。{@code TickBoost} の追い tick が
-     * 効いていれば、同じ 1 tick のうちにその待ち時間ごと回してしまえる。</p>
+     * 働いていれば、同じ 1 tick のうちにその待ち時間ごと回してしまえる。</p>
      *
      * <p>40 tick (グリッドの起動を含む) で 64 個すべて刻めていれば貫通できている。</p>
      */

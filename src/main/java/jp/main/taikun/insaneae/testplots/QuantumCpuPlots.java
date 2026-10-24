@@ -59,8 +59,8 @@ public final class QuantumCpuPlots {
      *
      * <p>Advanced AE (1.3.6 / 1.6.12 で確認) は {@code ExecutingCraftingJob} だけでなく
      * 進捗カウンタ {@code ElapsedTimeTracker} まで<b>自前のコピー</b>で持っている。
-     * 以前は「timeTracker フィールドの型が AE2 の tracker であること」を要求していたため、
-     * ここで弾かれてまとめ処理が丸ごと諦めになっていた (1 クラフトずつの遅い経路に落ちる)。</p>
+     * 「timeTracker フィールドの型が AE2 の tracker であること」を要求すると、
+     * ここで弾かれてまとめ処理が丸ごと使えなくなる (1 クラフトずつの遅い経路に落ちる)。</p>
      *
      * <p>AAE を dev 環境に入れられないので、<b>同じフィールド構造のフェイク CPU</b>
      * ({@link FakeForeignCpuLogic}: job / inventory / tasks / waitingFor /
@@ -198,19 +198,17 @@ public final class QuantumCpuPlots {
             sequence.thenExecute(() -> {
                 var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(1, 0, 0));
 
-                // 1) long 超の量が正確に載る
                 cpu.addPendingOutput(log, overLong);
                 helper.check(overLong.equals(cpu.getPendingOutputs().get(log)),
                         "long 超の量が正確に積まれていない: " + cpu.getPendingOutputs().get(log));
 
-                // 2) NBT 往復で 1 個もずれない
                 var tag = new CompoundTag();
                 cpu.saveAdditional(tag);
                 cpu.loadTag(tag);
                 helper.check(overLong.equals(cpu.getPendingOutputs().get(log)),
                         "NBT 往復で量がずれた: " + cpu.getPendingOutputs().get(log));
 
-                // 3) 壊れたエントリは例外なしで捨てられ、正常なエントリは残る
+                // 壊れたエントリは例外なしで捨てられ、正常なエントリは残る
                 var broken = tag.copy();
                 var entries = broken.getCompound("pendingOutputsBig")
                         .getList("entries", Tag.TAG_COMPOUND);
@@ -227,7 +225,6 @@ public final class QuantumCpuPlots {
                 helper.check(cpu.getPendingOutputs().size() == 1,
                         "壊れたエントリが捨てられていない: " + cpu.getPendingOutputs());
 
-                // 4) 旧 long 形式から移行できる
                 var legacy = new CompoundTag();
                 cpu.saveAdditional(legacy);
                 legacy.remove("pendingOutputsBig");
@@ -240,7 +237,7 @@ public final class QuantumCpuPlots {
                                 .equals(cpu.getPendingOutputs().get(log)),
                         "旧形式の移行に失敗: " + cpu.getPendingOutputs().get(log));
 
-                // 5) の準備: long 超の量に戻す
+                // 後段の確認のため、long 超の量へ戻す
                 cpu.loadTag(tag);
             });
 
@@ -267,10 +264,10 @@ public final class QuantumCpuPlots {
      * まとめクラフトが<b>材料以上に作らない</b>ことを確かめる (増殖の回帰テスト)。
      *
      * <p>{@code QuantumBulkCrafting.extractInputs} は在庫が足りなければ<b>黙って回数を減らす</b>。
-     * 以前はその縮小した回数を呼び出し側に返しておらず、要求した回数のまま組ませていたため、
-     * 「丸太 5 本ぶんの材料で 256 回ぶんの板材ができる」状態になっていた。
+     * その縮小した回数を呼び出し側に返さないと、要求した回数のまま組ませてしまい、
+     * 「丸太 5 本ぶんの材料で 256 回ぶんの板材ができる」状態になる。
      * 多段クラフトでは中間素材が順次でき上がる = 「残り回数 &gt;&gt; 手元の材料」が通常の進行状態なので、
-     * 日常的に踏む経路だった。</p>
+     * 日常的に通る経路である。</p>
      *
      * <p>ジョブの窓口 ({@link CraftingJobView}) を差し替えられるようにしてあるので、
      * <b>在庫をこちらで固定して直接呼べる</b>。クラフト CPU を組んで実際にジョブを流すより
@@ -486,7 +483,6 @@ public final class QuantumCpuPlots {
         });
     }
 
-    /** 中身を設定した超強化クリエイティブセルを 1 枚作る。 */
     /**
      * <b>Quantum CPU の内部スロットに挿したクラフトユニットが、本物のクラフト CPU になるか。</b>
      *
@@ -538,12 +534,10 @@ public final class QuantumCpuPlots {
             });
             sequence.thenIdle(10);
 
-            // 1. ユニットを挿す前は CPU が無いこと。
             sequence.thenExecute(() -> helper.check(countCpus(helper) == 0,
                     "クラフトユニットを挿していないのに CPU が現れている: " + countCpus(helper)
                             + " (isFormed の判定か、他に CPU が置かれている)", cpuPos));
 
-            // 2. クラフトストレージと協調処理ユニットを内部スロットへ。
             sequence.thenExecute(() -> {
                 var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
                 cpu.getCraftingUnits().addItems(
@@ -573,7 +567,6 @@ public final class QuantumCpuPlots {
                                 + " != " + expectedThreads, cpuPos);
             });
 
-            // 3. 実際に 2 段クラフトが最後まで終わること。
             sequence.thenExecute(() -> state.job = new TestCraftingJob(
                     helper, BlockPos.ZERO, AEItemKey.of(Items.OAK_BUTTON), requested));
             sequence.thenWaitUntil(() -> state.job.tickUntilStarted());
@@ -585,7 +578,6 @@ public final class QuantumCpuPlots {
                 }
             });
 
-            // 4. 抜いたら CPU 一覧から消えること。
             sequence.thenExecute(() -> {
                 var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
                 cpu.getCraftingUnits().clear();
@@ -662,7 +654,6 @@ public final class QuantumCpuPlots {
             });
             sequence.thenIdle(10);
 
-            // 1. 発注前は CPU 1 台、容量は挿したぶん全部。
             sequence.thenExecute(() -> {
                 var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
                 state.total = cpu.getCraftingCpu().totalStorage();
@@ -673,7 +664,6 @@ public final class QuantumCpuPlots {
                                 + cpu.getCraftingCpu().freeStorage() + " != " + state.total, cpuPos);
             });
 
-            // 2. 1 本目を始めて、すぐ止める (終わってしまう前に)。
             sequence.thenExecute(() -> state.first = new TestCraftingJob(
                     helper, BlockPos.ZERO, AEItemKey.of(Items.OAK_BUTTON), buttons));
             // 止めるのは<b>始まったのと同じ tick のうち</b>に。1 tick でも空けると
@@ -703,7 +693,6 @@ public final class QuantumCpuPlots {
                                 + state.freeAfterFirst + " == " + state.total, cpuPos);
             });
 
-            // 3. 止めたまま 2 本目を発注できること。
             sequence.thenExecute(() -> state.second = new TestCraftingJob(
                     helper, BlockPos.ZERO, AEItemKey.of(Items.OAK_PLANKS), planks));
             sequence.thenWaitUntil(() -> {
@@ -720,7 +709,6 @@ public final class QuantumCpuPlots {
                     "2 本実行中 + 残量ぶんで 3 台にならない: " + countCpus(helper) + " 台",
                     cpuPos));
 
-            // 4. パターンを戻したら両方終わり、区画も容量も元に戻ること。
             sequence.thenExecute(() -> {
                 var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
                 cpu.getLogic().getPatternInv().setItemDirect(BUTTON_PATTERN_SLOT,
@@ -786,6 +774,19 @@ public final class QuantumCpuPlots {
         return cpus;
     }
 
+    /**
+     * <b>実際のジョブ</b>でまとめ処理が発火することを確かめる (同居 Mod に対する回帰テスト)。
+     *
+     * <p>他のまとめ処理テストは {@code QuantumBulkCrafting.execute} を直接呼んでいるので、
+     * <b>クラフト CPU の tick から本当に呼ばれているか</b>は見ていない。
+     * {@code executeCrafting} の先頭には打ち切り付きで注入している Mod が他にもいる
+     * (AE2 Crafting Optimizer がそう) ため、先を越されるとまとめ処理は<b>黙って</b>
+     * 素の 1 回ずつに戻る。結果は同じで遅くなるだけなので、カウンタでしか気付けない。</p>
+     *
+     * <p>タスク統合カードを挿してあるので、まとめ処理が働いていれば
+     * {@code crafts} 回は数 tick で終わる。働いていなければクラスタ予算 (1 tick に数回) で
+     * 刻まれるため、待ち時間の側でも差が出る。</p>
+     */
     @TestPlot("insaneae_bulk_execution_live")
     public static void bulkExecutionLive(PlotBuilder plot) {
         plot.creativeEnergyCell("0 -1 0");

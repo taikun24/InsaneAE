@@ -76,7 +76,7 @@ public final class TimeTrackerAdapter {
             } catch (NoSuchMethodException notHere) {
                 // 親クラスを見る
             } catch (RuntimeException e) {
-                // setAccessible がモジュールに弾かれた場合など。スキップに倒す。
+                // setAccessible がモジュールに弾かれた場合など。スキップ扱いにする。
                 LOGGER.warn("InsaneAE: cannot access {}#addMaxItems; progress display may drift",
                         owner.getName(), e);
                 return MISSING;

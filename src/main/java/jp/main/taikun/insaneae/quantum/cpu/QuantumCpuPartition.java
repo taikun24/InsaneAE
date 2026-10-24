@@ -17,7 +17,7 @@ import jp.main.taikun.insaneae.util.SaturatingMath;
  *
  * <p>AE2 のクラフト CPU は<b>1 個につきジョブ 1 本</b>で、実行中は容量が丸ごと塞がる。
  * Quantum CPU は容量が桁違いなので、それだと「1000K あるのに 100K のクラフトを
- * 始めた瞬間に何も発注できない」ことになる。そこで<b>クラスタを 1 個に固定せず</b>、
+ * 始めた時点で何も発注できない」ことになる。そこで<b>クラスタを 1 個に固定せず</b>、
  * 発注のたびに区画を切り出す ({@link QuantumCraftingCpu} が親)。</p>
  *
  * <p>区画は AE2 から見ると<b>普通のクラフト CPU がもう 1 台ある</b>のと区別が付かない。
@@ -27,7 +27,7 @@ import jp.main.taikun.insaneae.util.SaturatingMath;
  * <ul>
  *   <li>{@link #allotment} … この区画の容量。<b>空き区画は残り全部</b>、
  *       発注を受けた区画は<b>そのジョブが要求したバイト数ちょうど</b>に縮む
- *       (余りが空き区画へ戻る = これが「分割」の本体)。</li>
+ *       (余りが空き区画へ戻る。これが分割の実体)。</li>
  *   <li>{@link #threads} … 親が配った協調処理スレッド数。</li>
  * </ul>
  */
@@ -40,10 +40,8 @@ public final class QuantumCpuPartition implements QuantumCpuClusterOwner {
 
     private CraftingCPUCluster cluster;
 
-    /** この区画が使ってよいバイト数。 */
     private BigInteger allotment = BigInteger.ZERO;
 
-    /** この区画に配られたスレッド数。 */
     private long threads;
 
     /** 発注を受けたか。受けた区画は容量が固定され、空き区画ではなくなる。 */
@@ -93,7 +91,6 @@ public final class QuantumCpuPartition implements QuantumCpuClusterOwner {
         return taken;
     }
 
-    /** ジョブを実行中か。 */
     public boolean isBusy() {
         return cluster != null && cluster.isBusy();
     }
@@ -118,7 +115,6 @@ public final class QuantumCpuPartition implements QuantumCpuClusterOwner {
         return items.isEmpty();
     }
 
-    /** この区画の容量。 */
     public BigInteger allotment() {
         return allotment;
     }
@@ -133,7 +129,6 @@ public final class QuantumCpuPartition implements QuantumCpuClusterOwner {
         pushTotals();
     }
 
-    /** スレッド数を入れ替える。 */
     void setThreads(long value) {
         if (threads == value) {
             return;
@@ -198,7 +193,7 @@ public final class QuantumCpuPartition implements QuantumCpuClusterOwner {
     }
 
     /**
-     * この区画がジョブを受け取った瞬間に呼ばれる ({@code CraftingCpuClusterOwnerMixin})。
+     * この区画がジョブを受け取った時点で呼ばれる ({@code CraftingCpuClusterOwnerMixin})。
      *
      * <p>ここで<b>容量をそのジョブのぶんだけに縮める</b>。残りは親が新しい空き区画に回すので、
      * 実行中でも残量ぶんの発注を続けられる。</p>

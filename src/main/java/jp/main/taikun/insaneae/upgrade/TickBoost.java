@@ -96,7 +96,6 @@ public final class TickBoost {
         return b.ordinal() > a.ordinal() ? b : a;
     }
 
-    /** まだ仕事が残っている (＝もう 1 回回す価値がある) か。 */
     private static boolean hasMoreWork(TickRateModulation modulation) {
         return modulation == TickRateModulation.URGENT || modulation == TickRateModulation.FASTER;
     }

@@ -86,14 +86,12 @@ public final class CraftingCalculationPlots {
                                 new ItemStack(Items.WHEAT)));
             });
 
-            // 1) AE2 本来の計算 (まとめ処理なし)
             sequence.thenExecuteAfter(1, () -> {
                 InsaneAEConfig.setBatchCraftingCalculation(false);
                 state.pending = beginCalculation(helper);
             });
             sequence.thenWaitUntil(() -> state.withoutBatching = awaitPlan(state.pending));
 
-            // 2) まとめ処理あり
             sequence.thenExecute(() -> {
                 InsaneAEConfig.setBatchCraftingCalculation(true);
                 state.batchedBefore = CraftingCalculationBatch.batchedCrafts;
@@ -154,11 +152,9 @@ public final class CraftingCalculationPlots {
             sequence.thenExecute(() -> {
                 var provider = (PatternProviderBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
                 var patterns = provider.getLogic().getPatternInv();
-                // 鉄 2 → 銅 1
                 patterns.addItems(processingPattern(Items.IRON_INGOT, 2, Items.COPPER_INGOT, 1));
                 // 金 2 → 銅 1 (材料が無いので使えない枝)
                 patterns.addItems(processingPattern(Items.GOLD_INGOT, 2, Items.COPPER_INGOT, 1));
-                // 銅 4 → ダイヤ 1
                 patterns.addItems(processingPattern(Items.COPPER_INGOT, 4, Items.DIAMOND, 1));
             });
 
@@ -200,12 +196,10 @@ public final class CraftingCalculationPlots {
     }
 
     /**
-     * <b>Quantum CPU に入れたパターン</b>が連鎖クラフトで使われることを確かめる。
+     * <b>特大パターンプロバイダーに入れたパターン</b>が連鎖クラフトで使われることを確かめる。
      *
-     * <p>「登録してあるクラフトパターンが反映されない」という報告を受けての回帰テスト
-     * (元は Quantum CPU で見ていたが、加工パターンの置き場が特大パターンプロバイダーに
-     * 移ったのでこちらで見る。読み直しを 1 tick 遅らせる仕組みは共通
-     * {@code InsanePatternProviderLogic#updatePatterns})。
+     * <p>「登録してあるクラフトパターンが反映されない」という報告を受けての回帰テスト。
+     * パターンの読み直しは {@code InsanePatternProviderLogic#updatePatterns} で 1 tick 遅れるので、
      * グリッドのクラフト索引に載り損ねていないかをここで見る。</p>
      */
     @TestPlot("insaneae_pattern_provider_patterns")

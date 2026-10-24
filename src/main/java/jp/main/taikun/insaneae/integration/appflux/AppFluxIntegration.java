@@ -26,11 +26,11 @@ import java.util.function.Consumer;
 
 /**
  * AppliedFlux 連携: 1G〜16T の FE ストレージセル (通常 / ポータブル) を足す
- * (16T だけ容量 8T。理由は {@link FluxTiers})。芯は AppliedFlux と同じく専用の
+ * (16T だけ容量 8T。理由は {@link FluxTiers})。材料は AppliedFlux と同じく専用の
  * エネルギーストレージコンポーネントで、これも 1G〜16T を足す (AppliedFlux の 256M の続き)。
  *
  * <p>セルは AppliedFlux の {@link IFluxCell} 実装なので、ME ドライブ等に挿したときの中身は
- * AppliedFlux 自身のセルハンドラ ({@code FECellHandler}、{@code IFluxCell} なら誰のアイテムでも拾う)
+ * AppliedFlux 自身のセルハンドラ ({@code FECellHandler}、{@code IFluxCell} なら誰のアイテムでも対象にする)
  * が扱う。<b>Mixin は要らない</b>。FE の capability もアイテム側の {@code initCapabilities}
  * (AppliedFlux の実装) がそのまま出す。容量が long を溢れる件は {@link FluxCapacity} を参照。</p>
  *
@@ -44,7 +44,7 @@ public final class AppFluxIntegration implements AddonIntegration {
     /** AppliedFlux が自分のポータブル FE セルに渡している画面の色。 */
     private static final int PORTABLE_SCREEN_COLOR = 0xDDDDDD;
 
-    /** 各階層のエネルギーストレージコンポーネント (FE セルの芯。AppliedFlux の 1k〜256M の続き)。 */
+    /** 各階層のエネルギーストレージコンポーネント (FE セルの材料。AppliedFlux の 1k〜256M の続き)。 */
     private final Map<InsaneCraftingUnitType, RegistryObject<Item>> components =
             new EnumMap<>(InsaneCraftingUnitType.class);
     private final Map<InsaneCraftingUnitType, RegistryObject<Item>> cells =

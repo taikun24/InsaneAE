@@ -190,7 +190,7 @@ public final class NetworkPlots {
     /**
      * 超特大インターフェイスの基本動作。
      *
-     * <p>capability の公開・81 枠・1 枠 21 億 (allowOverstacking が効いていること) に加えて、
+     * <p>capability の公開・81 枠・1 枠 21 億 (allowOverstacking が反映されていること) に加えて、
      * <b>int に収まらない量の一括挿入がネットワークへ欠けずに入ること</b>と、
      * <b>壊したときに中身がネットワークへ戻ること</b> (AEItemKey#addDrops の
      * 1000 スタック上限対策) を見る。</p>
@@ -287,7 +287,7 @@ public final class NetworkPlots {
      * ケーブル版 (プレート) がブロック版と同じ中身を持ち、グリッドにも入ることの検証。
      *
      * <p>部品は AE2 の {@code InterfacePart} / {@code PatternProviderPart} を継承して
-     * {@code createLogic()} だけ差し替えている。<b>差し替えが効いていないと
+     * {@code createLogic()} だけ差し替えている。<b>差し替えが反映されていないと
      * 静かに AE2 の既定 (9 枠 / 36 枠) に戻る</b>ので、枠数と 1 枠の上限をここで押さえる。</p>
      *
      * <p>あわせて「ケーブルに貼れて、チャネルが通り、電力が来ている」ことも見る。
@@ -578,7 +578,7 @@ public final class NetworkPlots {
         return node == null ? -1 : node.getMaxChannels();
     }
 
-    /** 高密度ケーブル相当の上限 (ChannelMode の倍率込み)。解錠前の期待値。 */
+    /** 高密度ケーブル相当の上限 (ChannelMode の倍率込み)。 */
     private static int denseChannels(PlotTestHelper helper, BlockPos pos) {
         ChannelMode mode = helper.getGrid(pos).getPathingService().getChannelMode();
         return 32 * mode.getCableCapacityFactor();

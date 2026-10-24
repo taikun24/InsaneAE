@@ -123,7 +123,6 @@ public final class InsaneAEClient {
                 .forEach(cell -> event.register(AbstractPortableCell::getColor, cell.get()));
         ModCells.PORTABLE_FLUID_CELLS.values()
                 .forEach(cell -> event.register(AbstractPortableCell::getColor, cell.get()));
-        // 他アドオンのセル (化学物質セル・FE セルなど) も同じ色付け。
         for (AddonIntegration addon : AddonIntegrations.active()) {
             addon.storageCells().forEach(cell -> event.register(BasicStorageCell::getColor, cell));
             addon.portableCells().forEach(cell -> event.register(AbstractPortableCell::getColor, cell));

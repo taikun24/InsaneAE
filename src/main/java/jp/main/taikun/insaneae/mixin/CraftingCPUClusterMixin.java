@@ -38,7 +38,7 @@ import jp.main.taikun.insaneae.util.SaturatingMath;
  * <pre>throw new IllegalArgumentException("Co-processor threads may not exceed 16 per single unit block.");</pre>
  *
  * <p>上限の定数そのものを引き上げるのは {@link CraftingUnitThreadLimitMixin} の担当。
- * こちらは<b>それが効かなかった場合の受け皿</b>と、<b>long での数え直し</b>を持つ
+ * こちらは<b>それで上限を外せなかった場合の受け皿</b>と、<b>long での数え直し</b>を持つ
  * ({@link ICoProcessorCount})。</p>
  *
  * <p>AE2 の {@code accelerator} フィールドは {@code int} の単純加算なので
@@ -48,7 +48,7 @@ import jp.main.taikun.insaneae.util.SaturatingMath;
  * int 側を {@code MAX_VALUE} ぴったりにしないのは、{@code getCoProcessors() + 1} を計算する箇所
  * (AE2 本体および他 Mod) で再びオーバーフローさせないため。</p>
  *
- * <h2>他 Mod との共存 (1.0.1)</h2>
+ * <h2>他 Mod との共存</h2>
  * <p>同じ 16 スレッド上限を外すアドオンは他にもあり、{@code addBlockEntity} は混雑している。
  * 実際に報告のあった構成では BiggerAE2 (同じ {@code @ModifyConstant}、上限 1024)、
  * ExtendedAE_Plus (HEAD で自前処理して元メソッドを<b>キャンセル</b>)、
@@ -145,7 +145,7 @@ public abstract class CraftingCPUClusterMixin
 
     /**
      * int 側の飽和。ブロックが足されるたびに呼ばれるので、
-     * 他 Mod や AE2 本体が {@code getCoProcessors()} を読む前に負値を潰せる。
+     * 他 Mod や AE2 本体が {@code getCoProcessors()} を読む前に負値を上限へ戻せる。
      *
      * <p>合計そのものは {@link #insaneae$recount} が持つので、ここでは積算しない
      * (このメソッドは他 Mod にキャンセルされうる)。</p>
@@ -175,7 +175,6 @@ public abstract class CraftingCPUClusterMixin
     /** 構成が確定した直後にも数え直し、元のlongフィールドが負値のまま残らないようにする。 */
     @Inject(method = "addBlockEntity", at = @At("RETURN"), require = 0)
     private void insaneae$refreshExactStorage(CraftingBlockEntity blockEntity, CallbackInfo ci) {
-        // ブロック追加のたびにキャッシュを無効化し、次の容量参照で全構成を再計算する。
         insaneae$countedStorageBlocks = -1;
         insaneae$recountStorage();
     }
@@ -202,14 +201,12 @@ public abstract class CraftingCPUClusterMixin
             ICraftingRequester requester,
             CallbackInfoReturnable<ICraftingSubmitResult> cir) {
         var exactPlan = AcoBigIntegerPlanBridge.inspect(plan);
-        // ACOのBigInteger計画でなければ、通常AE2の容量判定へ完全に委譲する。
         if (exactPlan.isEmpty()) {
             return;
         }
 
         BigInteger required = exactPlan.get().exactBytes();
         BigInteger capacity = insaneae$recountStorage();
-        // 正確な必要量が正確な容量を超える場合だけ、AE2標準の失敗結果を返す。
         if (!ExactCraftingCapacityPolicy.fits(required, capacity)) {
             /*
              * AE2の画面に出せるのは「ストレージが不足しています」だけで、どれだけ
@@ -296,7 +293,6 @@ public abstract class CraftingCPUClusterMixin
         }
 
         int blocks = blockEntities.size();
-        // 構成ブロック数が変わっていなければ、同じ容量を再利用する。
         if (blocks == insaneae$countedStorageBlocks) {
             return insaneae$exactStorage;
         }

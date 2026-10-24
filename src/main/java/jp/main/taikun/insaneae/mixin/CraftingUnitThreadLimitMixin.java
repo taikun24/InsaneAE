@@ -20,8 +20,8 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
  *       こちらは {@code require = 0} なので何も起きない。</li>
  *   <li>譲った結果まだ上限が残っていても (BiggerAE2 の 1024 など)、
  *       {@code CraftingCPUClusterMixin#insaneae$acceptOverLimit} が例外の直前で拾う。</li>
- *   <li>逆に InsaneAE だけを入れている場合は競合が起きないので、ここが普通に効く
- *       (＝例外経路に入らない = 他 Mod の RETURN 注入も素通しできる)。</li>
+ *   <li>逆に InsaneAE だけを入れている場合は競合が起きないので、この Mixin がそのまま適用される
+ *       (例外経路に入らないので、他 Mod の RETURN 注入も素通しできる)。</li>
  * </ul>
  *
  * <p>{@code CraftingCPUClusterMixin} 本体は逆に priority を上げてある (マージ済みメソッドへ

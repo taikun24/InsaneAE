@@ -7,7 +7,7 @@ import net.minecraftforge.fml.ModList;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * 化学物質 (ガス・注入型・顔料・スラリー) を AE2 のキーに変換する入口。
+ * 化学物質 (ガス・注入型・顔料・スラリー) を AE2 のキーに変換する。
  *
  * <p>ネットワークが化学物質を持てるのは Applied Mekanistics があるときだけなので、
  * <b>appmek の型に触るのはこのクラスの中だけ</b>に閉じ込めてある

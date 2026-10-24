@@ -52,7 +52,7 @@ public class InsanePatternProviderPart extends PatternProviderPart {
     public static final PartModel MODELS_ON = new PartModel(MODEL_BASE, INDICATOR_ON);
     public static final PartModel MODELS_HAS_CHANNEL = new PartModel(MODEL_BASE, INDICATOR_HAS_CHANNEL);
 
-    /** モデルの焼き込み対象として AE2 に知らせるもの一式 → {@code ModParts}。 */
+    /** モデルの焼き込み対象として AE2 に知らせるモデル一式。{@code ModParts} が使う。 */
     public static List<ResourceLocation> models() {
         return List.of(MODEL_BASE, INDICATOR_OFF, INDICATOR_ON, INDICATOR_HAS_CHANNEL);
     }

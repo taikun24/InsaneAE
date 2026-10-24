@@ -50,7 +50,7 @@ import java.util.function.Function;
  *
  * <p>階層ごとに次の 8 種類 (化学物質系 2 種は Applied Mekanistics 導入時のみ有効な
  * 条件付きレシピ) を出す。レシピ ID は結果アイテムの登録名と同じになるため、
- * ポータブルセルの分解処理 ({@code getRecipeId()}) ともそのまま噛み合う。</p>
+ * ポータブルセルの分解処理 ({@code getRecipeId()}) ともそのまま一致する。</p>
  */
 public class ModRecipeProvider extends RecipeProvider {
 
@@ -98,22 +98,16 @@ public class ModRecipeProvider extends RecipeProvider {
                     ? MEGAItems.CELL_COMPONENT_256M
                     : ModItems.CELL_COMPONENTS.get(tiers[index - 1]).get();
 
-            // セルコンポーネント: 下位 ×4
-            // shapeless(consumer, component, lower, b -> b.requires(lower, 4));
-
             tieredComponent(consumer, component, lower, ACCUMULATION_PROCESSOR, tier);
 
-            // クラフトストレージ: MEGA のクラフトユニット + コンポーネント
             shapeless(consumer, ModBlocks.CRAFTING_STORAGE.get(tier).get(), component,
                     b -> b.requires(MEGABlocks.MEGA_CRAFTING_UNIT).requires(component));
 
-            // 通常セル: ハウジング + コンポーネント
             storageCell(consumer, ModCells.ITEM_CELLS.get(tier).get(), component,
                     MEGAItems.MEGA_ITEM_CELL_HOUSING);
             storageCell(consumer, ModCells.FLUID_CELLS.get(tier).get(), component,
                     MEGAItems.MEGA_FLUID_CELL_HOUSING);
 
-            // ポータブルセル: ME チェスト + コンポーネント + 高密度エネルギーセル + ハウジング
             portableCell(consumer, ModCells.PORTABLE_ITEM_CELLS.get(tier).get(), component,
                     MEGAItems.MEGA_ITEM_CELL_HOUSING);
             portableCell(consumer, ModCells.PORTABLE_FLUID_CELLS.get(tier).get(), component,
@@ -137,7 +131,6 @@ public class ModRecipeProvider extends RecipeProvider {
                     b -> b.requires(lower, tier.lowerCount()));
         }
 
-        // 加速カード: 下位カード ×4 + 集積プロセッサ (最下段は AE2 の加速カード ×4)。
         InsaneSpeedCardType[] cards = InsaneSpeedCardType.values();
         for (int index = 0; index < cards.length; index++) {
             InsaneSpeedCardType card = cards[index];
@@ -148,7 +141,6 @@ public class ModRecipeProvider extends RecipeProvider {
 
         insaneProcessor(consumer);
 
-        // Quantum CPU: パターンプロバイダ 1 + 分子組立装置 4 + Insane プロセッサ 4。
         shaped(consumer, ModBlocks.QUANTUM_CPU.get(), ModItems.INSANE_PROCESSOR.get(),
                 new String[]{"ABA", "BCB", "ABA"},
                 Map.of(
@@ -222,7 +214,6 @@ public class ModRecipeProvider extends RecipeProvider {
                         'C', AEBlocks.INTERFACE
                 ));
 
-        // Improved Crystal Charger: AE2 のチャージャー + 集積プロセッサ + 帯電水晶。
         shaped(consumer, ModBlocks.IMPROVED_CHARGER.get(), ACCUMULATION_PROCESSOR,
                 new String[]{"ABA", "BCB", "ABA"},
                 Map.of(
@@ -232,7 +223,7 @@ public class ModRecipeProvider extends RecipeProvider {
                 ));
 
         // ソーラーパネル: 最下段だけ素材から、以降は下位 ×8 + 中央の「核」。
-        // 発電量が 1 段で 256 倍 (2^8-1 → 2^32-1) 伸びるので、核も段ごとに重くしてある。
+        // 発電量が 1 段で約 4096 倍 (2^12 倍) 伸びるので、核も段ごとに重くしてある。
         SolarPanelTier[] panels = SolarPanelTier.values();
         ItemLike[] cores = {ModBlocks.ENERGY_CELLS.get(InsaneEnergyCellTier.DEGENERATE).get(), ModBlocks.ENERGY_CELLS.get(InsaneEnergyCellTier.QUASAR).get(), ModBlocks.ENERGY_CELLS.get(InsaneEnergyCellTier.GALACTIC).get()};
         for (int index = 0; index < panels.length; index++) {
@@ -253,12 +244,10 @@ public class ModRecipeProvider extends RecipeProvider {
             }
         }
 
-        // Quantum CPU 用加速カード: 最上位の加速カード ×4 + 特異点。
         ItemLike topSpeedCard = cards[cards.length - 1].item();
         shapeless(consumer, ModUpgrades.QUANTUM_ACCELERATION_CARD.get(), topSpeedCard,
                 b -> b.requires(topSpeedCard, 4).requires(SINGULARITY));
 
-        // タスク統合カード: 加速カード ×2 + 特異点 ×2 (タスクを 1 つに融合するイメージ)。
         shapeless(consumer, ModUpgrades.TASK_FUSION_CARD.get(),
                 ModUpgrades.QUANTUM_ACCELERATION_CARD.get(),
                 b -> b.requires(ModUpgrades.QUANTUM_ACCELERATION_CARD.get(), 2)
@@ -310,7 +299,6 @@ public class ModRecipeProvider extends RecipeProvider {
      */
     public static void tieredComponent(Consumer<FinishedRecipe> consumer, ItemLike component, ItemLike lower,
             ItemLike processor, InsaneCraftingUnitType tier) {
-        // 256G までは物質ボール、それより上は特異点。
         ItemLike baseMaterial = tier.getStorageBytes() > InsaneCraftingUnitType.STORAGE_256G.getStorageBytes()
                 ? SINGULARITY
                 : MATTER_BALL;
@@ -332,7 +320,6 @@ public class ModRecipeProvider extends RecipeProvider {
         shapeless(consumer, cell, component, b -> b.requires(housing).requires(component));
     }
 
-    /** ポータブルセル (ME チェスト + コンポーネント + 高密度エネルギーセル + ハウジング) を出す。 */
     public static void portableCell(Consumer<FinishedRecipe> consumer, ItemLike cell, ItemLike component,
             ItemLike housing) {
         shapeless(consumer, cell, component, b -> b.requires(AEBlocks.CHEST)
