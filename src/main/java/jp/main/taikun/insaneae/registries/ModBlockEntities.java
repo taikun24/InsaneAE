@@ -1,5 +1,6 @@
 package jp.main.taikun.insaneae.registries;
 
+import appeng.blockentity.AEBaseBlockEntity;
 import appeng.blockentity.crafting.CraftingBlockEntity;
 import appeng.blockentity.networking.EnergyCellBlockEntity;
 import jp.main.taikun.insaneae.InsaneAE;
@@ -153,5 +154,29 @@ public class ModBlockEntities {
         ModBlocks.INSANE_PATTERN_PROVIDER.get().setBlockEntity(
                 InsanePatternProviderBlockEntity.class, INSANE_PATTERN_PROVIDER.get(), null,
                 (level, pos, state, be) -> be.serverTick());
+
+        registerRepresentativeItems();
+    }
+
+    /**
+     * BlockEntityType ごとの「代表アイテム」を AE2 に教える。
+     *
+     * <p>AE2 の {@code AEBaseBlockEntity#getItemFromBlockEntity} は、AE2 が自分の型だけを入れた表から
+     * 引き、<b>載っていない型には空気 ({@code minecraft:air}) を返す</b>。この値は
+     * <b>アップグレード枠がどのカードを受けるか</b> ({@code InterfaceLogic} が
+     * {@code UpgradeInventories.forMachine(item, ...)} に渡す) と、名前を付けていないときの表示名に使われる。
+     * 登録しないと、カードの対応付けをどれだけ足してもアップグレード枠が 1 枚も受け付けず、
+     * 端末には「空気」と表示される。</p>
+     *
+     * <p>対象はブロックが 1 種類だけの型。階層ごとにブロックが違う型 (クラフトストレージ・
+     * エネルギーセル・ソーラーパネル) は AE2 の親クラスがブロックから名前を引くので載せない。
+     * {@link #bindBlockEntities()} と同じく commonSetup で呼ぶ (ワールドの読み込み = BE の生成より前)。</p>
+     */
+    private static void registerRepresentativeItems() {
+        AEBaseBlockEntity.registerBlockEntityItem(QUANTUM_CPU.get(), ModBlocks.QUANTUM_CPU.get().asItem());
+        AEBaseBlockEntity.registerBlockEntityItem(IMPROVED_CHARGER.get(), ModBlocks.IMPROVED_CHARGER.get().asItem());
+        AEBaseBlockEntity.registerBlockEntityItem(INSANE_INTERFACE.get(), ModBlocks.INSANE_INTERFACE.get().asItem());
+        AEBaseBlockEntity.registerBlockEntityItem(INSANE_PATTERN_PROVIDER.get(),
+                ModBlocks.INSANE_PATTERN_PROVIDER.get().asItem());
     }
 }

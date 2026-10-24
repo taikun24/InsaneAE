@@ -12,6 +12,7 @@ import jp.main.taikun.insaneae.upgrade.InsaneSpeedCardItem;
 import jp.main.taikun.insaneae.upgrade.InsaneSpeedCardType;
 import jp.main.taikun.insaneae.upgrade.QuantumAccelerationCardItem;
 import jp.main.taikun.insaneae.upgrade.TaskFusionCardItem;
+import jp.main.taikun.insaneae.upgrade.UpgradeMirrors;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.ItemLike;
@@ -87,6 +88,10 @@ public class ModUpgrades {
 
         registerCellUpgrades();
         AddonIntegrations.active().forEach(AddonIntegration::registerUpgrades);
+
+        // AE2 のインターフェイス / パターンプロバイダに登録されたカード (AE2 自身のものも、
+        // 他アドオンのものも) を超次元版にも登録する。ここより後の登録はその場で写る。
+        UpgradeMirrors.enable();
     }
 
     /**

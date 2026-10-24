@@ -5,6 +5,7 @@ import appeng.core.definitions.AEItems;
 import appeng.core.localization.GuiText;
 import com.glodblock.github.appflux.api.IFluxCell;
 import com.glodblock.github.appflux.common.AFItemAndBlock;
+import com.glodblock.github.appflux.util.helpers.INeighborListener;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.datagen.ModRecipeProvider;
 import jp.main.taikun.insaneae.integration.AddonIntegration;
@@ -12,6 +13,7 @@ import jp.main.taikun.insaneae.registries.ModCells;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
 import jp.main.taikun.insaneae.util.TieredItem;
 import jp.main.taikun.insaneae.util.TieredNames;
+import net.minecraft.core.Direction;
 import net.minecraft.data.recipes.FinishedRecipe;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.ItemLike;
@@ -103,6 +105,19 @@ public final class AppFluxIntegration implements AddonIntegration {
             Upgrades.add(AEItems.VOID_CARD, cell, 1, portableGroup);
             ModUpgrades.addPortableEnergyCards(cell, portableGroup);
             Upgrades.add(AFItemAndBlock.INDUCTION_CARD, cell, 1, portableGroup);
+        }
+    }
+
+    /**
+     * 誘導カードの FE 搬出は、隣の機械を<b>向きごとに覚えておき</b>、AppliedFlux が
+     * AE2 のブロックに入れた Mixin が隣の変化を知らせたときだけ探し直す
+     * ({@code INeighborListener#onChange})。こちらのブロックはその Mixin の対象外なので、
+     * 知らせないと「置いた時点で隣に何も無ければ、後から機械を置いても送らない」になる。
+     */
+    @Override
+    public void onInsaneHostNeighborChanged(Object logic, Direction side) {
+        if (logic instanceof INeighborListener listener) {
+            listener.onChange(side);
         }
     }
 

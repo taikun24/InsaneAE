@@ -5,6 +5,8 @@ import jp.main.taikun.insaneae.integration.advancedae.AdvancedAeIntegration;
 import jp.main.taikun.insaneae.integration.appflux.AppFluxIntegration;
 import jp.main.taikun.insaneae.integration.appmek.AppMekIntegration;
 import jp.main.taikun.insaneae.integration.extendedae.ExtendedAeIntegration;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraftforge.fml.ModList;
 import org.slf4j.Logger;
 
@@ -71,6 +73,22 @@ public final class AddonIntegrations {
             throw new IllegalStateException("AddonIntegrations.init() has not run yet");
         }
         return active;
+    }
+
+    /**
+     * 超次元版のブロックの隣が変わったことを各連携に伝える
+     * ({@link AddonIntegration#onInsaneHostNeighborChanged})。
+     * ブロックの {@code neighborChanged} / {@code onNeighborChange} から呼ぶ。
+     */
+    public static void notifyNeighborChanged(Object logic, BlockPos pos, BlockPos neighbor) {
+        for (Direction side : Direction.values()) {
+            if (pos.relative(side).equals(neighbor)) {
+                for (AddonIntegration integration : active()) {
+                    integration.onInsaneHostNeighborChanged(logic, side);
+                }
+                return;
+            }
+        }
     }
 
     /** 名簿に載っているが入っていないアドオン (datagen で「レシピが欠ける」警告を出す用)。 */

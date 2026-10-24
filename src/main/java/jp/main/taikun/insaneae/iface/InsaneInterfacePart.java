@@ -2,6 +2,7 @@ package jp.main.taikun.insaneae.iface;
 
 import appeng.api.parts.IPartItem;
 import appeng.api.parts.IPartModel;
+import appeng.capabilities.Capabilities;
 import appeng.helpers.InterfaceLogic;
 import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
@@ -12,6 +13,9 @@ import jp.main.taikun.insaneae.InsaneAE;
 import jp.main.taikun.insaneae.menu.InsaneInterfaceMenu;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.util.LazyOptional;
 
 import java.util.List;
 
@@ -25,16 +29,15 @@ import java.util.List;
  * <b>{@link #createLogic()} だけ差し替えれば</b>ブロック版とまったく同じ挙動になる
  * (グリッドノード・NBT・ドロップ・メモリーカードは AE2 側の実装がそのまま効く)。</p>
  *
- * <h2>ブロック版との違い</h2>
+ * <h2>ブロック版と共通の処理</h2>
  * <ul>
- *   <li><b>溢れたぶんの ME 直送が無い</b> ({@link InterfaceOverflowInventory} を挟んでいない)。
- *       あれは {@code GENERIC_INTERNAL_INV} capability として<b>ブロックの面</b>に出すもので、
- *       ケーブルバスの部品には同じ口が無い。Mekanism 系の long 搬入を受けるなら
- *       ブロック版を使うこと。</li>
- *   <li>壊したときの<b>在庫の ME への返却が無い</b>。AE2 の部品はドロップに変換する
- *       ({@code addAdditionalDrops}) 実装しか持たず、そこは 1000 スタックで頭打ちになる。
- *       ケーブル版に大量在庫を貯めたまま壊さないこと。</li>
+ *   <li>外の機械に見せるインベントリ ({@code GENERIC_INTERNAL_INV}) は、ブロック版と同じく
+ *       <b>未設定の枠に来たぶんを ME ネットワークへ直送する</b> {@link InterfaceOverflowInventory}
+ *       ({@link #getCapability})。ケーブルバスは面ごとに部品の {@code getCapability} を呼ぶので、
+ *       AE2 のアイテム/液体アダプタや AppliedFlux の FE の口もこれを通る。</li>
+ *   <li>取り外したときは在庫をまず ME ネットワークに戻す ({@link #addAdditionalDrops})。</li>
  * </ul>
+ * <p>中身の処理は {@link InsaneInterfaces} にまとめてあり、ブロック版と同じものを呼んでいる。</p>
  */
 public class InsaneInterfacePart extends InterfacePart {
 
@@ -74,8 +77,42 @@ public class InsaneInterfacePart extends InterfacePart {
      */
     @Override
     protected InterfaceLogic createLogic() {
-        return InsaneInterfaceBlockEntity.createInsaneLogic(
-                getMainNode(), this, getPartItem().asItem());
+        return InsaneInterfaces.createLogic(getMainNode(), this, getPartItem().asItem());
+    }
+
+    /**
+     * 外の機械に見せるインベントリ。
+     *
+     * <p>super のコンストラクタ (= {@link #createLogic()}) より後に初期化されるので、
+     * ここでは {@code getInterfaceLogic()} を安全に触れる。</p>
+     */
+    private final InterfaceOverflowInventory exposedInventory =
+            new InterfaceOverflowInventory(getMainNode(), this);
+
+    /** 他 Mod のアダプタに見せるインベントリ ({@code GENERIC_INTERNAL_INV})。 */
+    public InterfaceOverflowInventory getExposedInventory() {
+        return exposedInventory;
+    }
+
+    /** {@code GENERIC_INTERNAL_INV} だけ溢れ対応の包みに差し替える。それ以外は AE2 のまま。 */
+    @Override
+    public <T> LazyOptional<T> getCapability(Capability<T> capabilityClass) {
+        if (capabilityClass == Capabilities.GENERIC_INTERNAL_INV) {
+            return LazyOptional.of(() -> exposedInventory).cast();
+        }
+        return super.getCapability(capabilityClass);
+    }
+
+    /**
+     * 取り外されたときは<b>中身をまず ME ネットワークに戻す</b>
+     * → {@link InsaneInterfaces#returnStorageToNetwork}。
+     *
+     * <p>この時点でグリッドから切り離されていれば何もせず、これまでどおりドロップに回る。</p>
+     */
+    @Override
+    public void addAdditionalDrops(List<ItemStack> drops, boolean wrenched) {
+        InsaneInterfaces.returnStorageToNetwork(getMainNode(), getInterfaceLogic());
+        super.addAdditionalDrops(drops, wrenched);
     }
 
     @Override

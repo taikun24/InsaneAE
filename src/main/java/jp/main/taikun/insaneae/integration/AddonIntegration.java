@@ -1,6 +1,7 @@
 package jp.main.taikun.insaneae.integration;
 
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
+import net.minecraft.core.Direction;
 import net.minecraft.data.recipes.FinishedRecipe;
 import net.minecraft.world.level.ItemLike;
 
@@ -56,6 +57,20 @@ public interface AddonIntegration {
      * ({@code initCapabilities}) 出すので、相手のアイテムを継承すればそのまま付いてくる。</p>
      */
     default void registerUpgrades() {
+    }
+
+    /**
+     * 超次元版のインターフェイス / パターンプロバイダー (ブロック) の隣のブロックが変わったとき。
+     * サーバー側でだけ呼ばれる。
+     *
+     * <p>AE2 の機械の隣接変化を Mixin で拾っているアドオン (AppliedFlux の FE 搬出など) は、
+     * {@code InterfaceBlock} / {@code PatternProviderBlock} を継承していないこちらのブロックでは
+     * 通知を受けられない。中身のロジックは AE2 のクラスなので、ここで同じ通知を渡せば動く。</p>
+     *
+     * @param logic そのブロックの {@code InterfaceLogic} または {@code PatternProviderLogic}
+     * @param side 変わった隣の向き
+     */
+    default void onInsaneHostNeighborChanged(Object logic, Direction side) {
     }
 
     /**
