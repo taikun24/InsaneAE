@@ -10,6 +10,8 @@ import appeng.api.networking.crafting.CalculationStrategy;
 import appeng.api.networking.crafting.ICraftingPlan;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.stacks.AEItemKey;
+import appeng.api.storage.StorageCells;
+import appeng.api.storage.cells.StorageCell;
 import appeng.core.definitions.AEBlocks;
 import appeng.crafting.execution.ExecutingCraftingJob;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
@@ -24,14 +26,16 @@ import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerLimitBridge;
 import jp.main.taikun.insaneae.integration.aco.AcoClassNames;
 import jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership;
 import jp.main.taikun.insaneae.integration.aco.AcoExactLimits;
+import jp.main.taikun.insaneae.integration.aco.InfiniteCellExactState;
 import jp.main.taikun.insaneae.mixin.CraftingCpuLogicJobAccessor;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModCells;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
 import net.minecraft.core.BlockPos;
-import net.minecraft.gametest.framework.GameTestAssertException;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CraftingRecipe;
@@ -406,6 +410,141 @@ public final class AcoPlots {
                 helper.check(!busy,
                         "40 tick 経ってもジョブが終わらない。"
                                 + "ACOの判断=" + acoPlanDiagnostics());
+            });
+            sequence.thenSucceed();
+        }).maxTicks(600);
+    }
+
+    /** ME Infinity Cell の無限丸石セル。Mod が居なければ空。 */
+    private static ItemStack infinityCobblestoneCell() {
+        var item = BuiltInRegistries.ITEM.get(
+                ResourceLocation.fromNamespaceAndPath("meinfinitycell", "infinity_cobblestone_cell"));
+        return item == Items.AIR ? ItemStack.EMPTY : new ItemStack(item);
+    }
+
+    /**
+     * ME Infinity Cell の無限セルが、ACO に BigInteger の在庫を名乗ること
+     * (CurseForge のコメント: 21 億を超えると ME Infinity Cell が BigInteger で扱われない件)。
+     *
+     * <p>そのセルは AE2 に {@code Integer.MAX_VALUE} 個しか申告しない。かまど (丸石 8 個) を
+     * 5×10^18 個頼むと丸石は 4×10^19 個要り、long も超えるので ACO の BigInteger 計画になる。
+     * セルが BigInteger の在庫を名乗っていなければ計画は材料不足で終わる。</p>
+     *
+     * <p>ACO か ME Infinity Cell のどちらかが居なければ何も検査しない
+     * ({@code -PwithAco=true -PwithInfinityCell=true} で走る)。</p>
+     */
+    @TestPlot("insaneae_infinity_cell_exact_supply")
+    public static void infinityCellExactSupply(PlotBuilder plot) {
+        final long requested = 5_000_000_000_000_000_000L;
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,3] 0 0");
+        plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
+            ItemStack infinity = infinityCobblestoneCell();
+            if (!infinity.isEmpty()) {
+                drive.getInternalInventory().addItems(infinity);
+            }
+            // 完成品の納品先 (ACO が実行を所有するのに要る)。丸石はここに入れない。
+            drive.getInternalInventory().addItems(ultraCreativeCell(Items.FURNACE));
+        });
+        plot.blockState("2 [0,1] [0,2]", ModBlocks.BIG_INTEGER_CPU.get().defaultBlockState());
+        plot.block("2 1 0", AEBlocks.CRAFTING_ACCELERATOR);
+        plot.blockState("3 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
+
+        plot.test(helper -> {
+            ItemStack infinity = infinityCobblestoneCell();
+            if (infinity.isEmpty()
+                    || optionalClass("com.syaru.ae2craftingoptimizer.access.ExactCraftingJobAccess") == null) {
+                helper.startSequence().thenSucceed();
+                return;
+            }
+            var state = new Object() {
+                MachineSource source;
+                Future<ICraftingPlan> plan;
+            };
+            var sequence = helper.startSequence();
+
+            sequence.thenExecute(() -> {
+                // セル単体の窓口。ACO の版で有る無しが違うので、在る方だけ見る。
+                StorageCell cell = StorageCells.getCellInventory(infinity, null);
+                helper.check(cell != null, "無限丸石セルの中身が取れない");
+                Class<?> exactStorage = optionalClass("com.syaru.ae2craftingoptimizer.access"
+                        + ".ExtendedAePlusBigIntegerCellInventoryAccess");
+                helper.check(exactStorage != null && exactStorage.isInstance(cell),
+                        "無限セルに BigInteger 在庫の窓口が生えていない (@Pseudo Mixin が当たっていない)");
+                Class<?> amountProvider = optionalClass("com.syaru.ae2craftingoptimizer.api.contract"
+                        + ".ExactStorageAmountProvider");
+                if (amountProvider != null) {
+                    helper.check(amountProvider.isInstance(cell),
+                            "無限セルに公開の ExactStorageAmountProvider が生えていない");
+                }
+                var holder = (InfiniteCellExactState.Holder) cell;
+                var amounts = holder.insaneae$infiniteExactState().amounts();
+                helper.check(amounts == holder.insaneae$infiniteExactState().amounts(),
+                        "無限セルが在庫マップのコピーを返している (ACO の同一性検査に落ちる)");
+                BigInteger cobblestone = amounts.get(AEItemKey.of(Items.COBBLESTONE));
+                helper.check(cobblestone != null
+                                && cobblestone.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0,
+                        "無限セルが名乗る丸石が long を超えていない: " + cobblestone);
+
+                var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(3, 0, 0));
+                // 1.20.1 の AE2 テストヘルパーには定形レシピの encode が無いので、
+                // 公開 API へ直接レシピを渡して組む。
+                ItemStack[] sparse = new ItemStack[9];
+                for (int slot = 0; slot < sparse.length; slot++) {
+                    sparse[slot] = slot == 4
+                            ? ItemStack.EMPTY
+                            : new ItemStack(Items.COBBLESTONE);
+                }
+                var furnaceRecipe = helper.getLevel().getRecipeManager()
+                        .byKey(ResourceLocation.fromNamespaceAndPath("minecraft", "furnace"))
+                        .orElseThrow(() -> new GameTestAssertException("かまどのレシピが無い"));
+                cpu.getLogic().getPatternInv().addItems(
+                        PatternDetailsHelper.encodeCraftingPattern(
+                                (CraftingRecipe) furnaceRecipe,
+                                sparse, new ItemStack(Items.FURNACE), false, false));
+                for (int i = 0; i < QuantumCpuBlockEntity.MAX_ACCELERATION_CARDS; i++) {
+                    cpu.getUpgrades().addItems(
+                            new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
+                }
+                cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.TASK_FUSION_CARD.get()));
+            });
+            sequence.thenIdle(60);
+
+            sequence.thenExecute(() -> {
+                var grid = helper.getGrid(BlockPos.ZERO);
+                state.source = new MachineSource(
+                        (IActionHost) helper.getBlockEntity(new BlockPos(3, 0, 0)));
+                state.plan = grid.getCraftingService().beginCraftingCalculation(
+                        helper.getLevel(), () -> state.source,
+                        AEItemKey.of(Items.FURNACE), requested,
+                        CalculationStrategy.REPORT_MISSING_ITEMS);
+            });
+            sequence.thenWaitUntil(() -> helper.check(state.plan.isDone(), "計算が終わらない"));
+            sequence.thenExecute(() -> {
+                ICraftingPlan plan;
+                try {
+                    plan = state.plan.get();
+                } catch (Exception failure) {
+                    throw new GameTestAssertException("計算が例外で終わった: " + failure);
+                }
+                helper.check(!plan.simulation(),
+                        "丸石が足りない計画になった (無限セルの BigInteger 在庫が計画に入っていない): 不足 "
+                                + plan.missingItems() + " ACOの判断=" + acoPlanDiagnostics());
+                var result = helper.getGrid(BlockPos.ZERO).getCraftingService()
+                        .submitJob(plan, null, null, false, state.source);
+                helper.check(result.successful(),
+                        "投入が断られた: errorCode=" + result.errorCode()
+                                + " ACOの判断=" + acoPlanDiagnostics());
+            });
+
+            sequence.thenIdle(40);
+            sequence.thenExecute(() -> {
+                boolean busy = false;
+                for (var cpu : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
+                    busy |= cpu.isBusy();
+                }
+                helper.check(!busy,
+                        "40 tick 経ってもジョブが終わらない。ACOの判断=" + acoPlanDiagnostics());
             });
             sequence.thenSucceed();
         }).maxTicks(600);

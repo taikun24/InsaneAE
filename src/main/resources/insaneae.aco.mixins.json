@@ -11,7 +11,11 @@
     "QuantumCpuProviderTargetMixin",
     "UltraCreativeCellExactStorageMixin",
     "UltraCreativeCellExactAmountProviderMixin",
-    "UltraCreativeCellExactInsertPolicyMixin"
+    "UltraCreativeCellExactInsertPolicyMixin",
+    "InfinityCellExactStateMixin",
+    "InfinityCellExactStorageMixin",
+    "InfinityCellExactAmountProviderMixin",
+    "InfinityCellExactInsertPolicyMixin"
   ],
   "injectors": {
     "defaultRequire": 0

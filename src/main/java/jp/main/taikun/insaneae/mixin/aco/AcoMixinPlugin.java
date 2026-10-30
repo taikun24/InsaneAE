@@ -43,8 +43,9 @@ public class AcoMixinPlugin implements IMixinConfigPlugin {
             "com.syaru.ae2craftingoptimizer.api.contract.ExactStorageAmountProvider";
 
     /** 上のクラスを実装する Mixin。ここだけ追加の条件が要る。 */
-    private static final String EXACT_STORAGE_PROVIDER_MIXIN =
-            "jp.main.taikun.insaneae.mixin.aco.UltraCreativeCellExactAmountProviderMixin";
+    private static final Set<String> EXACT_STORAGE_PROVIDER_MIXINS = Set.of(
+            "jp.main.taikun.insaneae.mixin.aco.UltraCreativeCellExactAmountProviderMixin",
+            "jp.main.taikun.insaneae.mixin.aco.InfinityCellExactAmountProviderMixin");
 
     /**
      * exact 実行の納品先ポリシー。<b>ACO 1.5.23 で入った</b>公開契約なので、
@@ -54,8 +55,9 @@ public class AcoMixinPlugin implements IMixinConfigPlugin {
             "com.syaru.ae2craftingoptimizer.api.vector.ExactVectorStoragePolicy";
 
     /** 上のクラスを実装する Mixin。 */
-    private static final String EXACT_INSERT_POLICY_MIXIN =
-            "jp.main.taikun.insaneae.mixin.aco.UltraCreativeCellExactInsertPolicyMixin";
+    private static final Set<String> EXACT_INSERT_POLICY_MIXINS = Set.of(
+            "jp.main.taikun.insaneae.mixin.aco.UltraCreativeCellExactInsertPolicyMixin",
+            "jp.main.taikun.insaneae.mixin.aco.InfinityCellExactInsertPolicyMixin");
 
     private boolean acoPresent;
     private boolean exactStorageProviderPresent;
@@ -93,10 +95,10 @@ public class AcoMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        if (EXACT_STORAGE_PROVIDER_MIXIN.equals(mixinClassName)) {
+        if (EXACT_STORAGE_PROVIDER_MIXINS.contains(mixinClassName)) {
             return exactStorageProviderPresent;
         }
-        if (EXACT_INSERT_POLICY_MIXIN.equals(mixinClassName)) {
+        if (EXACT_INSERT_POLICY_MIXINS.contains(mixinClassName)) {
             return exactInsertPolicyPresent;
         }
         return acoPresent;
