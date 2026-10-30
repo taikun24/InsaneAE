@@ -14,7 +14,8 @@
     "InfinityCellExactStateMixin",
     "InfinityCellExactStorageMixin",
     "InfinityCellExactAmountProviderMixin",
-    "InfinityCellExactInsertPolicyMixin"
+    "InfinityCellExactInsertPolicyMixin",
+    "InfinityCellSaturatedStacksMixin"
   ],
   "injectors": {
     "defaultRequire": 0

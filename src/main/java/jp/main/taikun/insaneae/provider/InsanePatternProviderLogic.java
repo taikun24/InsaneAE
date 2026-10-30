@@ -15,11 +15,13 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 
 /**
  * 大量のパターン枠を持つプロバイダ用の {@link PatternProviderLogic}。
@@ -105,7 +107,33 @@ public class InsanePatternProviderLogic extends PatternProviderLogic implements 
         patternsDirty = true;
         if (currentTick() != lastFlushTick) {
             flushPatternUpdate();
+        } else {
+            PENDING.add(this);
         }
+    }
+
+    /**
+     * 更新を溜めているプロバイダ。クラフト計算を始める直前に流す ({@link #flushAllPending})。
+     * サーバスレッドからしか触らない。
+     */
+    private static final Set<InsanePatternProviderLogic> PENDING =
+            Collections.newSetFromMap(new WeakHashMap<>());
+
+    /**
+     * 溜めているパターン更新をすべて流す。{@code CraftingServicePatternFlushMixin} が
+     * クラフト計算の開始時に呼ぶ。
+     *
+     * <p>ACO 2.0 は計算を始めた瞬間にグリッドのクラフト索引を写し取るので、同じ tick に
+     * 入れた 2 枚目以降のパターンが溜まったままだと、その計算では使われない。</p>
+     */
+    public static void flushAllPending() {
+        if (PENDING.isEmpty()) {
+            return;
+        }
+        for (InsanePatternProviderLogic logic : List.copyOf(PENDING)) {
+            logic.flushPatternUpdate();
+        }
+        PENDING.clear();
     }
 
     /**
@@ -127,6 +155,7 @@ public class InsanePatternProviderLogic extends PatternProviderLogic implements 
             return;
         }
         patternsDirty = false;
+        PENDING.remove(this);
         // 先に印を進めること。super.updatePatterns() の中から戻ってきても、
         // 同じ tick なら溜めるだけになって再帰しない。
         lastFlushTick = currentTick();

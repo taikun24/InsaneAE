@@ -23,10 +23,26 @@ public abstract class InfinityCellExactStateMixin implements InfiniteCellExactSt
     @Unique
     private InfiniteCellExactState insaneae$exactState;
 
+    /**
+     * 状態を作っている最中か。作るときにセルの {@code getAvailableStacks} を呼ぶが、
+     * そこには {@link InfinityCellSaturatedStacksMixin} が注入していて、また状態を取りに来る。
+     */
+    @Unique
+    private boolean insaneae$building;
+
+    /** 状態を作っている最中に呼ばれたときだけ null を返す。 */
     @Override
     public synchronized InfiniteCellExactState insaneae$infiniteExactState() {
         if (insaneae$exactState == null) {
-            insaneae$exactState = InfiniteCellExactState.of((StorageCell) (Object) this);
+            if (insaneae$building) {
+                return null;
+            }
+            insaneae$building = true;
+            try {
+                insaneae$exactState = InfiniteCellExactState.of((StorageCell) (Object) this);
+            } finally {
+                insaneae$building = false;
+            }
         }
         return insaneae$exactState;
     }

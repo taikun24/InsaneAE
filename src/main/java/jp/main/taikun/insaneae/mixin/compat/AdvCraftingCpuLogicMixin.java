@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * <h2>なぜ要るのか</h2>
  * <p>Advanced AE は AE2 のクラフト CPU を使わず、{@code AdvCraftingCPULogic} という
  * <b>自前の複製</b>を用意して、{@code CraftingService} への Mixin ({@code tickAdvClusters}) で
- * 自分でティックを回している。そのため {@code CraftingCpuLogicMixin} (AE2 用) は素通りされ、
+ * 自分でティックを回している。そのため {@code CraftingCpuLogicBulkMixin} (AE2 用) は素通りされ、
  * Quantum CPU が<b>1 クラフトずつの遅い経路</b>に落ちてしまう。
  * Advanced Quantum Engineering のような「AAE の部品を強化する」アドオンも
  * 独自の CPU 系統は作らないので、ここ 1 か所で全部まかなえる。</p>

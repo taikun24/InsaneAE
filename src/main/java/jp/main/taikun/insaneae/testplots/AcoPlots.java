@@ -9,6 +9,7 @@ import appeng.api.networking.crafting.CalculationStrategy;
 import appeng.api.networking.crafting.ICraftingPlan;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.stacks.AEItemKey;
+import appeng.api.stacks.KeyCounter;
 import appeng.api.storage.StorageCells;
 import appeng.api.storage.cells.StorageCell;
 import appeng.core.definitions.AEBlocks;
@@ -21,7 +22,6 @@ import appeng.server.testplots.TestPlotClass;
 import appeng.server.testworld.PlotBuilder;
 import jp.main.taikun.insaneae.cell.InsaneUltraCreativeCellInventory;
 import jp.main.taikun.insaneae.crafting.IBigCraftingCapacity;
-import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerLimitBridge;
 import jp.main.taikun.insaneae.integration.aco.AcoClassNames;
 import jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership;
@@ -155,14 +155,13 @@ public final class AcoPlots {
         plot.creativeEnergyCell("0 -1 0");
         plot.cable("[0,3] 0 0");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
-            // 完成品 (ボタン) もセルに設定してある。ACO の exact 実行は境界の入出力を
-            // exact 書き込み可能セルでしか行えず、#125 の修正後は「最終出力の納品先が
-            // 無い計画」は所有権を取らずに外部コンシューマへ委譲するようになった。
-            // このテストの主題は<b>所有の認識</b>なので、所有が成立する盤面にしておく。
-            drive.getInternalInventory().addItems(
-                    ultraCreativeCell(Items.OAK_LOG, Items.OAK_BUTTON));
-            drive.getInternalInventory().addItems(new ItemStack(
-                    ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_8E).get()));
+            // 完成品 (チェスト) もセルに設定してある。ACO の exact 実行は境界の入出力を
+            // exact 書き込み可能セルでしか行えず、納品先が無い計画は所有権を取らずに
+            // 外部コンシューマへ委譲する。このテストの主題は<b>所有の認識</b>なので、
+            // 所有が成立する盤面にしておく。チェストなのは余り (使わない板材) が出ないため。
+            // ACO 2.0 は余りの納品先も要求し、ボタン (原木 1 本 → 板材 4 枚のうち 1 枚) では
+            // 板材をセルに設定しても所有されなかった。
+            drive.getInternalInventory().addItems(ultraCreativeCell(Items.OAK_LOG, Items.CHEST));
         });
         plot.blockState("2 [0,1] [0,2]", ModBlocks.BIG_INTEGER_CPU.get().defaultBlockState());
         plot.block("2 1 0", AEBlocks.CRAFTING_ACCELERATOR);
@@ -185,9 +184,13 @@ public final class AcoPlots {
                 cpu.getLogic().getPatternInv().addItems(
                         CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
                                 new ItemStack(Items.OAK_LOG)));
+                Object[] chest = new Object[] {
+                        Items.OAK_PLANKS, Items.OAK_PLANKS, Items.OAK_PLANKS,
+                        Items.OAK_PLANKS, null, Items.OAK_PLANKS,
+                        Items.OAK_PLANKS, Items.OAK_PLANKS, Items.OAK_PLANKS};
                 cpu.getLogic().getPatternInv().addItems(
-                        CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
-                                new ItemStack(Items.OAK_PLANKS)));
+                        CraftingPatternHelper.encodeCraftingPattern(
+                                helper.getLevel(), chest, false, false));
                 for (int i = 0; i < QuantumCpuBlockEntity.MAX_ACCELERATION_CARDS; i++) {
                     cpu.getUpgrades().addItems(
                             new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
@@ -202,7 +205,7 @@ public final class AcoPlots {
                                 helper.getBlockEntity(new BlockPos(3, 0, 0)));
                 state.plan = helper.getGrid(BlockPos.ZERO).getCraftingService()
                         .beginCraftingCalculation(helper.getLevel(), () -> state.source,
-                                AEItemKey.of(Items.OAK_BUTTON), Long.MAX_VALUE,
+                                AEItemKey.of(Items.CHEST), 5_000_000_000_000_000_000L,
                                 CalculationStrategy.REPORT_MISSING_ITEMS);
             });
             sequence.thenWaitUntil(() -> helper.check(state.plan.isDone(), "計算が終わらない"));
@@ -218,11 +221,9 @@ public final class AcoPlots {
                         .submitJob(plan, null, null, false, state.source);
                 helper.check(result.successful(),
                         "long を超える要求の投入が断られた: errorCode=" + result.errorCode());
-            });
 
-            // 投入直後に見る。ACO が隔離してジョブを畳んだあとでは判定できない。
-            sequence.thenIdle(2);
-            sequence.thenExecute(() -> {
+                // 投入と同じ tick のうちに見る。ACO 2.0 は所有したジョブをその tick のうちに
+                // 終わらせるので、1 tick でも待つとジョブが CPU に残っていない。
                 ExecutingCraftingJob job = null;
                 for (var cpu : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
                     if (cpu instanceof CraftingCPUCluster cluster) {
@@ -421,6 +422,14 @@ public final class AcoPlots {
         }).maxTicks(600);
     }
 
+    private static String describe(KeyCounter counter) {
+        var text = new StringBuilder("{");
+        for (var entry : counter) {
+            text.append(entry.getKey()).append('=').append(entry.getLongValue()).append(' ');
+        }
+        return text.append('}').toString();
+    }
+
     /** ME Infinity Cell の無限丸石セル。Mod が居なければ空。 */
     private static ItemStack infinityCobblestoneCell() {
         var item = BuiltInRegistries.ITEM.get(
@@ -487,6 +496,12 @@ public final class AcoPlots {
                 var amounts = holder.insaneae$infiniteExactState().amounts();
                 helper.check(amounts == holder.insaneae$infiniteExactState().amounts(),
                         "無限セルが在庫マップのコピーを返している (ACO の同一性検査に落ちる)");
+                // ACO 2.0 は AE2 側の在庫が long の天井に張り付いていないと BigInteger 計画に入らない。
+                var facade = new KeyCounter();
+                cell.getAvailableStacks(facade);
+                helper.check(facade.get(AEItemKey.of(Items.COBBLESTONE)) == Long.MAX_VALUE,
+                        "無限セルが AE2 に申告する丸石が long の天井まで上がっていない: "
+                                + facade.get(AEItemKey.of(Items.COBBLESTONE)));
                 BigInteger cobblestone = amounts.get(AEItemKey.of(Items.COBBLESTONE));
                 helper.check(cobblestone != null
                                 && cobblestone.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0,
@@ -527,7 +542,9 @@ public final class AcoPlots {
                 }
                 helper.check(!plan.simulation(),
                         "丸石が足りない計画になった (無限セルの BigInteger 在庫が計画に入っていない): 不足 "
-                                + plan.missingItems() + " ACOの判断=" + acoPlanDiagnostics());
+                                + describe(plan.missingItems()) + " 消費 " + describe(plan.usedItems())
+                                + " パターン " + plan.patternTimes().size()
+                                + " ACOの判断=" + acoPlanDiagnostics());
                 var result = helper.getGrid(BlockPos.ZERO).getCraftingService()
                         .submitJob(plan, null, null, false, state.source);
                 helper.check(result.successful(),

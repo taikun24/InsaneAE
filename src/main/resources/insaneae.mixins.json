@@ -9,6 +9,8 @@
     "CraftingCPUClusterMixin",
     "CraftingCPUNameMixin",
     "CraftingCpuLogicMixin",
+    "CraftingCpuLogicBulkMixin",
+    "CraftingServicePatternFlushMixin",
     "ConfigInventoryAccessor",
     "CraftingCpuClusterAccessor",
     "CraftingCpuClusterOwnerMixin",

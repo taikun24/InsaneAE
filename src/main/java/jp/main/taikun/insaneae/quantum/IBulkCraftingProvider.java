@@ -13,7 +13,7 @@ import appeng.api.stacks.KeyCounter;
  * つまりクラフト数に比例した固定コストが AE2 側に発生し、
  * 100 万クラフト/tick のような規模ではそこが支配的になる。</p>
  *
- * <p>そこで {@code CraftingCpuLogicMixin} が、このインタフェースを実装したプロバイダに対してだけ
+ * <p>そこで {@code CraftingCpuLogicBulkMixin} が、このインタフェースを実装したプロバイダに対してだけ
  * 「材料を N 回ぶんまとめて取り出して 1 回で渡す」経路を用意する。
  * 実装していない普通のプロバイダには一切影響しない。</p>
  */
