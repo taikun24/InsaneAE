@@ -11,6 +11,8 @@
     "CraftingCPUClusterMixin",
     "CraftingCPUNameMixin",
     "CraftingCpuLogicMixin",
+    "CraftingCpuLogicBulkMixin",
+    "CraftingServicePatternFlushMixin",
     "CraftingCpuClusterAccessor",
     "CraftingCpuClusterOwnerMixin",
     "CraftingServiceQuantumCpuMixin",

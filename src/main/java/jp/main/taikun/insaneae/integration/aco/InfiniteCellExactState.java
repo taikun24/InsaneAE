@@ -27,6 +27,8 @@ public final class InfiniteCellExactState {
 
     /** Mixin でセルに生やす、状態の置き場。 */
     public interface Holder {
+        /** 状態を作っている最中 (セルの在庫を読んでいる間) に呼ばれたときだけ null。 */
+        @org.jetbrains.annotations.Nullable
         InfiniteCellExactState insaneae$infiniteExactState();
     }
 
