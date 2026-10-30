@@ -199,6 +199,13 @@ dependencies {
         localRuntime acoRuntimeJar
     }
 
+    // ME Infinity Cell — 無限セルの在庫を ACO に BigInteger で見せる @Pseudo Mixin の
+    // 実機確認用【任意・オプトイン】。-PwithInfinityCell=true で dev 実行に載る。
+    // Mixin は文字列でクラスを指すので、コンパイルにも型は要らない。
+    if (project.findProperty('withInfinityCell') == 'true') {
+        localRuntime "curse.maven:me-infinity-cell-1320551:${infinity_cell_file}"
+    }
+
     // Advanced AE — 自前のクラフト CPU (AdvCraftingCPULogic) へ入れている compat Mixin
     // (compat.AdvCraftingCpuLogicMixin / compat.AdvCraftingCpuBudgetMixin) の実機確認用
     // 【任意・オプトイン】。-PwithAdvancedAe=true で dev 実行に載る。
