@@ -12,7 +12,7 @@ import java.math.BigInteger;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import jp.main.taikun.insaneae.quantum.IBulkCraftingProvider;
+import jp.main.taikun.insaneae.quantum.QuantumCpuLogic;
 
 /**
  * ACOの正確なBigInteger計画をInsaneAEのQuantum CPUへ渡す任意連携。
@@ -86,7 +86,8 @@ public final class AcoBigIntegerPlanBridge {
         for (IPatternDetails details : plan.patternTimes().keySet()) {
             boolean hasBulkProvider = false;
             for (ICraftingProvider provider : service.getProviders(details)) {
-                if (provider instanceof IBulkCraftingProvider) {
+                // 超次元パターンプロバイダーもまとめ処理を持つが、まとめられるのは加工パターンだけ。
+                if (provider instanceof QuantumCpuLogic) {
                     hasBulkProvider = true;
                     break;
                 }

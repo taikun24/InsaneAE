@@ -28,10 +28,11 @@ public interface IBulkCraftingProvider extends ICraftingProvider {
     /**
      * まとめて処理する。
      *
-     * @param inputHolder {@code times} 回ぶんの材料。1 回ぶんを取り出した残りは
-     *                    消費済みとして捨ててよい (呼び出し側は返さない)。
+     * @param inputHolder {@code times} 回ぶんの材料。処理したぶんは取り除き、
+     *                    <b>処理しなかった回数ぶんは残しておくこと</b> (呼び出し側が CPU へ戻す)。
+     *                    1 回組んで結果を掛け算する実装では、組めた時点で全部消費済みとしてよい。
      * @param times       処理する回数。{@link #getBulkCapacity} 以下であることは呼び出し側が保証する。
-     * @return 実際に処理した回数。0 なら何も起きなかったものとして扱われる。
+     * @return 実際に処理した回数 ({@code times} 以下)。0 なら何も起きなかったものとして扱われる。
      */
     long pushPatternBulk(IPatternDetails details, KeyCounter[] inputHolder, long times);
 

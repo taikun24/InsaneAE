@@ -92,31 +92,36 @@ public final class QuantumBulkCrafting {
             }
             IPatternDetails details = cursor.details();
 
-            IBulkCraftingProvider provider = findBulkProvider(craftingService, details);
-            if (provider == null) {
-                continue;
-            }
-            // タスク統合 (fusesOperations): まとめ 1 回を CPU 予算の 1 操作として数える。
-            // このとき回数は CPU 予算 (maxPatterns) で縛らず、プロバイダ自身の予算に任せる。
-            boolean fused = provider.fusesOperations();
-            long limit = Math.min(remaining, provider.getBulkCapacity(details));
-            if (!fused) {
-                limit = Math.min(limit, maxPatterns - pushed);
-            }
-            limit = clampForOutputs(details, limit);
-            if (limit <= 0) {
-                continue;
-            }
-
-            long done = pushBulk(view, details, provider, limit, energyService, level);
-            if (done > 0) {
-                pushed += fused ? 1 : (int) done;
-                long left = remaining - done;
-                cursor.setRemaining(left);
-                if (left <= 0) {
-                    cursor.remove();
+            // 同じパターンを持つプロバイダが複数あれば順に回す。加工パターンは搬入先が
+            // 埋まった時点でそのプロバイダの受け入れ回数が 0 になり、次のプロバイダが選ばれる。
+            while (remaining > 0 && pushed < maxPatterns) {
+                IBulkCraftingProvider provider = findBulkProvider(craftingService, details);
+                if (provider == null) {
+                    break;
                 }
+                // タスク統合 (fusesOperations): まとめ 1 回を CPU 予算の 1 操作として数える。
+                // このとき回数は CPU 予算 (maxPatterns) で縛らず、プロバイダ自身の予算に任せる。
+                boolean fused = provider.fusesOperations();
+                long limit = Math.min(remaining, provider.getBulkCapacity(details));
+                if (!fused) {
+                    limit = Math.min(limit, maxPatterns - pushed);
+                }
+                limit = clampForOutputs(details, limit);
+                if (limit <= 0) {
+                    break;
+                }
+
+                long done = pushBulk(view, details, provider, limit, energyService, level);
+                if (done <= 0) {
+                    break;
+                }
+                pushed += fused ? 1 : (int) done;
+                remaining -= done;
+                cursor.setRemaining(remaining);
                 view.markDirty();
+            }
+            if (remaining <= 0) {
+                cursor.remove();
             }
         }
 
@@ -347,11 +352,19 @@ public final class QuantumBulkCrafting {
                 energyService.extractAEPower(power, Actionable.MODULATE, PowerMultiplier.CONFIG);
             }
 
-            long done = provider.pushPatternBulk(details, inputs, times);
+            long done = Math.min(provider.pushPatternBulk(details, inputs, times), times);
             if (done <= 0) {
                 // 受け取ってもらえなかった: 電力は戻せないが材料は戻す。
                 rollbackInputs(view, inputs, extracted.networkInputs());
                 return 0;
+            }
+            if (done < times) {
+                // 搬入先が途中で埋まった (加工パターン)。使われなかった材料は inputs に残っている。
+                rollbackInputs(view, inputs, extracted.networkInputs());
+                if (power > 0.0) {
+                    energyService.injectPower(power * (times - done) / times, Actionable.MODULATE);
+                }
+                scaleContainerItems(containerItems, times, done);
             }
 
             bulkWindows++;
@@ -619,6 +632,16 @@ public final class QuantumBulkCrafting {
         long inventory = view.getInventory().extract(key, Long.MAX_VALUE, Actionable.SIMULATE);
         long waitingFor = view.getWaitingFor().extract(key, Long.MAX_VALUE, Actionable.SIMULATE);
         return Math.max(Math.max(inventory, 0L), Math.max(waitingFor, 0L));
+    }
+
+    /** 端材 (バケツ等) の見込みを、実際に処理した回数ぶんに減らす。取り出しは回数の倍数なので割り切れる。 */
+    private static void scaleContainerItems(KeyCounter containerItems, long times, long done) {
+        KeyCounter scaled = new KeyCounter();
+        for (var entry : containerItems) {
+            scaled.add(entry.getKey(), entry.getLongValue() / times * done);
+        }
+        containerItems.reset();
+        containerItems.addAll(scaled);
     }
 
     /** KeyCounterへ追加する前に個別キーのlong境界を検査する。 */

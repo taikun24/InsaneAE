@@ -5,6 +5,7 @@ import static jp.main.taikun.insaneae.testplots.TestPlotSupport.ultraCreativeCel
 
 import appeng.api.config.Actionable;
 import appeng.api.crafting.IPatternDetails;
+import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.GenericStack;
@@ -21,6 +22,7 @@ import appeng.server.testworld.PlotBuilder;
 import appeng.server.testworld.PlotTestHelper;
 import appeng.server.testworld.TestCraftingJob;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry;
+import jp.main.taikun.insaneae.provider.InsanePatternProviderBlockEntity;
 import jp.main.taikun.insaneae.quantum.CraftingJobView;
 import jp.main.taikun.insaneae.quantum.QuantumBulkCrafting;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
@@ -36,10 +38,13 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.Container;
+import net.minecraft.world.level.block.Blocks;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -843,6 +848,117 @@ public final class QuantumCpuPlots {
                     () -> helper.assertContains(helper.getGrid(BlockPos.ZERO), Items.OAK_PLANKS));
             sequence.thenSucceed();
         });
+    }
+
+    /**
+     * 超次元パターンプロバイダーが、加工パターンを 1 回の呼び出しで何百回ぶんも押し出すこと
+     * (CurseForge のコメント: 加工パターンが 1 tick 5,000 回で頭打ちになる件)。
+     *
+     * <p>材料 2 種類 (丸太 1 + 丸石 2) のパターンを、別々の面にある 2 つのチェストへ押し出す。
+     * チェストは 2 種類の材料が同じ空き枠を取り合うので、照会を材料ごとに足し合わせると
+     * 入る回数を多く見積もる。見積もりどおり入れると溢れて送信待ちに積まれ、プロバイダが止まる。
+     * 押し出しが 1 巡ごとに見積もりの半分ずつ入れていれば、溢れずに 2 つとも 9 割以上埋まる。</p>
+     *
+     * <p>入りきらなかった回数ぶんの材料は CPU の在庫へ戻ること、完成待ちの帳簿が
+     * 押し出した回数と一致することも見る。</p>
+     */
+    @TestPlot("insaneae_processing_bulk_push")
+    public static void processingBulkPush(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("[0,1] 0 0");
+        plot.blockState("2 0 0", ModBlocks.INSANE_PATTERN_PROVIDER.get().defaultBlockState());
+        // 2 つのチェストは隣り合わせない (ラージチェストにならないように)。
+        plot.blockState("2 1 0", Blocks.CHEST.defaultBlockState());
+        plot.blockState("2 0 1", Blocks.CHEST.defaultBlockState());
+
+        final long requested = 10_000;
+        final int planksPerCraft = 4;
+        // チェスト 2 つ = 54 枠。1 回 3 個 (丸太 1 + 丸石 2) なので、隙間なく詰めて 1152 回。
+        final long perfectFit = 54L * 64 / 3;
+
+        plot.test(helper -> {
+            var state = new Object() {
+                FakeJobView view;
+                int pushed;
+            };
+            var sequence = helper.startSequence();
+            BlockPos providerPos = new BlockPos(2, 0, 0);
+
+            sequence.thenExecute(() -> {
+                var provider = (InsanePatternProviderBlockEntity) helper.getBlockEntity(providerPos);
+                provider.getLogic().getPatternInv().addItems(PatternDetailsHelper.encodeProcessingPattern(
+                        new GenericStack[] {
+                                new GenericStack(AEItemKey.of(Items.OAK_LOG), 1),
+                                new GenericStack(AEItemKey.of(Items.COBBLESTONE), 2)},
+                        new GenericStack[] {
+                                new GenericStack(AEItemKey.of(Items.OAK_PLANKS), planksPerCraft)}));
+            });
+
+            sequence.thenIdle(5);
+
+            sequence.thenExecute(() -> {
+                var provider = (InsanePatternProviderBlockEntity) helper.getBlockEntity(providerPos);
+                var patterns = provider.getLogic().getAvailablePatterns();
+                helper.check(patterns.size() == 1,
+                        "超次元パターンプロバイダーがパターンを 1 枚だけ持っている状態にならなかった: "
+                                + patterns.size());
+
+                var grid = helper.getGrid(BlockPos.ZERO);
+                state.view = new FakeJobView(patterns.get(0), requested);
+                state.view.inventory.insert(AEItemKey.of(Items.OAK_LOG), requested, Actionable.MODULATE);
+                state.view.inventory.insert(AEItemKey.of(Items.COBBLESTONE), requested * 2,
+                        Actionable.MODULATE);
+
+                state.pushed = QuantumBulkCrafting.execute(
+                        state.view, (int) requested,
+                        (CraftingService) grid.getCraftingService(),
+                        grid.getEnergyService(), grid.getPivot().getLevel());
+            });
+
+            sequence.thenExecute(() -> {
+                var provider = (InsanePatternProviderBlockEntity) helper.getBlockEntity(providerPos);
+                long pushed = state.pushed;
+                helper.check(pushed >= perfectFit * 9 / 10,
+                        "1 回の呼び出しでチェスト 2 つを埋めきれていない: " + pushed + " 回 (詰め切りで "
+                                + perfectFit + " 回)");
+                helper.check(!provider.getLogic().isBusy(),
+                        "送信待ちに材料が積まれた (照会の見積もりどおりに入れて溢れている)");
+
+                long logsInChests = countInChests(helper, Items.OAK_LOG);
+                long cobbleInChests = countInChests(helper, Items.COBBLESTONE);
+                helper.check(logsInChests == pushed && cobbleInChests == pushed * 2,
+                        "チェストの中身が押し出した回数と合わない: 丸太 " + logsInChests + " / 丸石 "
+                                + cobbleInChests + " (回数 " + pushed + ")");
+
+                helper.check(state.view.remaining == requested - pushed,
+                        "残り回数の引き方が合わない: " + state.view.remaining);
+                long logsBack = state.view.inventory.list.get(AEItemKey.of(Items.OAK_LOG));
+                long cobbleBack = state.view.inventory.list.get(AEItemKey.of(Items.COBBLESTONE));
+                helper.check(logsBack == requested - pushed && cobbleBack == (requested - pushed) * 2,
+                        "入らなかった回数ぶんの材料が CPU に戻っていない: 丸太 " + logsBack + " / 丸石 "
+                                + cobbleBack);
+                long planks = state.view.waitingFor.list.get(AEItemKey.of(Items.OAK_PLANKS));
+                helper.check(planks == pushed * planksPerCraft,
+                        "完成待ちの数が押し出した回数と釣り合っていない: " + planks);
+            });
+
+            sequence.thenSucceed();
+        });
+    }
+
+    /** プロットの 2 つのチェストに入っている数の合計。 */
+    private static long countInChests(PlotTestHelper helper, Item item) {
+        long total = 0;
+        for (BlockPos pos : List.of(new BlockPos(2, 1, 0), new BlockPos(2, 0, 1))) {
+            var chest = (Container) helper.getBlockEntity(pos);
+            for (int slot = 0; slot < chest.getContainerSize(); slot++) {
+                ItemStack stack = chest.getItem(slot);
+                if (stack.is(item)) {
+                    total += stack.getCount();
+                }
+            }
+        }
+        return total;
     }
 
     /**
