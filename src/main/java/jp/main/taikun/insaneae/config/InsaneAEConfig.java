@@ -81,6 +81,11 @@ public final class InsaneAEConfig {
         return get(COMMON.machineTickBurst, 256);
     }
 
+    /** 超次元パターンプロバイダーが、加工パターンを 1 tick にまとめて押し出すか。 */
+    public static boolean processingBulkPush() {
+        return get(COMMON.processingBulkPush, true);
+    }
+
     /**
      * 設定ファイル読み込み前でも安全に読む。
      *
@@ -103,6 +108,7 @@ public final class InsaneAEConfig {
         private final ModConfigSpec.IntValue quantumCpuMaxJobs;
         private final ModConfigSpec.IntValue hyperChannels;
         private final ModConfigSpec.IntValue machineTickBurst;
+        private final ModConfigSpec.BooleanValue processingBulkPush;
 
         private Common(ModConfigSpec.Builder builder) {
             builder.comment("クラフト計算 (Calculating... の部分) の軽量化").push("crafting_calculation");
@@ -175,6 +181,18 @@ public final class InsaneAEConfig {
                             "輸出入バスや IO ポートのように 1 tick の処理量そのものが速度で決まる機械は",
                             "対象外 (二重に掛かるため)。")
                     .defineInRange("machineTickBurst", 256, 1, 65536);
+
+            builder.pop();
+            builder.comment("超次元パターンプロバイダー").push("pattern_provider");
+
+            processingBulkPush = builder
+                    .comment("加工パターンの材料を、搬入先が受け取れる回数ぶんまとめて 1 回で押し出す。",
+                            "AE2 は 1 クラフトごとに材料の取り出しと搬入をやり直すので、",
+                            "1 tick に数千回を超えると重くなる。ここをまとめて 1 回にする。",
+                            "隣にクラフト機械 (分子組立装置など) があるとき、ブロッキングモードのとき、",
+                            "「結果が戻るまでロック」などのクラフトロックを使っているときは AE2 本来の処理のまま。",
+                            "特定の機械で材料の入り方がおかしいと思ったら false にして比べること。")
+                    .define("processingBulkPush", true);
 
             builder.pop();
         }

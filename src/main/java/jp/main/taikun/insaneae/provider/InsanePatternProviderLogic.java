@@ -4,12 +4,15 @@ import appeng.api.crafting.IPatternDetails;
 import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.IManagedGridNode;
+import appeng.api.stacks.KeyCounter;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import jp.main.taikun.insaneae.menu.PatternPagingHandshake;
+import jp.main.taikun.insaneae.quantum.IBulkCraftingProvider;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
@@ -46,8 +49,10 @@ import java.util.Set;
  * 「入れたばかりのパターンが使われない」として表に出る (ゲームテストで確認)。
  * そこで<b>その tick で最初の 1 回だけは即座に流す</b> — まとめ処理の狙いは
  * 「1 tick に何十回も再構築しない」ことなので、1 tick あたりの再構築回数は変わらない。</p>
+ *
+ * <p>加工パターンは {@link ProcessingBulkPush} でまとめて押し出せる。</p>
  */
-public class InsanePatternProviderLogic extends PatternProviderLogic {
+public class InsanePatternProviderLogic extends PatternProviderLogic implements IBulkCraftingProvider {
 
     /**
      * 入っているパターンの集合。{@code getAvailablePatterns().contains} の O(1) 版
@@ -61,12 +66,34 @@ public class InsanePatternProviderLogic extends PatternProviderLogic {
     /** ホスト (現在の tick を引くのに使う)。 */
     private final PatternProviderLogicHost patternHost;
 
+    private final IManagedGridNode gridNode;
+
     /** 最後に再読み込みした tick。同じ tick の 2 回目以降だけをまとめる。 */
     private long lastFlushTick = Long.MIN_VALUE;
 
     public InsanePatternProviderLogic(IManagedGridNode mainNode, PatternProviderLogicHost host, int slots) {
         super(mainNode, host, slots);
         this.patternHost = host;
+        this.gridNode = mainNode;
+    }
+
+    @Override
+    public long getBulkCapacity(IPatternDetails details) {
+        return ProcessingBulkPush.capacity(this, details);
+    }
+
+    @Override
+    public long pushPatternBulk(IPatternDetails details, KeyCounter[] inputHolder, long times) {
+        return ProcessingBulkPush.push(this, details, inputHolder, times);
+    }
+
+    @Nullable
+    BlockEntity hostBlockEntity() {
+        return patternHost.getBlockEntity();
+    }
+
+    boolean isNodeActive() {
+        return gridNode.isActive();
     }
 
     /**
