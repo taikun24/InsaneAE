@@ -16,6 +16,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import jp.main.taikun.insaneae.util.SaturatingMath;
+//? if <1.21 {
+/*import jp.main.taikun.insaneae.cell.storage.CellNbt;
+*///?}
 
 /**
  * {@link IHugeCellItem} なセルの容量を long で扱えるようにする。
@@ -102,6 +105,19 @@ public abstract class BasicCellInventoryMixin {
             maxItemTypes = Math.max(1, cellType.getTotalTypes(i));
         }
     }
+    //? if <1.21 {
+    /*@Inject(method = "getStoredItemTypes", at = @At("HEAD"), cancellable = true)
+    private void insaneae$storedItemTypesWithoutShortOverflow(CallbackInfoReturnable<Long> cir) {
+        if (!(cellType instanceof IHugeCellItem)) {
+            return;
+        }
+        // 中身を保存データに置いているセルは amts が無いので、アイテムに残した要約の種類数を読む。
+        long types = storedAmounts != null ?
+                storedAmounts.size()
+                : CellNbt.storedTypes(i);
+        cir.setReturnValue(types);
+    }
+    *///?}
 
     // getStoredItemTypes には注入しない。AE2 19.2 の storedItems は int で、
     // 値も getStoredStacks().size() から入るので、32767 種を超えても桁あふれしない

@@ -4,7 +4,6 @@ import jp.main.taikun.insaneae.energy.SolarPanelTier;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerLimitBridge;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModParts;
-import jp.main.taikun.insaneae.registries.ModDataComponents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
@@ -16,6 +15,12 @@ import java.util.IdentityHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+//? if >=1.21 {
+import jp.main.taikun.insaneae.registries.ModDataComponents;
+//?}
+//? if <1.21 {
+/*import jp.main.taikun.insaneae.cell.storage.CellNbt;
+*///?}
 
 /**
  * アイテムの説明文 (ロア) をツールチップに足す。
@@ -41,6 +46,9 @@ import java.util.UUID;
  * {@code .tooltip} キーを使っているので、ここの {@code .desc} とは衝突しない。</p>
  */
 public final class InsaneTooltips {
+    //? if <1.21 {
+    /*private static final String CELL_ID = "insaneae.tooltip.cell_id";
+    *///?}
 
     private static final String SUFFIX = ".desc";
     private static final String SOLAR_PANEL = "insaneae.desc.solar_panel";
@@ -48,7 +56,9 @@ public final class InsaneTooltips {
     private static final String HYPER_CABLE = "insaneae.desc.hyper_cable";
     /** 圧縮 ME 高密度スマートケーブルも同様。 */
     private static final String COMPRESSED_CABLE = "insaneae.desc.compressed_dense_cable";
+    //? if >=1.21 {
     private static final String CELL_ID = "insaneae.tooltip.cell_id";
+    //?}
     private static final String BIG_INTEGER_CPU_CAPACITY =
             "block.insaneae.big_integer_cpu.capacity";
 
@@ -70,7 +80,11 @@ public final class InsaneTooltips {
     private static void onTooltip(ItemTooltipEvent event) {
         Item item = event.getItemStack().getItem();
         // 中身を失ったセルを /insaneae cells recover で作り直すときに要る。普段は邪魔なので詳細表示のときだけ。
+        //? if >=1.21 {
         UUID cellId = event.getItemStack().get(ModDataComponents.CELL_ID.get());
+        //?} else {
+        /*UUID cellId = CellNbt.id(event.getItemStack());
+        *///?}
         if (cellId != null && event.getFlags().isAdvanced()) {
             event.getToolTip().add(Component.translatable(CELL_ID, cellId.toString())
                     .withStyle(ChatFormatting.DARK_GRAY));

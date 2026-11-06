@@ -11,7 +11,6 @@ import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.crafting.ExactCraftingUnitType;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -25,6 +24,9 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+//? if >=1.21 {
+import net.minecraft.core.HolderLookup;
+//?}
 
 /**
  * Quantum CPU に内蔵されるクラフト CPU。<b>容量を切り分けて何本も同時に受ける</b>。
@@ -147,8 +149,8 @@ public class QuantumCraftingCpu {
         partition.markTaken();
         // 要求量が名乗っていた容量を超えることはない (AE2 が容量で選んでいる) が、
         // 念のため丸めておく。ここを超えて予約すると残量が負になる。
-        BigInteger reserved = bytes.signum() > 0
-                ? bytes.min(partition.allotment())
+        BigInteger reserved = bytes.signum() > 0 ?
+                bytes.min(partition.allotment())
                 : BigInteger.ZERO;
         partition.setAllotment(reserved);
         redistribute();
@@ -402,7 +404,11 @@ public class QuantumCraftingCpu {
     private static final String NBT_BYTES = "bytes";
     private static final String NBT_CPU = "cpu";
 
+    //? if >=1.21 {
     public void writeToNBT(CompoundTag data, HolderLookup.Provider registries) {
+    //?} else {
+    /*public void writeToNBT(CompoundTag data) {
+    *///?}
         ListTag list = new ListTag();
         for (QuantumCpuPartition partition : partitions) {
             if (partition.clusterIfPresent() == null) {
@@ -414,7 +420,11 @@ public class QuantumCraftingCpu {
             entry.putBoolean(NBT_TAKEN, partition.isTaken());
             entry.putByteArray(NBT_BYTES, partition.allotment().toByteArray());
             CompoundTag cpu = new CompoundTag();
+            //? if >=1.21 {
             partition.writeToNBT(cpu, registries);
+            //?} else {
+            /*partition.writeToNBT(cpu);
+            *///?}
             entry.put(NBT_CPU, cpu);
             list.add(entry);
         }
@@ -423,14 +433,22 @@ public class QuantumCraftingCpu {
         }
     }
 
+    //? if >=1.21 {
     public void readFromNBT(CompoundTag data, HolderLookup.Provider registries) {
+    //?} else {
+    /*public void readFromNBT(CompoundTag data) {
+    *///?}
         partitions.clear();
         if (!data.contains(NBT_PARTITIONS, Tag.TAG_LIST)) {
             // 区画を切る前のワールド。CPU 1 台ぶんのジョブがそのまま入っている。
             // 予約量は記録されていないので 0 で復元する (そのぶん残量が多めに見えるが、
             // 次にそのジョブが終わった時点で帳尻が合う)。
             QuantumCpuPartition partition = newPartition();
+            //? if >=1.21 {
             partition.readFromNBT(data, registries);
+            //?} else {
+            /*partition.readFromNBT(data);
+            *///?}
             if (partition.isBusy()) {
                 partition.markTaken();
             }
@@ -448,7 +466,11 @@ public class QuantumCraftingCpu {
             if (entry.getBoolean(NBT_TAKEN)) {
                 partition.markTaken();
             }
+            //? if >=1.21 {
             partition.readFromNBT(entry.getCompound(NBT_CPU), registries);
+            //?} else {
+            /*partition.readFromNBT(entry.getCompound(NBT_CPU));
+            *///?}
         }
     }
 

@@ -11,7 +11,6 @@ import jp.main.taikun.insaneae.network.CompressedCablePart;
 import jp.main.taikun.insaneae.network.HyperCablePart;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderPart;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.util.ArrayList;
@@ -20,6 +19,14 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.resources.ResourceLocation;
+//? if >=1.21 {
+import net.neoforged.neoforge.registries.DeferredItem;
+//?}
+//? if <1.21 {
+/*import net.minecraft.world.item.Item;
+import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.registries.RegistryObject;
+*///?}
 
 /**
  * ケーブルに貼れる版 (プレート)。
@@ -51,6 +58,7 @@ import net.minecraft.resources.ResourceLocation;
  */
 public final class ModParts {
 
+    //? if >=1.21 {
     private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(InsaneAE.MODID);
 
     public static final DeferredItem<InsaneInterfacePartItem> INSANE_INTERFACE =
@@ -78,6 +86,37 @@ public final class ModParts {
      * {@code AECableType} と {@code AEColor} から直接組み立てるため。</p>
      */
     public static final Map<AEColor, DeferredItem<ColoredPartItem<HyperCablePart>>> HYPER_CABLES =
+    //?} else {
+    /*private static final DeferredRegister<Item> ITEMS =
+            DeferredRegister.create(ForgeRegistries.ITEMS, InsaneAE.MODID);
+
+    public static final RegistryObject<InsaneInterfacePartItem> INSANE_INTERFACE =
+            ITEMS.register("insane_interface_part",
+                    () -> new InsaneInterfacePartItem(new Item.Properties()));
+
+    public static final RegistryObject<PartItem<InsanePatternProviderPart>> INSANE_PATTERN_PROVIDER =
+            ITEMS.register("insane_pattern_provider_part",
+                    () -> new PartItem<>(new Item.Properties(),
+                            InsanePatternProviderPart.class, InsanePatternProviderPart::new));
+
+    /^*
+     * 超次元 ME ケーブル。AE2 のケーブルと同じく<b>16 色 + fluix の 17 種類</b>を出す。
+     *
+     * <p>登録名は AE2 に合わせて {@code <色>_hyper_cable} ({@code fluix_hyper_cable} ほか)。
+     * 色は {@code AEColor#registryPrefix} をそのまま使うので、AE2 のケーブルと
+     * <b>並び順も名前の付き方も揃う</b>。</p>
+     *
+     * <p>色を変える経路は 2 つあり、どちらも<b>アイテムを差し替える</b>方式:
+     * 色塗り器 / ペイントボールは {@link HyperCablePart#changeColor}、
+     * クラフトは染料レシピ ({@code ModRecipeProvider})。したがって
+     * <b>ここの 17 種が揃っていないと色替えが失敗する</b>。</p>
+     *
+     * <p>ケーブルは他の部品と違って {@link PartModels} への申告が要らない。
+     * ワールド上の描画は部品のモデルではなく AE2 の {@code CableBuilder} が
+     * {@code AECableType} と {@code AEColor} から直接組み立てるため。</p>
+     ^/
+    public static final Map<AEColor, RegistryObject<ColoredPartItem<HyperCablePart>>> HYPER_CABLES =
+    *///?}
             new EnumMap<>(AEColor.class);
 
     /**
@@ -86,18 +125,34 @@ public final class ModParts {
      * <p>登録名は {@code <色>_compressed_dense_cable}。本数は高密度ケーブルと同じ 32 本で、
      * 違うのは<b>細くて部品が貼れる</b>こと ({@link CompressedCablePart})。</p>
      */
+    //? if >=1.21 {
     public static final Map<AEColor, DeferredItem<ColoredPartItem<CompressedCablePart>>> COMPRESSED_CABLES =
+    //?} else {
+    /*public static final Map<AEColor, RegistryObject<ColoredPartItem<CompressedCablePart>>> COMPRESSED_CABLES =
+    *///?}
             new EnumMap<>(AEColor.class);
 
     static {
         for (AEColor color : AEColor.values()) {
+            //? if >=1.21 {
             HYPER_CABLES.put(color, ITEMS.registerItem(color.registryPrefix + "_hyper_cable",
                     props -> new ColoredPartItem<>(props, HyperCablePart.class, HyperCablePart::new,
                             color)));
             COMPRESSED_CABLES.put(color, ITEMS.registerItem(
+            //?} else {
+            /*HYPER_CABLES.put(color, ITEMS.register(color.registryPrefix + "_hyper_cable",
+                    () -> new ColoredPartItem<>(new Item.Properties(),
+                            HyperCablePart.class, HyperCablePart::new, color)));
+            COMPRESSED_CABLES.put(color, ITEMS.register(
+            *///?}
                     color.registryPrefix + "_compressed_dense_cable",
+                    //? if >=1.21 {
                     props -> new ColoredPartItem<>(props, CompressedCablePart.class,
                             CompressedCablePart::new, color)));
+                    //?} else {
+                    /*() -> new ColoredPartItem<>(new Item.Properties(),
+                            CompressedCablePart.class, CompressedCablePart::new, color)));
+                    *///?}
         }
     }
 

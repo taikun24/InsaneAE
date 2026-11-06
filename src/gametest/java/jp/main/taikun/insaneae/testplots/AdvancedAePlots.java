@@ -9,7 +9,6 @@ import appeng.core.definitions.AEBlocks;
 import appeng.core.definitions.AEItems;
 import appeng.server.testplots.CraftingPatternHelper;
 import appeng.server.testplots.TestPlot;
-import appeng.server.testplots.TestPlotClass;
 import appeng.server.testworld.PlotBuilder;
 import appeng.server.testworld.TestCraftingJob;
 import jp.main.taikun.insaneae.integration.advancedae.AaeCompatCounters;
@@ -27,13 +26,18 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+//? if >=1.21 {
+import appeng.server.testplots.TestPlotClass;
+//?}
 
 /**
  * Advanced AE のクラフト CPU へ入れた互換 Mixin が実際に走るか。
  *
  * <p>走らせ方は {@link TestPlotSupport} を参照。</p>
  */
+//? if >=1.21 {
 @TestPlotClass
+//?}
 public final class AdvancedAePlots {
 
     private AdvancedAePlots() {

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "insaneae:quantum_acceleration_card"
+    },
+    {
+      "item": "insaneae:quantum_acceleration_card"
+    },
+    {
+      "item": "ae2:singularity"
+    },
+    {
+      "item": "ae2:singularity"
+    }
+  ],
+  "result": {
+    "item": "insaneae:task_fusion_card"
+  }
+}

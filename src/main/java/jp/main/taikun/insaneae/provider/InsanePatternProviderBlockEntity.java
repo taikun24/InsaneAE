@@ -4,18 +4,15 @@ import appeng.api.networking.IGridNodeListener;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.util.AECableType;
 import appeng.blockentity.ServerTickingBlockEntity;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuHostLocator;
 import jp.main.taikun.insaneae.menu.InsanePatternProviderMenu;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -25,6 +22,18 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.EnumSet;
 import java.util.List;
+//? if >=1.21 {
+import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.menu.locator.MenuHostLocator;
+import net.minecraft.core.HolderLookup;
+//?}
+//? if <1.21 {
+/*import appeng.blockentity.grid.AENetworkBlockEntity;
+import appeng.menu.locator.MenuLocator;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.util.LazyOptional;
+import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * 特大パターンプロバイダー — AE2 のパターンプロバイダのパターン枠を
@@ -40,7 +49,11 @@ import java.util.List;
  * <p>毎 tick の {@link #serverTick()} は、1620 枠に耐えるためにまとめてある
  * パターン更新を流すためだけにある → {@link InsanePatternProviderLogic}。</p>
  */
+//? if >=1.21 {
 public class InsanePatternProviderBlockEntity extends AENetworkedBlockEntity
+//?} else {
+/*public class InsanePatternProviderBlockEntity extends AENetworkBlockEntity
+*///?}
         implements PatternProviderLogicHost, ServerTickingBlockEntity {
 
     private final InsanePatternProviderLogic logic =
@@ -80,7 +93,11 @@ public class InsanePatternProviderBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
+    //? if >=1.21 {
     public void openMenu(Player player, MenuHostLocator locator) {
+    //?} else {
+    /*public void openMenu(Player player, MenuLocator locator) {
+    *///?}
         MenuOpener.open(InsanePatternProviderMenu.TYPE, player, locator);
     }
 
@@ -108,15 +125,27 @@ public class InsanePatternProviderBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
+    //? if >=1.21 {
     public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
         super.saveAdditional(data, registries);
         logic.writeToNBT(data, registries);
+    //?} else {
+    /*public void saveAdditional(CompoundTag data) {
+        super.saveAdditional(data);
+        logic.writeToNBT(data);
+    *///?}
     }
 
     @Override
+    //? if >=1.21 {
     public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
         super.loadTag(data, registries);
         logic.readFromNBT(data, registries);
+    //?} else {
+    /*public void loadTag(CompoundTag data) {
+        super.loadTag(data);
+        logic.readFromNBT(data);
+    *///?}
     }
 
     @Override
@@ -130,4 +159,11 @@ public class InsanePatternProviderBlockEntity extends AENetworkedBlockEntity
         super.clearContent();
         logic.clearContent();
     }
+    //? if <1.21 {
+    /*@Override
+    public <T> LazyOptional<T> getCapability(Capability<T> cap, @Nullable Direction side) {
+        LazyOptional<T> fromLogic = logic.getCapability(cap);
+        return fromLogic.isPresent() ? fromLogic : super.getCapability(cap, side);
+    }
+    *///?}
 }

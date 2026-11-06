@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
+//? if <1.21 {
+/*import java.util.Objects;
+*///?}
 
 /**
  * 大量のパターン枠を持つプロバイダ用の {@link PatternProviderLogic}。
@@ -206,7 +209,11 @@ public class InsanePatternProviderLogic extends PatternProviderLogic implements 
             decodeCache.clear();
             decodeCacheRecipes = recipes;
         }
+        //? if >=1.21 {
         int contentHash = ItemStack.hashItemAndComponents(stack);
+        //?} else {
+        /*int contentHash = Objects.hash(stack.getItem(), stack.getTag());
+        *///?}
         Decoded decoded = decodeCache.get(stack);
         if (decoded == null || decoded.contentHash() != contentHash) {
             decoded = new Decoded(contentHash, PatternDetailsHelper.decodePattern(stack, level));

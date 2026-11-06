@@ -5,7 +5,6 @@ import appeng.api.parts.IPartModel;
 import appeng.helpers.InterfaceLogic;
 import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuHostLocator;
 import appeng.parts.PartModel;
 import appeng.parts.misc.InterfacePart;
 import jp.main.taikun.insaneae.InsaneAE;
@@ -15,6 +14,15 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
+//? if >=1.21 {
+import appeng.menu.locator.MenuHostLocator;
+//?}
+//? if <1.21 {
+/*import appeng.capabilities.Capabilities;
+import appeng.menu.locator.MenuLocator;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.util.LazyOptional;
+*///?}
 
 /**
  * 超特大インターフェイスのケーブル版 (プレート)。
@@ -99,6 +107,22 @@ public class InsaneInterfacePart extends InterfacePart {
      * <p>この時点でグリッドから切り離されていれば何もせず、これまでどおりドロップに回る。</p>
      */
     @Override
+    //? if <1.21 {
+    /*public <T> LazyOptional<T> getCapability(Capability<T> capabilityClass) {
+        if (capabilityClass == Capabilities.GENERIC_INTERNAL_INV) {
+            return LazyOptional.of(() -> exposedInventory).cast();
+        }
+        return super.getCapability(capabilityClass);
+    }
+
+    /^*
+     * 取り外されたときは<b>中身をまず ME ネットワークに戻す</b>
+     * → {@link InsaneInterfaces#returnStorageToNetwork}。
+     *
+     * <p>この時点でグリッドから切り離されていれば何もせず、これまでどおりドロップに回る。</p>
+     ^/
+    @Override
+    *///?}
     public void addAdditionalDrops(List<ItemStack> drops, boolean wrenched) {
         InsaneInterfaces.returnStorageToNetwork(getMainNode(), getInterfaceLogic());
         super.addAdditionalDrops(drops, wrenched);
@@ -116,7 +140,11 @@ public class InsaneInterfacePart extends InterfacePart {
     // ブロック版と同じく自前の MenuType に差し替える (枠数もレイアウトも違うため)。
 
     @Override
+    //? if >=1.21 {
     public void openMenu(Player player, MenuHostLocator locator) {
+    //?} else {
+    /*public void openMenu(Player player, MenuLocator locator) {
+    *///?}
         MenuOpener.open(InsaneInterfaceMenu.TYPE, player, locator);
     }
 

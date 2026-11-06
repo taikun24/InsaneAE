@@ -19,6 +19,14 @@ public final class BigIntegerCapacityDisplayMarker {
     private static final String PREFIX = "insaneae:big_integer_capacity_v1=";
     /** Componentツリーを無制限にたどらないための走査上限。 */
     private static final int MAX_COMPONENTS_TO_SCAN = 64;
+    //? if <1.21 {
+    /*private static final int SCIENTIFIC_SIGNIFICANT_DIGITS = 4;
+    /^* 16Eなど通常のクラスタ容量を正確な二進単位へ戻せるよう保持する最大桁数。 ^/
+    private static final int LEADING_DIGITS = 64;
+    private static final BigInteger EIB_BYTES = BigInteger.ONE.shiftLeft(60);
+    /^* UI幅を守りつつ整数E表記を使える最大桁数。 ^/
+    private static final int MAX_EIB_INTEGER_DIGITS = 6;
+    *///?}
     private BigIntegerCapacityDisplayMarker() {
     }
 
@@ -27,7 +35,11 @@ public final class BigIntegerCapacityDisplayMarker {
             return name;
         }
 
+        //? if >=1.21 {
         BigIntegerCapacityDisplayValue value = BigIntegerCapacityDisplayValue.capture(capacity);
+        //?} else {
+        /*DisplayValue value = DisplayValue.capture(capacity);
+        *///?}
         if (read(name).filter(value::equals).isPresent()) {
             return name;
         }
@@ -40,7 +52,11 @@ public final class BigIntegerCapacityDisplayMarker {
         return marked;
     }
 
+    //? if >=1.21 {
     public static Optional<BigIntegerCapacityDisplayValue> read(Component component) {
+    //?} else {
+    /*public static Optional<DisplayValue> read(Component component) {
+    *///?}
         if (component == null) {
             return Optional.empty();
         }
@@ -48,14 +64,22 @@ public final class BigIntegerCapacityDisplayMarker {
         Deque<Component> pending = new ArrayDeque<>();
         pending.add(component);
         int scanned = 0;
+        //? if >=1.21 {
         BigIntegerCapacityDisplayValue latest = null;
+        //?} else {
+        /*DisplayValue latest = null;
+        *///?}
         // 外部から渡されたComponentでも、表示処理の走査量を固定する。
         while (!pending.isEmpty() && scanned++ < MAX_COMPONENTS_TO_SCAN) {
             Component current = pending.removeFirst();
             String insertion = current.getStyle().getInsertion();
             // 最新の正常なマーカーだけを採用し、壊れた値は表示へ反映しない。
             if (insertion != null && insertion.startsWith(PREFIX)) {
+                //? if >=1.21 {
                 Optional<BigIntegerCapacityDisplayValue> decoded = BigIntegerCapacityDisplayValue.decode(
+                //?} else {
+                /*Optional<DisplayValue> decoded = DisplayValue.decode(
+                *///?}
                         insertion.substring(PREFIX.length()));
                 if (decoded.isPresent()) {
                     latest = decoded.orElseThrow();
@@ -66,13 +90,99 @@ public final class BigIntegerCapacityDisplayMarker {
         return Optional.ofNullable(latest);
     }
 
+    //? if >=1.21 {
     public static String format(BigIntegerCapacityDisplayValue value) {
         return value.format();
+    //?} else {
+    /*public static String format(DisplayValue value) {
+        String exactEib = formatExactEib(value);
+        if (exactEib != null) {
+            return exactEib;
+        }
+
+        String leading = value.leadingDigits();
+        int significant = Math.min(SCIENTIFIC_SIGNIFICANT_DIGITS, leading.length());
+        String fraction = leading.substring(1, significant);
+        // 仮数末尾の0を除いて、表示幅を増やさない。
+        while (fraction.endsWith("0")) {
+            fraction = fraction.substring(0, fraction.length() - 1);
+        }
+        String mantissa = fraction.isEmpty() ?
+                leading.substring(0, 1)
+                : leading.substring(0, 1) + "." + fraction;
+        return mantissa + " × 10^" + (value.decimalDigits() - 1) + " B";
+    }
+
+    /^* 全桁を同期できた値がEiBの整数倍なら、短いE表記へ変換する。 ^/
+    private static String formatExactEib(DisplayValue value) {
+        // 先頭桁しか持たない巨大値を、正確な容量だと推測しない。
+        if (value.leadingDigits().length() != value.decimalDigits()) {
+            return null;
+        }
+        BigInteger exact = new BigInteger(value.leadingDigits());
+        BigInteger[] quotientAndRemainder = exact.divideAndRemainder(EIB_BYTES);
+        if (quotientAndRemainder[1].signum() != 0) {
+            return null;
+        }
+        String eib = quotientAndRemainder[0].toString();
+        // 長い整数をそのままGUIへ出さず、幅を超える場合は科学表記へ戻す。
+        if (eib.length() > MAX_EIB_INTEGER_DIGITS) {
+            return null;
+        }
+        return eib + "E";
+    *///?}
     }
 
     private static boolean isMarker(Component component) {
         String insertion = component.getStyle().getInsertion();
         return insertion != null && insertion.startsWith(PREFIX);
     }
+    //? if <1.21 {
+    /*public record DisplayValue(int decimalDigits, String leadingDigits) {
+        private static final String SEPARATOR = ",";
+
+        public DisplayValue {
+            // 桁数と先頭桁の形式を検証し、偽造した表示データを受け付けない。
+            if (decimalDigits < 1 || leadingDigits == null
+                    || leadingDigits.isEmpty()
+                    || leadingDigits.length() > LEADING_DIGITS
+                    || !leadingDigits.chars().allMatch(Character::isDigit)) {
+                throw new IllegalArgumentException("invalid BigInteger capacity display value");
+            }
+            // 0以外の値を先頭0で表すと指数がずれるため拒否する。
+            if (decimalDigits > 1 && leadingDigits.charAt(0) == '0') {
+                throw new IllegalArgumentException("BigInteger capacity display has a leading zero");
+            }
+        }
+
+        public static DisplayValue capture(BigInteger capacity) {
+            String decimal = capacity.toString();
+            int leadingLength = Math.min(LEADING_DIGITS, decimal.length());
+            return new DisplayValue(decimal.length(), decimal.substring(0, leadingLength));
+        }
+
+        private String encode() {
+            return decimalDigits + SEPARATOR + leadingDigits;
+        }
+
+        private static Optional<DisplayValue> decode(String encoded) {
+            // 区切りが一つだけの正規形以外は曖昧に解釈しない。
+            if (encoded == null) {
+                return Optional.empty();
+            }
+            int separator = encoded.indexOf(SEPARATOR);
+            if (separator <= 0 || separator != encoded.lastIndexOf(SEPARATOR)) {
+                return Optional.empty();
+            }
+            try {
+                return Optional.of(new DisplayValue(
+                        Integer.parseInt(encoded.substring(0, separator)),
+                        encoded.substring(separator + 1)));
+            } catch (IllegalArgumentException ignored) {
+                return Optional.empty();
+            }
+        }
+    }
+    *///?}
 
 }

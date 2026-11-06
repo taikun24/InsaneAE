@@ -16,15 +16,12 @@ import jp.main.taikun.insaneae.integration.aco.OptionalAcoBigIntegerIntegration;
 import jp.main.taikun.insaneae.integration.AddonIntegrations;
 import jp.main.taikun.insaneae.registries.ModBlockEntities;
 import jp.main.taikun.insaneae.registries.ModBlocks;
-import jp.main.taikun.insaneae.registries.ModCapabilities;
 import jp.main.taikun.insaneae.registries.ModCells;
-import jp.main.taikun.insaneae.registries.ModDataComponents;
 import jp.main.taikun.insaneae.registries.ModCreativeTabs;
 import jp.main.taikun.insaneae.registries.ModItems;
 import jp.main.taikun.insaneae.registries.ModMenus;
 import jp.main.taikun.insaneae.registries.ModParts;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.data.PackOutput;
@@ -33,7 +30,6 @@ import net.minecraft.data.tags.TagsProvider;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -49,6 +45,15 @@ import org.slf4j.Logger;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+//? if >=1.21 {
+import jp.main.taikun.insaneae.registries.ModCapabilities;
+import jp.main.taikun.insaneae.registries.ModDataComponents;
+import net.minecraft.core.HolderLookup;
+import net.neoforged.fml.ModContainer;
+//?}
+//? if <1.21 {
+/*import net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext;
+*///?}
 
 @Mod(InsaneAE.MODID)
 public class InsaneAE {
@@ -57,11 +62,19 @@ public class InsaneAE {
     public static final String MODID = "insaneae";
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    //? if >=1.21 {
     public InsaneAE(IEventBus bus, ModContainer container) {
         container.registerConfig(ModConfig.Type.COMMON, InsaneAEConfig.SPEC);
+    //?} else {
+    /*public InsaneAE(FMLJavaModLoadingContext context) {
+        IEventBus bus = context.getModEventBus();
+        context.registerConfig(ModConfig.Type.COMMON, InsaneAEConfig.SPEC);
+    *///?}
         ModBlocks.register(bus);
         ModItems.register(bus);
+        //? if >=1.21 {
         ModDataComponents.register(bus);
+        //?}
         // ケーブルに貼る版。部品のモデル申告が凍結前に済む必要があるのでここで。
         ModParts.register(bus);
         // 他の AE2 アドオンとの連携 (化学物質セル・FE セル・他 Mod の機械への加速カードなど)。
@@ -85,9 +98,11 @@ public class InsaneAE {
         bus.addListener(this::gatherData);
         // NeoForge では capability を BlockEntityType / Item ごとに専用イベントで登録する。
         // AE2 の一括登録は AE2 自身の型しか見ないので、自前の型はここで全部登録する。
+        //? if >=1.21 {
         bus.addListener(ModCapabilities::register);
         // ケーブルに貼る版は AE2 の部品用イベントで登録する (AE2 の登録はクラスの完全一致でしか効かない)。
         bus.addListener(ModCapabilities::registerParts);
+        //?}
 
         // formed モデルの組み込み登録は ModelBakery より前に済ませる必要があるため、
         // client でのみ Mod 構築時に行う (AE2 の AppEngClient コンストラクタと同タイミング)。
@@ -107,18 +122,31 @@ public class InsaneAE {
         ExistingFileHelper existingFiles = event.getExistingFileHelper();
         // レシピ・ドロップ系のプロバイダは HolderLookup.Provider を要求する
         // (タグやデータコンポーネントをレジストリ越しに引くため)。
+        //? if >=1.21 {
         CompletableFuture<HolderLookup.Provider> registries = event.getLookupProvider();
 
         // タグはレシピより先に (レシピがタグを材料に使うため、生成の順を揃えておく)。
         generator.addProvider(event.includeServer(), new ModItemTagProvider(output, registries,
+        //?} else {
+        /*generator.addProvider(event.includeServer(), new ModItemTagProvider(output,
+                event.getLookupProvider(),
+        *///?}
                 CompletableFuture.completedFuture(
                         TagsProvider.TagLookup.empty()),
                 existingFiles));
+        //? if >=1.21 {
         generator.addProvider(event.includeServer(), new ModRecipeProvider(output, registries));
+        //?} else {
+        /*generator.addProvider(event.includeServer(), new ModRecipeProvider(output));
+        *///?}
         generator.addProvider(event.includeServer(), new LootTableProvider(output, Set.of(),
                 List.of(new LootTableProvider.SubProviderEntry(
+                //? if >=1.21 {
                         ModBlockLootProvider::new, LootContextParamSets.BLOCK)),
                 registries));
+                //?} else {
+                        /*ModBlockLootProvider::new, LootContextParamSets.BLOCK))));
+                *///?}
         // ブロックモデルを先に生成しておく (アイテムモデルが親として参照するため)。
         generator.addProvider(event.includeClient(), new ModBlockStateProvider(output, existingFiles));
         generator.addProvider(event.includeClient(), new ModItemModelProvider(output, existingFiles));
@@ -136,8 +164,24 @@ public class InsaneAE {
         event.enqueueWork(
                 OptionalAcoBigIntegerIntegration
                         ::registerBigIntegerPlanConsumer);
+        //? if <1.21 {
+        /*if (Boolean.getBoolean("appeng.tests")) {
+            // プロットは配布 jar に入らない別のソースセットにあるので、クラス名で呼ぶ。
+            event.enqueueWork(InsaneAE::registerTestPlots);
+        }
+        *///?}
         // 検証用のテストプロット (`./gradlew runGameTestServer`) は
         // @TestPlotClass 経由で AE2 が自動的に拾うので、ここで登録する必要はない。
         LOGGER.info("InsaneAE: {} crafting storage tiers registered.", ModBlocks.CRAFTING_STORAGE.size());
     }
+    //? if <1.21 {
+    /*private static void registerTestPlots() {
+        try {
+            Class.forName("jp.main.taikun.insaneae.testplots.InsaneAETestPlots")
+                    .getMethod("register").invoke(null);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("InsaneAE: test plots are missing from the classpath", e);
+        }
+    }
+    *///?}
 }

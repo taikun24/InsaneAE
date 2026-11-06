@@ -18,8 +18,8 @@
 --------------------------------------------------------------------------------------
 下敷きの置き場所 (MC バージョンごとに分けられる)
 --------------------------------------------------------------------------------------
-下敷きは次の順に<b>ファイル単位で</b>探す。gradle.properties の minecraft_version を
-読むので、チェックアウトしているブランチに合ったものが自動で選ばれる。
+下敷きは次の順に<b>ファイル単位で</b>探す。対象バージョン (環境変数 INSANEAE_MC、
+無ければ IDE で開いているバージョン) の minecraft_version で選ばれる。
 
     1. tools/textures/<minecraft_version>/   そのバージョン専用の絵
     2. tools/textures/                       バージョン共通の絵
@@ -67,10 +67,11 @@ import colorsys
 import json
 import math
 import os
+import re
 from PIL import Image
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT_DIR = os.path.join(REPO, "src/main/resources/assets/insaneae/textures/block/crafting")
+OUT_DIR = None  # resource_root() の後で決まる (下で設定)
 
 
 # --------------------------------------------------------------------------------------
@@ -78,10 +79,36 @@ OUT_DIR = os.path.join(REPO, "src/main/resources/assets/insaneae/textures/block/
 # --------------------------------------------------------------------------------------
 
 
+def target_node(repo: str = REPO) -> str:
+    """絵を作る対象 (versions/ の下のディレクトリ名、例: 1.20.1-forge)。
+
+    環境変数 INSANEAE_MC (例: 1.20.1) があればそのバージョン、無ければ
+    stonecutter.gradle.kts の active (IDE で開いているバージョン) を使う。
+    """
+    wanted = os.environ.get("INSANEAE_MC")
+    nodes = sorted(os.listdir(os.path.join(repo, "versions")))
+    if wanted:
+        for node in nodes:
+            if node == wanted or node.startswith(wanted + "-"):
+                return node
+        raise SystemExit(f"INSANEAE_MC={wanted} に当たる versions/ がありません: {nodes}")
+    with open(os.path.join(repo, "stonecutter.gradle.kts"), encoding="utf-8") as fh:
+        match = re.search(r'stonecutter active "([^"]+)"', fh.read())
+    if not match:
+        raise SystemExit("stonecutter.gradle.kts から active のバージョンが読めません")
+    return match.group(1)
+
+
+def resource_root(repo: str = REPO) -> str:
+    """出力先。テクスチャはバージョンごとに違うので versions/<node>/src/main/resources に置く。"""
+    return os.path.join(repo, "versions", target_node(repo), "src", "main", "resources")
+
+
 def read_minecraft_version(repo: str = REPO) -> str | None:
-    """gradle.properties の minecraft_version を読む。読めなければ None。"""
+    """対象の versions/<node>/gradle.properties の minecraft_version。読めなければ None。"""
     try:
-        with open(os.path.join(repo, "gradle.properties"), encoding="utf-8") as fh:
+        path = os.path.join(repo, "versions", target_node(repo), "gradle.properties")
+        with open(path, encoding="utf-8") as fh:
             for line in fh:
                 key, sep, value = line.partition("=")
                 if sep and key.strip() == "minecraft_version":
@@ -97,9 +124,7 @@ def resolve_template_dirs(repo: str = REPO) -> list[str]:
         1. tools/textures/<minecraft_version>/   そのバージョン専用の絵
         2. tools/textures/                       バージョン共通の絵
 
-    MC バージョンごとにブランチを分けている (main = 1.20.1 / 1.21.1) ので、
-    gradle.properties を見れば<b>チェックアウトしているブランチに合った下敷きが
-    自動で選ばれる</b>。
+    バージョンは target_node() (環境変数 INSANEAE_MC か、IDE で開いているバージョン) で決まる。
 
     探索がファイル単位なのが要点で、<b>バージョンで変えたい絵だけ</b>
     tools/textures/<version>/ に置けばよい。残りは tools/textures/ の共通の絵が
@@ -116,6 +141,7 @@ def resolve_template_dirs(repo: str = REPO) -> list[str]:
 
 
 TEMPLATE_DIRS = resolve_template_dirs()
+OUT_DIR = os.path.join(resource_root(), "assets/insaneae/textures/block/crafting")
 
 # --------------------------------------------------------------------------------------
 # 色の設定。ここだけ触れば見た目が変わる

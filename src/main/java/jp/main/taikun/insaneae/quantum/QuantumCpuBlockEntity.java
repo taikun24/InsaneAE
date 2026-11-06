@@ -1,6 +1,5 @@
 package jp.main.taikun.insaneae.quantum;
 
-import net.minecraft.core.HolderLookup;
 import appeng.api.config.Actionable;
 import appeng.api.implementations.blockentities.PatternContainerGroup;
 import appeng.api.inventories.ISegmentedInventory;
@@ -20,7 +19,6 @@ import appeng.util.inv.InternalInventoryHost;
 import appeng.util.inv.filter.IAEItemFilter;
 import appeng.api.util.AECableType;
 import appeng.blockentity.ServerTickingBlockEntity;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.core.localization.GuiText;
 import appeng.core.localization.Tooltips;
 import appeng.helpers.patternprovider.PatternProviderLogic;
@@ -28,7 +26,6 @@ import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import appeng.me.helpers.MachineSource;
 import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuHostLocator;
 import jp.main.taikun.insaneae.menu.QuantumCpuMenu;
 import jp.main.taikun.insaneae.quantum.batch.QuantumBatchReceipts;
 import jp.main.taikun.insaneae.quantum.cpu.QuantumCraftingCpu;
@@ -56,6 +53,17 @@ import java.math.BigInteger;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+//? if >=1.21 {
+import net.minecraft.core.HolderLookup;
+import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.menu.locator.MenuHostLocator;
+//?}
+//? if <1.21 {
+/*import appeng.blockentity.grid.AENetworkBlockEntity;
+import appeng.menu.locator.MenuLocator;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.util.LazyOptional;
+*///?}
 
 /**
  * Quantum CPU は、パターンプロバイダと分子組立装置を 1 ブロックに合体させたもの。
@@ -68,7 +76,11 @@ import java.util.Map;
  * {@link ModUpgrades#QUANTUM_ACCELERATION_CARD 加速カード} 1 枚ごとに
  * {@link #MULTIPLIER_PER_CARD} 倍になり、{@link #MAX_ACCELERATION_CARDS} 枚で long の上限に達する。</p>
  */
+//? if >=1.21 {
 public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
+//?} else {
+/*public class QuantumCpuBlockEntity extends AENetworkBlockEntity
+*///?}
         implements PatternProviderLogicHost, IUpgradeableObject, ServerTickingBlockEntity,
         InternalInventoryHost {
 
@@ -360,15 +372,21 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
      * 返却インベントリも同じ口を通るので、<b>どのインベントリが変わったのかを見る</b>こと。</p>
      */
     @Override
+    //? if >=1.21 {
     public void onChangeInventory(AppEngInternalInventory inv, int slot) {
+    //?} else {
+    /*public void onChangeInventory(InternalInventory inv, int slot) {
+    *///?}
         if (inv == craftingUnits || inv == acceleratorUnits) {
             craftingCpu.updateUnits();
         }
+    //? if >=1.21 {
     }
 
     @Override
     public void saveChangedInventory(AppEngInternalInventory inv) {
         saveChanges();
+    //?}
     }
 
     // ------------------------------------------------- PatternProviderLogicHost
@@ -403,8 +421,8 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
         AEItemKey icon = getTerminalIcon();
         Component name = hasCustomName() ? getCustomName() : icon.getDisplayName();
         int cards = upgrades.getInstalledUpgrades(ModUpgrades.QUANTUM_ACCELERATION_CARD.get());
-        List<Component> tooltip = cards == 0
-                ? List.of()
+        List<Component> tooltip = cards == 0 ?
+                List.of()
                 : List.of(GuiText.CompatibleUpgrade.text(
                         Tooltips.of(ModUpgrades.QUANTUM_ACCELERATION_CARD.get().getDescription()),
                         Tooltips.ofUnformattedNumber(cards)));
@@ -412,7 +430,11 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
+    //? if >=1.21 {
     public void openMenu(Player player, MenuHostLocator locator) {
+    //?} else {
+    /*public void openMenu(Player player, MenuLocator locator) {
+    *///?}
         MenuOpener.open(QuantumCpuMenu.TYPE, player, locator);
     }
 
@@ -430,10 +452,14 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public InternalInventory getSubInventory(ResourceLocation id) {
+        //? if >=1.21 {
         if (id.equals(ISegmentedInventory.UPGRADES)) {
             return upgrades;
         }
         return super.getSubInventory(id);
+        //?} else {
+        /*return id.equals(ISegmentedInventory.UPGRADES) ? upgrades : super.getSubInventory(id);
+        *///?}
     }
 
     // ------------------------------------------------------------ BlockEntity
@@ -462,53 +488,98 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
     // NBT の読み書きにはレジストリ参照 (HolderLookup.Provider) が要る。
     // データコンポーネントを含む ItemStack をタグ化するのにレジストリが必要なため。
     @Override
+    //? if >=1.21 {
     public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
         super.saveAdditional(data, registries);
         logic.writeToNBT(data, registries);
         upgrades.writeToNBT(data, NBT_UPGRADES, registries);
         craftingUnits.writeToNBT(data, NBT_CRAFTING_UNITS, registries);
         acceleratorUnits.writeToNBT(data, NBT_ACCELERATOR_UNITS, registries);
+    //?} else {
+    /*public void saveAdditional(CompoundTag data) {
+        super.saveAdditional(data);
+        logic.writeToNBT(data);
+        upgrades.writeToNBT(data, NBT_UPGRADES);
+        craftingUnits.writeToNBT(data, NBT_CRAFTING_UNITS);
+        acceleratorUnits.writeToNBT(data, NBT_ACCELERATOR_UNITS);
+    *///?}
         // 実行中のジョブ・CPU に溜まっている中間物。クラスタがまだ作られていなければ何も書かない。
         CompoundTag cpuData = new CompoundTag();
+        //? if >=1.21 {
         craftingCpu.writeToNBT(cpuData, registries);
+        //?} else {
+        /*craftingCpu.writeToNBT(cpuData);
+        *///?}
         if (!cpuData.isEmpty()) {
             data.put(NBT_CRAFTING_CPU, cpuData);
         }
 
         // BigInteger は byte[] として保存する。旧 ListTag は loadTag 側で移行する。
         // 形式は台帳の実装 (ACO / 内蔵) に任せず、常に InsaneAE 側で固定する。
+        //? if >=1.21 {
         data.put(NBT_PENDING_BIG, PendingOutputNbt.save(pendingOutputs, registries));
         // ACO の craftingtable batch レシート。ACO 未導入でも読み書きするだけなので、
         // 一度連携で使ったワールドから ACO を抜いてもレシートは消えない。
         batchReceipts.save(data, registries);
+        //?} else {
+        /*data.put(NBT_PENDING_BIG, PendingOutputNbt.save(pendingOutputs));
+        // ACO の craftingtable batch レシート。ACO 未導入でも読み書きするだけなので、
+        // 一度連携で使ったワールドから ACO を抜いてもレシートは消えない。
+        batchReceipts.save(data);
+        *///?}
     }
 
     @Override
+    //? if >=1.21 {
     public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
         super.loadTag(data, registries);
         logic.readFromNBT(data, registries);
         upgrades.readFromNBT(data, NBT_UPGRADES, registries);
         craftingUnits.readFromNBT(data, NBT_CRAFTING_UNITS, registries);
         acceleratorUnits.readFromNBT(data, NBT_ACCELERATOR_UNITS, registries);
+    //?} else {
+    /*public void loadTag(CompoundTag data) {
+        super.loadTag(data);
+        logic.readFromNBT(data);
+        upgrades.readFromNBT(data, NBT_UPGRADES);
+        craftingUnits.readFromNBT(data, NBT_CRAFTING_UNITS);
+        acceleratorUnits.readFromNBT(data, NBT_ACCELERATOR_UNITS);
+    *///?}
         // ストレージと協調処理ユニットを分ける前のワールドでは、両方が craftingUnits に
         // 混ざって入っている。読んだ直後に振り分け直す。
         migrateMixedUnits();
         // 合計は onReady() で数え直す (ここではまだワールドにもグリッドにも繋がっていない)。
         if (data.contains(NBT_CRAFTING_CPU, Tag.TAG_COMPOUND)) {
+            //? if >=1.21 {
             craftingCpu.readFromNBT(data.getCompound(NBT_CRAFTING_CPU), registries);
+            //?} else {
+            /*craftingCpu.readFromNBT(data.getCompound(NBT_CRAFTING_CPU));
+            *///?}
         }
 
+        //? if >=1.21 {
         batchReceipts.load(data, registries);
+        //?} else {
+        /*batchReceipts.load(data);
+        *///?}
 
         pendingOutputs.clear();
         if (data.contains(NBT_PENDING_BIG, Tag.TAG_COMPOUND)) {
             // 読めないエントリはスキップされる (例外は投げない)。ここで投げるとチャンク読込が壊れる。
+            //? if >=1.21 {
             PendingOutputNbt.load(pendingOutputs, data.getCompound(NBT_PENDING_BIG), registries);
+            //?} else {
+            /*PendingOutputNbt.load(pendingOutputs, data.getCompound(NBT_PENDING_BIG));
+            *///?}
         } else {
             // 旧バージョンの long 台帳を読み、最初の保存で BigInteger 形式へ移行する。
             ListTag pending = data.getList(NBT_PENDING, Tag.TAG_COMPOUND);
             for (int i = 0; i < pending.size(); i++) {
+                //? if >=1.21 {
                 GenericStack stack = GenericStack.readTag(registries, pending.getCompound(i));
+                //?} else {
+                /*GenericStack stack = GenericStack.readTag(pending.getCompound(i));
+                *///?}
                 if (stack != null && stack.amount() > 0L) {
                     pendingOutputs.add(stack.what(), BigInteger.valueOf(stack.amount()));
                 }
@@ -524,9 +595,11 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
         // 壊す前に実行中のジョブを畳んで、CPU に溜まっている中間物をネットワークへ返す
         // (AE2 のクラフト CPU を壊したときと同じ)。ネットワークから切れた後だと戻し先が
         // 無いので、まだ繋がっているときだけ。
+        //? if >=1.21 {
         if (getMainNode().getGrid() != null) {
             craftingCpu.cancelJob();
         }
+        //?}
         super.addAdditionalDrops(level, pos, drops);
         logic.addDrops(drops);
         for (ItemStack upgrade : upgrades) {
@@ -599,6 +672,13 @@ public class QuantumCpuBlockEntity extends AENetworkedBlockEntity
             return QuantumCraftingCpu.isAcceleratorUnit(stack);
         }
     }
+    //? if <1.21 {
+    /*@Override
+    public <T> LazyOptional<T> getCapability(Capability<T> cap, @Nullable Direction side) {
+        LazyOptional<T> fromLogic = logic.getCapability(cap);
+        return fromLogic.isPresent() ? fromLogic : super.getCapability(cap, side);
+    }
+    *///?}
 
     // capability の公開 (取り出し用インベントリ・グリッドノード) は
     // jp.main.taikun.insaneae.registries.ModCapabilities にまとめてある。

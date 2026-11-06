@@ -85,8 +85,8 @@ public abstract class CraftingCpuBudgetMixin {
 
         // CraftingCPUCluster は final クラスなので、Mixin でインタフェースを足したことを
         // コンパイラは知らない。Object 経由で確かめる。
-        long coProcessors = (Object) cluster instanceof ICoProcessorCount counted
-                ? counted.insaneae$coProcessorCount()
+        long coProcessors = (Object) cluster instanceof ICoProcessorCount counted ?
+                counted.insaneae$coProcessorCount()
                 : cluster.getCoProcessors();
 
         // ここが long なので、スレッド数がいくつでも溢れない。

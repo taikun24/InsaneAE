@@ -7,7 +7,6 @@ import appeng.core.definitions.AEBlocks;
 import appeng.core.definitions.AEItems;
 import appeng.core.definitions.AEParts;
 import appeng.server.testplots.TestPlot;
-import appeng.server.testplots.TestPlotClass;
 import appeng.server.testworld.PlotBuilder;
 import appeng.server.testworld.PlotTestHelper;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
@@ -19,13 +18,18 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+//? if >=1.21 {
+import appeng.server.testplots.TestPlotClass;
+//?}
 
 /**
  * 加速カードの倍率が機械に反映されているか。
  *
  * <p>走らせ方は {@link TestPlotSupport} を参照。</p>
  */
+//? if >=1.21 {
 @TestPlotClass
+//?}
 public final class SpeedCardPlots {
 
     private SpeedCardPlots() {
@@ -168,7 +172,12 @@ public final class SpeedCardPlots {
         }).maxTicks(feedTicks + 60);
     }
 
+    //? if >=1.21 {
     private static long countInNetwork(PlotTestHelper helper, Item item) {
+    //?} else {
+    /*private static long countInNetwork(PlotTestHelper helper,
+            Item item) {
+    *///?}
         var counter = new KeyCounter();
         helper.getGrid(BlockPos.ZERO).getStorageService().getInventory().getAvailableStacks(counter);
         return counter.get(AEItemKey.of(item));

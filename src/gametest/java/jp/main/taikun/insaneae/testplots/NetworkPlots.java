@@ -2,7 +2,6 @@ package jp.main.taikun.insaneae.testplots;
 
 import static jp.main.taikun.insaneae.testplots.TestPlotSupport.processingPattern;
 
-import appeng.api.AECapabilities;
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
@@ -22,7 +21,6 @@ import appeng.core.definitions.ItemDefinition;
 import appeng.parts.storagebus.StorageBusPart;
 import appeng.server.testplots.CraftingPatternHelper;
 import appeng.server.testplots.TestPlot;
-import appeng.server.testplots.TestPlotClass;
 import appeng.server.testworld.PlotBuilder;
 import appeng.server.testworld.PlotTestHelper;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
@@ -40,26 +38,46 @@ import jp.main.taikun.insaneae.registries.ModCells;
 import jp.main.taikun.insaneae.registries.ModParts;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ItemLike;
+
+import java.util.List;
+//? if >=1.21 {
+import appeng.api.AECapabilities;
+import appeng.server.testplots.TestPlotClass;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.registries.DeferredItem;
-
-import java.util.List;
+//?}
+//? if <1.21 {
+/*import appeng.api.behaviors.GenericInternalInventory;
+import appeng.api.networking.GridHelper;
+import appeng.capabilities.Capabilities;
+import appeng.me.helpers.IGridConnectedBlockEntity;
+import appeng.menu.locator.MenuLocators;
+import gripe._90.megacells.definition.MEGAItems;
+import jp.main.taikun.insaneae.menu.InsaneInterfaceMenu;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.FakePlayerFactory;
+import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.registries.RegistryObject;
+*///?}
 
 /**
  * ケーブル・部品・インターフェイス・チャンネルなど、グリッドまわりの検証。
  *
  * <p>走らせ方は {@link TestPlotSupport} を参照。</p>
  */
+//? if >=1.21 {
 @TestPlotClass
+//?}
 public final class NetworkPlots {
 
     private NetworkPlots() {
+    //? if >=1.21 {
     }
 
     /**
@@ -102,6 +120,7 @@ public final class NetworkPlots {
                             gripe._90.megacells.definition.MEGAItems.GREATER_ENERGY_CARD, portableFluid) == 2,
                     "ポータブル液体セルに Greater Energy Card ×2 を登録していない");
         }));
+    //?}
     }
 
     /**
@@ -163,9 +182,15 @@ public final class NetworkPlots {
      * {@code GridHelper.getNodeHost} ({@code Level#getCapability} 一発) がノードを見つけられず、
      * 周りから見てただの石ころになる。{@code ModCapabilities} が抜けたときの回帰テスト。</p>
      */
+    //? if >=1.21 {
     @TestPlot("insaneae_grid_connection")
     public static void gridConnection(PlotBuilder plot) {
+    //?} else {
+    /*@TestPlot("insaneae_cell_upgrades")
+    public static void cellUpgrades(PlotBuilder plot) {
+    *///?}
         plot.creativeEnergyCell("0 -1 0");
+    //? if >=1.21 {
         plot.cable("[0,6] 0 0");
         // ケーブルの上に自前のブロックを 1 つずつ載せる (階層があるものは最下段で代表させる)。
         plot.blockState(new BlockPos(0, 1, 0), ModBlocks.allCraftingBlocks().get(0).defaultBlockState());
@@ -190,6 +215,67 @@ public final class NetworkPlots {
 
             sequence.thenSucceed();
         });
+    //?} else {
+        /*plot.test(helper -> helper.succeedIf(() -> {
+            var itemCell = ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_1G).get();
+            var fluidCell = ModCells.FLUID_CELLS.get(InsaneCraftingUnitType.STORAGE_1G).get();
+            var portable = ModCells.PORTABLE_ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_1G).get();
+
+            helper.check(Upgrades.getMaxInstallable(
+                            AEItems.FUZZY_CARD, itemCell) > 0,
+                    "アイテムセルにあいまいカードを登録していない");
+            helper.check(Upgrades.getMaxInstallable(
+                            AEItems.VOID_CARD, itemCell) > 0,
+                    "アイテムセルに超過破棄カードを登録していない");
+            helper.check(Upgrades.getMaxInstallable(
+                            AEItems.INVERTER_CARD, fluidCell) > 0,
+                    "液体セルに白黒リストカードを登録していない");
+            helper.check(Upgrades.getMaxInstallable(
+                            AEItems.EQUAL_DISTRIBUTION_CARD, fluidCell) > 0,
+                    "液体セルに均等配分カードを登録していない");
+            helper.check(Upgrades.getMaxInstallable(
+                            AEItems.ENERGY_CARD, portable) == 2,
+                    "ポータブルセルにエネルギーカード ×2 を登録していない");
+            // MEGA Cells の Greater Energy Card。MEGA が自分のポータブルセルにしているのと同じ ×2。
+            helper.check(Upgrades.getMaxInstallable(
+                            MEGAItems.GREATER_ENERGY_CARD, portable) == 2,
+                    "ポータブルセルに Greater Energy Card ×2 を登録していない");
+            var portableFluid = ModCells.PORTABLE_FLUID_CELLS.get(InsaneCraftingUnitType.STORAGE_1G).get();
+            helper.check(Upgrades.getMaxInstallable(
+                            MEGAItems.GREATER_ENERGY_CARD, portableFluid) == 2,
+                    "ポータブル液体セルに Greater Energy Card ×2 を登録していない");
+        }));
+    }
+
+    /^*
+     * 超特大インターフェイスの画面が開くこと (「開けない」報告の再現テスト)。
+     *
+     * <p>FakePlayer はパケットを捨てるだけの接続を持つので、サーバ側の
+     * メニュー構築 ({@code NetworkHooks.openScreen} → コンストラクタでの
+     * スロット構築まで) をヘッドレスで検証できる。クライアント側 (画面クラスと
+     * スタイル JSON) はここでは検証できない。</p>
+     ^/
+    @TestPlot("insaneae_interface_menu_opens")
+    public static void interfaceMenuOpens(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.cable("0 0 0");
+        plot.blockState("1 0 0", ModBlocks.INSANE_INTERFACE.get().defaultBlockState());
+
+        plot.test(helper -> helper.startSequence()
+                .thenIdle(2)
+                .thenExecute(() -> {
+                    var be = (InsaneInterfaceBlockEntity) helper.getBlockEntity(new BlockPos(1, 0, 0));
+                    var player = FakePlayerFactory
+                            .getMinecraft(helper.getLevel());
+                    be.openMenu(player, MenuLocators.forBlockEntity(be));
+                    helper.check(
+                            player.containerMenu instanceof InsaneInterfaceMenu,
+                            "画面が開かなかった: containerMenu = "
+                                    + player.containerMenu.getClass().getName());
+                    player.closeContainer();
+                })
+                .thenSucceed());
+    *///?}
     }
 
     /**
@@ -230,7 +316,11 @@ public final class NetworkPlots {
             sequence.thenIdle(10);
 
             sequence.thenExecute(() -> {
+                //? if >=1.21 {
                 var inv = helper.getCapability(pos, AECapabilities.GENERIC_INTERNAL_INV, null);
+                //?} else {
+                /*var inv = genericInv(helper, pos);
+                *///?}
                 helper.check(inv != null,
                         "超特大インターフェイスが GENERIC_INTERNAL_INV を公開していない", pos);
                 helper.check(inv.size() == InsaneInterfaceBlockEntity.SLOTS,
@@ -242,12 +332,22 @@ public final class NetworkPlots {
                         "1 枠に入るアイテム数がスタック数で頭打ちになっている: "
                                 + inv.getMaxAmount(AEItemKey.of(Items.IRON_INGOT))
                                 + " (allowOverstacking が効いていない)", pos);
+                //? if >=1.21 {
                 helper.check(helper.getCapability(pos, AECapabilities.ME_STORAGE, null) != null,
                         "超特大インターフェイスが ME_STORAGE を公開していない", pos);
+                //?} else {
+                /*helper.check(helper.getBlockEntity(pos)
+                                .getCapability(Capabilities.STORAGE).isPresent(),
+                        "超特大インターフェイスが STORAGE (MEStorage) を公開していない", pos);
+                *///?}
             });
 
             sequence.thenExecute(() -> {
+                //? if >=1.21 {
                 var inv = helper.getCapability(pos, AECapabilities.GENERIC_INTERNAL_INV, null);
+                //?} else {
+                /*var inv = genericInv(helper, pos);
+                *///?}
                 state.accepted = inv.insert(0, AEItemKey.of(Items.IRON_INGOT), inserted,
                         Actionable.MODULATE);
             });
@@ -262,8 +362,12 @@ public final class NetworkPlots {
                 helper.getGrid(BlockPos.ZERO).getStorageService().getInventory()
                         .getAvailableStacks(counter);
                 long inNetwork = counter.get(AEItemKey.of(Items.IRON_INGOT));
+                //? if >=1.21 {
                 var inv = helper.getCapability(pos, AECapabilities.GENERIC_INTERNAL_INV, null);
                 long inSlot = inv.getAmount(0);
+                //?} else {
+                /*long inSlot = genericInv(helper, pos).getAmount(0);
+                *///?}
                 helper.check(inNetwork + inSlot == inserted,
                         "入れた数と行き先が合わない: ネットワーク " + inNetwork + " + 枠 " + inSlot
                                 + " ≠ " + inserted, pos);
@@ -361,16 +465,29 @@ public final class NetworkPlots {
             // ModCapabilities#registerParts が抜けると AE2 の InterfacePart 向けの登録も効かず、
             // パイプや他 Mod の機械から何も見えなくなる。
             sequence.thenExecute(() -> {
+                //? if >=1.21 {
                 var ifaceInv = helper.getCapability(pos, AECapabilities.GENERIC_INTERNAL_INV, Direction.UP);
+                //?} else {
+                /*var cableBus = helper.getBlockEntity(pos);
+                var ifaceInv = cableBus.getCapability(Capabilities.GENERIC_INTERNAL_INV, Direction.UP).orElse(null);
+                *///?}
                 helper.check(ifaceInv != null,
                         "ケーブル版インターフェイスが GENERIC_INTERNAL_INV を公開していない", pos);
                 helper.check(ifaceInv.size() == InsaneInterfaceBlockEntity.SLOTS,
                         "ケーブル版インターフェイスの外向きの枠数が違う: " + ifaceInv.size(), pos);
+                //? if >=1.21 {
                 helper.check(helper.getCapability(pos, AECapabilities.ME_STORAGE, Direction.UP) != null,
                         "ケーブル版インターフェイスが ME_STORAGE を公開していない", pos);
                 helper.check(helper.getCapability(pos, Capabilities.ItemHandler.BLOCK, Direction.UP) != null,
+                //?} else {
+                /*helper.check(cableBus.getCapability(ForgeCapabilities.ITEM_HANDLER, Direction.UP).isPresent(),
+                *///?}
                         "ケーブル版インターフェイスに IItemHandler のアダプタが付いていない", pos);
+                //? if >=1.21 {
                 helper.check(helper.getCapability(pos, AECapabilities.GENERIC_INTERNAL_INV, Direction.NORTH) != null,
+                //?} else {
+                /*helper.check(cableBus.getCapability(Capabilities.GENERIC_INTERNAL_INV, Direction.NORTH).isPresent(),
+                *///?}
                         "ケーブル版パターンプロバイダーが返却インベントリを公開していない", pos);
 
                 // 未設定の枠に入れたぶんは、ブロック版と同じくネットワークへ直送される。
@@ -401,14 +518,24 @@ public final class NetworkPlots {
                     new ItemLike[] {AEBlocks.PATTERN_PROVIDER, ModBlocks.INSANE_PATTERN_PROVIDER.get()},
                     new ItemLike[] {AEParts.PATTERN_PROVIDER, ModParts.INSANE_PATTERN_PROVIDER.get()});
             for (ItemLike[] pair : pairs) {
+                //? if >=1.21 {
                 for (Item card : BuiltInRegistries.ITEM) {
+                //?} else {
+                /*for (Item card : ForgeRegistries.ITEMS) {
+                *///?}
                     int original = Upgrades.getMaxInstallable(card, pair[0]);
                     if (original > 0) {
                         int mirrored = Upgrades.getMaxInstallable(card, pair[1]);
                         helper.check(mirrored == original,
+                                //? if >=1.21 {
                                 BuiltInRegistries.ITEM.getKey(card) + " が "
                                         + BuiltInRegistries.ITEM.getKey(pair[1].asItem()) + " に "
                                         + mirrored + " 枚 (" + BuiltInRegistries.ITEM.getKey(pair[0].asItem())
+                                //?} else {
+                                /*ForgeRegistries.ITEMS.getKey(card) + " が "
+                                        + ForgeRegistries.ITEMS.getKey(pair[1].asItem()) + " に "
+                                        + mirrored + " 枚 (" + ForgeRegistries.ITEMS.getKey(pair[0].asItem())
+                                *///?}
                                         + " は " + original + " 枚)");
                     }
                 }
@@ -432,11 +559,17 @@ public final class NetworkPlots {
      * こちらの {@code DeferredItem} を包んで渡す。表示名はテストの出力にしか出ない。
      */
     private static <I extends Item> ItemDefinition<I> partDefinition(
+        //? if >=1.21 {
             String englishName, DeferredItem<I> item) {
         return new ItemDefinition<>(englishName, item);
+        //?} else {
+            /*String englishName, RegistryObject<I> item) {
+        return new ItemDefinition<>(englishName, item.getId(), item.get());
+        *///?}
     }
 
     /** その位置のブロックが capability を公開していて、かつ同じグリッドに入っていること。 */
+    //? if >=1.21 {
     private static void checkOnGrid(PlotTestHelper helper, BlockPos pos, IGrid grid) {
         String name = helper.getBlockState(pos).getBlock().getName().getString();
         var host = helper.getCapability(pos, AECapabilities.IN_WORLD_GRID_NODE_HOST, null);
@@ -445,6 +578,12 @@ public final class NetworkPlots {
         IGridNode node = helper.getGridNode(pos);
         helper.check(node != null && node.getGrid() == grid,
                 name + " がケーブルと同じネットワークに入っていない", pos);
+    //?} else {
+    /*private static GenericInternalInventory genericInv(PlotTestHelper helper,
+            BlockPos pos) {
+        return helper.getBlockEntity(pos)
+                .getCapability(Capabilities.GENERIC_INTERNAL_INV).orElse(null);
+    *///?}
     }
 
     /**
@@ -580,7 +719,21 @@ public final class NetworkPlots {
 
     /** その位置のノードのチャンネル上限。 */
     private static int maxChannels(PlotTestHelper helper, BlockPos pos) {
+        //? if >=1.21 {
         IGridNode node = helper.getGridNode(pos);
+        //?} else {
+        /*IGridNode node = null;
+        if (helper.getBlockEntity(pos) instanceof IGridConnectedBlockEntity connected) {
+            node = connected.getMainNode().getNode();
+        } else {
+            var host = GridHelper.getNodeHost(helper.getLevel(), helper.absolutePos(pos));
+            for (var side : Direction.values()) {
+                if (host != null && node == null) {
+                    node = host.getGridNode(side);
+                }
+            }
+        }
+        *///?}
         return node == null ? -1 : node.getMaxChannels();
     }
 

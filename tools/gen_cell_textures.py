@@ -74,6 +74,7 @@ from gen_crafting_textures import (  # noqa: E402  (パス調整の後に import
     dominant_hue,
     load_template,
     read_minecraft_version,
+    resource_root,
     resolve_template_dirs,
     write_dir,
     parse_hex,
@@ -82,7 +83,7 @@ from gen_crafting_textures import (  # noqa: E402  (パス調整の後に import
 )
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT_DIR = os.path.join(REPO, "src/main/resources/assets/insaneae/textures/item")
+OUT_DIR = os.path.join(resource_root(REPO), "assets/insaneae/textures/item")
 TEMPLATE_DIRS = resolve_template_dirs(REPO)
 
 # --------------------------------------------------------------------------------------

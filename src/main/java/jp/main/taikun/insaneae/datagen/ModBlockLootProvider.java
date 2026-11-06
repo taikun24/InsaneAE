@@ -1,7 +1,6 @@
 package jp.main.taikun.insaneae.datagen;
 
 import jp.main.taikun.insaneae.registries.ModBlocks;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.data.loot.BlockLootSubProvider;
 import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.level.block.Block;
@@ -9,6 +8,9 @@ import net.minecraft.world.level.block.Block;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
+//? if >=1.21 {
+import net.minecraft.core.HolderLookup;
+//?}
 
 /**
  * クラフトストレージのドロップ。全階層とも自分自身をそのまま落とすだけ。
@@ -16,8 +18,13 @@ import java.util.stream.Stream;
 public class ModBlockLootProvider extends BlockLootSubProvider {
 
     // BlockLootSubProvider はレジストリ参照 (HolderLookup.Provider) を要求する。
+    //? if >=1.21 {
     public ModBlockLootProvider(HolderLookup.Provider registries) {
         super(Set.of(), FeatureFlags.REGISTRY.allFlags(), registries);
+    //?} else {
+    /*public ModBlockLootProvider() {
+        super(Set.of(), FeatureFlags.REGISTRY.allFlags());
+    *///?}
     }
 
     @Override

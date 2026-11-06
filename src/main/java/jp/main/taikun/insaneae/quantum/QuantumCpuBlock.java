@@ -6,7 +6,6 @@ import appeng.util.InteractionUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -14,6 +13,12 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+//? if >=1.21 {
+import net.minecraft.world.ItemInteractionResult;
+//?}
+//? if <1.21 {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * Quantum CPU のブロック。中身は {@link QuantumCpuBlockEntity}。
@@ -53,6 +58,7 @@ public class QuantumCpuBlock extends AEBaseEntityBlock<QuantumCpuBlockEntity> {
     // どちらも画面を開くだけなので、実処理は openScreen() にまとめてある。
 
     @Override
+    //? if >=1.21 {
     protected ItemInteractionResult useItemOn(ItemStack heldItem, BlockState state, Level level, BlockPos pos,
             Player player, InteractionHand hand, BlockHitResult hit) {
         if (InteractionUtil.isInAlternateUseMode(player)) {
@@ -63,30 +69,44 @@ public class QuantumCpuBlock extends AEBaseEntityBlock<QuantumCpuBlockEntity> {
         if (handled != ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION) {
             return handled;
         }
-        return openScreen(level, pos, player)
-                ? ItemInteractionResult.sidedSuccess(level.isClientSide())
+        return openScreen(level, pos, player) ?
+                ItemInteractionResult.sidedSuccess(level.isClientSide())
                 : ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
             BlockHitResult hit) {
+    //?} else {
+    /*public InteractionResult onActivated(Level level, BlockPos pos, Player player, InteractionHand hand,
+            @Nullable ItemStack heldItem, BlockHitResult hit) {
+    *///?}
         if (InteractionUtil.isInAlternateUseMode(player)) {
             return InteractionResult.PASS;
         }
-        return openScreen(level, pos, player)
-                ? InteractionResult.sidedSuccess(level.isClientSide())
+    //? if >=1.21 {
+        return openScreen(level, pos, player) ?
+                InteractionResult.sidedSuccess(level.isClientSide())
                 : InteractionResult.PASS;
     }
 
     private boolean openScreen(Level level, BlockPos pos, Player player) {
+    //?}
         QuantumCpuBlockEntity be = getBlockEntity(level, pos);
         if (be == null) {
+            //? if >=1.21 {
             return false;
+            //?} else {
+            /*return InteractionResult.PASS;
+            *///?}
         }
         if (!level.isClientSide()) {
             be.openMenu(player, MenuLocators.forBlockEntity(be));
         }
+        //? if >=1.21 {
         return true;
+        //?} else {
+        /*return InteractionResult.sidedSuccess(level.isClientSide());
+        *///?}
     }
 }

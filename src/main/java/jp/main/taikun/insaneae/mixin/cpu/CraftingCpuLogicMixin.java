@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Optional;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerPlanBridge;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -36,6 +35,9 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+//? if >=1.21 {
+import net.minecraft.core.HolderLookup;
+//?}
 
 /**
  * ACO の BigInteger 計画をクラフト CPU に載せる・保存する・片付ける処理。
@@ -148,7 +150,11 @@ public abstract class CraftingCpuLogicMixin {
      * PatternはAE2のタスク保存と同じく定義アイテム (AEItemKey) で表す。</p>
      */
     @Inject(method = "writeToNBT", at = @At("RETURN"))
+    //? if >=1.21 {
     private void insaneae$saveExactTasks(CompoundTag tag, HolderLookup.Provider registries, CallbackInfo ci) {
+    //?} else {
+    /*private void insaneae$saveExactTasks(CompoundTag tag, CallbackInfo ci) {
+    *///?}
         if (job == null) {
             return;
         }
@@ -156,7 +162,11 @@ public abstract class CraftingCpuLogicMixin {
             ListTag list = new ListTag();
             snapshot.forEach((pattern, remaining) -> {
                 CompoundTag entry = new CompoundTag();
+                //? if >=1.21 {
                 entry.put("pattern", pattern.getDefinition().toTag(registries));
+                //?} else {
+                /*entry.put("pattern", pattern.getDefinition().toTag());
+                *///?}
                 // longに収まらない値があるため、残数は10進文字列で保存する。
                 entry.putString("remaining", remaining.toString());
                 list.add(entry);
@@ -173,7 +183,11 @@ public abstract class CraftingCpuLogicMixin {
      * 消された等) は、AE2側の該当タスクも消えているので黙って捨ててよい。</p>
      */
     @Inject(method = "readFromNBT", at = @At("RETURN"))
+    //? if >=1.21 {
     private void insaneae$loadExactTasks(CompoundTag tag, HolderLookup.Provider registries, CallbackInfo ci) {
+    //?} else {
+    /*private void insaneae$loadExactTasks(CompoundTag tag, CallbackInfo ci) {
+    *///?}
         if (job == null || !tag.contains(INSANEAE$EXACT_TASKS_TAG, Tag.TAG_LIST)) {
             return;
         }
@@ -187,7 +201,11 @@ public abstract class CraftingCpuLogicMixin {
         for (Tag element : tag.getList(INSANEAE$EXACT_TASKS_TAG, Tag.TAG_COMPOUND)) {
             CompoundTag entry = (CompoundTag) element;
             try {
+                //? if >=1.21 {
                 AEItemKey definition = AEItemKey.fromTag(registries, entry.getCompound("pattern"));
+                //?} else {
+                /*AEItemKey definition = AEItemKey.fromTag(entry.getCompound("pattern"));
+                *///?}
                 IPatternDetails details = definition == null ? null : byDefinition.get(definition);
                 if (details == null) {
                     INSANEAE$EXACT_LOGGER.warn(

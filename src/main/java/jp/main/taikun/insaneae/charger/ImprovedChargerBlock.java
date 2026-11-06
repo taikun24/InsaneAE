@@ -9,7 +9,6 @@ import appeng.util.InteractionUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -20,6 +19,12 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+//? if >=1.21 {
+import net.minecraft.world.ItemInteractionResult;
+//?}
+//? if <1.21 {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * Improved Crystal Charger のブロック。中身は {@link ImprovedChargerBlockEntity}。
@@ -118,6 +123,7 @@ public class ImprovedChargerBlock extends AEBaseEntityBlock<ImprovedChargerBlock
     // どちらも同じ「入れる／取り出す」を行うので、実処理は activate() にまとめてある。
 
     @Override
+    //? if >=1.21 {
     protected ItemInteractionResult useItemOn(ItemStack heldItem, BlockState state, Level level, BlockPos pos,
             Player player, InteractionHand hand, BlockHitResult hit) {
         if (InteractionUtil.isInAlternateUseMode(player)) {
@@ -135,19 +141,28 @@ public class ImprovedChargerBlock extends AEBaseEntityBlock<ImprovedChargerBlock
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
             BlockHitResult hit) {
+    //?} else {
+    /*public InteractionResult onActivated(Level level, BlockPos pos, Player player, InteractionHand hand,
+            @Nullable ItemStack heldItem, BlockHitResult hit) {
+    *///?}
         if (InteractionUtil.isInAlternateUseMode(player)) {
             return InteractionResult.PASS;
         }
+    //? if >=1.21 {
         activate(level, pos, player);
         return InteractionResult.sidedSuccess(level.isClientSide());
     }
 
     private void activate(Level level, BlockPos pos, Player player) {
+    //?}
         if (!level.isClientSide()) {
             ImprovedChargerBlockEntity be = getBlockEntity(level, pos);
             if (be != null) {
                 be.activate(player);
             }
         }
+        //? if <1.21 {
+        /*return InteractionResult.sidedSuccess(level.isClientSide());
+        *///?}
     }
 }

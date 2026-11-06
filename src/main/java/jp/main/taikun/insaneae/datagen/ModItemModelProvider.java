@@ -57,6 +57,7 @@ public class ModItemModelProvider extends ItemModelProvider {
      * <p>MEGA Cells 4.x のポータブルセルは AE2 の汎用テクスチャ 1 枚を使っているので、
      * アイテム用と液体用の両方をそれに合わせる。</p>
      */
+    //? if >=1.21 {
     private static final ResourceLocation PORTABLE_ITEM_SCREEN = mega("ae2", "item/portable_cell_screen");
     private static final ResourceLocation PORTABLE_FLUID_SCREEN = PORTABLE_ITEM_SCREEN;
     /**
@@ -80,6 +81,26 @@ public class ModItemModelProvider extends ItemModelProvider {
      */
     private static final ResourceLocation FE_HOUSING = mega("appflux", "item/fe_cell_housing");
     private static final ResourceLocation PORTABLE_FE_HOUSING = mega("appflux", "item/portable_cell_fe_housing");
+    //?} else {
+    /*private static final ResourceLocation PORTABLE_ITEM_SCREEN =
+            mega("megacells", "item/cell/portable/portable_cell_item_screen");
+    private static final ResourceLocation PORTABLE_FLUID_SCREEN =
+            mega("megacells", "item/cell/portable/portable_cell_fluid_screen");
+    private static final ResourceLocation PORTABLE_ITEM_HOUSING = mega("ae2", "item/portable_cell_item_housing");
+    private static final ResourceLocation PORTABLE_FLUID_HOUSING = mega("ae2", "item/portable_cell_fluid_housing");
+    /^* 化学物質のポータブルセル用。AE2 に専用の筐体が無いので汎用のものを使う。 ^/
+    private static final ResourceLocation PORTABLE_HOUSING = mega("ae2", "item/portable_cell_housing");
+    /^*
+     * FE セル (AppliedFlux 連携) の筐体と画面。AppliedFlux の 1M〜256M (MEGA 版) のものを借りる。
+     *
+     * <p>筐体の形は MEGA の化学物質セル筐体と同じなので、階層色レイヤ ({@code standardCell}) が
+     * そのまま重なる (jar のテクスチャで確認済み)。ポータブルも AppliedFlux 自身が AE2 の側面帯を
+     * 重ねているので {@code portableSide} がそのまま合う。</p>
+     ^/
+    private static final ResourceLocation FE_HOUSING = mega("appflux", "item/mega_fe_cell_housing");
+    private static final ResourceLocation PORTABLE_FE_SCREEN = mega("appflux", "item/portable_mega_cell_screen");
+    private static final ResourceLocation PORTABLE_FE_HOUSING = mega("appflux", "item/portable_mega_cell_fe_housing");
+    *///?}
     /**
      * AE2 Things 連携の DISK の下地。窓が MEGA のハウジングと同じ形・同じ 3 階調なので、
      * 通常セルの階層色レイヤ ({@code standardCell}) がそのまま重なって 1k の色を覆う。
@@ -92,15 +113,22 @@ public class ModItemModelProvider extends ItemModelProvider {
     private static ResourceLocation mega(String namespace, String path) {
         return ResourceLocation.fromNamespaceAndPath(namespace, path);
     }
+    //? if <1.21 {
+    /*private static ResourceLocation compressedCableTexture(String name) {
+        return mega(InsaneAE.MODID, "part/cable/compressed/" + name);
+    }
+    *///?}
 
     /** 超次元 ME ケーブルのテクスチャ (帯・目盛りとも insaneae 側にコピー済み)。 */
     private static ResourceLocation hyperCableTexture(String name) {
         return mega(InsaneAE.MODID, "part/cable/hyper/" + name);
+    //? if >=1.21 {
     }
 
     /** 圧縮 ME 高密度スマートケーブルのテクスチャ (枠を明るくした版)。 */
     private static ResourceLocation compressedCableTexture(String name) {
         return mega(InsaneAE.MODID, "part/cable/compressed/" + name);
+    //?}
     }
 
     public ModItemModelProvider(PackOutput output, ExistingFileHelper existingFileHelper) {
@@ -125,11 +153,23 @@ public class ModItemModelProvider extends ItemModelProvider {
             layered("disk_drive_" + id, DISK_BASE, CELL_LED, standardCell(id));
 
             layered("portable_item_cell_" + id,
+                    //? if >=1.21 {
                     PORTABLE_ITEM_HOUSING, PORTABLE_LED, PORTABLE_ITEM_SCREEN, portableSide(id));
+                    //?} else {
+                    /*PORTABLE_ITEM_SCREEN, PORTABLE_LED, PORTABLE_ITEM_HOUSING, portableSide(id));
+                    *///?}
             layered("portable_fluid_cell_" + id,
+                    //? if >=1.21 {
                     PORTABLE_FLUID_HOUSING, PORTABLE_LED, PORTABLE_FLUID_SCREEN, portableSide(id));
+                    //?} else {
+                    /*PORTABLE_FLUID_SCREEN, PORTABLE_LED, PORTABLE_FLUID_HOUSING, portableSide(id));
+                    *///?}
             layered("portable_chemical_cell_" + id,
+                    //? if >=1.21 {
                     PORTABLE_HOUSING, PORTABLE_LED, PORTABLE_ITEM_SCREEN, portableSide(id));
+                    //?} else {
+                    /*PORTABLE_ITEM_SCREEN, PORTABLE_LED, PORTABLE_HOUSING, portableSide(id));
+                    *///?}
         }
 
         // FE セルは AppliedFlux の容量計算が long なので 16T までしか出さない (FluxTiers)。
@@ -138,7 +178,11 @@ public class ModItemModelProvider extends ItemModelProvider {
             layered("energy_component_" + id, modLoc("item/energy_component_" + id));
             layered("fe_storage_cell_" + id, FE_HOUSING, CELL_LED, standardCell(id));
             layered("portable_fe_cell_" + id,
+                    //? if >=1.21 {
                     PORTABLE_FE_HOUSING, PORTABLE_LED, PORTABLE_ITEM_SCREEN, portableSide(id));
+                    //?} else {
+                    /*PORTABLE_FE_SCREEN, PORTABLE_LED, PORTABLE_FE_HOUSING, portableSide(id));
+                    *///?}
         }
 
         simple("creative_cell");
@@ -171,9 +215,17 @@ public class ModItemModelProvider extends ItemModelProvider {
         // 正面のテクスチャだけこちらのものに差し替える。
         // ワールドに置いたときの見た目は models/part/*_base.json (手書き) が担当する。
         partItem("insane_interface_part", "insane_interface",
+                //? if >=1.21 {
                 "ae2:part/interface_sides", "ae2:part/interface_back");
+                //?} else {
+                /*mega("ae2", "part/interface_sides"), mega("ae2", "part/interface_back"));
+                *///?}
         partItem("insane_pattern_provider_part", "insane_pattern_provider",
+                //? if >=1.21 {
                 "ae2:part/pattern_provider_sides", "ae2:part/pattern_provider_back");
+                //?} else {
+                /*mega("ae2", "part/pattern_provider_sides"), mega("ae2", "part/pattern_provider_back"));
+                *///?}
 
         // 超次元 ME ケーブルの手持ちモデル (17 色)。
         //
@@ -265,11 +317,21 @@ public class ModItemModelProvider extends ItemModelProvider {
      * @param sides       側面のテクスチャ (AE2 のものを借りる)
      * @param back        背面のテクスチャ (同上)
      */
+    //? if >=1.21 {
     private void partItem(String name, String blockTexture, String sides, String back) {
+    //?} else {
+    /*private void partItem(String name, String blockTexture, ResourceLocation sides,
+            ResourceLocation back) {
+    *///?}
         ItemModelBuilder builder = withExistingParent(name, mega("ae2", "item/part_base"))
                 .texture("front", modLoc("block/" + blockTexture))
+                //? if >=1.21 {
                 .texture("sides", ResourceLocation.parse(sides))
                 .texture("back", ResourceLocation.parse(back))
+                //?} else {
+                /*.texture("sides", sides)
+                .texture("back", back)
+                *///?}
                 .texture("particle", modLoc("block/" + blockTexture));
         partPlate(builder, 2, 2, 7, 14, 14, 9, 0, 0, 16, 16);
         partPlate(builder, 5, 5, 10, 11, 11, 11, 4, 4, 12, 12);

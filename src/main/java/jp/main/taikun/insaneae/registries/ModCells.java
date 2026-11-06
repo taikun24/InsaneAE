@@ -1,6 +1,5 @@
 package jp.main.taikun.insaneae.registries;
 
-import net.minecraft.core.registries.Registries;
 import appeng.api.stacks.AEKeyType;
 import appeng.items.storage.StorageTier;
 import appeng.menu.me.common.MEStorageMenu;
@@ -16,11 +15,18 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.ItemLike;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import net.neoforged.neoforge.registries.DeferredHolder;
 
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Supplier;
+//? if >=1.21 {
+import net.minecraft.core.registries.Registries;
+import net.neoforged.neoforge.registries.DeferredHolder;
+//?}
+//? if <1.21 {
+/*import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.registries.RegistryObject;
+*///?}
 
 /**
  * 各階層の ME ストレージセル (通常セル / ポータブルセル)。
@@ -33,7 +39,11 @@ import java.util.function.Supplier;
  */
 public class ModCells {
     private static final DeferredRegister<Item> ITEMS =
+            //? if >=1.21 {
             DeferredRegister.create(Registries.ITEM, InsaneAE.MODID);
+            //?} else {
+            /*DeferredRegister.create(ForgeRegistries.ITEMS, InsaneAE.MODID);
+            *///?}
 
     /** 型ごとに予約されるバイト数。容量に対して十分小さい固定値で足りる。 */
     public static final int BYTES_PER_TYPE = 8192;
@@ -57,17 +67,35 @@ public class ModCells {
      * <p>種類の区別は画面の色ではなく<b>筐体テクスチャ</b>のほうで付いている
      * ({@code megacells:item/portable_cell_item/fluid/chemical_housing})。</p>
      */
+    //? if >=1.21 {
     public static final int PORTABLE_SCREEN_COLOR = 0x80CFFF;
+    //?}
 
     public static final Map<InsaneCraftingUnitType, StorageTier> TIERS =
             new EnumMap<>(InsaneCraftingUnitType.class);
+    //? if >=1.21 {
     public static final Map<InsaneCraftingUnitType, DeferredHolder<Item, Item>> ITEM_CELLS =
+    //?} else {
+    /*public static final Map<InsaneCraftingUnitType, RegistryObject<Item>> ITEM_CELLS =
+    *///?}
             new EnumMap<>(InsaneCraftingUnitType.class);
+    //? if >=1.21 {
     public static final Map<InsaneCraftingUnitType, DeferredHolder<Item, Item>> FLUID_CELLS =
+    //?} else {
+    /*public static final Map<InsaneCraftingUnitType, RegistryObject<Item>> FLUID_CELLS =
+    *///?}
             new EnumMap<>(InsaneCraftingUnitType.class);
+    //? if >=1.21 {
     public static final Map<InsaneCraftingUnitType, DeferredHolder<Item, Item>> PORTABLE_ITEM_CELLS =
+    //?} else {
+    /*public static final Map<InsaneCraftingUnitType, RegistryObject<Item>> PORTABLE_ITEM_CELLS =
+    *///?}
             new EnumMap<>(InsaneCraftingUnitType.class);
+    //? if >=1.21 {
     public static final Map<InsaneCraftingUnitType, DeferredHolder<Item, Item>> PORTABLE_FLUID_CELLS =
+    //?} else {
+    /*public static final Map<InsaneCraftingUnitType, RegistryObject<Item>> PORTABLE_FLUID_CELLS =
+    *///?}
             new EnumMap<>(InsaneCraftingUnitType.class);
 
     /**
@@ -75,7 +103,11 @@ public class ModCells {
      * 報告する在庫量が 21 億 ({@code int}) ではなく約 922 京 ({@code long})。
      * 種類の制限は無いので 1 個でアイテムも液体も化学物質もまかなう。
      */
+    //? if >=1.21 {
     public static final DeferredHolder<Item, Item> CREATIVE_CELL =
+    //?} else {
+    /*public static final RegistryObject<Item> CREATIVE_CELL =
+    *///?}
             register("creative_cell", () -> new InsaneCreativeCellItem(new Item.Properties()));
 
     /**
@@ -86,7 +118,11 @@ public class ModCells {
      * <b>ACO の正確な計算経路だけ</b>で、922京を超える材料を要求する BigInteger クラフトを
      * 作成可能にするためのもの。ACO が無ければ強化クリエイティブセルと同じ。</p>
      */
+    //? if >=1.21 {
     public static final DeferredHolder<Item, Item> ULTRA_CREATIVE_CELL =
+    //?} else {
+    /*public static final RegistryObject<Item> ULTRA_CREATIVE_CELL =
+    *///?}
             register("ultra_creative_cell", () -> new InsaneUltraCreativeCellItem(new Item.Properties()));
 
     static {
@@ -115,12 +151,20 @@ public class ModCells {
             PORTABLE_ITEM_CELLS.put(tier, register("portable_item_cell_" + tier.id(),
                     () -> new InsanePortableCellItem(new Item.Properties(), storageTier,
                             tier.getStorageBytes(), totalTypes(tier), AEKeyType.items(),
+                            //? if >=1.21 {
                             MEStorageMenu.PORTABLE_ITEM_CELL_TYPE, PORTABLE_SCREEN_COLOR,
+                            //?} else {
+                            /*MEStorageMenu.PORTABLE_ITEM_CELL_TYPE, 0x353535,
+                            *///?}
                             TieredNames.PORTABLE_ITEM_CELL, tier.label())));
             PORTABLE_FLUID_CELLS.put(tier, register("portable_fluid_cell_" + tier.id(),
                     () -> new InsanePortableCellItem(new Item.Properties(), storageTier,
                             tier.getStorageBytes(), totalTypes(tier), AEKeyType.fluids(),
+                            //? if >=1.21 {
                             MEStorageMenu.PORTABLE_FLUID_CELL_TYPE, PORTABLE_SCREEN_COLOR,
+                            //?} else {
+                            /*MEStorageMenu.PORTABLE_FLUID_CELL_TYPE, 0xF1C5,
+                            *///?}
                             TieredNames.PORTABLE_FLUID_CELL, tier.label())));
         }
     }
@@ -156,7 +200,11 @@ public class ModCells {
     }
 
     /** 化学物質セルなど、他クラスからアイテムを追加するための入口。 */
+    //? if >=1.21 {
     public static DeferredHolder<Item, Item> register(String name, Supplier<Item> factory) {
+    //?} else {
+    /*public static RegistryObject<Item> register(String name, Supplier<Item> factory) {
+    *///?}
         return ITEMS.register(name, factory);
     }
 

@@ -1,98 +1,52 @@
 name: build
 
-# 1.20.1 (main) と 1.21.1 は別ブランチで並行メンテしている。
-# このファイルは両ブランチに同じ内容で置いてあり、それぞれ自分のブランチをビルドする。
-# 片方に cherry-pick したときにもう片方を壊していないかを、push 時点で拾うのが目的。
-#
-# ブランチごとに違うのは次の 2 つだけ:
-#   - 下の Java バージョン (main = 17 / 1.21.1 = 21)
-#   - .github/known-test-failures.txt の中身
-# このファイルを cherry-pick するときは Java バージョンを戻し忘れないこと。
+# 1.20.1 (Forge) と 1.21.1 (NeoForge) を Stonecutter で 1 つのソースから作っている。
+# push のたびに両方をビルドし、GameTest を回す。
 
 on:
   push:
-    branches: [main, '1.21.1']
   pull_request:
-    branches: [main, '1.21.1']
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
+    strategy:
+      # 片方が落ちても、もう片方の結果は最後まで見る。
+      fail-fast: false
+      matrix:
+        node: ['1.20.1-forge', '1.21.1-neoforge']
 
     steps:
       - uses: actions/checkout@v4
 
-      # ★ブランチ依存: main は 17、1.21.1 は 21
+      # Gradle 自体 (Stonecutter) は Java 21 で動き、1.20.1 のコンパイルには Java 17 が要る。
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: |
+            17
+            21
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - run: chmod +x ./gradlew
+      - run: chmod +x ./gradlew .github/scripts/gametest.sh
 
       - name: Build
-        run: ./gradlew build
+        run: ./gradlew ":${{ matrix.node }}:build"
 
-      # GameTestServer はワールドを作るので EULA への同意が要る。
-      # run/ は .gitignore なのでここで用意する。
-      - name: Accept EULA
-        run: |
-          mkdir -p run
-          echo "eula=true" > run/eula.txt
-
-      # AE2 のテストプロットに相乗りした検証を含め、登録済みの GameTest を全部走らせる。
-      # AE2 本体に元から落ちるテストがあるので、終了コードではなく
-      # 「落ちたテストの顔ぶれが known-test-failures.txt と一致するか」で判定する。
       - name: Game tests
-        run: |
-          ./gradlew runGameTestServer 2>&1 | tee gametest.log || true
-
-          # サーバーがテストに到達せず落ちた場合を先に弾く (下の diff だと素通りしてしまう)。
-          if ! grep -qE 'required tests (passed|failed)' gametest.log; then
-            echo "::error::テストが実行されていません (サーバーが起動途中で落ちた可能性)"
-            exit 1
-          fi
-
-          grep -oE 'LogTestReporter\]: [a-z0-9_.]+ failed!' gametest.log \
-            | sed -E 's/.*\]: //; s/ failed!$//' | sort -u > actual-failures.txt
-          # 行頭コメント・行末コメント・空行を落としてテスト名だけにする。
-          sed -E 's/#.*//; s/[[:space:]]+//g' .github/known-test-failures.txt \
-            | grep -vE '^$' | sort -u > expected-failures.txt
-
-          echo "--- 落ちたテスト ---"
-          cat actual-failures.txt
-
-          # <b>完全一致では判定しない。</b>AE2 本体のテストにはタイミング依存で結果が変わるものがあり
-          # (channel_assignment_test / p2p_channel_reconnect_behavior は手元の Windows では落ちるが
-          #  CI のランナーでは通る)、完全一致にすると「想定より良い結果」でビルドが落ちる。
-          # 落とすのは<b>新しく落ちたテストがあるときだけ</b>にして、
-          # 「リストにあるのに通った」は警告に留める (直ったならリストから消す合図)。
-          comm -13 expected-failures.txt actual-failures.txt > new-failures.txt
-          comm -23 expected-failures.txt actual-failures.txt > now-passing.txt
-
-          if [ -s now-passing.txt ]; then
-            echo "::warning::許可リストにあるが今回は通ったテスト (環境差か、直ったならリストから消すこと):"
-            cat now-passing.txt
-          fi
-          if [ -s new-failures.txt ]; then
-            echo "::error::新たに落ちたテストがあります:"
-            cat new-failures.txt
-            exit 1
-          fi
-          echo "新規の失敗はありません。"
+        run: .github/scripts/gametest.sh "${{ matrix.node }}"
 
       - name: Upload jar
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: insaneae-${{ github.run_id }}-${{ github.run_attempt }}
-          path: build/libs/*.jar
+          name: insaneae-${{ matrix.node }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: versions/${{ matrix.node }}/build/libs/*.jar
           if-no-files-found: error
 
       # 落ちたときに原因を追えるようにログを残す。
@@ -100,8 +54,8 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: logs-${{ github.run_id }}-${{ github.run_attempt }}
+          name: logs-${{ matrix.node }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            run/logs/
-            gametest.log
+            versions/${{ matrix.node }}/run/logs/
+            gametest-${{ matrix.node }}.log
           if-no-files-found: ignore

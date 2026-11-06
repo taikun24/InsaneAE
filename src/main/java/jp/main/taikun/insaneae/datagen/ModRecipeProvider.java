@@ -1,12 +1,9 @@
 package jp.main.taikun.insaneae.datagen;
 
 import java.util.List;
-import java.util.Arrays;
-import appeng.recipes.game.StorageCellDisassemblyRecipe;
 import appeng.recipes.handlers.InscriberProcessType;
 import appeng.recipes.handlers.InscriberRecipeBuilder;
 import net.minecraft.world.item.Items;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.TagKey;
 import appeng.core.definitions.AEBlocks;
@@ -33,11 +30,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
-import net.minecraft.core.HolderLookup;
-import net.neoforged.neoforge.common.conditions.ModLoadedCondition;
-import net.neoforged.neoforge.common.crafting.DifferenceIngredient;
 
-import java.util.concurrent.CompletableFuture;
 import jp.main.taikun.insaneae.integration.AddonIntegration;
 import jp.main.taikun.insaneae.integration.AddonIntegrations;
 import org.slf4j.Logger;
@@ -46,6 +39,21 @@ import com.mojang.logging.LogUtils;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+//? if >=1.21 {
+import java.util.Arrays;
+import appeng.recipes.game.StorageCellDisassemblyRecipe;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.HolderLookup;
+import net.neoforged.neoforge.common.conditions.ModLoadedCondition;
+import net.neoforged.neoforge.common.crafting.DifferenceIngredient;
+import java.util.concurrent.CompletableFuture;
+//?}
+//? if <1.21 {
+/*import net.minecraftforge.common.crafting.ConditionalRecipe;
+import net.minecraftforge.common.crafting.DifferenceIngredient;
+import net.minecraftforge.common.crafting.conditions.ModLoadedCondition;
+import net.neoforged.neoforge.registries.ForgeRegistries;
+*///?}
 
 /**
  * 全レシピの生成元。手書き JSON は置かず、ここから {@code src/generated/resources} に出力する。
@@ -77,15 +85,28 @@ public class ModRecipeProvider extends RecipeProvider {
      */
     private static TagKey<Item> dyeTag(AEColor color) {
         return TagKey.create(Registries.ITEM,
+                //? if >=1.21 {
                 ResourceLocation.fromNamespaceAndPath("c", "dyes/" + color.dye.getName()));
+                //?} else {
+                /*ResourceLocation.fromNamespaceAndPath("forge", "dyes/" + color.dye.getName()));
+                *///?}
     }
 
+    //? if >=1.21 {
     public ModRecipeProvider(PackOutput output, CompletableFuture<HolderLookup.Provider> registries) {
         super(output, registries);
+    //?} else {
+    /*public ModRecipeProvider(PackOutput output) {
+        super(output);
+    *///?}
     }
 
     @Override
+    //? if >=1.21 {
     protected void buildRecipes(RecipeOutput consumer) {
+    //?} else {
+    /*protected void buildRecipes(Consumer<FinishedRecipe> consumer) {
+    *///?}
         List<String> missingAddons = AddonIntegrations.missingModIds();
         if (!missingAddons.isEmpty()) {
             LOGGER.warn("Addons not present: {}. それらの連携が足すレシピ (化学物質セル・FE セルなど) は"
@@ -97,8 +118,8 @@ public class ModRecipeProvider extends RecipeProvider {
             InsaneCraftingUnitType tier = tiers[index];
             ItemLike component = ModItems.CELL_COMPONENTS.get(tier).get();
             // 最下段のコンポーネントだけ MEGA Cells の 256M コンポーネントから作る。
-            ItemLike lower = index == 0
-                    ? MEGAItems.CELL_COMPONENT_256M
+            ItemLike lower = index == 0 ?
+                    MEGAItems.CELL_COMPONENT_256M
                     : ModItems.CELL_COMPONENTS.get(tiers[index - 1]).get();
 
             tieredComponent(consumer, component, lower, ACCUMULATION_PROCESSOR, tier);
@@ -118,8 +139,12 @@ public class ModRecipeProvider extends RecipeProvider {
 
             // 他アドオンのセル。相手が居ないワールドでは無効になるよう mod_loaded 条件を付ける。
             for (AddonIntegration addon : AddonIntegrations.active()) {
+                //? if >=1.21 {
                 addon.buildRecipes(consumer.withConditions(new ModLoadedCondition(addon.modId())),
                         tier, component);
+                //?} else {
+                /*addon.buildRecipes(whenModLoaded(consumer, addon.modId()), tier, component);
+                *///?}
             }
         }
 
@@ -128,8 +153,8 @@ public class ModRecipeProvider extends RecipeProvider {
         InsaneAcceleratorType[] accelerators = InsaneAcceleratorType.values();
         for (int index = 0; index < accelerators.length; index++) {
             InsaneAcceleratorType tier = accelerators[index];
-            ItemLike lower = index == 0
-                    ? MEGABlocks.CRAFTING_ACCELERATOR
+            ItemLike lower = index == 0 ?
+                    MEGABlocks.CRAFTING_ACCELERATOR
                     : ModBlocks.CRAFTING_ACCELERATOR.get(accelerators[index - 1]).get();
             shapeless(consumer, ModBlocks.CRAFTING_ACCELERATOR.get(tier).get(), lower,
                     b -> b.requires(lower, tier.lowerCount()));
@@ -151,6 +176,7 @@ public class ModRecipeProvider extends RecipeProvider {
                         'A', ModItems.INSANE_PROCESSOR.get(),
                         'B', AEBlocks.MOLECULAR_ASSEMBLER,
                         'C', AEBlocks.PATTERN_PROVIDER
+        //? if >=1.21 {
                 ));
 
         // 超特大インターフェイス: ME インターフェイス + 集積プロセッサ 4 + 特異点 4。
@@ -161,6 +187,7 @@ public class ModRecipeProvider extends RecipeProvider {
                         'A', ACCUMULATION_PROCESSOR,
                         'B', SINGULARITY,
                         'C', AEBlocks.INTERFACE
+        //?}
                 ));
 
         // 特大パターンプロバイダー: パターンプロバイダ + 集積プロセッサ 4 + 特異点 4。
@@ -210,13 +237,22 @@ public class ModRecipeProvider extends RecipeProvider {
         InsaneEnergyCellTier[] energyCells = InsaneEnergyCellTier.values();
         for (int index = 0; index < energyCells.length; index++) {
             InsaneEnergyCellTier tier = energyCells[index];
-            ItemLike lower = index == 0
-                    ? MEGABlocks.MEGA_ENERGY_CELL
+            ItemLike lower = index == 0 ?
+                    MEGABlocks.MEGA_ENERGY_CELL
                     : ModBlocks.ENERGY_CELLS.get(energyCells[index - 1]).get();
             shaped(consumer, ModBlocks.ENERGY_CELLS.get(tier).get(), lower,
                     new String[]{"AAA", "ABA", "AAA"},
                     Map.of('A', lower, 'B', ACCUMULATION_PROCESSOR));
         }
+        //? if <1.21 {
+        /*shaped(consumer, ModBlocks.INSANE_INTERFACE.get(), ACCUMULATION_PROCESSOR,
+                new String[]{"ABA", "BCB", "ABA"},
+                Map.of(
+                        'A', ACCUMULATION_PROCESSOR,
+                        'B', SINGULARITY,
+                        'C', AEBlocks.INTERFACE
+                ));
+        *///?}
 
         shaped(consumer, ModBlocks.IMPROVED_CHARGER.get(), ACCUMULATION_PROCESSOR,
                 new String[]{"ABA", "BCB", "ABA"},
@@ -268,7 +304,11 @@ public class ModRecipeProvider extends RecipeProvider {
      * 本体   : 上 Insane 回路 / 中 集積プロセッサ / 下 シリコン回路 (press)
      * </pre>
      */
+    //? if >=1.21 {
     private static void insaneProcessor(RecipeOutput consumer) {
+    //?} else {
+    /*private static void insaneProcessor(Consumer<FinishedRecipe> consumer) {
+    *///?}
         Item press = ModItems.INSANE_PROCESSOR_PRESS.get();
         Item printed = ModItems.PRINTED_INSANE_PROCESSOR.get();
         InscriberRecipeBuilder.inscribe(AEItems.QUANTUM_ENTANGLED_SINGULARITY, press, 1)
@@ -301,10 +341,14 @@ public class ModRecipeProvider extends RecipeProvider {
      *
      * @param processor 真ん中上に置くプロセッサ (セル用は集積プロセッサ)
      */
+    //? if >=1.21 {
     public static void tieredComponent(RecipeOutput consumer, ItemLike component, ItemLike lower,
+    //?} else {
+    /*public static void tieredComponent(Consumer<FinishedRecipe> consumer, ItemLike component, ItemLike lower,
+    *///?}
             ItemLike processor, InsaneCraftingUnitType tier) {
-        ItemLike baseMaterial = tier.getStorageBytes() > InsaneCraftingUnitType.STORAGE_256G.getStorageBytes()
-                ? SINGULARITY
+        ItemLike baseMaterial = tier.getStorageBytes() > InsaneCraftingUnitType.STORAGE_256G.getStorageBytes() ?
+                SINGULARITY
                 : MATTER_BALL;
         shaped(consumer, component, lower, new String[]{"ABA", "CDC", "ACA"},
                 Map.of(
@@ -315,20 +359,37 @@ public class ModRecipeProvider extends RecipeProvider {
                 ));
     }
 
+    //? if >=1.21 {
     public static void storageCell(RecipeOutput consumer, ItemLike cell, ItemLike component, ItemLike housing) {
+    //?} else {
+    /*public static void storageCell(Consumer<FinishedRecipe> consumer, ItemLike cell, ItemLike component,
+            ItemLike housing) {
+    *///?}
         shapeless(consumer, cell, component, b -> b.requires(housing).requires(component));
+        //? if >=1.21 {
         cellDisassembly(consumer, cell, component, housing);
+        //?}
     }
 
+    //? if >=1.21 {
     public static void portableCell(RecipeOutput consumer, ItemLike cell, ItemLike component, ItemLike housing) {
         shapeless(consumer, cell, component, b -> b.requires(AEBlocks.ME_CHEST)
+    //?} else {
+    /*public static void portableCell(Consumer<FinishedRecipe> consumer, ItemLike cell, ItemLike component,
+            ItemLike housing) {
+        shapeless(consumer, cell, component, b -> b.requires(AEBlocks.CHEST)
+    *///?}
                 .requires(component)
                 .requires(AEBlocks.DENSE_ENERGY_CELL)
                 .requires(housing));
     }
 
     /** 素材を組み立てて shapeless レシピを 1 件出す (解禁条件は素材のコンポーネント)。 */
+    //? if >=1.21 {
     public static void shapeless(RecipeOutput consumer, ItemLike result, ItemLike unlockedBy,
+    //?} else {
+    /*public static void shapeless(Consumer<FinishedRecipe> consumer, ItemLike result, ItemLike unlockedBy,
+    *///?}
             Consumer<ShapelessRecipeBuilder> ingredients) {
         ShapelessRecipeBuilder builder = ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, result);
         ingredients.accept(builder);
@@ -340,13 +401,22 @@ public class ModRecipeProvider extends RecipeProvider {
      * <p>レシピ ID は結果アイテム名そのままにすると<b>本来の作成レシピと衝突する</b>
      * (ブロック版はここより上で 3x3 から作っている) ので、{@code convert/} を頭に付けて分ける。</p>
      */
+    //? if >=1.21 {
     static void convert(RecipeOutput consumer, ItemLike block, ItemLike part) {
+    //?} else {
+    /*static void convert(Consumer<FinishedRecipe> consumer, ItemLike block, ItemLike part) {
+    *///?}
         convertOneWay(consumer, block, part);
         convertOneWay(consumer, part, block);
     }
 
+    //? if >=1.21 {
     private static void convertOneWay(RecipeOutput consumer, ItemLike from, ItemLike to) {
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(to.asItem()).withPrefix("convert/");
+    //?} else {
+    /*private static void convertOneWay(Consumer<FinishedRecipe> consumer, ItemLike from, ItemLike to) {
+        ResourceLocation id = ForgeRegistries.ITEMS.getKey(to.asItem()).withPrefix("convert/");
+    *///?}
         ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, to)
                 .requires(from)
                 .unlockedBy("has_component", has(from))
@@ -374,7 +444,11 @@ public class ModRecipeProvider extends RecipeProvider {
      * @param cableTag そのケーブル 17 色をまとめたタグ ({@link ModItemTagProvider})
      * @param cleanId  色落としレシピの ID (ケーブルごとに分ける)
      */
+    //? if >=1.21 {
     private static void cableColoring(RecipeOutput consumer,
+    //?} else {
+    /*private static void cableColoring(Consumer<FinishedRecipe> consumer,
+    *///?}
             Function<AEColor, ? extends ItemLike> cables,
             TagKey<Item> cableTag, String cleanId) {
         ItemLike fluix = cables.apply(AEColor.TRANSPARENT);
@@ -400,8 +474,13 @@ public class ModRecipeProvider extends RecipeProvider {
     }
 
     /** {@link #shaped} の、結果を複数個出す版。 */
+    //? if >=1.21 {
     static void shapedCount(RecipeOutput consumer, ItemLike result, int count, ItemLike unlockedBy,
             String[] pattern, Map<Character, ItemLike> ingredients) {
+    //?} else {
+    /*static void shapedCount(Consumer<FinishedRecipe> consumer, ItemLike result, int count,
+            ItemLike unlockedBy, String[] pattern, Map<Character, ItemLike> ingredients) {
+    *///?}
         ShapedRecipeBuilder builder = ShapedRecipeBuilder.shaped(RecipeCategory.MISC, result, count);
         for (String s : pattern) {
             builder.pattern(s);
@@ -412,7 +491,11 @@ public class ModRecipeProvider extends RecipeProvider {
         builder.unlockedBy("has_component", has(unlockedBy)).save(consumer);
     }
 
+    //? if >=1.21 {
     static void shaped(RecipeOutput consumer, ItemLike result, ItemLike unlockedBy, String[] pattern, Map<Character, ItemLike> ingredients) {
+    //?} else {
+    /*static void shaped(Consumer<FinishedRecipe> consumer, ItemLike result, ItemLike unlockedBy, String[] pattern, Map<Character, ItemLike> ingredients) {
+    *///?}
         ShapedRecipeBuilder builder = ShapedRecipeBuilder.shaped(RecipeCategory.MISC, result);
         for (String s : pattern) {
             builder.pattern(s);
@@ -429,10 +512,19 @@ public class ModRecipeProvider extends RecipeProvider {
      * <p>AE2 19.2 では分解結果が {@code StorageCellDisassemblyRecipe} というデータ駆動レシピで
      * 決まるため、datagen 側で出す必要がある。これを出さないとセルを分解できなくなる。</p>
      */
+    //? if >=1.21 {
     public static void cellDisassembly(RecipeOutput consumer, ItemLike cell, ItemLike... results) {
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(cell.asItem()).withPrefix("cell_disassembly/");
         List<ItemStack> stacks = Arrays.stream(results).map(ItemStack::new).toList();
         // 分解レシピはクラフト台に出ないので進捗 (advancement) は付けない。
         consumer.accept(id, new StorageCellDisassemblyRecipe(cell.asItem(), stacks), null);
+    //?} else {
+    /*static Consumer<FinishedRecipe> whenModLoaded(Consumer<FinishedRecipe> consumer, String modId) {
+        return recipe -> ConditionalRecipe.builder()
+                .addCondition(new ModLoadedCondition(modId))
+                .addRecipe(recipe)
+                .generateAdvancement()
+                .build(consumer, recipe.getId());
+    *///?}
     }
 }

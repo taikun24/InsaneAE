@@ -7,12 +7,10 @@ import appeng.menu.MenuOpener;
 import appeng.menu.SlotSemantic;
 import appeng.menu.SlotSemantics;
 import appeng.menu.implementations.PatternProviderMenu;
-import appeng.menu.locator.MenuHostLocator;
 import appeng.menu.locator.MenuLocators;
 import appeng.menu.slot.AppEngSlot;
 import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
@@ -23,9 +21,19 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 
 import java.util.List;
+//? if >=1.21 {
+import appeng.menu.locator.MenuHostLocator;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
+//?}
+//? if <1.21 {
+/*import appeng.menu.locator.MenuLocator;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.common.extensions.IForgeMenuType;
+import net.minecraftforge.network.NetworkHooks;
+*///?}
 
 /**
  * Quantum CPU の画面。パターンプロバイダの画面に加速カードのスロットを足しただけ。
@@ -43,7 +51,11 @@ import java.util.List;
  */
 public class QuantumCpuMenu extends PatternProviderMenu {
 
+    //? if >=1.21 {
     public static final MenuType<QuantumCpuMenu> TYPE = IMenuTypeExtension.create(QuantumCpuMenu::fromNetwork);
+    //?} else {
+    /*public static final MenuType<QuantumCpuMenu> TYPE = IForgeMenuType.create(QuantumCpuMenu::fromNetwork);
+    *///?}
 
     /** 表示ページの変更をサーバに伝えるアクション。 */
     private static final String ACTION_SET_PAGE = "insaneaeSetPage";
@@ -105,11 +117,19 @@ public class QuantumCpuMenu extends PatternProviderMenu {
         // 特大パターンプロバイダー (このクラスを継承している) は CPU を持たないので、
         // Quantum CPU のときだけ並べる。
         if (host instanceof QuantumCpuBlockEntity quantumCpu) {
+            //? if >=1.21 {
             List<Component> storageTooltip =
+            //?} else {
+            /*List<Component> unitTooltip =
+            *///?}
                     List.of(Component.translatable("gui.insaneae.quantum_cpu.crafting_units"));
             for (int i = 0; i < QuantumCpuBlockEntity.CRAFTING_UNIT_SLOTS; i++) {
                 AppEngSlot slot = new AppEngSlot(quantumCpu.getCraftingUnits(), i);
+                //? if >=1.21 {
                 slot.setEmptyTooltip(() -> storageTooltip);
+                //?} else {
+                /*slot.setEmptyTooltip(() -> unitTooltip);
+                *///?}
                 addSlot(slot, CRAFTING_UNIT);
             }
             List<Component> acceleratorTooltip =
@@ -140,8 +160,8 @@ public class QuantumCpuMenu extends PatternProviderMenu {
     }
 
     public int getPageCount() {
-        return patternWindow != null
-                ? patternWindow.getPageCount()
+        return patternWindow != null ?
+                patternWindow.getPageCount()
                 : QuantumCpuBlockEntity.PATTERN_PAGES;
     }
 
@@ -204,9 +224,14 @@ public class QuantumCpuMenu extends PatternProviderMenu {
         return semantic == SlotSemantics.PLAYER_INVENTORY || semantic == SlotSemantics.PLAYER_HOTBAR;
     }
 
+    //? if >=1.21 {
     private static QuantumCpuMenu fromNetwork(int containerId, Inventory playerInventory,
             RegistryFriendlyByteBuf buf) {
         MenuHostLocator locator = MenuLocators.readFromPacket(buf);
+    //?} else {
+    /*private static QuantumCpuMenu fromNetwork(int containerId, Inventory playerInventory, FriendlyByteBuf buf) {
+        MenuLocator locator = MenuLocators.readFromPacket(buf);
+    *///?}
         PatternProviderLogicHost host = locator.locate(playerInventory.player, PatternProviderLogicHost.class);
         if (host == null) {
             throw new IllegalStateException("Couldn't find a Quantum CPU at " + locator + " on the client.");
@@ -216,7 +241,11 @@ public class QuantumCpuMenu extends PatternProviderMenu {
         return menu;
     }
 
+    //? if >=1.21 {
     private static boolean open(Player player, MenuHostLocator locator, boolean fromSubMenu) {
+    //?} else {
+    /*private static boolean open(Player player, MenuLocator locator, boolean fromSubMenu) {
+    *///?}
         if (!(player instanceof ServerPlayer serverPlayer)) {
             return false;
         }
@@ -224,15 +253,19 @@ public class QuantumCpuMenu extends PatternProviderMenu {
         if (host == null) {
             return false;
         }
-        Component title = host instanceof Nameable nameable && nameable.hasCustomName()
-                ? nameable.getCustomName()
+        Component title = host instanceof Nameable nameable && nameable.hasCustomName() ?
+                nameable.getCustomName()
                 : Component.empty();
         MenuProvider provider = new SimpleMenuProvider((containerId, inv, p) -> {
             QuantumCpuMenu menu = new QuantumCpuMenu(containerId, inv, host);
             menu.setLocator(locator);
             return menu;
         }, title);
+        //? if >=1.21 {
         serverPlayer.openMenu(provider, buf -> {
+        //?} else {
+        /*NetworkHooks.openScreen(serverPlayer, provider, buf -> {
+        *///?}
             MenuLocators.writeToPacket(buf, locator);
             buf.writeBoolean(fromSubMenu);
         });

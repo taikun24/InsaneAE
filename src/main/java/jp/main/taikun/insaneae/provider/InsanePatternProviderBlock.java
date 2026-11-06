@@ -9,6 +9,14 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+//? if <1.21 {
+/*import appeng.util.InteractionUtil;
+import jp.main.taikun.insaneae.integration.AddonIntegrations;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.LevelReader;
+import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * 特大パターンプロバイダーのブロック。中身は {@link InsanePatternProviderBlockEntity}。
@@ -29,15 +37,39 @@ public class InsanePatternProviderBlock extends AEBaseEntityBlock<InsanePatternP
         InsanePatternProviderBlockEntity be = getBlockEntity(level, pos);
         if (be != null) {
             be.getLogic().updateRedstoneState();
+            //? if <1.21 {
+            /*if (!level.isClientSide()) {
+                AddonIntegrations.notifyNeighborChanged(be.getLogic(), pos, fromPos);
+            }
+            *///?}
         }
     }
 
     @Override
+    //? if >=1.21 {
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
             BlockHitResult hitResult) {
+    //?} else {
+    /*public void onNeighborChange(BlockState state, LevelReader level, BlockPos pos, BlockPos neighbor) {
+        if (!level.isClientSide() && level.getBlockEntity(pos) instanceof InsanePatternProviderBlockEntity be) {
+            AddonIntegrations.notifyNeighborChanged(be.getLogic(), pos, neighbor);
+        }
+    }
+
+    @Override
+    public InteractionResult onActivated(Level level, BlockPos pos, Player player, InteractionHand hand,
+            @Nullable ItemStack heldItem, BlockHitResult hit) {
+        if (InteractionUtil.isInAlternateUseMode(player)) {
+            return InteractionResult.PASS;
+        }
+    *///?}
         InsanePatternProviderBlockEntity be = getBlockEntity(level, pos);
         if (be == null) {
+            //? if >=1.21 {
             return super.useWithoutItem(state, level, pos, player, hitResult);
+            //?} else {
+            /*return InteractionResult.PASS;
+            *///?}
         }
         if (!level.isClientSide()) {
             be.openMenu(player, MenuLocators.forBlockEntity(be));

@@ -1,0 +1,15 @@
+{
+  "type": "ae2:inscriber",
+  "ingredients": {
+    "middle": {
+      "item": "ae2:singularity"
+    },
+    "top": {
+      "item": "insaneae:insane_processor_press"
+    }
+  },
+  "mode": "inscribe",
+  "result": {
+    "item": "insaneae:printed_insane_processor"
+  }
+}

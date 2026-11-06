@@ -28,10 +28,11 @@ from gen_crafting_textures import (  # noqa: E402
     dominant_hue,
     load_template,
     resolve_template_dirs,
+    resource_root,
 )
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT_DIR = os.path.join(REPO, "src/main/resources/assets/insaneae/textures/item")
+OUT_DIR = os.path.join(resource_root(REPO), "assets/insaneae/textures/item")
 TEMPLATE_DIRS = resolve_template_dirs(REPO)
 
 # 下敷きの主要色相からこれ以内の画素だけ虹にする (色相は 0〜1)。

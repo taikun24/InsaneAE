@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "ae2:matter_ball"
+    },
+    "B": {
+      "item": "megacells:accumulation_processor"
+    },
+    "C": {
+      "item": "insaneae:cell_component_16g"
+    },
+    "D": {
+      "item": "ae2:quartz_vibrant_glass"
+    }
+  },
+  "pattern": [
+    "ABA",
+    "CDC",
+    "ACA"
+  ],
+  "result": {
+    "item": "insaneae:cell_component_64g"
+  },
+  "show_notification": true
+}

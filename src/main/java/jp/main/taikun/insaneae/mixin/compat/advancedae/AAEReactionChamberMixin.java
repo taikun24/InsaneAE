@@ -20,7 +20,11 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 public abstract class AAEReactionChamberMixin {
 
     // ラムダのメソッド名はコンパイル結果に依存する = バージョン差で消えやすいので require = 0。
+    //? if >=1.21 {
     @ModifyVariable(method = "lambda$tickingRequest$1(Lappeng/api/networking/IGrid;)V",
+    //?} else {
+    /*@ModifyVariable(method = "lambda$tickingRequest$2(Lappeng/api/networking/IGrid;)V",
+    *///?}
             at = @At("STORE"), name = "speedFactor", require = 0)
     private int insaneae$boostSpeed(int speed) {
         return SpeedBoost.saturatingMultiply(speed,

@@ -5,7 +5,6 @@ import appeng.api.parts.IPartModel;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuHostLocator;
 import appeng.parts.PartModel;
 import appeng.parts.crafting.PatternProviderPart;
 import jp.main.taikun.insaneae.InsaneAE;
@@ -15,6 +14,12 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.List;
+//? if >=1.21 {
+import appeng.menu.locator.MenuHostLocator;
+//?}
+//? if <1.21 {
+/*import appeng.menu.locator.MenuLocator;
+*///?}
 
 /**
  * 特大パターンプロバイダーのケーブル版 (プレート)。
@@ -89,7 +94,11 @@ public class InsanePatternProviderPart extends PatternProviderPart {
     // 1620 枠はそのレイアウトに収まらないので、ブロック版と同じ画面に差し替える。
 
     @Override
+    //? if >=1.21 {
     public void openMenu(Player player, MenuHostLocator locator) {
+    //?} else {
+    /*public void openMenu(Player player, MenuLocator locator) {
+    *///?}
         MenuOpener.open(InsanePatternProviderMenu.TYPE, player, locator);
     }
 

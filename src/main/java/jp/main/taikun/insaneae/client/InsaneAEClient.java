@@ -19,13 +19,11 @@ import jp.main.taikun.insaneae.menu.QuantumCpuMenu;
 import jp.main.taikun.insaneae.registries.ModBlockEntities;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModCells;
-import net.minecraft.client.color.item.ItemColor;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
-import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
@@ -33,6 +31,10 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.joml.Vector3f;
 import jp.main.taikun.insaneae.integration.AddonIntegration;
 import jp.main.taikun.insaneae.integration.AddonIntegrations;
+//? if >=1.21 {
+import net.minecraft.client.color.item.ItemColor;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+//?}
 
 /**
  * クライアント専用のセットアップ。
@@ -68,7 +70,9 @@ public final class InsaneAEClient {
         bus.addListener(InsaneAEClient::registerItemColors);
         bus.addListener(InsaneAEClient::clientSetup);
         bus.addListener(InsaneAEClient::registerRenderers);
+        //? if >=1.21 {
         bus.addListener(InsaneAEClient::registerScreens);
+        //?}
     }
 
     /**
@@ -93,6 +97,7 @@ public final class InsaneAEClient {
         // 登録しないと solid になり、formed の枠テクスチャの透明部分が正しく抜けない。
         event.enqueueWork(() -> ModBlocks.allCraftingBlocks()
                 .forEach(block -> ItemBlockRenderTypes.setRenderLayer(block, RenderType.cutout())));
+    //? if >=1.21 {
     }
 
     /**
@@ -105,15 +110,30 @@ public final class InsaneAEClient {
      */
     private static void registerScreens(RegisterMenuScreensEvent event) {
         InitScreens.register(event,
+    //?} else {
+        /*event.enqueueWork(() -> InitScreens.register(
+    *///?}
                 QuantumCpuMenu.TYPE, QuantumCpuScreen<QuantumCpuMenu>::new,
+        //? if >=1.21 {
                 "/screens/insaneae/quantum_cpu.json");
         InitScreens.register(event,
                 InsaneInterfaceMenu.TYPE, InsaneInterfaceScreen::new,
                 "/screens/insaneae/insane_interface.json");
         // 特大パターンプロバイダーは画面クラスごと Quantum CPU と共用 (レイアウトも同じ)。
         InitScreens.register(event,
+        //?} else {
+                /*"/screens/insaneae/quantum_cpu.json"));
+        event.enqueueWork(() -> InitScreens.register(
+                InsaneInterfaceMenu.TYPE, InsaneInterfaceScreen::new, "/screens/insaneae/insane_interface.json"));
+        // 特大パターンプロバイダーは画面クラスごと Quantum CPU と共用 (レイアウトも同じ)。
+        event.enqueueWork(() -> InitScreens.register(
+        *///?}
                 InsanePatternProviderMenu.TYPE, QuantumCpuScreen<InsanePatternProviderMenu>::new,
+                //? if >=1.21 {
                 "/screens/insaneae/insane_pattern_provider.json");
+                //?} else {
+                /*"/screens/insaneae/insane_pattern_provider.json"));
+                *///?}
     }
 
     /** formed 状態のブロックモデルを、階層色の発光レイヤを持つマルチブロック用モデルに差し替える。 */
@@ -129,6 +149,7 @@ public final class InsaneAEClient {
      * <p><b>必ず {@link #opaque} を通して登録すること。</b>理由はそちらの説明を参照。</p>
      */
     private static void registerItemColors(RegisterColorHandlersEvent.Item event) {
+        //? if >=1.21 {
         ItemColor basic = opaque(BasicStorageCell::getColor);
         // ポータブルセルは染色できるので AE2 側の色解決を使う。
         ItemColor portable = opaque(AbstractPortableCell::getColor);
@@ -136,11 +157,29 @@ public final class InsaneAEClient {
         ModCells.FLUID_CELLS.values().forEach(cell -> event.register(basic, cell.get()));
         ModCells.PORTABLE_ITEM_CELLS.values().forEach(cell -> event.register(portable, cell.get()));
         ModCells.PORTABLE_FLUID_CELLS.values().forEach(cell -> event.register(portable, cell.get()));
+        //?} else {
+        /*ModCells.ITEM_CELLS.values().forEach(cell -> event.register(BasicStorageCell::getColor, cell.get()));
+        ModCells.FLUID_CELLS.values().forEach(cell -> event.register(BasicStorageCell::getColor, cell.get()));
+        // ポータブルセルは染色できるので AE2 側の色解決を使う。
+        ModCells.PORTABLE_ITEM_CELLS.values()
+                .forEach(cell -> event.register(AbstractPortableCell::getColor, cell.get()));
+        ModCells.PORTABLE_FLUID_CELLS.values()
+                .forEach(cell -> event.register(AbstractPortableCell::getColor, cell.get()));
+        *///?}
         for (AddonIntegration addon : AddonIntegrations.active()) {
+            //? if >=1.21 {
             addon.storageCells().forEach(cell -> event.register(basic, cell));
             addon.portableCells().forEach(cell -> event.register(portable, cell));
+            //?} else {
+            /*addon.storageCells().forEach(cell -> event.register(BasicStorageCell::getColor, cell));
+            addon.portableCells().forEach(cell -> event.register(AbstractPortableCell::getColor, cell));
+            *///?}
             addon.cellsWithOwnColor().forEach((cell, color) ->
+                    //? if >=1.21 {
                     event.register(opaque(color::applyAsInt), cell));
+                    //?} else {
+                    /*event.register((stack, tintIndex) -> color.applyAsInt(stack, tintIndex), cell));
+                    *///?}
         }
     }
 
@@ -165,7 +204,9 @@ public final class InsaneAEClient {
      * <p>AE2 自身も {@code InitItemColors#makeOpaque} で同じ処理をしてから登録しているが、
      * private で借りられないのでこちらで用意する。</p>
      */
+    //? if >=1.21 {
     private static ItemColor opaque(ItemColor color) {
         return (stack, tintIndex) -> color.getColor(stack, tintIndex) | 0xFF000000;
     }
+    //?}
 }

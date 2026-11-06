@@ -1,10 +1,15 @@
 package jp.main.taikun.insaneae.integration.appflux;
 
-import com.glodblock.github.appflux.common.items.ItemFECell;
 import jp.main.taikun.insaneae.util.TieredNames;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
+//? if >=1.21 {
+import com.glodblock.github.appflux.common.items.ItemFECell;
+//?}
+//? if <1.21 {
+/*import com.glodblock.github.appflux.common.items.ItemMEGAFECell;
+*///?}
 
 /**
  * 1G 以上の FE ストレージセル。
@@ -14,7 +19,11 @@ import net.minecraft.world.level.ItemLike;
  * が働く。こちらで変えているのは容量と表示名だけ。容量は {@code int} (KiB) では足りないので
  * コンストラクタには 0 を渡し、{@link #getBytes} を上書きして long で返す。</p>
  */
+//? if >=1.21 {
 public class InsaneFECellItem extends ItemFECell {
+//?} else {
+/*public class InsaneFECellItem extends ItemMEGAFECell {
+*///?}
 
     private final long totalBytes;
     private final String nameKey;

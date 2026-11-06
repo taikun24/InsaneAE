@@ -1,6 +1,5 @@
 package jp.main.taikun.insaneae.cell;
 
-import net.minecraft.core.registries.BuiltInRegistries;
 import appeng.api.stacks.AEKeyType;
 import appeng.items.storage.StorageTier;
 import appeng.items.tools.powered.PortableCellItem;
@@ -10,6 +9,12 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import jp.main.taikun.insaneae.util.TieredNames;
 import net.minecraft.network.chat.Component;
+//? if >=1.21 {
+import net.minecraft.core.registries.BuiltInRegistries;
+//?}
+//? if <1.21 {
+/*import net.neoforged.neoforge.registries.ForgeRegistries;
+*///?}
 
 /**
  * 2 GiB を超える容量を持つポータブルセル。
@@ -65,7 +70,11 @@ public class InsanePortableCellItem extends PortableCellItem implements IHugeCel
      */
     @Override
     public ResourceLocation getRecipeId() {
+        //? if >=1.21 {
         return BuiltInRegistries.ITEM.getKey(this);
+        //?} else {
+        /*return ForgeRegistries.ITEMS.getKey(this);
+        *///?}
     }
 
     @Override

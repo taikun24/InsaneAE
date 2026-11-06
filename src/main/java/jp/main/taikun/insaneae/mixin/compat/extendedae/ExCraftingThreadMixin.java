@@ -30,8 +30,8 @@ public abstract class ExCraftingThreadMixin {
     @ModifyVariable(method = "userPower(IID)I", at = @At("HEAD"), ordinal = 1, argsOnly = true,
             require = 0)
     private int insaneae$boostBonus(int bonusValue) {
-        return host instanceof IUpgradeableObject upgradeable
-                ? SpeedBoost.saturatingMultiply(bonusValue, SpeedBoost.multiplier(upgradeable.getUpgrades()))
+        return host instanceof IUpgradeableObject upgradeable ?
+                SpeedBoost.saturatingMultiply(bonusValue, SpeedBoost.multiplier(upgradeable.getUpgrades()))
                 : bonusValue;
     }
 }

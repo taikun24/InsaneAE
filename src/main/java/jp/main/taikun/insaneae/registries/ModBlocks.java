@@ -1,6 +1,5 @@
 package jp.main.taikun.insaneae.registries;
 
-import net.minecraft.core.registries.Registries;
 import appeng.block.crafting.CraftingUnitBlock;
 import appeng.block.networking.EnergyCellBlock;
 import appeng.block.networking.EnergyCellBlockItem;
@@ -24,56 +23,109 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import net.neoforged.neoforge.registries.DeferredHolder;
 
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+//? if >=1.21 {
+import net.minecraft.core.registries.Registries;
+import net.neoforged.neoforge.registries.DeferredHolder;
+//?}
+//? if <1.21 {
+/*import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.registries.RegistryObject;
+*///?}
 
 public class ModBlocks {
     private static final DeferredRegister<Block> BLOCKS =
+            //? if >=1.21 {
             DeferredRegister.create(Registries.BLOCK, InsaneAE.MODID);
+            //?} else {
+            /*DeferredRegister.create(ForgeRegistries.BLOCKS, InsaneAE.MODID);
+            *///?}
     private static final DeferredRegister<Item> BLOCK_ITEMS =
+    //? if >=1.21 {
             DeferredRegister.create(Registries.ITEM, InsaneAE.MODID);
 
     public static final Map<InsaneCraftingUnitType, DeferredHolder<Block, CraftingUnitBlock>> CRAFTING_STORAGE =
+    //?} else {
+            /*DeferredRegister.create(ForgeRegistries.ITEMS, InsaneAE.MODID);
+
+    public static final Map<InsaneCraftingUnitType, RegistryObject<CraftingUnitBlock>> CRAFTING_STORAGE =
+    *///?}
             new EnumMap<>(InsaneCraftingUnitType.class);
 
+    //? if >=1.21 {
     public static final Map<InsaneAcceleratorType, DeferredHolder<Block, CraftingUnitBlock>> CRAFTING_ACCELERATOR =
+    //?} else {
+    /*public static final Map<InsaneAcceleratorType, RegistryObject<CraftingUnitBlock>> CRAFTING_ACCELERATOR =
+    *///?}
             new EnumMap<>(InsaneAcceleratorType.class);
 
+    //? if >=1.21 {
     public static final Map<InsaneEnergyCellTier, DeferredHolder<Block, EnergyCellBlock>> ENERGY_CELLS =
+    //?} else {
+    /*public static final Map<InsaneEnergyCellTier, RegistryObject<EnergyCellBlock>> ENERGY_CELLS =
+    *///?}
             new EnumMap<>(InsaneEnergyCellTier.class);
 
+    //? if >=1.21 {
     public static final Map<SolarPanelTier, DeferredHolder<Block, SolarPanelBlock>> SOLAR_PANELS =
+    //?} else {
+    /*public static final Map<SolarPanelTier, RegistryObject<SolarPanelBlock>> SOLAR_PANELS =
+    *///?}
             new EnumMap<>(SolarPanelTier.class);
 
     /** パターンプロバイダ + 分子組立装置を合体させた自己完結型のクラフト機。 */
+    //? if >=1.21 {
     public static final DeferredHolder<Block, QuantumCpuBlock> QUANTUM_CPU =
+    //?} else {
+    /*public static final RegistryObject<QuantumCpuBlock> QUANTUM_CPU =
+    *///?}
             BLOCKS.register("quantum_cpu", QuantumCpuBlock::new);
 
     /** ACOの理論上限容量を持つ、通常AE2クラフトCPU用のストレージブロック。 */
+    //? if >=1.21 {
     public static final DeferredHolder<Block, CraftingUnitBlock> BIG_INTEGER_CPU =
+    //?} else {
+    /*public static final RegistryObject<CraftingUnitBlock> BIG_INTEGER_CPU =
+    *///?}
             BLOCKS.register("big_integer_cpu",
                     () -> new CraftingUnitBlock(BigIntegerCraftingUnitType.INSTANCE));
 
     /** AE2 のチャージャーの限界突破版。 */
+    //? if >=1.21 {
     public static final DeferredHolder<Block, ImprovedChargerBlock> IMPROVED_CHARGER =
+    //?} else {
+    /*public static final RegistryObject<ImprovedChargerBlock> IMPROVED_CHARGER =
+    *///?}
             BLOCKS.register("improved_charger", ImprovedChargerBlock::new);
 
     /** ME インターフェイスの限界突破版 (9x9 枠 × 1 枠 21 億)。 */
+    //? if >=1.21 {
     public static final DeferredHolder<Block, InsaneInterfaceBlock> INSANE_INTERFACE =
+    //?} else {
+    /*public static final RegistryObject<InsaneInterfaceBlock> INSANE_INTERFACE =
+    *///?}
             BLOCKS.register("insane_interface", InsaneInterfaceBlock::new);
 
     /** パターンプロバイダの限界突破版 (Quantum CPU と同じ 1620 枠)。加工パターンの置き場。 */
+    //? if >=1.21 {
     public static final DeferredHolder<Block, InsanePatternProviderBlock> INSANE_PATTERN_PROVIDER =
+    //?} else {
+    /*public static final RegistryObject<InsanePatternProviderBlock> INSANE_PATTERN_PROVIDER =
+    *///?}
             BLOCKS.register("insane_pattern_provider", InsanePatternProviderBlock::new);
 
     static {
         // 表示名は階層ごとの lang キーではなく「書式キー + 階層ラベル」で作る (TieredNames を参照)。
         for (InsaneCraftingUnitType type : InsaneCraftingUnitType.values()) {
+            //? if >=1.21 {
             DeferredHolder<Block, CraftingUnitBlock> block = BLOCKS.register(type.blockId(),
+            //?} else {
+            /*RegistryObject<CraftingUnitBlock> block = BLOCKS.register(type.blockId(),
+            *///?}
                     () -> new InsaneCraftingUnitBlock(type, TieredNames.CRAFTING_STORAGE, type.label()));
             BLOCK_ITEMS.register(type.blockId(),
                     () -> new TieredBlockItem(block.get(), new Item.Properties()));
@@ -82,7 +134,11 @@ public class ModBlocks {
             CRAFTING_STORAGE.put(type, block);
         }
         for (InsaneAcceleratorType type : InsaneAcceleratorType.values()) {
+            //? if >=1.21 {
             DeferredHolder<Block, CraftingUnitBlock> block = BLOCKS.register(type.blockId(),
+            //?} else {
+            /*RegistryObject<CraftingUnitBlock> block = BLOCKS.register(type.blockId(),
+            *///?}
                     () -> new InsaneCraftingUnitBlock(type, TieredNames.CRAFTING_ACCELERATOR, type.label()));
             BLOCK_ITEMS.register(type.blockId(),
                     () -> new TieredBlockItem(block.get(), new Item.Properties()));
@@ -93,14 +149,22 @@ public class ModBlocks {
             // AE2 の EnergyCellBlock / EnergyCellBlockItem をそのまま使う。
             // AE2 側は「registry を走査して EnergyCellBlockItem なら fill_level を登録」する作りなので、
             // アイテムモデルの残量表示もクライアント側の追加処理なしで動く。
+            //? if >=1.21 {
             DeferredHolder<Block, EnergyCellBlock> block = BLOCKS.register(tier.id(),
+            //?} else {
+            /*RegistryObject<EnergyCellBlock> block = BLOCKS.register(tier.id(),
+            *///?}
                     () -> new EnergyCellBlock(tier.maxPower(), tier.chargeRate(), tier.priority()));
             BLOCK_ITEMS.register(tier.id(),
                     () -> new EnergyCellBlockItem(block.get(), new Item.Properties()));
             ENERGY_CELLS.put(tier, block);
         }
         for (SolarPanelTier tier : SolarPanelTier.values()) {
+            //? if >=1.21 {
             DeferredHolder<Block, SolarPanelBlock> block =
+            //?} else {
+            /*RegistryObject<SolarPanelBlock> block =
+            *///?}
                     BLOCKS.register(tier.id(), () -> new SolarPanelBlock(tier));
             BLOCK_ITEMS.register(tier.id(), () -> new BlockItem(block.get(), new Item.Properties()));
             SOLAR_PANELS.put(tier, block);
@@ -124,16 +188,28 @@ public class ModBlocks {
         return Stream.concat(
                         Stream.concat(CRAFTING_STORAGE.values().stream(), CRAFTING_ACCELERATOR.values().stream()),
                         Stream.of(BIG_INTEGER_CPU))
+                //? if >=1.21 {
                 .map(DeferredHolder::get)
+                //?} else {
+                /*.map(RegistryObject::get)
+                *///?}
                 .toList();
     }
 
     public static List<EnergyCellBlock> allEnergyCells() {
+        //? if >=1.21 {
         return ENERGY_CELLS.values().stream().map(DeferredHolder::get).toList();
+        //?} else {
+        /*return ENERGY_CELLS.values().stream().map(RegistryObject::get).toList();
+        *///?}
     }
 
     public static List<SolarPanelBlock> allSolarPanels() {
+        //? if >=1.21 {
         return SOLAR_PANELS.values().stream().map(DeferredHolder::get).toList();
+        //?} else {
+        /*return SOLAR_PANELS.values().stream().map(RegistryObject::get).toList();
+        *///?}
     }
 
     public static void register(IEventBus bus) {

@@ -63,7 +63,11 @@ public abstract class ScreenStyleMixin {
         }
         if (INSANEAE_REPORTED.add(id)) {
             INSANEAE_LOG.warn("InsaneAE: 自前の画面スタイルに widget \"{}\" が無い"
+                    //? if >=1.21 {
                     + " (他の AE2 アドオンが AE2 の画面に足したもの)。"
+                    //?} else {
+                    /*+ " (他の AE2 アドオンが PatternProviderScreen に足したもの)。"
+                    *///?}
                     + " 画面外に逃がして表示だけ諦める。", id);
         }
         cir.setReturnValue(insaneae$offscreen());

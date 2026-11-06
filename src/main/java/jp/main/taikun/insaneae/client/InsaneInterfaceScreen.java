@@ -127,8 +127,13 @@ public class InsaneInterfaceScreen extends UpgradeableScreen<InsaneInterfaceMenu
 
     @Override
     // ページ送りは縦スクロール (wheelDelta) だけを見る。横スクロール (scrollX) は使わない。
+    //? if >=1.21 {
     public boolean mouseScrolled(double x, double y, double scrollX, double wheelDelta) {
         if (super.mouseScrolled(x, y, scrollX, wheelDelta)) {
+    //?} else {
+    /*public boolean mouseScrolled(double x, double y, double wheelDelta) {
+        if (super.mouseScrolled(x, y, wheelDelta)) {
+    *///?}
             return true;
         }
         if (wheelDelta != 0 && isOverGrid(x, y)) {
@@ -233,7 +238,11 @@ public class InsaneInterfaceScreen extends UpgradeableScreen<InsaneInterfaceMenu
 
         @Override
         protected Icon getIcon() {
+            //? if >=1.21 {
             return selected || isHoveredOrFocused() ? Icon.COG : Icon.COG_DISABLED;
+            //?} else {
+            /*return selected || isHoveredOrFocused() ? Icon.WRENCH : Icon.WRENCH_DISABLED;
+            *///?}
         }
     }
 }

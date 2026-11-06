@@ -1,0 +1,44 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "jp.main.taikun.insaneae.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "insaneae.refmap.json",
+  "_comment": "壊れると危険な注入 (容量・スレッド上限・ツールチップ) はこちら。required=true なので失敗したら起動時に落ちる。加速カードの速度倍率のように他 Mod と衝突しうる注入は insaneae.optional.mixins.json に分けてあり、そちらは衝突しても落ちない。",
+  "mixins": [
+    "cell.BasicCellInventoryMixin",
+    "cell.BasicCellInventoryUuidMixin",
+    "iface.ConfigInventoryAccessor",
+    "cpu.CraftingCPUClusterMixin",
+    "cpu.CraftingCPUNameMixin",
+    "cpu.CraftingCpuLogicMixin",
+    "cpu.CraftingCpuLogicBulkMixin",
+    "crafting.CraftingServicePatternFlushMixin",
+    "cpu.CraftingCpuClusterAccessor",
+    "cpu.CraftingCpuClusterOwnerMixin",
+    "cpu.CraftingServiceQuantumCpuMixin",
+    "cpu.CraftingCpuLogicJobAccessor",
+    "cpu.CraftingUnitThreadLimitMixin",
+    "cpu.ElapsedTimeTrackerInvoker",
+    "cpu.ExecutingCraftingJobAccessor",
+    "cable.GridNodeChannelMixin",
+    "crafting.PatternProviderLogicAccessor",
+    "ui.SlotAccessor",
+    "cpu.TaskProgressAccessor",
+    "ui.TooltipsMixin"
+  ],
+  "client": [
+    "cpu.BigIntegerCPUSelectionListMixin",
+    "cable.CableBuilderMixin",
+    "cable.CableBusBakedModelMixin",
+    "cable.CableBusContainerRenderStateMixin",
+    "cable.CableBusRenderStateMixin",
+    "cable.CubeBuilderMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

@@ -21,11 +21,9 @@ import appeng.core.definitions.AEItems;
 import appeng.me.helpers.MachineSource;
 import appeng.server.testplots.CraftingPatternHelper;
 import appeng.server.testplots.TestPlot;
-import appeng.server.testplots.TestPlotClass;
 import appeng.server.testworld.PlotBuilder;
 import appeng.server.testworld.PlotTestHelper;
 import appeng.server.testworld.TestCraftingJob;
-import jp.main.taikun.insaneae.crafting.IBigCraftingCapacity;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerPlanBridge;
 import jp.main.taikun.insaneae.integration.aco.AcoClassNames;
@@ -48,16 +46,29 @@ import java.math.BigInteger;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Future;
+//? if >=1.21 {
+import appeng.server.testplots.TestPlotClass;
+import jp.main.taikun.insaneae.crafting.IBigCraftingCapacity;
+//?}
+//? if <1.21 {
+/*import appeng.api.crafting.IPatternDetails;
+import appeng.api.crafting.PatternDetailsHelper;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.crafting.CraftingRecipe;
+*///?}
 
 /**
  * クリエイティブセルからのクラフトと、long を超える量のクラフトを完走できるか。
  *
  * <p>走らせ方は {@link TestPlotSupport} を参照。</p>
  */
+//? if >=1.21 {
 @TestPlotClass
+//?}
 public final class LongOverflowCraftPlots {
 
     private LongOverflowCraftPlots() {
+    //? if >=1.21 {
     }
 
     /**
@@ -75,6 +86,7 @@ public final class LongOverflowCraftPlots {
         } catch (RuntimeException | LinkageError unavailable) {
             return "<読めず: " + unavailable + ">";
         }
+    //?}
     }
 
     /**
@@ -197,13 +209,31 @@ public final class LongOverflowCraftPlots {
                         CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
                                 new ItemStack(Items.OAK_LOG)));
                 // 板 8 → チェスト 1。中央だけ空けた 3x3 のバニラレシピ。
+                //? if >=1.21 {
                 Object[] chest = new Object[] {
                         Items.OAK_PLANKS, Items.OAK_PLANKS, Items.OAK_PLANKS,
                         Items.OAK_PLANKS, null, Items.OAK_PLANKS,
                         Items.OAK_PLANKS, Items.OAK_PLANKS, Items.OAK_PLANKS};
+                //?} else {
+                /*ItemStack[] sparse = new ItemStack[9];
+                for (int slot = 0; slot < sparse.length; slot++) {
+                    sparse[slot] = slot == 4 ?
+                            ItemStack.EMPTY
+                            : new ItemStack(Items.OAK_PLANKS);
+                }
+                var chestRecipe = helper.getLevel().getRecipeManager()
+                        .byKey(ResourceLocation.fromNamespaceAndPath("minecraft", "chest"))
+                        .orElseThrow(() -> new GameTestAssertException("チェストのレシピが無い"));
+                *///?}
                 cpu.getLogic().getPatternInv().addItems(
+                        //? if >=1.21 {
                         CraftingPatternHelper.encodeCraftingPattern(
                                 helper.getLevel(), chest, false, false));
+                        //?} else {
+                        /*PatternDetailsHelper.encodeCraftingPattern(
+                                (CraftingRecipe) chestRecipe,
+                                sparse, new ItemStack(Items.CHEST), false, false));
+                        *///?}
                 for (int i = 0; i < QuantumCpuBlockEntity.MAX_ACCELERATION_CARDS; i++) {
                     cpu.getUpgrades().addItems(
                             new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
@@ -387,6 +417,7 @@ public final class LongOverflowCraftPlots {
                 for (var cpu : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
                     cpuSizes.append(" [available=").append(cpu.getAvailableStorage())
                             .append(" total=").append(cpu.getAvailableStorage())
+                    //? if >=1.21 {
                             .append(" busy=").append(cpu.isBusy());
                     // long に飽和した available だけでは足りるか分からないので、
                     // 正確な容量 (こちらの BigInteger 会計) も並べる。
@@ -394,6 +425,9 @@ public final class LongOverflowCraftPlots {
                         cpuSizes.append(" exactCapacity=").append(exact.insaneae$exactStorageCapacity());
                     }
                     cpuSizes.append(']');
+                    //?} else {
+                            /*.append(" busy=").append(cpu.isBusy()).append(']');
+                    *///?}
                 }
                 helper.check(result.successful(),
                         "long を超える要求の投入が断られた: errorCode=" + result.errorCode()
@@ -523,9 +557,14 @@ public final class LongOverflowCraftPlots {
                 var result = helper.getGrid(BlockPos.ZERO).getCraftingService()
                         .submitJob(plan, null, null, false, state.source);
                 helper.check(!result.successful(),
+                        //? if >=1.21 {
                         "加工パターンの BigInteger 計画を受理してしまった。"
                                 + "Quantum CPU は加工パターンを回せないので、"
                                 + "受けると終わらないジョブが CPU を占有する");
+                        //?} else {
+                        /*"加工パターンの BigInteger 計画を受理してしまった "
+                                + "(受けると終わらないジョブが CPU を占有する)");
+                        *///?}
                 helper.check(result.errorCode()
                                 == CraftingSubmitErrorCode
                                         .INCOMPLETE_PLAN,
@@ -536,6 +575,25 @@ public final class LongOverflowCraftPlots {
             sequence.thenSucceed();
         // 既定の制限時間だと足りない。待ち 60 tick と計算の時間を賄う。
         }).maxTicks(400);
+    //? if <1.21 {
+    /*}
+
+    /^*
+     * ACO の BigInteger 計画が持つ<b>正確な</b>必要バイト数。
+     *
+     * <p>{@code plan.bytes()} は long に飽和するので、断られた理由が
+     * 「BigInteger 計画が作れなかった」のか「作れたが容量が足りない」のかを
+     * 区別できない。ここが {@code <BigInteger計画なし>} なら前者。</p>
+     ^/
+    private static String exactPlanBytes(ICraftingPlan plan) {
+        try {
+            return AcoBigIntegerPlanBridge.inspect(plan)
+                    .map(exact -> exact.exactBytes().toString())
+                    .orElse("<BigInteger計画なし>");
+        } catch (RuntimeException | LinkageError unavailable) {
+            return "<読めず: " + unavailable + ">";
+        }
+    *///?}
     }
 
     /**
@@ -816,8 +874,8 @@ public final class LongOverflowCraftPlots {
         plot.cable("[0,3] 0 0");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
             // 材料は超強化クリエイティブセルから。完成品の置き場に普通のセルを 1 枚。
-            drive.getInternalInventory().addItems(configureOutputToo
-                    ? ultraCreativeCell(Items.OAK_LOG, Items.OAK_PLANKS)
+            drive.getInternalInventory().addItems(configureOutputToo ?
+                    ultraCreativeCell(Items.OAK_LOG, Items.OAK_PLANKS)
                     : ultraCreativeCell(Items.OAK_LOG));
             drive.getInternalInventory().addItems(AEItems.ITEM_CELL_64K.stack());
         });
@@ -853,8 +911,8 @@ public final class LongOverflowCraftPlots {
                 if (stored < requested) {
                     throw new GameTestAssertException("板材が " + stored + "/" + requested
                             + " しかネットワークに無い"
-                            + (configureOutputToo
-                                    ? " (完成品もクリエイティブセルに設定してある並び"
+                            + (configureOutputToo ?
+                                    " (完成品もクリエイティブセルに設定してある並び"
                                             + " — セルが完成品を飲んでいる疑い)"
                                     : ""));
                 }

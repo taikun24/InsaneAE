@@ -14,8 +14,6 @@ import appeng.items.storage.CreativeCellItem;
 import appeng.me.helpers.MachineSource;
 import appeng.server.testplots.CraftingPatternHelper;
 import appeng.server.testplots.TestPlot;
-import appeng.server.testplots.TestPlotClass;
-import appeng.server.testplots.TestPlots;
 import appeng.server.testworld.PlotBuilder;
 import appeng.server.testworld.PlotTestHelper;
 import jp.main.taikun.insaneae.config.InsaneAEConfig;
@@ -33,13 +31,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+//? if >=1.21 {
+import appeng.server.testplots.TestPlotClass;
+import appeng.server.testplots.TestPlots;
+//?}
 
 /**
  * クラフト計算のまとめ処理 (AE2 本来の計算と同じ結果になるか、long あふれの門番)。
  *
  * <p>走らせ方は {@link TestPlotSupport} を参照。</p>
  */
+//? if >=1.21 {
 @TestPlotClass
+//?}
 public final class CraftingCalculationPlots {
 
     private CraftingCalculationPlots() {

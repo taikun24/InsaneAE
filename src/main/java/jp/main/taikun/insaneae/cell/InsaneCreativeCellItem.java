@@ -1,12 +1,14 @@
 package jp.main.taikun.insaneae.cell;
 
 import appeng.api.config.FuzzyMode;
-import appeng.api.ids.AEComponents;
 import appeng.api.storage.cells.ICellWorkbenchItem;
 import appeng.items.contents.CellConfig;
 import appeng.util.ConfigInventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+//? if >=1.21 {
+import appeng.api.ids.AEComponents;
+//?}
 
 /**
  * 強化クリエイティブセル。セルワークベンチで設定した中身を<b>無限に</b>供給する。
@@ -24,6 +26,9 @@ import net.minecraft.world.item.ItemStack;
  * 中身は薄いので自前で持ち、{@link InsaneCreativeCellHandler} で拾う。</p>
  */
 public class InsaneCreativeCellItem extends Item implements ICellWorkbenchItem {
+    //? if <1.21 {
+    /*private static final String FUZZY_MODE_TAG = "FuzzyMode";
+    *///?}
 
     public InsaneCreativeCellItem(Properties props) {
         super(props.stacksTo(1));
@@ -40,11 +45,27 @@ public class InsaneCreativeCellItem extends Item implements ICellWorkbenchItem {
     // 値の検証とコーデックは AE2 側にあるので、壊れた値を握り潰す処理は要らない。
     @Override
     public FuzzyMode getFuzzyMode(ItemStack is) {
+        //? if >=1.21 {
         return is.getOrDefault(AEComponents.STORAGE_CELL_FUZZY_MODE, FuzzyMode.IGNORE_ALL);
+        //?} else {
+        /*var tag = is.getTag();
+        if (tag != null && tag.contains(FUZZY_MODE_TAG)) {
+            try {
+                return FuzzyMode.valueOf(tag.getString(FUZZY_MODE_TAG));
+            } catch (IllegalArgumentException ignored) {
+                // 壊れた NBT は既定値として扱う
+            }
+        }
+        return FuzzyMode.IGNORE_ALL;
+        *///?}
     }
 
     @Override
     public void setFuzzyMode(ItemStack is, FuzzyMode fuzzyMode) {
+        //? if >=1.21 {
         is.set(AEComponents.STORAGE_CELL_FUZZY_MODE, fuzzyMode);
+        //?} else {
+        /*is.getOrCreateTag().putString(FUZZY_MODE_TAG, fuzzyMode.name());
+        *///?}
     }
 }

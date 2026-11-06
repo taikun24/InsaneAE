@@ -2,7 +2,6 @@ package jp.main.taikun.insaneae.integration.appmek;
 
 import appeng.api.stacks.AEKey;
 import appeng.items.storage.StorageTier;
-import gripe._90.megacells.definition.MEGAItems;
 import jp.main.taikun.insaneae.cell.InsanePortableCellItem;
 import jp.main.taikun.insaneae.cell.InsaneStorageCellItem;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
@@ -16,10 +15,17 @@ import mekanism.api.chemical.attribute.ChemicalAttributeValidator;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
-import net.neoforged.neoforge.registries.DeferredHolder;
 
 import java.util.EnumMap;
 import java.util.Map;
+//? if >=1.21 {
+import gripe._90.megacells.definition.MEGAItems;
+import net.neoforged.neoforge.registries.DeferredHolder;
+//?}
+//? if <1.21 {
+/*import gripe._90.megacells.integration.appmek.AppMekItems;
+import net.neoforged.neoforge.registries.RegistryObject;
+*///?}
 
 /**
  * Applied Mekanistics ({@code appmek}) が導入されている場合だけ追加される化学物質セル。
@@ -33,9 +39,17 @@ import java.util.Map;
  */
 public final class AppMekCells {
 
+    //? if >=1.21 {
     public static final Map<InsaneCraftingUnitType, DeferredHolder<Item, Item>> CHEMICAL_CELLS =
+    //?} else {
+    /*public static final Map<InsaneCraftingUnitType, RegistryObject<Item>> CHEMICAL_CELLS =
+    *///?}
             new EnumMap<>(InsaneCraftingUnitType.class);
+    //? if >=1.21 {
     public static final Map<InsaneCraftingUnitType, DeferredHolder<Item, Item>> PORTABLE_CHEMICAL_CELLS =
+    //?} else {
+    /*public static final Map<InsaneCraftingUnitType, RegistryObject<Item>> PORTABLE_CHEMICAL_CELLS =
+    *///?}
             new EnumMap<>(InsaneCraftingUnitType.class);
 
     private AppMekCells() {
@@ -50,7 +64,11 @@ public final class AppMekCells {
 
             CHEMICAL_CELLS.put(tier, ModCells.register("chemical_storage_cell_" + tier.id(),
                     () -> new InsaneStorageCellItem(new Item.Properties().stacksTo(1), component,
+                            //? if >=1.21 {
                             MEGAItems.MEGA_CHEMICAL_CELL_HOUSING, idleDrain, tier.getStorageBytes(),
+                            //?} else {
+                            /*AppMekItems.MEGA_CHEMICAL_CELL_HOUSING, idleDrain, tier.getStorageBytes(),
+                            *///?}
                             ModCells.BYTES_PER_TYPE, ModCells.totalTypes(tier), MekanismKeyType.TYPE,
                             TieredNames.CHEMICAL_STORAGE_CELL, tier.label()) {
                         @Override
@@ -63,7 +81,11 @@ public final class AppMekCells {
             PORTABLE_CHEMICAL_CELLS.put(tier, ModCells.register("portable_chemical_cell_" + tier.id(),
                     () -> new InsanePortableCellItem(new Item.Properties(), storageTier,
                             tier.getStorageBytes(), ModCells.totalTypes(tier), MekanismKeyType.TYPE,
+                            //? if >=1.21 {
                             AMMenus.PORTABLE_CHEMICAL_CELL_TYPE, ModCells.PORTABLE_SCREEN_COLOR,
+                            //?} else {
+                            /*AMMenus.PORTABLE_CHEMICAL_CELL_TYPE, 0x33528D,
+                            *///?}
                             TieredNames.PORTABLE_CHEMICAL_CELL, tier.label()) {
                         @Override
                         public boolean isBlackListed(ItemStack cellItem, AEKey requestedAddition) {

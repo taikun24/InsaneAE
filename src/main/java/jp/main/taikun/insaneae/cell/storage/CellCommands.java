@@ -4,7 +4,6 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import jp.main.taikun.insaneae.registries.ModDataComponents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -22,6 +21,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+//? if >=1.21 {
+import jp.main.taikun.insaneae.registries.ModDataComponents;
+//?}
 
 /**
  * {@code /insaneae cells list [page]} と {@code /insaneae cells recover <uuid>}。
@@ -69,7 +71,11 @@ public final class CellCommands {
                 Math.min(entries.size(), current * PAGE_SIZE))) {
             String id = entry.getKey().toString();
             CellContentStore.Entry cell = entry.getValue();
+            //? if >=1.21 {
             long count = CellSummary.of(cell.stacks()).count();
+            //?} else {
+            /*long count = cell.count();
+            *///?}
             Component line = Component.literal(id)
                     .withStyle(style -> style.withColor(ChatFormatting.AQUA)
                             .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
@@ -78,7 +84,11 @@ public final class CellCommands {
                                     Component.translatable("commands.insaneae.cells.list.click"))))
                     .append(Component.literal(" " + cell.item()).withStyle(ChatFormatting.GRAY))
                     .append(Component.translatable("commands.insaneae.cells.list.contents",
+                            //? if >=1.21 {
                             cell.stacks().size(), count).withStyle(ChatFormatting.WHITE));
+                            //?} else {
+                            /*cell.types(), count).withStyle(ChatFormatting.WHITE));
+                            *///?}
             source.sendSuccess(() -> line, false);
         }
         return entries.size();
@@ -101,8 +111,14 @@ public final class CellCommands {
             return 0;
         }
         ItemStack stack = new ItemStack(item);
+        //? if >=1.21 {
         stack.set(ModDataComponents.CELL_ID.get(), id);
         stack.set(ModDataComponents.CELL_SUMMARY.get(), CellSummary.of(entry.stacks()));
+        //?} else {
+        /*stack.getOrCreateTag().putUUID(CellNbt.ID, id);
+        stack.getOrCreateTag().put(CellNbt.SUMMARY, CellNbt.summary(entry));
+        stack.getOrCreateTag().putLong(CellNbt.ITEM_COUNT, entry.count());
+        *///?}
         if (!player.getInventory().add(stack)) {
             player.drop(stack, false);
         }

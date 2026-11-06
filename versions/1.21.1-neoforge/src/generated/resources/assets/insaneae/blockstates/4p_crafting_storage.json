@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "formed=false": {
+      "model": "insaneae:block/crafting/4p_storage"
+    },
+    "formed=true": {
+      "model": "ae2:block/crafting/insaneae/4p_storage_formed"
+    }
+  }
+}

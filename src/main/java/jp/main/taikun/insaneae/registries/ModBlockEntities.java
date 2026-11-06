@@ -1,6 +1,5 @@
 package jp.main.taikun.insaneae.registries;
 
-import net.minecraft.core.registries.Registries;
 import appeng.blockentity.AEBaseBlockEntity;
 import appeng.blockentity.crafting.CraftingBlockEntity;
 import appeng.blockentity.networking.EnergyCellBlockEntity;
@@ -15,9 +14,15 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
+//? if >=1.21 {
+import net.minecraft.core.registries.Registries;
 import net.neoforged.neoforge.registries.DeferredHolder;
-
 import java.util.List;
+//?}
+//? if <1.21 {
+/*import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.registries.RegistryObject;
+*///?}
 
 /**
  * 独自の {@link CraftingBlockEntity} 用 BlockEntityType。
@@ -27,9 +32,15 @@ import java.util.List;
  */
 public class ModBlockEntities {
     private static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =
+    //? if >=1.21 {
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, InsaneAE.MODID);
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CraftingBlockEntity>> CRAFTING_STORAGE =
+    //?} else {
+            /*DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, InsaneAE.MODID);
+
+    public static final RegistryObject<BlockEntityType<CraftingBlockEntity>> CRAFTING_STORAGE =
+    *///?}
             BLOCK_ENTITY_TYPES.register("crafting_storage", () -> {
                 Block[] blocks = ModBlocks.allCraftingBlocks().toArray(Block[]::new);
                 // build(null): 全階層ブロックで有効な CraftingBlockEntity 型を構築。
@@ -40,7 +51,11 @@ public class ModBlockEntities {
                         .build(null);
             });
 
+    //? if >=1.21 {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<QuantumCpuBlockEntity>> QUANTUM_CPU =
+    //?} else {
+    /*public static final RegistryObject<BlockEntityType<QuantumCpuBlockEntity>> QUANTUM_CPU =
+    *///?}
             BLOCK_ENTITY_TYPES.register("quantum_cpu", () -> BlockEntityType.Builder
                     .of((pos, state) -> new QuantumCpuBlockEntity(quantumCpuType(), pos, state),
                             ModBlocks.QUANTUM_CPU.get())
@@ -52,7 +67,11 @@ public class ModBlockEntities {
      * <p>{@link EnergyCellBlockEntity} は容量・充電速度・優先度をすべて
      * {@code getBlockState().getBlock()} 経由で引くので、AE2 のクラスをそのまま使える。</p>
      */
+    //? if >=1.21 {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EnergyCellBlockEntity>> ENERGY_CELL =
+    //?} else {
+    /*public static final RegistryObject<BlockEntityType<EnergyCellBlockEntity>> ENERGY_CELL =
+    *///?}
             BLOCK_ENTITY_TYPES.register("energy_cell", () -> BlockEntityType.Builder
                     .of((pos, state) -> new EnergyCellBlockEntity(energyCellType(), pos, state),
                             ModBlocks.allEnergyCells().toArray(Block[]::new))
@@ -62,26 +81,42 @@ public class ModBlockEntities {
      * 全階層のソーラーパネルで共有する BlockEntityType。
      * 階層はブロックステートの {@link SolarPanelBlock} から引く。
      */
+    //? if >=1.21 {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SolarPanelBlockEntity>> SOLAR_PANEL =
+    //?} else {
+    /*public static final RegistryObject<BlockEntityType<SolarPanelBlockEntity>> SOLAR_PANEL =
+    *///?}
             BLOCK_ENTITY_TYPES.register("solar_panel", () -> BlockEntityType.Builder
                     .of((pos, state) -> new SolarPanelBlockEntity(solarPanelType(), pos, state,
                                     ((SolarPanelBlock) state.getBlock()).getTier()),
                             ModBlocks.allSolarPanels().toArray(Block[]::new))
                     .build(null));
 
+    //? if >=1.21 {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ImprovedChargerBlockEntity>> IMPROVED_CHARGER =
+    //?} else {
+    /*public static final RegistryObject<BlockEntityType<ImprovedChargerBlockEntity>> IMPROVED_CHARGER =
+    *///?}
             BLOCK_ENTITY_TYPES.register("improved_charger", () -> BlockEntityType.Builder
                     .of((pos, state) -> new ImprovedChargerBlockEntity(improvedChargerType(), pos, state),
                             ModBlocks.IMPROVED_CHARGER.get())
                     .build(null));
 
+    //? if >=1.21 {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<InsaneInterfaceBlockEntity>> INSANE_INTERFACE =
+    //?} else {
+    /*public static final RegistryObject<BlockEntityType<InsaneInterfaceBlockEntity>> INSANE_INTERFACE =
+    *///?}
             BLOCK_ENTITY_TYPES.register("insane_interface", () -> BlockEntityType.Builder
                     .of((pos, state) -> new InsaneInterfaceBlockEntity(insaneInterfaceType(), pos, state),
                             ModBlocks.INSANE_INTERFACE.get())
                     .build(null));
 
+    //? if >=1.21 {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<InsanePatternProviderBlockEntity>> INSANE_PATTERN_PROVIDER =
+    //?} else {
+    /*public static final RegistryObject<BlockEntityType<InsanePatternProviderBlockEntity>> INSANE_PATTERN_PROVIDER =
+    *///?}
             BLOCK_ENTITY_TYPES.register("insane_pattern_provider", () -> BlockEntityType.Builder
                     .of((pos, state) -> new InsanePatternProviderBlockEntity(insanePatternProviderType(), pos, state),
                             ModBlocks.INSANE_PATTERN_PROVIDER.get())
@@ -118,6 +153,7 @@ public class ModBlockEntities {
 
     public static void register(IEventBus bus) {
         BLOCK_ENTITY_TYPES.register(bus);
+    //? if >=1.21 {
     }
 
     /**
@@ -131,6 +167,7 @@ public class ModBlockEntities {
         return BLOCK_ENTITY_TYPES.getEntries().stream()
                 .<BlockEntityType<?>>map(DeferredHolder::get)
                 .toList();
+    //?}
     }
 
     /**

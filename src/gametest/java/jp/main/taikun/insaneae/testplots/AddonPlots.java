@@ -2,13 +2,15 @@ package jp.main.taikun.insaneae.testplots;
 
 import appeng.core.definitions.ItemDefinition;
 import appeng.server.testplots.TestPlot;
-import appeng.server.testplots.TestPlotClass;
 import appeng.server.testworld.PlotBuilder;
 import jp.main.taikun.insaneae.integration.appflux.AppFluxIntegration;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModParts;
 import net.minecraft.core.Direction;
 import net.neoforged.fml.ModList;
+//? if >=1.21 {
+import appeng.server.testplots.TestPlotClass;
+//?}
 
 /**
  * 他アドオン連携 ({@code integration/}) の検証。
@@ -17,7 +19,9 @@ import net.neoforged.fml.ModList;
  * 相手が入っていないときはそのクラスをロードせずに素通りで成功させる
  * (dev 実行から {@code -PwithAppFlux=false} で外しても全体が落ちないように)。</p>
  */
+//? if >=1.21 {
 @TestPlotClass
+//?}
 public final class AddonPlots {
 
     private AddonPlots() {
@@ -47,9 +51,16 @@ public final class AddonPlots {
         plot.cable("[0,2] 0 0");
         plot.blockState("0 1 0", ModBlocks.INSANE_INTERFACE.get().defaultBlockState());
         plot.blockState("1 1 0", ModBlocks.INSANE_PATTERN_PROVIDER.get().defaultBlockState());
+        //? if >=1.21 {
         plot.part("2 0 0", Direction.UP, new ItemDefinition<>("Insane ME Interface", ModParts.INSANE_INTERFACE));
         plot.part("2 0 0", Direction.NORTH,
                 new ItemDefinition<>("Insane Pattern Provider", ModParts.INSANE_PATTERN_PROVIDER));
+        //?} else {
+        /*plot.part("2 0 0", Direction.UP, new ItemDefinition<>("Insane ME Interface",
+                ModParts.INSANE_INTERFACE.getId(), ModParts.INSANE_INTERFACE.get()));
+        plot.part("2 0 0", Direction.NORTH, new ItemDefinition<>("Insane Pattern Provider",
+                ModParts.INSANE_PATTERN_PROVIDER.getId(), ModParts.INSANE_PATTERN_PROVIDER.get()));
+        *///?}
         plot.test(helper -> {
             var sequence = helper.startSequence();
             sequence.thenIdle(10);
@@ -58,6 +69,14 @@ public final class AddonPlots {
                     AppFluxChecks.inductionCard(helper);
                 }
             });
+            //? if <1.21 {
+            /*sequence.thenIdle(5);
+            sequence.thenExecute(() -> {
+                if (ModList.get().isLoaded(AppFluxIntegration.MODID)) {
+                    AppFluxChecks.neighborRelay(helper);
+                }
+            });
+            *///?}
             sequence.thenSucceed();
         });
     }

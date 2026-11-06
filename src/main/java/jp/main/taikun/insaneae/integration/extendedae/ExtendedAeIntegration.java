@@ -14,7 +14,11 @@ import java.util.List;
 public final class ExtendedAeIntegration implements AddonIntegration {
 
     /** 1.21 の modid。1.20.1 は {@code expatternprovider} だった。 */
+    //? if >=1.21 {
     public static final String MODID = "extendedae";
+    //?} else {
+    /*public static final String MODID = "expatternprovider";
+    *///?}
 
     @Override
     public String modId() {
@@ -34,7 +38,11 @@ public final class ExtendedAeIntegration implements AddonIntegration {
                 "ex_molecular_assembler",   // ExCraftingThreadMixin
                 "ex_inscriber",             // ExInscriberThreadMixin
                 "ex_io_port",               // ExIOPortMixin
+                //? if >=1.21 {
                 "circuit_cutter",           // ExCircuitCutterMixin
                 "crystal_assembler"));      // ExCrystalAssemblerMixin (1.21 で追加された機械)
+                //?} else {
+                /*"circuit_cutter"));         // ExCircuitCutterMixin
+                *///?}
     }
 }

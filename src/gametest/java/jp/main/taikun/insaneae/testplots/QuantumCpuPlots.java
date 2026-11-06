@@ -18,7 +18,6 @@ import appeng.items.storage.CreativeCellItem;
 import appeng.me.service.CraftingService;
 import appeng.server.testplots.CraftingPatternHelper;
 import appeng.server.testplots.TestPlot;
-import appeng.server.testplots.TestPlotClass;
 import appeng.server.testworld.PlotBuilder;
 import appeng.server.testworld.PlotTestHelper;
 import appeng.server.testworld.TestCraftingJob;
@@ -48,13 +47,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+//? if >=1.21 {
+import appeng.server.testplots.TestPlotClass;
+//?}
 
 /**
  * Quantum CPU (まとめクラフト・内蔵 CPU・タスク統合カード・完成待ち帳簿) の検証。
  *
  * <p>走らせ方は {@link TestPlotSupport} を参照。</p>
  */
+//? if >=1.21 {
 @TestPlotClass
+//?}
 public final class QuantumCpuPlots {
 
     private QuantumCpuPlots() {
@@ -195,8 +199,13 @@ public final class QuantumCpuPlots {
         plot.blockState("1 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
 
         // Long.MAX_VALUE + 5。long のどこにも収まらない代表値。
+        //? if >=1.21 {
         final java.math.BigInteger overLong =
                 java.math.BigInteger.valueOf(Long.MAX_VALUE).add(java.math.BigInteger.valueOf(5));
+        //?} else {
+        /*final BigInteger overLong =
+                BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.valueOf(5));
+        *///?}
         final AEItemKey log = AEItemKey.of(Items.OAK_LOG);
 
         plot.test(helper -> {
@@ -204,15 +213,22 @@ public final class QuantumCpuPlots {
 
             sequence.thenExecute(() -> {
                 var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(1, 0, 0));
+                //? if >=1.21 {
                 var registries = helper.getLevel().registryAccess();
+                //?}
 
                 cpu.addPendingOutput(log, overLong);
                 helper.check(overLong.equals(cpu.getPendingOutputs().get(log)),
                         "long 超の量が正確に積まれていない: " + cpu.getPendingOutputs().get(log));
 
                 var tag = new CompoundTag();
+                //? if >=1.21 {
                 cpu.saveAdditional(tag, registries);
                 cpu.loadTag(tag, registries);
+                //?} else {
+                /*cpu.saveAdditional(tag);
+                cpu.loadTag(tag);
+                *///?}
                 helper.check(overLong.equals(cpu.getPendingOutputs().get(log)),
                         "NBT 往復で量がずれた: " + cpu.getPendingOutputs().get(log));
 
@@ -225,30 +241,60 @@ public final class QuantumCpuPlots {
                 entries.add(badKey);
                 var badAmount = entries.getCompound(0).copy();
                 badAmount.putByteArray("amount",
+                        //? if >=1.21 {
                         java.math.BigInteger.valueOf(-5).toByteArray());
+                        //?} else {
+                        /*BigInteger.valueOf(-5).toByteArray());
+                        *///?}
                 entries.add(badAmount);
+                //? if >=1.21 {
                 cpu.loadTag(broken, registries); // ここで例外が出たらテストごと落ちる = 検出できる
+                //?} else {
+                /*cpu.loadTag(broken); // ここで例外が出たらテストごと落ちる = 検出できる
+                *///?}
                 helper.check(overLong.equals(cpu.getPendingOutputs().get(log)),
                         "壊れたエントリ混在で正常なエントリまで壊れた: " + cpu.getPendingOutputs().get(log));
                 // 1.21 の AE2 は解決できないキーを ae2:missing_content として保全する
                 // (捨てない)。負の量のエントリだけが落ち、元の 1 + 保全された 1 = 2 になる。
+                //? if >=1.21 {
                 helper.check(cpu.getPendingOutputs().size() == 2,
                         "壊れたエントリの扱いが想定と違う: " + cpu.getPendingOutputs());
+                //?} else {
+                /*helper.check(cpu.getPendingOutputs().size() == 1,
+                        "壊れたエントリが捨てられていない: " + cpu.getPendingOutputs());
+                *///?}
 
                 var legacy = new CompoundTag();
+                //? if >=1.21 {
                 cpu.saveAdditional(legacy, registries);
+                //?} else {
+                /*cpu.saveAdditional(legacy);
+                *///?}
                 legacy.remove("pendingOutputsBig");
                 var legacyList = new ListTag();
+                //? if >=1.21 {
                 legacyList.add(GenericStack.writeTag(registries,
+                //?} else {
+                /*legacyList.add(GenericStack.writeTag(
+                *///?}
                         new GenericStack(log, 123_456_789L)));
                 legacy.put("pendingOutputs", legacyList);
+                //? if >=1.21 {
                 cpu.loadTag(legacy, registries);
                 helper.check(java.math.BigInteger.valueOf(123_456_789L)
+                //?} else {
+                /*cpu.loadTag(legacy);
+                helper.check(BigInteger.valueOf(123_456_789L)
+                *///?}
                                 .equals(cpu.getPendingOutputs().get(log)),
                         "旧形式の移行に失敗: " + cpu.getPendingOutputs().get(log));
 
                 // 後段の確認のため、long 超の量へ戻す
+                //? if >=1.21 {
                 cpu.loadTag(tag, registries);
+                //?} else {
+                /*cpu.loadTag(tag);
+                *///?}
             });
 
             // serverTick が走る (このネットワークにはストレージが無いので 1 個も入らない)
@@ -260,8 +306,13 @@ public final class QuantumCpuPlots {
                 long stored = grid.getStorageService().getInventory()
                         .getAvailableStacks().get(log);
                 // 入ったぶん + 台帳の残り = 元の量 (1 個も消えていない)
+                //? if >=1.21 {
                 var pending = cpu.getPendingOutputs().getOrDefault(log, java.math.BigInteger.ZERO);
                 var total = pending.add(java.math.BigInteger.valueOf(stored));
+                //?} else {
+                /*var pending = cpu.getPendingOutputs().getOrDefault(log, BigInteger.ZERO);
+                var total = pending.add(BigInteger.valueOf(stored));
+                *///?}
                 helper.check(overLong.equals(total),
                         "serverTick 後に量が合わない: 台帳 " + pending + " + ME " + stored);
             });
@@ -467,7 +518,11 @@ public final class QuantumCpuPlots {
                 // 立てずに経路だけ試したいので null をキーに使う (WeakHashMap は null を許す)。
                 // このプロットしか null を使わないが、並列で走る他プロットに残さないよう最後に消す。
                 AcoBigIntegerJobRegistry.install(null,
+                        //? if >=1.21 {
                         Map.of(patterns.get(0), java.math.BigInteger.valueOf(requested)));
+                        //?} else {
+                        /*Map.of(patterns.get(0), BigInteger.valueOf(requested)));
+                        *///?}
                 state.view.exactCursor = AcoBigIntegerJobRegistry.find(null)
                         .orElseThrow(() -> new GameTestAssertException("Exact 台帳を作れなかった"))
                         .cursor(details -> {
@@ -892,9 +947,17 @@ public final class QuantumCpuPlots {
             sequence.thenExecute(() -> {
                 var provider = (InsanePatternProviderBlockEntity) helper.getBlockEntity(providerPos);
                 provider.getLogic().getPatternInv().addItems(PatternDetailsHelper.encodeProcessingPattern(
+                        //? if >=1.21 {
                         List.of(new GenericStack(AEItemKey.of(Items.OAK_LOG), 1),
                                 new GenericStack(AEItemKey.of(Items.COBBLESTONE), 2)),
                         List.of(new GenericStack(AEItemKey.of(Items.OAK_PLANKS), planksPerCraft))));
+                        //?} else {
+                        /*new GenericStack[] {
+                                new GenericStack(AEItemKey.of(Items.OAK_LOG), 1),
+                                new GenericStack(AEItemKey.of(Items.COBBLESTONE), 2)},
+                        new GenericStack[] {
+                                new GenericStack(AEItemKey.of(Items.OAK_PLANKS), planksPerCraft)}));
+                        *///?}
             });
 
             sequence.thenIdle(5);

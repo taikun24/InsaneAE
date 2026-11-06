@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "fullness=0": {
+      "model": "insaneae:block/nova_energy_cell_0"
+    },
+    "fullness=1": {
+      "model": "insaneae:block/nova_energy_cell_1"
+    },
+    "fullness=2": {
+      "model": "insaneae:block/nova_energy_cell_2"
+    },
+    "fullness=3": {
+      "model": "insaneae:block/nova_energy_cell_3"
+    },
+    "fullness=4": {
+      "model": "insaneae:block/nova_energy_cell_4"
+    }
+  }
+}

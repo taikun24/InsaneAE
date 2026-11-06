@@ -96,7 +96,11 @@ public class QuantumCpuScreen<C extends QuantumCpuMenu> extends PatternProviderS
 
         // クラフトユニット枠の開閉。CPU を持たない特大パターンプロバイダーでは
         // ユニット枠のスロットが 1 つも無いので、ボタンも出さない。
+        //? if >=1.21 {
         unitsToggle = new IconTextButton(() -> showingUnits ? Icon.BACK : Icon.S_MACHINE,
+        //?} else {
+        /*unitsToggle = new IconTextButton(() -> showingUnits ? Icon.ARROW_LEFT : Icon.CRAFT_HAMMER,
+        *///?}
                 Component.empty(), btn -> toggleUnits());
         widgets.add("unitsToggle", unitsToggle);
         unitsToggle.visible = hasUnitSlots();
@@ -221,8 +225,13 @@ public class QuantumCpuScreen<C extends QuantumCpuMenu> extends PatternProviderS
 
     @Override
     // ページ送りは縦スクロール (wheelDelta) だけを見る。横スクロール (scrollX) は使わない。
+    //? if >=1.21 {
     public boolean mouseScrolled(double x, double y, double scrollX, double wheelDelta) {
         if (super.mouseScrolled(x, y, scrollX, wheelDelta)) {
+    //?} else {
+    /*public boolean mouseScrolled(double x, double y, double wheelDelta) {
+        if (super.mouseScrolled(x, y, wheelDelta)) {
+    *///?}
             return true;
         }
         if (!showingUnits && wheelDelta != 0 && isOverPatternGrid(x, y)) {
@@ -253,8 +262,8 @@ public class QuantumCpuScreen<C extends QuantumCpuMenu> extends PatternProviderS
         setTextHidden("page", showingUnits);
         setTextHidden("storageUnitsLabel", !showingUnits);
         setTextHidden("acceleratorUnitsLabel", !showingUnits);
-        unitsToggle.setMessage(Component.translatable(showingUnits
-                ? "gui.insaneae.quantum_cpu.show_patterns"
+        unitsToggle.setMessage(Component.translatable(showingUnits ?
+                "gui.insaneae.quantum_cpu.show_patterns"
                 : "gui.insaneae.quantum_cpu.show_crafting_units"));
         // ロック表示 (lockReason) はタイトルと同じ行に出るので、出ている間はタイトルを引っ込める。
         setTextHidden("dialog_title", menu.getLockCraftingMode() != LockCraftingMode.NONE);

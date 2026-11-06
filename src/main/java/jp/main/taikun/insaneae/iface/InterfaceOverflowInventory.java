@@ -160,6 +160,7 @@ public class InterfaceOverflowInventory implements GenericInternalInventory {
     }
 
     @Override
+    //? if >=1.21 {
     public boolean isSupportedType(AEKeyType type) {
         return storage().isSupportedType(type);
     }
@@ -167,6 +168,10 @@ public class InterfaceOverflowInventory implements GenericInternalInventory {
     @Override
     public boolean isAllowedIn(int slot, AEKey what) {
         return storage().isAllowedIn(slot, what);
+    //?} else {
+    /*public boolean isAllowed(AEKey what) {
+        return storage().isAllowed(what);
+    *///?}
     }
 
     @Override

@@ -1,6 +1,5 @@
 package jp.main.taikun.insaneae.registries;
 
-import net.minecraft.core.registries.Registries;
 import appeng.api.upgrades.Upgrades;
 import appeng.core.definitions.AEBlocks;
 import appeng.core.definitions.AEItems;
@@ -14,20 +13,27 @@ import jp.main.taikun.insaneae.upgrade.InsaneSpeedCardType;
 import jp.main.taikun.insaneae.upgrade.QuantumAccelerationCardItem;
 import jp.main.taikun.insaneae.upgrade.TaskFusionCardItem;
 import jp.main.taikun.insaneae.upgrade.UpgradeMirrors;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ItemLike;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import net.neoforged.neoforge.registries.DeferredHolder;
 
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import jp.main.taikun.insaneae.integration.AddonIntegration;
 import jp.main.taikun.insaneae.integration.AddonIntegrations;
+//? if >=1.21 {
+import net.minecraft.core.registries.Registries;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.neoforge.registries.DeferredHolder;
+//?}
+//? if <1.21 {
+/*import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.registries.RegistryObject;
+*///?}
 
 /**
  * 加速カード (アップグレードカード) の登録。
@@ -37,7 +43,11 @@ import jp.main.taikun.insaneae.integration.AddonIntegrations;
  */
 public class ModUpgrades {
     private static final DeferredRegister<Item> ITEMS =
+            //? if >=1.21 {
             DeferredRegister.create(Registries.ITEM, InsaneAE.MODID);
+            //?} else {
+            /*DeferredRegister.create(ForgeRegistries.ITEMS, InsaneAE.MODID);
+            *///?}
 
     /** 1 機械あたりの取り付け上限。倍率が大きいので 1 枚で十分。 */
     private static final int MAX_INSTALLED = 1;
@@ -50,22 +60,38 @@ public class ModUpgrades {
             AEBlocks.INSCRIBER,
             AEBlocks.IO_PORT);
 
+    //? if >=1.21 {
     public static final Map<InsaneSpeedCardType, DeferredHolder<Item, Item>> SPEED_CARDS =
+    //?} else {
+    /*public static final Map<InsaneSpeedCardType, RegistryObject<Item>> SPEED_CARDS =
+    *///?}
             new EnumMap<>(InsaneSpeedCardType.class);
 
     /** Quantum CPU 専用の加速カード。1 枚ごとに組み立て速度が 256 倍。 */
+    //? if >=1.21 {
     public static final DeferredHolder<Item, Item> QUANTUM_ACCELERATION_CARD =
+    //?} else {
+    /*public static final RegistryObject<Item> QUANTUM_ACCELERATION_CARD =
+    *///?}
             ITEMS.register("quantum_acceleration_card",
                     () -> new QuantumAccelerationCardItem(new Item.Properties()));
 
     /** Quantum CPU 専用のタスク統合カード。まとめ 1 回をクラスタ予算の 1 操作として数えさせる。 */
+    //? if >=1.21 {
     public static final DeferredHolder<Item, Item> TASK_FUSION_CARD =
+    //?} else {
+    /*public static final RegistryObject<Item> TASK_FUSION_CARD =
+    *///?}
             ITEMS.register("task_fusion_card",
                     () -> new TaskFusionCardItem(new Item.Properties()));
 
     static {
         for (InsaneSpeedCardType type : InsaneSpeedCardType.values()) {
+            //? if >=1.21 {
             DeferredHolder<Item, Item> card = ITEMS.register(type.id(),
+            //?} else {
+            /*RegistryObject<Item> card = ITEMS.register(type.id(),
+            *///?}
                     () -> new InsaneSpeedCardItem(new Item.Properties(), type));
             type.setItem(card::get);
             SPEED_CARDS.put(type, card);
@@ -94,6 +120,19 @@ public class ModUpgrades {
         // 他アドオンのものも) を超次元版にも登録する。ここより後の登録はその場で写る。
         UpgradeMirrors.enable();
     }
+    //? if <1.21 {
+    /*public static void allowSpeedCards(String modId, List<String> itemIds) {
+        for (String itemId : itemIds) {
+            Item machine = ForgeRegistries.ITEMS.getValue(ResourceLocation.fromNamespaceAndPath(modId, itemId));
+            if (machine != null && machine != Items.AIR) {
+                for (InsaneSpeedCardType type : InsaneSpeedCardType.values()) {
+                    Upgrades.add(type.item(), machine, MAX_INSTALLED,
+                            "insaneae.upgrade_group." + modId);
+                }
+            }
+        }
+    }
+    *///?}
 
     /**
      * 自作の ME ストレージセルにアップグレードカードを挿せるようにする。
@@ -113,17 +152,33 @@ public class ModUpgrades {
         String cells = GuiText.StorageCells.getTranslationKey();
         String portables = GuiText.PortableCells.getTranslationKey();
 
+        //? if >=1.21 {
         for (DeferredHolder<Item, Item> cell : ModCells.ITEM_CELLS.values()) {
+        //?} else {
+        /*for (RegistryObject<Item> cell : ModCells.ITEM_CELLS.values()) {
+        *///?}
             addItemCellCards(cell.get(), cells);
         }
+        //? if >=1.21 {
         for (DeferredHolder<Item, Item> cell : ModCells.FLUID_CELLS.values()) {
+        //?} else {
+        /*for (RegistryObject<Item> cell : ModCells.FLUID_CELLS.values()) {
+        *///?}
             addFluidCellCards(cell.get(), cells);
         }
+        //? if >=1.21 {
         for (DeferredHolder<Item, Item> cell : ModCells.PORTABLE_ITEM_CELLS.values()) {
+        //?} else {
+        /*for (RegistryObject<Item> cell : ModCells.PORTABLE_ITEM_CELLS.values()) {
+        *///?}
             addItemCellCards(cell.get(), portables);
             addPortableEnergyCards(cell.get(), portables);
         }
+        //? if >=1.21 {
         for (DeferredHolder<Item, Item> cell : ModCells.PORTABLE_FLUID_CELLS.values()) {
+        //?} else {
+        /*for (RegistryObject<Item> cell : ModCells.PORTABLE_FLUID_CELLS.values()) {
+        *///?}
             addFluidCellCards(cell.get(), portables);
             addPortableEnergyCards(cell.get(), portables);
         }
@@ -166,6 +221,7 @@ public class ModUpgrades {
      * アイテムが見つからない場合 (相手の改名など) は無視する。
      * カードが挿せないだけで、ほかに影響はない。</p>
      */
+    //? if >=1.21 {
     public static void allowSpeedCards(String modId, List<String> itemIds) {
         for (String itemId : itemIds) {
             Item machine = BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath(modId, itemId));
@@ -177,4 +233,5 @@ public class ModUpgrades {
             }
         }
     }
+    //?}
 }

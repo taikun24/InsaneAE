@@ -73,6 +73,7 @@ from __future__ import annotations
 import argparse
 import colorsys
 import os
+import sys
 
 from PIL import Image
 
@@ -98,31 +99,10 @@ CABLE_OVERLAYS = tuple("channels_%02d" % n for n in (0, 1, 2, 3, 4, 10, 11, 12, 
 CABLE_CORES = tuple("core_" + name for name in CABLE_COLORS)
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(REPO, "src", "main", "resources", "assets", "insaneae", "textures")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from gen_crafting_textures import read_minecraft_version, resolve_template_dirs, resource_root  # noqa: E402
 
-
-def read_minecraft_version(repo: str = REPO) -> str | None:
-    """gradle.properties の minecraft_version を読む。読めなければ None。"""
-    try:
-        with open(os.path.join(repo, "gradle.properties"), encoding="utf-8") as fh:
-            for line in fh:
-                key, sep, value = line.partition("=")
-                if sep and key.strip() == "minecraft_version":
-                    return value.strip() or None
-    except OSError:
-        pass
-    return None
-
-
-def resolve_template_dirs(repo: str = REPO) -> list[str]:
-    """下敷きを探す順番。<b>ファイル単位</b>で前から順に見る (他の生成スクリプトと同じ)。"""
-    root = os.path.join(repo, "tools", "textures")
-    version = read_minecraft_version(repo)
-    if version:
-        versioned = os.path.join(root, version)
-        if os.path.isdir(versioned):
-            return [versioned, root]
-    return [root]
+OUT = os.path.join(resource_root(REPO), "assets", "insaneae", "textures")
 
 
 TEMPLATE_DIRS = resolve_template_dirs()

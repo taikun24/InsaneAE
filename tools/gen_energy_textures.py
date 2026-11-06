@@ -62,11 +62,11 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from gen_crafting_textures import (RED, fit_luminance, load_template, rainbow_recolor,
-                                   read_minecraft_version, recolor,
+                                   read_minecraft_version, recolor, resource_root,
                                    resolve_template_dirs, write_dir)  # noqa: E402  (パス調整の後に import する)
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT_DIR = os.path.join(REPO, "src/main/resources/assets/insaneae/textures/block/energy")
+OUT_DIR = os.path.join(resource_root(REPO), "assets/insaneae/textures/block/energy")
 TEMPLATE_DIRS = resolve_template_dirs(REPO)
 
 # --------------------------------------------------------------------------------------

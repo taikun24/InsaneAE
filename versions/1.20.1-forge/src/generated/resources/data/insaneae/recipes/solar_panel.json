@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "item": "ae2:charged_certus_quartz_crystal"
+    },
+    "G": {
+      "item": "ae2:quartz_glass"
+    },
+    "P": {
+      "item": "ae2:engineering_processor"
+    },
+    "S": {
+      "item": "ae2:smooth_sky_stone_block"
+    }
+  },
+  "pattern": [
+    "GGG",
+    "PCP",
+    "SSS"
+  ],
+  "result": {
+    "item": "insaneae:solar_panel"
+  },
+  "show_notification": true
+}

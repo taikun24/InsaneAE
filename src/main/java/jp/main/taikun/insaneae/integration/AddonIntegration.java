@@ -1,15 +1,22 @@
 package jp.main.taikun.insaneae.integration;
 
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
-import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 
 import java.util.List;
 import java.util.Map;
 import java.util.function.ToIntBiFunction;
+//? if >=1.21 {
+import net.minecraft.data.recipes.RecipeOutput;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+//?}
+//? if <1.21 {
+/*import net.minecraft.core.Direction;
+import net.minecraft.data.recipes.FinishedRecipe;
+import java.util.function.Consumer;
+*///?}
 
 /**
  * 他の AE2 アドオンとの連携 1 つぶん。対象 Mod が入っているときだけ実体が作られる。
@@ -69,7 +76,11 @@ public interface AddonIntegration {
      * capability の登録。NeoForge では各 Mod が自分の型にしか登録しないので、
      * 相手の仕組みに乗せた自前のアイテムはここで登録し直す。
      */
+    //? if >=1.21 {
     default void registerCapabilities(RegisterCapabilitiesEvent event) {
+    //?} else {
+    /*default void onInsaneHostNeighborChanged(Object logic, Direction side) {
+    *///?}
     }
 
     /**
@@ -78,6 +89,10 @@ public interface AddonIntegration {
      *
      * @param component その階層のセルコンポーネント
      */
+    //? if >=1.21 {
     default void buildRecipes(RecipeOutput output, InsaneCraftingUnitType tier, ItemLike component) {
+    //?} else {
+    /*default void buildRecipes(Consumer<FinishedRecipe> output, InsaneCraftingUnitType tier, ItemLike component) {
+    *///?}
     }
 }

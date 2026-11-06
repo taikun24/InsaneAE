@@ -1,13 +1,9 @@
 package jp.main.taikun.insaneae.cell.storage;
 
-import appeng.api.stacks.GenericStack;
-import com.mojang.logging.LogUtils;
 import jp.main.taikun.insaneae.InsaneAE;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -17,13 +13,24 @@ import net.minecraft.world.level.saveddata.SavedData;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+//? if >=1.21 {
+import appeng.api.stacks.GenericStack;
+import com.mojang.logging.LogUtils;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.NbtOps;
+import org.slf4j.Logger;
+import java.util.List;
+//?}
+//? if <1.21 {
+/*import appeng.api.stacks.AEKey;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import jp.main.taikun.insaneae.util.SaturatingMath;
+*///?}
 
 /**
  * UUID で管理しているストレージセルの中身。オーバーワールドの {@code data/insaneae_cells.dat} に入る。
@@ -37,15 +44,19 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class CellContentStore extends SavedData {
 
+    //? if >=1.21 {
     private static final Logger LOGGER = LogUtils.getLogger();
+    //?}
     private static final String FILE_NAME = InsaneAE.MODID + "_cells";
     private static final String CELLS = "cells";
     private static final String ID = "id";
     private static final String ITEM = "item";
+    //? if >=1.21 {
     private static final String STACKS = "stacks";
 
     private static final Factory<CellContentStore> FACTORY =
             new Factory<>(CellContentStore::new, CellContentStore::load, null);
+    //?}
 
     @Nullable
     private static volatile Cached cached;
@@ -54,9 +65,34 @@ public final class CellContentStore extends SavedData {
     }
 
     /** {@code item} は {@code /insaneae cells recover} でセルを作り直すときに使う。 */
+    //? if >=1.21 {
     public record Entry(ResourceLocation item, List<GenericStack> stacks) {
         public Entry {
             stacks = List.copyOf(stacks);
+    //?} else {
+    /*public record Entry(ResourceLocation item, ListTag keys, long[] amounts) {
+        public int types() {
+            return amounts.length;
+        }
+
+        public long count() {
+            long count = 0;
+            for (long amount : amounts) {
+                count = SaturatingMath.add(count, amount);
+            }
+            return count;
+        }
+
+        /^* AE2 の {@code loadCellItems} と同じ読み方。読めないキーは飛ばす。 ^/
+        public void decode(Object2LongMap<AEKey> out) {
+            int size = Math.min(amounts.length, keys.size());
+            for (int index = 0; index < size; index++) {
+                AEKey key = AEKey.fromTagGeneric(keys.getCompound(index));
+                if (key != null && amounts[index] > 0) {
+                    out.put(key, amounts[index]);
+                }
+            }
+    *///?}
         }
     }
 
@@ -94,7 +130,12 @@ public final class CellContentStore extends SavedData {
             if (current != null && current.server == server) {
                 return current.store;
             }
+            //? if >=1.21 {
             CellContentStore store = overworld.getDataStorage().computeIfAbsent(FACTORY, FILE_NAME);
+            //?} else {
+            /*CellContentStore store = overworld.getDataStorage()
+                    .computeIfAbsent(CellContentStore::load, CellContentStore::new, FILE_NAME);
+            *///?}
             cached = new Cached(server, store);
             return store;
         }
@@ -132,8 +173,13 @@ public final class CellContentStore extends SavedData {
         return Collections.unmodifiableMap(cells);
     }
 
+    //? if >=1.21 {
     public void put(UUID id, Item item, List<GenericStack> stacks) {
         cells.put(id, new Entry(BuiltInRegistries.ITEM.getKey(item), stacks));
+    //?} else {
+    /*public void put(UUID id, Item item, ListTag keys, long[] amounts) {
+        cells.put(id, new Entry(BuiltInRegistries.ITEM.getKey(item), keys, amounts));
+    *///?}
         setDirty();
     }
 
@@ -144,24 +190,37 @@ public final class CellContentStore extends SavedData {
     }
 
     @Override
+    //? if >=1.21 {
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         var ops = registries.createSerializationContext(NbtOps.INSTANCE);
+    //?} else {
+    /*public CompoundTag save(CompoundTag tag) {
+    *///?}
         ListTag list = new ListTag();
         cells.forEach((id, entry) -> {
             CompoundTag cell = new CompoundTag();
             cell.putUUID(ID, id);
             cell.putString(ITEM, entry.item().toString());
+            //? if >=1.21 {
             GenericStack.FAULT_TOLERANT_LIST_CODEC.encodeStart(ops, entry.stacks())
                     .resultOrPartial(error -> LOGGER.error("InsaneAE: failed to save cell {}: {}", id, error))
                     .ifPresent(stacks -> cell.put(STACKS, stacks));
+            //?} else {
+            /*cell.put(CellNbt.KEYS, entry.keys());
+            cell.putLongArray(CellNbt.AMOUNTS, entry.amounts());
+            *///?}
             list.add(cell);
         });
         tag.put(CELLS, list);
         return tag;
     }
 
+    //? if >=1.21 {
     private static CellContentStore load(CompoundTag tag, HolderLookup.Provider registries) {
         var ops = registries.createSerializationContext(NbtOps.INSTANCE);
+    //?} else {
+    /*private static CellContentStore load(CompoundTag tag) {
+    *///?}
         CellContentStore store = new CellContentStore();
         ListTag list = tag.getList(CELLS, Tag.TAG_COMPOUND);
         for (int index = 0; index < list.size(); index++) {
@@ -169,14 +228,23 @@ public final class CellContentStore extends SavedData {
             if (!cell.hasUUID(ID)) {
                 continue;
             }
+            //? if >=1.21 {
             UUID id = cell.getUUID(ID);
+            //?}
             ResourceLocation item = ResourceLocation.tryParse(cell.getString(ITEM));
             // 消えた Mod のアイテムが混じっていても、AE2 のセルと同じく「欠けた中身」として残す。
+            //? if >=1.21 {
             List<GenericStack> stacks = !cell.contains(STACKS) ? List.of()
                     : GenericStack.FAULT_TOLERANT_LIST_CODEC.parse(ops, cell.get(STACKS))
                             .resultOrPartial(error -> LOGGER.error("InsaneAE: failed to load cell {}: {}", id, error))
                             .orElse(List.of());
             store.cells.put(id, new Entry(item != null ? item : BuiltInRegistries.ITEM.getDefaultKey(), stacks));
+            //?} else {
+            /*store.cells.put(cell.getUUID(ID), new Entry(
+                    item != null ? item : BuiltInRegistries.ITEM.getDefaultKey(),
+                    cell.getList(CellNbt.KEYS, Tag.TAG_COMPOUND),
+                    cell.getLongArray(CellNbt.AMOUNTS)));
+            *///?}
         }
         return store;
     }

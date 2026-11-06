@@ -224,7 +224,11 @@ public class ModBlockStateProvider extends BlockStateProvider {
                 .allFaces((direction, face) -> face.texture("#all").cullface(direction)).end();
         model.element().from(-0.01F, -0.01F, -0.01F).to(16.01F, 16.01F, 16.01F)
                 .shade(false)
+                //? if >=1.21 {
                 .allFaces((direction, face) -> face.texture("#light")).end();
+                //?} else {
+                /*.allFaces((direction, face) -> face.texture("#light").emissivity(15, 15)).end();
+                *///?}
         return model;
     }
 

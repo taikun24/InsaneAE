@@ -202,7 +202,13 @@ final class ProcessingBulkPush {
         var accessor = (PatternProviderLogicAccessor) logic;
         List<Target> targets = new ArrayList<>();
         for (Direction side : accessor.insaneae$getActiveSides()) {
+            //? if >=1.21 {
             ICraftingMachine machine = ICraftingMachine.of(level, be.getBlockPos().relative(side), side.getOpposite());
+            //?} else {
+            /*var adjPos = be.getBlockPos().relative(side);
+            ICraftingMachine machine = ICraftingMachine.of(level, adjPos, side.getOpposite(),
+                    level.getBlockEntity(adjPos));
+            *///?}
             if (machine != null && machine.acceptsPlans()) {
                 return null;
             }

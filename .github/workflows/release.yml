@@ -1,0 +1,287 @@
+name: release
+
+# CurseForge へのアップロードと GitHub Release の作成。
+#
+# 1.20.1 と 1.21.1 は Stonecutter で 1 つのソースから作るので、実行したブランチの
+# 同じチェックアウトから両方をビルドする (下のマトリクスの node が versions/ の下の名前)。
+#
+# 必要なシークレット:
+#   CF_API_TOKEN — https://legacy.curseforge.com/account/api-tokens で発行したもの。
+#                  console.curseforge.com の Core API キーでは<b>アップロードできません</b>。
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_to:
+        # CurseForge はアップロードした<b>ファイルを API から削除できない</b> (作者ページで手動削除)。
+        # 取り消しが効かない側を既定にしないよう、既定は GitHub だけにしてある。
+        description: '公開先'
+        type: choice
+        options: ['GitHub だけ', 'GitHub と CurseForge']
+        default: 'GitHub だけ'
+      release_type:
+        description: 'CurseForge のリリース種別 (CurseForge に上げるときだけ使う)'
+        type: choice
+        options: [release, beta, alpha]
+        default: release
+      targets:
+        description: '対象'
+        type: choice
+        options: ['両方', '1.20.1 だけ', '1.21.1 だけ']
+        default: '両方'
+      dry_run:
+        description: 'アップロードせずビルドと検証だけ行う'
+        type: boolean
+        default: false
+      prerelease:
+        description: 'GitHub Release を「プレリリース」として出す'
+        type: boolean
+        default: false
+
+env:
+  CF_PROJECT_ID: '1627326'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      # 片方が失敗しても、もう片方は最後まで走らせる。
+      fail-fast: false
+      matrix:
+        include:
+          - node: '1.20.1-forge'
+            java: '17'
+            mc: '1.20.1'
+            loader: Forge
+          - node: '1.21.1-neoforge'
+            java: '21'
+            mc: '1.21.1'
+            loader: NeoForge
+
+    steps:
+      - name: 対象ブランチか判定
+        id: want
+        run: |
+          case "${{ inputs.targets }}" in
+            '両方') want=yes ;;
+            '1.20.1 だけ') [ "${{ matrix.mc }}" = '1.20.1' ] && want=yes || want=no ;;
+            '1.21.1 だけ') [ "${{ matrix.mc }}" = '1.21.1' ] && want=yes || want=no ;;
+            *) want=no ;;
+          esac
+          echo "want=$want" >> "$GITHUB_OUTPUT"
+          echo "${{ matrix.node }} を処理するか: $want"
+
+      - uses: actions/checkout@v4
+        if: steps.want.outputs.want == 'yes'
+
+      - name: Set up JDK
+        if: steps.want.outputs.want == 'yes'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          # Gradle 自体 (Stonecutter) は Java 21 で動き、1.20.1 のコンパイルには Java 17 が要る。
+          java-version: |
+            17
+            21
+
+      - name: Set up Gradle
+        if: steps.want.outputs.want == 'yes'
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: バージョンと changelog を取り出す
+        if: steps.want.outputs.want == 'yes'
+        id: meta
+        run: |
+          version=$(grep -E '^mod_version=' gradle.properties | cut -d= -f2)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+          # CHANGELOG.md の「先頭のバージョン節」だけを抜き出す。
+          # 見出しが version と食い違っていたら、書き忘れとみなして止める。
+          head=$(grep -m1 -E '^## ' CHANGELOG.md | sed -E 's/^## +//')
+          if [ "$head" != "$version" ]; then
+            echo "::error::CHANGELOG.md の先頭が '$head' ですが mod_version は '$version' です"
+            exit 1
+          fi
+          awk '/^## /{ if (seen) exit; seen=1; next } seen' CHANGELOG.md > changelog.md
+          echo "--- changelog ---"
+          cat changelog.md
+
+      - run: chmod +x ./gradlew .github/scripts/gametest.sh
+        if: steps.want.outputs.want == 'yes'
+
+      - name: Build
+        if: steps.want.outputs.want == 'yes'
+        run: ./gradlew ":${{ matrix.node }}:build"
+
+      # build.yml と同じ判定。リリースする物が既知の失敗以外で落ちていないかを見る。
+      - name: Game tests
+        if: steps.want.outputs.want == 'yes'
+        run: .github/scripts/gametest.sh "${{ matrix.node }}"
+
+      - name: jar を特定する
+        if: steps.want.outputs.want == 'yes'
+        id: jar
+        run: |
+          # sources / javadoc が混ざらないよう名前で絞る (build.gradle の archivesName と揃えること)。
+          dir="versions/${{ matrix.node }}/build/libs"
+          jar="$dir/insaneae-${{ matrix.mc }}-${{ steps.meta.outputs.version }}.jar"
+          test -f "$jar" || { echo "::error::$jar が見つかりません"; ls -la "$dir"; exit 1; }
+          echo "path=$jar" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$jar")" >> "$GITHUB_OUTPUT"
+          ls -la "$jar"
+
+      # ゲームバージョンの数値 ID は API から引く。ハードコードすると
+      # CurseForge 側の採番が変わったときに黙って壊れるため。
+      - name: CurseForge のゲームバージョン ID を解決する
+        if: steps.want.outputs.want == 'yes' && !inputs.dry_run && inputs.publish_to == 'GitHub と CurseForge'
+        id: gv
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          if [ -z "$CF_API_TOKEN" ]; then
+            echo "::error::シークレット CF_API_TOKEN が設定されていません"
+            exit 1
+          fi
+          curl -sS -f -H "X-Api-Token: $CF_API_TOKEN" \
+            https://minecraft.curseforge.com/api/game/versions > versions.json
+
+          # <b>関数の中で exit してはいけない。</b>$(...) はサブシェルなので、
+          # そこで exit しても抜けるのはサブシェルだけでステップは成功扱いのまま進む。
+          # 空かどうかは呼び出した側で見る。
+          pick() { jq -r --arg n "$1" '[.[] | select(.name == $n)][0].id // empty' versions.json; }
+          need() {
+            if [ -z "$2" ]; then
+              echo "::error::CurseForge に '$1' というゲームバージョンが見つかりません"
+              exit 1
+            fi
+          }
+          mc=$(pick '${{ matrix.mc }}');            need '${{ matrix.mc }}' "$mc"
+          loader=$(pick '${{ matrix.loader }}');    need '${{ matrix.loader }}' "$loader"
+          java=$(pick 'Java ${{ matrix.java }}');   need 'Java ${{ matrix.java }}' "$java"
+
+          # <b>Environment グループ (Client / Server) も必須。</b>
+          # 抜けていると errorCode 1021
+          # "You must select at least one version from the environment group of versions" で 400 になる。
+          # この Mod はクライアント側の描画もサーバ側のロジックも持つので両方を指定する。
+          client=$(pick 'Client');                  need 'Client' "$client"
+          server=$(pick 'Server');                  need 'Server' "$server"
+
+          echo "ids=[$mc,$loader,$java,$client,$server]" >> "$GITHUB_OUTPUT"
+          echo "MC=${{ matrix.mc }}($mc) ローダー=${{ matrix.loader }}($loader) Java=${{ matrix.java }}($java) Client($client) Server($server)"
+
+      - name: CurseForge にアップロード
+        if: steps.want.outputs.want == 'yes' && !inputs.dry_run && inputs.publish_to == 'GitHub と CurseForge'
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          # 依存関係 (CurseForge の Relations)。mods.toml の dependencies と揃えること。
+          # slug を 1 つでも間違えるとアップロードごと 400 で落ちる
+          # (slug は curseforge.com/minecraft/mc-mods/<slug> の部分)。
+          jq -n \
+            --rawfile changelog changelog.md \
+            --arg name "InsaneAE ${{ steps.meta.outputs.version }} (${{ matrix.mc }})" \
+            --arg type "${{ inputs.release_type }}" \
+            --argjson versions '${{ steps.gv.outputs.ids }}' \
+            '{
+               changelog:     $changelog,
+               changelogType: "markdown",
+               displayName:   $name,
+               gameVersions:  $versions,
+               releaseType:   $type,
+               relations: {
+                 projects: [
+                   { slug: "applied-energistics-2",  type: "requiredDependency" },
+                   { slug: "mega-cells",             type: "requiredDependency" },
+                   { slug: "applied-mekanistics",    type: "optionalDependency" },
+                   { slug: "applied-flux",           type: "optionalDependency" },
+                   { slug: "ae2-things-forge",       type: "optionalDependency" },
+                   { slug: "ae2-crafting-optimizer", type: "optionalDependency" }
+                 ]
+               }
+             }' > metadata.json
+          cat metadata.json
+
+          # <b>-f は使わない。</b>curl の -f は失敗時に本文を捨ててしまうので、
+          # CurseForge が返す errorCode / errorMessage が読めず原因が分からなくなる。
+          # ステータスコードは -w で受け取り、本文は必ず表示する。
+          http=$(curl -sS -o response.txt -w '%{http_code}' -X POST \
+            -H "X-Api-Token: $CF_API_TOKEN" \
+            -F "metadata=<metadata.json" \
+            -F "file=@${{ steps.jar.outputs.path }}" \
+            "https://minecraft.curseforge.com/api/projects/${{ env.CF_PROJECT_ID }}/upload-file")
+
+          echo "HTTP $http"
+          echo "--- response ---"
+          cat response.txt || true
+          echo
+
+          if [ "$http" != "200" ]; then
+            echo "::error::アップロードに失敗しました (HTTP $http)"
+            exit 1
+          fi
+          echo "アップロードしました: ${{ steps.jar.outputs.name }}"
+
+      - name: 成果物を残す
+        if: steps.want.outputs.want == 'yes'
+        uses: actions/upload-artifact@v4
+        with:
+          name: insaneae-${{ matrix.mc }}-${{ steps.meta.outputs.version }}
+          path: versions/${{ matrix.node }}/build/libs/*.jar
+          if-no-files-found: error
+
+      - name: 失敗したらログを残す
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ matrix.node }}
+          path: |
+            versions/${{ matrix.node }}/run/logs/
+            gametest-${{ matrix.node }}.log
+          if-no-files-found: ignore
+
+  # 両方のビルドが通ってから、jar をまとめて GitHub Release に出す。
+  # CurseForge と違って「両方揃ってから 1 つのリリース」にしたいので別ジョブにしてある。
+  github-release:
+    needs: release
+    if: ${{ !inputs.dry_run && inputs.targets == '両方' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: バージョンと changelog を取り出す
+        id: meta
+        run: |
+          version=$(grep -E '^mod_version=' gradle.properties | cut -d= -f2)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          awk '/^## /{ if (seen) exit; seen=1; next } seen' CHANGELOG.md > changelog.md
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Release を作る
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la artifacts
+          # 同じタグで再実行したときに黙って上書きしないよう、あったら止める。
+          if gh release view "v${{ steps.meta.outputs.version }}" >/dev/null 2>&1; then
+            echo "::error::タグ v${{ steps.meta.outputs.version }} の Release が既にあります"
+            exit 1
+          fi
+          # プレリリースのときは Latest を更新しないよう --prerelease を付ける
+          # (gh は --prerelease=false を受け付けないので、フラグごと出し分ける)。
+          pre=''
+          if [ "${{ inputs.prerelease }}" = 'true' ]; then
+            pre='--prerelease'
+          fi
+          gh release create "v${{ steps.meta.outputs.version }}" \
+            --title "v${{ steps.meta.outputs.version }}" \
+            --notes-file changelog.md \
+            --target "${{ github.sha }}" \
+            $pre \
+            artifacts/*.jar

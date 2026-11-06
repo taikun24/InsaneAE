@@ -4,11 +4,13 @@ import appeng.api.stacks.AEKey;
 import com.mojang.logging.LogUtils;
 import java.math.BigInteger;
 import java.util.Map;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import org.slf4j.Logger;
+//? if >=1.21 {
+import net.minecraft.core.HolderLookup;
+//?}
 
 /**
  * 完成品待ち台帳の保存形式。<b>どの台帳実装が有効かに関係なく常にこの形式</b>で読み書きする。
@@ -38,7 +40,11 @@ public final class PendingOutputNbt {
     private PendingOutputNbt() {
     }
 
+    //? if >=1.21 {
     public static CompoundTag save(PendingOutputLedger ledger, HolderLookup.Provider registries) {
+    //?} else {
+    /*public static CompoundTag save(PendingOutputLedger ledger) {
+    *///?}
         CompoundTag saved = new CompoundTag();
         saved.putInt(NBT_SCHEMA, SCHEMA_VERSION);
         ListTag entries = new ListTag();
@@ -47,7 +53,11 @@ public final class PendingOutputNbt {
                 continue;
             }
             CompoundTag value = new CompoundTag();
+            //? if >=1.21 {
             value.put(NBT_KEY, entry.getKey().toTagGeneric(registries));
+            //?} else {
+            /*value.put(NBT_KEY, entry.getKey().toTagGeneric());
+            *///?}
             value.putByteArray(NBT_AMOUNT, entry.getValue().toByteArray());
             entries.add(value);
         }
@@ -56,8 +66,12 @@ public final class PendingOutputNbt {
     }
 
     /** {@code saved} の中身を {@code ledger} へ流し込む (追記)。読めないエントリは警告して飛ばす。 */
+    //? if >=1.21 {
     public static void load(PendingOutputLedger ledger, CompoundTag saved,
             HolderLookup.Provider registries) {
+    //?} else {
+    /*public static void load(PendingOutputLedger ledger, CompoundTag saved) {
+    *///?}
         if (saved == null) {
             return;
         }
@@ -76,7 +90,11 @@ public final class PendingOutputNbt {
         }
         for (int index = 0; index < limit; index++) {
             CompoundTag value = entries.getCompound(index);
+            //? if >=1.21 {
             AEKey key = AEKey.fromTagGeneric(registries, value.getCompound(NBT_KEY));
+            //?} else {
+            /*AEKey key = AEKey.fromTagGeneric(value.getCompound(NBT_KEY));
+            *///?}
             if (key == null) {
                 // そのアイテムの Mod が抜かれた場合にここへ来る。1 エントリ捨てるだけで済ませる。
                 LOGGER.warn("InsaneAE: dropping a Quantum CPU pending output whose key cannot be resolved: {}",

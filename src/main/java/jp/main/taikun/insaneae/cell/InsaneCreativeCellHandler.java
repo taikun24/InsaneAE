@@ -31,8 +31,8 @@ public final class InsaneCreativeCellHandler implements ICellHandler {
             return null;
         }
         // 超強化セルは BigInteger 在庫を名乗る別の中身を持つ。
-        return is.getItem() instanceof InsaneUltraCreativeCellItem
-                ? new InsaneUltraCreativeCellInventory(is)
+        return is.getItem() instanceof InsaneUltraCreativeCellItem ?
+                new InsaneUltraCreativeCellInventory(is)
                 : new InsaneCreativeCellInventory(is);
     }
 }

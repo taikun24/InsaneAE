@@ -1,4 +1,4 @@
-[日本語](README.md) | **English**
+[日本語](README.md) | **English** | [中文](README.zh-CN.md)
 
 # InsaneAE
 
@@ -9,29 +9,28 @@ MEGA Cells stops at 256M; InsaneAE adds storage, crafting power and energy from 
 
 ## Supported versions
 
-Each Minecraft version lives on its own branch. **When reporting a bug, please say which one you are using.**
+Both builds are made from a single source tree with [Stonecutter](https://stonecutter.kikugie.dev/).
+**When reporting a bug, please say which one you are using.**
 
-| Branch | Minecraft | Loader |
+| Minecraft | Loader | Jar |
 |---|---|---|
-| [`main`](https://github.com/taikun24/InsaneAE/tree/main) | 1.20.1 | Forge |
-| [`1.21.1`](https://github.com/taikun24/InsaneAE/tree/1.21.1) | 1.21.1 | NeoForge |
-
-This branch is **1.21.1 (NeoForge)**.
+| 1.20.1 | Forge | `insaneae-1.20.1-<version>.jar` |
+| 1.21.1 | NeoForge | `insaneae-1.21.1-<version>.jar` |
 
 ## Requirements
 
-| | Version |
-|---|---|
-| Minecraft | 1.21.1 |
-| NeoForge | 21.1.0 or later |
-| [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) | 19.2.15 or later (required) |
-| [MEGA Cells](https://github.com/62832/MEGACells) | 4.11 or later (required) |
-| [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) | 1.6 or later (optional, for chemical cells) |
-| [AppliedFlux](https://www.curseforge.com/minecraft/mc-mods/applied-flux) | 1.21-2.1.6 or later (optional, for FE cells) |
-| [AE2 Things](https://www.curseforge.com/minecraft/mc-mods/ae2-things-forge) | 1.4.2-beta or later (optional, for DISK drives) |
-| [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) | 1.5.12 or later, **1.5.18+ recommended** (optional, for BigInteger accounting and exact planning) |
+| | 1.20.1 (Forge) | 1.21.1 (NeoForge) |
+|---|---|---|
+| Loader | Forge 47.4.20 or later | NeoForge 21.1.0 or later |
+| [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) (required) | 15.2.15 or later | 19.2.15 or later |
+| [MEGA Cells](https://github.com/62832/MEGACells) (required) | 2.4.6 or later | 4.11 or later |
+| [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) (optional, chemical cells) | 1.4 or later | 1.6 or later |
+| [AppliedFlux](https://www.curseforge.com/minecraft/mc-mods/applied-flux) (optional, FE cells) | 1.20-1.3.7 or later | 1.21-2.1.6 or later |
+| [AE2 Things](https://www.curseforge.com/minecraft/mc-mods/ae2-things-forge) (optional, DISK drives) | 1.2.1 or later | 1.4.2-beta or later |
+| [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) (optional, BigInteger accounting and exact planning) | 1.5.12 or later | 1.5.12 or later (**1.5.18+ recommended**) |
+| [Astral Mekanism & Energistics](https://www.curseforge.com/minecraft/mc-mods/astral-mekanism) (optional, batches auto-ejection into ME interfaces) | 1.8 or later | — |
 
-AE2 requires [GuideME](https://github.com/AppliedEnergistics/GuideME) as a hard dependency (on 1.20.1 it was bundled with AE2).
+On 1.21.1, AE2 requires [GuideME](https://github.com/AppliedEnergistics/GuideME) as a hard dependency (on 1.20.1 it was bundled with AE2).
 
 AE2 Crafting Optimizer is not required. When it is installed and its BigInteger backend is
 enabled, the Quantum CPU's pending-output ledger is wired to ACO's public API. Without it — or
@@ -40,7 +39,7 @@ format is the same either way.
 
 Because InsaneAE reaches into AE2 internals with Mixins (`BasicCellInventory`,
 `CraftingCPUCluster`, tooltip rendering and more), the AE2 version range is pinned to
-`[19.2.15,20)` — the range that has actually been tested.
+the range that has actually been tested (`[15.2.15,16)` on 1.20.1, `[19.2.15,20)` on 1.21.1).
 
 ### ACO integration (optional)
 
@@ -110,20 +109,29 @@ by default). Use it to narrow things down if something looks wrong.
 ./gradlew build
 ```
 
-The jar lands in `build/libs/` as `insaneae-1.21.1-<version>.jar`.
+The jars for both versions land in `versions/<version>/build/libs/`
+(`versions/1.20.1-forge/` and `versions/1.21.1-neoforge/`).
+To build just one, prefix the task: `./gradlew :1.21.1-neoforge:build`.
+Gradle runs on Java 21; the Java 17 toolchain used for 1.20.1 is provisioned automatically.
 
 | Command | What it does |
 |---|---|
-| `./gradlew runClient` / `runServer` | Launch a development environment |
-| `./gradlew runData` | Regenerate `src/generated/resources` |
-| `./gradlew runGameTestServer` | Run the checks that ride along on AE2's test plots |
+| `./gradlew :<version>:runClient` / `runServer` | Launch a development environment |
+| `./gradlew :<version>:runData` | Regenerate `versions/<version>/src/generated/resources` |
+| `./gradlew :<version>:runGameTestServer` | Run the checks that ride along on AE2's test plots |
 
 ## Development notes
 
-- Fixes normally land on `main` (1.20.1) and are `git cherry-pick`ed onto `1.21.1`. The Mixin and
-  calculation classes are identical on both branches, so they usually apply cleanly.
-- NeoForge uses official Mojang mappings at runtime, so no Mixin refmap is needed. (The 1.20.1
-  branch does have an `insaneae.refmap.json`.)
+- There is one source tree in `src/`, kept in its 1.21.1 state. Differences from 1.20.1 are written
+  as conditional comments: `//? if >=1.21 { … //?} else { /* … *///?}` (`//? if neoforge {` works
+  for loader-only differences). Packages that differ only in name between Forge and NeoForge are
+  handled by the replacements in `stonecutter.gradle.kts`.
+- Files that exist for only one version live under `versions/<version>/src/`, as do resources that
+  differ per version (textures and so on).
+- To edit the 1.20.1 side in the IDE, switch the active version with the Stonecutter Gradle tasks
+  (the conditional comments in `src/` are rewritten for that version). Switch back to 1.21.1 before committing.
+- 1.20.1 ships with Forge's obfuscated names, so the jar carries a Mixin refmap (`insaneae.refmap.json`).
+  1.21.1 uses official Mojang mappings at runtime and does not need one.
 
 ## License
 

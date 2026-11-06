@@ -1,0 +1,125 @@
+{
+  "parent": "ae2:item/part_base",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#sides"
+        },
+        "east": {
+          "texture": "#sides"
+        },
+        "north": {
+          "texture": "#front",
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ]
+        },
+        "south": {
+          "texture": "#back"
+        },
+        "up": {
+          "texture": "#sides"
+        },
+        "west": {
+          "texture": "#sides"
+        }
+      },
+      "from": [
+        2,
+        2,
+        7
+      ],
+      "to": [
+        14,
+        14,
+        9
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#sides"
+        },
+        "east": {
+          "texture": "#sides"
+        },
+        "north": {
+          "texture": "#front",
+          "uv": [
+            4.0,
+            4.0,
+            12.0,
+            12.0
+          ]
+        },
+        "south": {
+          "texture": "#back"
+        },
+        "up": {
+          "texture": "#sides"
+        },
+        "west": {
+          "texture": "#sides"
+        }
+      },
+      "from": [
+        5,
+        5,
+        10
+      ],
+      "to": [
+        11,
+        11,
+        11
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#sides"
+        },
+        "east": {
+          "texture": "#sides"
+        },
+        "north": {
+          "texture": "#front",
+          "uv": [
+            4.0,
+            4.0,
+            12.0,
+            12.0
+          ]
+        },
+        "south": {
+          "texture": "#back"
+        },
+        "up": {
+          "texture": "#sides"
+        },
+        "west": {
+          "texture": "#sides"
+        }
+      },
+      "from": [
+        5,
+        5,
+        9
+      ],
+      "to": [
+        11,
+        11,
+        10
+      ]
+    }
+  ],
+  "textures": {
+    "back": "ae2:part/pattern_provider_back",
+    "front": "insaneae:block/insane_pattern_provider",
+    "particle": "insaneae:block/insane_pattern_provider",
+    "sides": "ae2:part/pattern_provider_sides"
+  }
+}

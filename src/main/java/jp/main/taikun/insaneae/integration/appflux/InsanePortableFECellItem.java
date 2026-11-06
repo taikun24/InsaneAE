@@ -1,11 +1,17 @@
 package jp.main.taikun.insaneae.integration.appflux;
 
-import com.glodblock.github.appflux.common.items.ItemPortableFECell;
 import jp.main.taikun.insaneae.util.TieredNames;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+//? if >=1.21 {
+import com.glodblock.github.appflux.common.items.ItemPortableFECell;
+import net.minecraft.core.registries.BuiltInRegistries;
+//?}
+//? if <1.21 {
+/*import com.glodblock.github.appflux.common.items.ItemPortableMEGAFECell;
+import net.neoforged.neoforge.registries.ForgeRegistries;
+*///?}
 
 /**
  * 1G 以上のポータブル FE セル。
@@ -14,7 +20,11 @@ import net.minecraft.world.item.ItemStack;
  * 誘導カードによる持ち物への給電は AppliedFlux の実装が働く。容量・表示名・分解レシピの ID と、
  * 内蔵電力 (本体のポータブルセルと同じく ×8、充電速度 ×2) だけを変えている。</p>
  */
+//? if >=1.21 {
 public class InsanePortableFECellItem extends ItemPortableFECell {
+//?} else {
+/*public class InsanePortableFECellItem extends ItemPortableMEGAFECell {
+*///?}
 
     private final long totalBytes;
     private final String nameKey;
@@ -47,6 +57,7 @@ public class InsanePortableFECellItem extends ItemPortableFECell {
      */
     @Override
     public ResourceLocation getRecipeId() {
+    //? if >=1.21 {
         return BuiltInRegistries.ITEM.getKey(this);
     }
 
@@ -58,5 +69,8 @@ public class InsanePortableFECellItem extends ItemPortableFECell {
     @Override
     public double getAEMaxPower(ItemStack stack) {
         return super.getAEMaxPower(stack) * 8;
+    //?} else {
+        /*return ForgeRegistries.ITEMS.getKey(this);
+    *///?}
     }
 }

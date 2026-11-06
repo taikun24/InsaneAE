@@ -17,7 +17,9 @@ import net.minecraft.world.level.block.Blocks;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigInteger;
+//? if >=1.21 {
 import java.util.List;
+//?}
 
 /**
  * 複数のテストプロットで使う部品。
@@ -93,7 +95,14 @@ final class TestPlotSupport {
     static ItemStack processingPattern(Item input, long inputAmount,
             Item output, long outputAmount) {
         return PatternDetailsHelper.encodeProcessingPattern(
+                //? if >=1.21 {
                 List.of(new GenericStack(AEItemKey.of(input), inputAmount)),
                 List.of(new GenericStack(AEItemKey.of(output), outputAmount)));
+                //?} else {
+                /*new GenericStack[] {
+                        new GenericStack(AEItemKey.of(input), inputAmount) },
+                new GenericStack[] {
+                        new GenericStack(AEItemKey.of(output), outputAmount) });
+                *///?}
     }
 }

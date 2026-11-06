@@ -1,7 +1,12 @@
 package jp.main.taikun.insaneae.config;
 
-import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
+//? if >=1.21 {
+import net.neoforged.neoforge.common.ModConfigSpec;
+//?}
+//? if <1.21 {
+/*import net.minecraftforge.common.ForgeConfigSpec;
+*///?}
 
 /**
  * InsaneAE の設定 ({@code config/insaneae-common.toml})。
@@ -16,10 +21,18 @@ import org.apache.commons.lang3.tuple.Pair;
 public final class InsaneAEConfig {
 
     private static final Common COMMON;
+    //? if >=1.21 {
     public static final ModConfigSpec SPEC;
+    //?} else {
+    /*public static final ForgeConfigSpec SPEC;
+    *///?}
 
     static {
+        //? if >=1.21 {
         Pair<Common, ModConfigSpec> pair = new ModConfigSpec.Builder().configure(Common::new);
+        //?} else {
+        /*Pair<Common, ForgeConfigSpec> pair = new ForgeConfigSpec.Builder().configure(Common::new);
+        *///?}
         COMMON = pair.getLeft();
         SPEC = pair.getRight();
     }
@@ -51,6 +64,11 @@ public final class InsaneAEConfig {
     public static boolean serverSidePatternPaging() {
         return get(COMMON.serverSidePatternPaging, true);
     }
+    //? if <1.21 {
+    /*public static boolean astralNetworkEject() {
+        return get(COMMON.astralNetworkEject, true);
+    }
+    *///?}
 
     /**
      * Quantum CPU が同時に受けられるクラフトの本数。
@@ -92,7 +110,11 @@ public final class InsaneAEConfig {
      * <p>{@code ConfigValue#get()} は読み込み前に呼ぶと例外になるので、
      * その場合はコード側の既定値を返す。</p>
      */
+    //? if >=1.21 {
     private static <T> T get(ModConfigSpec.ConfigValue<T> value, T fallback) {
+    //?} else {
+    /*private static <T> T get(ForgeConfigSpec.ConfigValue<T> value, T fallback) {
+    *///?}
         if (!SPEC.isLoaded()) {
             return fallback;
         }
@@ -101,6 +123,7 @@ public final class InsaneAEConfig {
 
     private static final class Common {
 
+        //? if >=1.21 {
         private final ModConfigSpec.BooleanValue batchCraftingCalculation;
         private final ModConfigSpec.IntValue craftingBatchThreshold;
         private final ModConfigSpec.BooleanValue serverSidePatternPaging;
@@ -111,6 +134,19 @@ public final class InsaneAEConfig {
         private final ModConfigSpec.BooleanValue processingBulkPush;
 
         private Common(ModConfigSpec.Builder builder) {
+        //?} else {
+        /*private final ForgeConfigSpec.BooleanValue batchCraftingCalculation;
+        private final ForgeConfigSpec.IntValue craftingBatchThreshold;
+        private final ForgeConfigSpec.BooleanValue serverSidePatternPaging;
+        private final ForgeConfigSpec.IntValue maxCraftingWindowsPerTick;
+        private final ForgeConfigSpec.IntValue quantumCpuMaxJobs;
+        private final ForgeConfigSpec.BooleanValue astralNetworkEject;
+        private final ForgeConfigSpec.IntValue hyperChannels;
+        private final ForgeConfigSpec.IntValue machineTickBurst;
+        private final ForgeConfigSpec.BooleanValue processingBulkPush;
+
+        private Common(ForgeConfigSpec.Builder builder) {
+        *///?}
             builder.comment("クラフト計算 (Calculating... の部分) の軽量化").push("crafting_calculation");
 
             batchCraftingCalculation = builder
@@ -145,6 +181,19 @@ public final class InsaneAEConfig {
                             "ネットワークへ流して完成待ちを清算するので、1 tick の合計は long を超えられる。",
                             "サーバが 1 tick に使う時間はこの値に比例するので、上げすぎると重くなる。")
                     .defineInRange("maxCraftingWindowsPerTick", 1024, 1, Integer.MAX_VALUE);
+            //? if <1.21 {
+            /*builder.pop();
+            builder.comment("他 Mod との連携").push("compat");
+
+            astralNetworkEject = builder
+                    .comment("Astral Mekanism & Energistics の機械が ME インターフェイスへ自動搬出するとき、",
+                            "スタック数や搬出レート (fluidAutoEjectRate / chemicalAutoEjectRate) で刻まずに",
+                            "中身を全部ネットワークへ渡す。Astral の機械は 1 回の処理で long 級を作るので、",
+                            "Mekanism 本来の刻みでは搬出が追いつかないため。",
+                            "設定枠を入れてあるインターフェイス (在庫確保用) には効かない。",
+                            "false にすると Mekanism 本来の搬出だけになる。")
+                    .define("astralNetworkEject", true);
+            *///?}
 
             quantumCpuMaxJobs = builder
                     .comment("内蔵クラフト CPU が同時に受けられるクラフトの本数。",

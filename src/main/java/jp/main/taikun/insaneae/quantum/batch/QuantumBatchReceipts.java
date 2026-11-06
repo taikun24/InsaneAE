@@ -5,11 +5,13 @@ import java.math.BigInteger;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import org.jetbrains.annotations.Nullable;
+//? if >=1.21 {
+import net.minecraft.core.HolderLookup;
+//?}
 
 /**
  * ACO の craftingtable batch で受け取った取引の<b>レシートの記録</b>。
@@ -115,7 +117,11 @@ public final class QuantumBatchReceipts {
 
     // ------------------------------------------------------------------ 保存
 
+    //? if >=1.21 {
     public void save(CompoundTag tag, HolderLookup.Provider registries) {
+    //?} else {
+    /*public void save(CompoundTag tag) {
+    *///?}
         if (receipts.isEmpty()) {
             return;
         }
@@ -128,7 +134,11 @@ public final class QuantumBatchReceipts {
             ListTag outputs = new ListTag();
             receipt.exactOutputs().forEach((key, amount) -> {
                 CompoundTag output = new CompoundTag();
+                //? if >=1.21 {
                 output.put(NBT_KEY, key.toTagGeneric(registries));
+                //?} else {
+                /*output.put(NBT_KEY, key.toTagGeneric());
+                *///?}
                 // BigInteger は 10 進文字列ではなくバイト列で持つ (桁数が大きいと文字列は無駄に長い)。
                 output.putByteArray(NBT_AMOUNT, amount.toByteArray());
                 outputs.add(output);
@@ -139,7 +149,11 @@ public final class QuantumBatchReceipts {
         tag.put(NBT_LIST, list);
     }
 
+    //? if >=1.21 {
     public void load(CompoundTag tag, HolderLookup.Provider registries) {
+    //?} else {
+    /*public void load(CompoundTag tag) {
+    *///?}
         receipts.clear();
         if (!tag.contains(NBT_LIST, Tag.TAG_LIST)) {
             return;
@@ -158,7 +172,11 @@ public final class QuantumBatchReceipts {
             ListTag saved = entry.getList(NBT_OUTPUTS, Tag.TAG_COMPOUND);
             for (int slot = 0; slot < saved.size(); slot++) {
                 CompoundTag output = saved.getCompound(slot);
+                //? if >=1.21 {
                 AEKey key = AEKey.fromTagGeneric(registries, output.getCompound(NBT_KEY));
+                //?} else {
+                /*AEKey key = AEKey.fromTagGeneric(output.getCompound(NBT_KEY));
+                *///?}
                 if (key == null) {
                     continue;
                 }

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "insaneae:advanced_solar_panel"
+    },
+    "B": {
+      "item": "insaneae:quasar_energy_cell"
+    }
+  },
+  "pattern": [
+    "AAA",
+    "ABA",
+    "AAA"
+  ],
+  "result": {
+    "item": "insaneae:elite_solar_panel"
+  },
+  "show_notification": true
+}

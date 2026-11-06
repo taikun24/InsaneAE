@@ -12,7 +12,6 @@ import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
 import appeng.api.util.AECableType;
 import appeng.api.util.DimensionalBlockPos;
-import appeng.blockentity.grid.AENetworkedInvBlockEntity;
 import appeng.blockentity.misc.ChargerBlockEntity;
 import appeng.blockentity.misc.ChargerRecipes;
 import appeng.recipes.handlers.ChargerRecipe;
@@ -21,13 +20,20 @@ import appeng.util.inv.AppEngInternalInventory;
 import appeng.util.inv.filter.IAEItemFilter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.List;
+//? if >=1.21 {
+import appeng.blockentity.grid.AENetworkedInvBlockEntity;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+//?}
+//? if <1.21 {
+/*import appeng.blockentity.grid.AENetworkInvBlockEntity;
+import net.minecraft.network.FriendlyByteBuf;
+*///?}
 
 /**
  * AE2 のチャージャーの「限界突破」版。
@@ -50,7 +56,11 @@ import java.util.List;
  * <p>速度は既に「ネットワークの電力量で決まる」ところまで来ているので、
  * 加速カードのスロットは持たせていない (挿しても意味が無いため)。</p>
  */
+//? if >=1.21 {
 public class ImprovedChargerBlockEntity extends AENetworkedInvBlockEntity implements IGridTickable {
+//?} else {
+/*public class ImprovedChargerBlockEntity extends AENetworkInvBlockEntity implements IGridTickable {
+*///?}
 
     /** 1 個変換するのに必要な電力。AE2 のチャージャーと同じ。 */
     public static final double POWER_PER_CONVERSION = ChargerBlockEntity.POWER_MAXIMUM_AMOUNT;
@@ -81,7 +91,11 @@ public class ImprovedChargerBlockEntity extends AENetworkedInvBlockEntity implem
     }
 
     @Override
+    //? if >=1.21 {
     public void onChangeInventory(AppEngInternalInventory inv, int slot) {
+    //?} else {
+    /*public void onChangeInventory(InternalInventory inv, int slot) {
+    *///?}
         getMainNode().ifPresent((grid, node) -> grid.getTickManager().wakeDevice(node));
         markForUpdate();
     }
@@ -93,20 +107,38 @@ public class ImprovedChargerBlockEntity extends AENetworkedInvBlockEntity implem
     // ItemStack の読み書きは StreamCodec 経由で、データコンポーネントを解決するためバッファも
     // レジストリ参照つき (RegistryFriendlyByteBuf) になる。空スタックを許すので OPTIONAL_STREAM_CODEC を使う。
     @Override
+    //? if >=1.21 {
     protected boolean readFromStream(RegistryFriendlyByteBuf data) {
+    //?} else {
+    /*protected boolean readFromStream(FriendlyByteBuf data) {
+    *///?}
         boolean changed = super.readFromStream(data);
         working = data.readBoolean();
+        //? if >=1.21 {
         inv.setItemDirect(INPUT_SLOT, ItemStack.OPTIONAL_STREAM_CODEC.decode(data));
         inv.setItemDirect(OUTPUT_SLOT, ItemStack.OPTIONAL_STREAM_CODEC.decode(data));
+        //?} else {
+        /*inv.setItemDirect(INPUT_SLOT, data.readItem());
+        inv.setItemDirect(OUTPUT_SLOT, data.readItem());
+        *///?}
         return changed;
     }
 
     @Override
+    //? if >=1.21 {
     protected void writeToStream(RegistryFriendlyByteBuf data) {
+    //?} else {
+    /*protected void writeToStream(FriendlyByteBuf data) {
+    *///?}
         super.writeToStream(data);
         data.writeBoolean(working);
+        //? if >=1.21 {
         ItemStack.OPTIONAL_STREAM_CODEC.encode(data, inv.getStackInSlot(INPUT_SLOT));
         ItemStack.OPTIONAL_STREAM_CODEC.encode(data, inv.getStackInSlot(OUTPUT_SLOT));
+        //?} else {
+        /*data.writeItem(inv.getStackInSlot(INPUT_SLOT));
+        data.writeItem(inv.getStackInSlot(OUTPUT_SLOT));
+        *///?}
     }
 
     /**
@@ -135,7 +167,11 @@ public class ImprovedChargerBlockEntity extends AENetworkedInvBlockEntity implem
 
     @Override
     public TickingRequest getTickingRequest(IGridNode node) {
+        //? if >=1.21 {
         return new TickingRequest(1, 20, inv.getStackInSlot(INPUT_SLOT).isEmpty());
+        //?} else {
+        /*return new TickingRequest(1, 20, inv.getStackInSlot(INPUT_SLOT).isEmpty(), true);
+        *///?}
     }
 
     @Override
@@ -192,7 +228,11 @@ public class ImprovedChargerBlockEntity extends AENetworkedInvBlockEntity implem
         ItemStack output = inv.getStackInSlot(OUTPUT_SLOT);
         int outputSpace = SLOT_CAPACITY - output.getCount();
         // ChargerRecipe#result は ItemStack なので、アイテムだけでなくコンポーネントも比べる。
+        //? if >=1.21 {
         if (!output.isEmpty() && !ItemStack.isSameItemSameComponents(output, recipe.result)) {
+        //?} else {
+        /*if (!output.isEmpty() && output.getItem() != recipe.result) {
+        *///?}
             outputSpace = 0;
         }
         int limit = Math.min(input.getCount(), outputSpace);
@@ -212,7 +252,11 @@ public class ImprovedChargerBlockEntity extends AENetworkedInvBlockEntity implem
         input.shrink(converted);
         inv.setItemDirect(INPUT_SLOT, input);
         if (output.isEmpty()) {
+            //? if >=1.21 {
             inv.setItemDirect(OUTPUT_SLOT, recipe.result.copyWithCount(converted));
+            //?} else {
+            /*inv.setItemDirect(OUTPUT_SLOT, new ItemStack(recipe.result, converted));
+            *///?}
         } else {
             output.grow(converted);
             inv.setItemDirect(OUTPUT_SLOT, output);

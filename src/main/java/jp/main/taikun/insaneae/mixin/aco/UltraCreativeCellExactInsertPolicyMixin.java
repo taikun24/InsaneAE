@@ -37,8 +37,8 @@ public abstract class UltraCreativeCellExactInsertPolicyMixin
         // (設定済みなら全量受け入れ、それ以外は 0)。
         boolean configured = ((InsaneUltraCreativeCellInventory) (Object) this)
                 .insert(key, 1, Actionable.SIMULATE, null) > 0;
-        return configured
-                ? InsaneUltraCreativeCellInventory.exactAmount()
+        return configured ?
+                InsaneUltraCreativeCellInventory.exactAmount()
                 : BigInteger.ZERO;
     }
 }

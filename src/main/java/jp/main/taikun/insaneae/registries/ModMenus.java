@@ -1,6 +1,5 @@
 package jp.main.taikun.insaneae.registries;
 
-import net.minecraft.core.registries.Registries;
 import jp.main.taikun.insaneae.InsaneAE;
 import jp.main.taikun.insaneae.menu.InsaneInterfaceMenu;
 import jp.main.taikun.insaneae.menu.InsanePatternProviderMenu;
@@ -8,7 +7,14 @@ import jp.main.taikun.insaneae.menu.QuantumCpuMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
+//? if >=1.21 {
+import net.minecraft.core.registries.Registries;
 import net.neoforged.neoforge.registries.DeferredHolder;
+//?}
+//? if <1.21 {
+/*import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.registries.RegistryObject;
+*///?}
 
 /**
  * 独自 GUI の {@link MenuType}。
@@ -18,15 +24,29 @@ import net.neoforged.neoforge.registries.DeferredHolder;
  */
 public class ModMenus {
     private static final DeferredRegister<MenuType<?>> MENU_TYPES =
+    //? if >=1.21 {
             DeferredRegister.create(Registries.MENU, InsaneAE.MODID);
 
     public static final DeferredHolder<MenuType<?>, MenuType<QuantumCpuMenu>> QUANTUM_CPU =
+    //?} else {
+            /*DeferredRegister.create(ForgeRegistries.MENU_TYPES, InsaneAE.MODID);
+
+    public static final RegistryObject<MenuType<QuantumCpuMenu>> QUANTUM_CPU =
+    *///?}
             MENU_TYPES.register("quantum_cpu", () -> QuantumCpuMenu.TYPE);
 
+    //? if >=1.21 {
     public static final DeferredHolder<MenuType<?>, MenuType<InsaneInterfaceMenu>> INSANE_INTERFACE =
+    //?} else {
+    /*public static final RegistryObject<MenuType<InsaneInterfaceMenu>> INSANE_INTERFACE =
+    *///?}
             MENU_TYPES.register("insane_interface", () -> InsaneInterfaceMenu.TYPE);
 
+    //? if >=1.21 {
     public static final DeferredHolder<MenuType<?>, MenuType<InsanePatternProviderMenu>> INSANE_PATTERN_PROVIDER =
+    //?} else {
+    /*public static final RegistryObject<MenuType<InsanePatternProviderMenu>> INSANE_PATTERN_PROVIDER =
+    *///?}
             MENU_TYPES.register("insane_pattern_provider", () -> InsanePatternProviderMenu.TYPE);
 
     public static void register(IEventBus bus) {

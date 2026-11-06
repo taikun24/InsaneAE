@@ -3,9 +3,7 @@ package jp.main.taikun.insaneae.menu;
 import appeng.helpers.InterfaceLogicHost;
 import appeng.menu.MenuOpener;
 import appeng.menu.implementations.InterfaceMenu;
-import appeng.menu.locator.MenuHostLocator;
 import appeng.menu.locator.MenuLocators;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
@@ -14,7 +12,17 @@ import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
+//? if >=1.21 {
+import appeng.menu.locator.MenuHostLocator;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
+//?}
+//? if <1.21 {
+/*import appeng.menu.locator.MenuLocator;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.common.extensions.IForgeMenuType;
+import net.minecraftforge.network.NetworkHooks;
+*///?}
 
 /**
  * 超特大インターフェイスの画面。
@@ -37,7 +45,11 @@ import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 public class InsaneInterfaceMenu extends InterfaceMenu {
 
     public static final MenuType<InsaneInterfaceMenu> TYPE =
+            //? if >=1.21 {
             IMenuTypeExtension.create(InsaneInterfaceMenu::fromNetwork);
+            //?} else {
+            /*IForgeMenuType.create(InsaneInterfaceMenu::fromNetwork);
+            *///?}
 
     static {
         MenuOpener.addOpener(TYPE, InsaneInterfaceMenu::open);
@@ -48,8 +60,13 @@ public class InsaneInterfaceMenu extends InterfaceMenu {
     }
 
     private static InsaneInterfaceMenu fromNetwork(int containerId, Inventory playerInventory,
+        //? if >=1.21 {
             RegistryFriendlyByteBuf buf) {
         MenuHostLocator locator = MenuLocators.readFromPacket(buf);
+        //?} else {
+            /*FriendlyByteBuf buf) {
+        MenuLocator locator = MenuLocators.readFromPacket(buf);
+        *///?}
         InterfaceLogicHost host = locator.locate(playerInventory.player, InterfaceLogicHost.class);
         if (host == null) {
             throw new IllegalStateException(
@@ -60,7 +77,11 @@ public class InsaneInterfaceMenu extends InterfaceMenu {
         return menu;
     }
 
+    //? if >=1.21 {
     private static boolean open(Player player, MenuHostLocator locator, boolean fromSubMenu) {
+    //?} else {
+    /*private static boolean open(Player player, MenuLocator locator, boolean fromSubMenu) {
+    *///?}
         if (!(player instanceof ServerPlayer serverPlayer)) {
             return false;
         }
@@ -68,15 +89,19 @@ public class InsaneInterfaceMenu extends InterfaceMenu {
         if (host == null) {
             return false;
         }
-        Component title = host instanceof Nameable nameable && nameable.hasCustomName()
-                ? nameable.getCustomName()
+        Component title = host instanceof Nameable nameable && nameable.hasCustomName() ?
+                nameable.getCustomName()
                 : Component.empty();
         MenuProvider provider = new SimpleMenuProvider((containerId, inv, p) -> {
             InsaneInterfaceMenu menu = new InsaneInterfaceMenu(containerId, inv, host);
             menu.setLocator(locator);
             return menu;
         }, title);
+        //? if >=1.21 {
         serverPlayer.openMenu(provider, buf -> {
+        //?} else {
+        /*NetworkHooks.openScreen(serverPlayer, provider, buf -> {
+        *///?}
             MenuLocators.writeToPacket(buf, locator);
             buf.writeBoolean(fromSubMenu);
         });

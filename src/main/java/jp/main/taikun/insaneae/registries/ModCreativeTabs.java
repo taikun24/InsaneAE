@@ -7,15 +7,24 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import net.neoforged.neoforge.registries.DeferredHolder;
 import jp.main.taikun.insaneae.integration.AddonIntegration;
 import jp.main.taikun.insaneae.integration.AddonIntegrations;
+//? if >=1.21 {
+import net.neoforged.neoforge.registries.DeferredHolder;
+//?}
+//? if <1.21 {
+/*import net.neoforged.neoforge.registries.RegistryObject;
+*///?}
 
 public class ModCreativeTabs {
     private static final DeferredRegister<CreativeModeTab> TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, InsaneAE.MODID);
 
+    //? if >=1.21 {
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> MAIN = TABS.register("main", () -> CreativeModeTab.builder()
+    //?} else {
+    /*public static final RegistryObject<CreativeModeTab> MAIN = TABS.register("main", () -> CreativeModeTab.builder()
+    *///?}
             .title(Component.translatable("itemGroup." + InsaneAE.MODID))
             .icon(() -> new ItemStack(ModBlocks.QUANTUM_CPU.get()))
             .displayItems((params, output) -> {
@@ -33,7 +42,11 @@ public class ModCreativeTabs {
                 output.accept(ModBlocks.INSANE_INTERFACE.get());
                 output.accept(ModParts.INSANE_INTERFACE.get());
                 // AE2 の EnergyCellBlock#addToMainCreativeTab は「空」と「満充電」の 2 個を出す。
+                //? if >=1.21 {
                 ModBlocks.allEnergyCells().forEach(cell -> cell.addToMainCreativeTab(params, output));
+                //?} else {
+                /*ModBlocks.allEnergyCells().forEach(cell -> cell.addToMainCreativeTab(output));
+                *///?}
                 ModBlocks.allSolarPanels().forEach(output::accept);
                 ModUpgrades.SPEED_CARDS.values().forEach(card -> output.accept(card.get()));
                 output.accept(ModItems.INSANE_PROCESSOR_PRESS.get());

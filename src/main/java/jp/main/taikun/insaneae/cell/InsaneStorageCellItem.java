@@ -21,8 +21,10 @@ public class InsaneStorageCellItem extends BasicStorageCell implements IHugeCell
     private final long totalBytesLong;
     private final String nameKey;
     private final String tierLabel;
+    //? if >=1.21 {
     private final ItemLike coreItem;
     private final ItemLike housingItem;
+    //?}
 
     public InsaneStorageCellItem(Item.Properties props, ItemLike coreItem, ItemLike housingItem,
             double idleDrain, long totalBytes, int bytesPerType, int totalTypes, AEKeyType keyType,
@@ -30,10 +32,15 @@ public class InsaneStorageCellItem extends BasicStorageCell implements IHugeCell
         // AE2 19.2 のセル分解 (右クリックでコンポーネント + ハウジングに戻る) は
         // コンストラクタ引数ではなく StorageCellDisassemblyRecipe というデータ駆動のレシピで定義する。
         // core/housing はここでは保持だけして、datagen 側で分解レシピを出力するのに使う。
+        //? if >=1.21 {
         super(props, idleDrain, toKilobytes(totalBytes), bytesPerType, totalTypes, keyType);
+        //?} else {
+        /*super(props, coreItem, housingItem, idleDrain, toKilobytes(totalBytes), bytesPerType, totalTypes, keyType);
+        *///?}
         this.totalBytesLong = totalBytes;
         this.nameKey = nameKey;
         this.tierLabel = tierLabel;
+    //? if >=1.21 {
         this.coreItem = coreItem;
         this.housingItem = housingItem;
     }
@@ -46,6 +53,7 @@ public class InsaneStorageCellItem extends BasicStorageCell implements IHugeCell
     /** 分解したときに返るハウジング (分解レシピの生成に使う)。 */
     public ItemLike housingItem() {
         return housingItem;
+    //?}
     }
 
     /** 表示名は階層ごとの lang キーではなく「書式キー + 階層ラベル」で作る。 */

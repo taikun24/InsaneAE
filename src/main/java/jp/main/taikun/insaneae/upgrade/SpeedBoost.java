@@ -67,8 +67,8 @@ public final class SpeedBoost {
             return 1;
         }
         try {
-            return field.get(owner) instanceof IUpgradeableObject upgradeable
-                    ? multiplier(upgradeable.getUpgrades())
+            return field.get(owner) instanceof IUpgradeableObject upgradeable ?
+                    multiplier(upgradeable.getUpgrades())
                     : 1;
         } catch (IllegalAccessException e) {
             return 1;

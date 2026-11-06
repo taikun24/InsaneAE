@@ -18,7 +18,6 @@ import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.me.helpers.MachineSource;
 import appeng.server.testplots.CraftingPatternHelper;
 import appeng.server.testplots.TestPlot;
-import appeng.server.testplots.TestPlotClass;
 import appeng.server.testworld.PlotBuilder;
 import jp.main.taikun.insaneae.cell.InsaneUltraCreativeCellInventory;
 import jp.main.taikun.insaneae.crafting.IBigCraftingCapacity;
@@ -41,13 +40,22 @@ import net.minecraft.world.item.Items;
 
 import java.math.BigInteger;
 import java.util.concurrent.Future;
+//? if >=1.21 {
+import appeng.server.testplots.TestPlotClass;
+//?}
+//? if <1.21 {
+/*import appeng.api.crafting.PatternDetailsHelper;
+import net.minecraft.world.item.crafting.CraftingRecipe;
+*///?}
 
 /**
  * Advanced Crafting Optimization (ACO) との BigInteger 連携。
  *
  * <p>走らせ方は {@link TestPlotSupport} を参照。</p>
  */
+//? if >=1.21 {
 @TestPlotClass
+//?}
 public final class AcoPlots {
 
     private AcoPlots() {
@@ -88,6 +96,7 @@ public final class AcoPlots {
                     "Quantum CPU のロジックに ProviderOwnedPatternBatchTarget が生えていない");
 
             // 超強化クリエイティブセルの BigInteger 在庫。読みと書きで窓口が別なので両方見る。
+            //? if >=1.21 {
             var cell = new InsaneUltraCreativeCellInventory(
                     new ItemStack(ModCells.ULTRA_CREATIVE_CELL.get()));
 
@@ -103,6 +112,7 @@ public final class AcoPlots {
                         "超強化クリエイティブセルに公開の ExactStorageAmountProvider が生えていない "
                                 + "(AcoMixinPlugin の追加判定が効いていないかもしれない)");
             }
+            //?}
 
             // 書き: 減らす側は 1.5.22 でもまだ内部 access しか知らない。
             // 向こうの名前が変わると<b>エラーなしで効かなくなる</b> — ここで気付けるようにする。
@@ -110,7 +120,13 @@ public final class AcoPlots {
                     + ".ExtendedAePlusBigIntegerCellInventoryAccess");
             helper.check(exactStorage != null,
                     "ACO の ExtendedAePlusBigIntegerCellInventoryAccess が無い "
+            //? if >=1.21 {
                             + "(書き込み側にも公開境界が入ったなら、こちらは畳んでよい)");
+            //?} else {
+                            /*+ "(公開フックへ移行できるかもしれない → ACO #101)");
+            var cell = new InsaneUltraCreativeCellInventory(
+                    new ItemStack(ModCells.ULTRA_CREATIVE_CELL.get()));
+            *///?}
             helper.check(exactStorage != null && exactStorage.isInstance(cell),
                     "超強化クリエイティブセルに BigInteger 在庫の窓口が生えていない");
 
@@ -184,13 +200,31 @@ public final class AcoPlots {
                 cpu.getLogic().getPatternInv().addItems(
                         CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
                                 new ItemStack(Items.OAK_LOG)));
+                //? if >=1.21 {
                 Object[] chest = new Object[] {
                         Items.OAK_PLANKS, Items.OAK_PLANKS, Items.OAK_PLANKS,
                         Items.OAK_PLANKS, null, Items.OAK_PLANKS,
                         Items.OAK_PLANKS, Items.OAK_PLANKS, Items.OAK_PLANKS};
+                //?} else {
+                /*ItemStack[] sparse = new ItemStack[9];
+                for (int slot = 0; slot < sparse.length; slot++) {
+                    sparse[slot] = slot == 4 ?
+                            ItemStack.EMPTY
+                            : new ItemStack(Items.OAK_PLANKS);
+                }
+                var chestRecipe = helper.getLevel().getRecipeManager()
+                        .byKey(ResourceLocation.fromNamespaceAndPath("minecraft", "chest"))
+                        .orElseThrow(() -> new GameTestAssertException("チェストのレシピが無い"));
+                *///?}
                 cpu.getLogic().getPatternInv().addItems(
+                        //? if >=1.21 {
                         CraftingPatternHelper.encodeCraftingPattern(
                                 helper.getLevel(), chest, false, false));
+                        //?} else {
+                        /*PatternDetailsHelper.encodeCraftingPattern(
+                                (CraftingRecipe) chestRecipe,
+                                sparse, new ItemStack(Items.CHEST), false, false));
+                        *///?}
                 for (int i = 0; i < QuantumCpuBlockEntity.MAX_ACCELERATION_CARDS; i++) {
                     cpu.getUpgrades().addItems(
                             new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
@@ -280,7 +314,11 @@ public final class AcoPlots {
                     return;
                 }
 
+                //? if >=1.21 {
                 java.math.BigInteger capacity = null;
+                //?} else {
+                /*BigInteger capacity = null;
+                *///?}
                 for (var cpu : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
                     if (cpu instanceof IBigCraftingCapacity exact) {
                         capacity = exact.insaneae$exactStorageCapacity();
@@ -290,7 +328,11 @@ public final class AcoPlots {
                 helper.check(capacity != null, "BigInteger CPU クラスタが見つからない");
                 // long 上限ちょうどは「退避した long 互換容量」の値。超えていることを見る。
                 helper.check(
+                        //? if >=1.21 {
                         capacity.compareTo(java.math.BigInteger.valueOf(Long.MAX_VALUE)) > 0,
+                        //?} else {
+                        /*capacity.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0,
+                        *///?}
                         "BigInteger クラフトストレージが long 互換容量へ退避している"
                                 + " (容量=" + capacity + ")");
             });
@@ -343,13 +385,31 @@ public final class AcoPlots {
                 cpu.getLogic().getPatternInv().addItems(
                         CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
                                 new ItemStack(Items.OAK_LOG)));
+                //? if >=1.21 {
                 Object[] chest = new Object[] {
                         Items.OAK_PLANKS, Items.OAK_PLANKS, Items.OAK_PLANKS,
                         Items.OAK_PLANKS, null, Items.OAK_PLANKS,
                         Items.OAK_PLANKS, Items.OAK_PLANKS, Items.OAK_PLANKS};
+                //?} else {
+                /*ItemStack[] sparse = new ItemStack[9];
+                for (int slot = 0; slot < sparse.length; slot++) {
+                    sparse[slot] = slot == 4 ?
+                            ItemStack.EMPTY
+                            : new ItemStack(Items.OAK_PLANKS);
+                }
+                var chestRecipe = helper.getLevel().getRecipeManager()
+                        .byKey(ResourceLocation.fromNamespaceAndPath("minecraft", "chest"))
+                        .orElseThrow(() -> new GameTestAssertException("チェストのレシピが無い"));
+                *///?}
                 cpu.getLogic().getPatternInv().addItems(
+                        //? if >=1.21 {
                         CraftingPatternHelper.encodeCraftingPattern(
                                 helper.getLevel(), chest, false, false));
+                        //?} else {
+                        /*PatternDetailsHelper.encodeCraftingPattern(
+                                (CraftingRecipe) chestRecipe,
+                                sparse, new ItemStack(Items.CHEST), false, false));
+                        *///?}
                 for (int i = 0; i < QuantumCpuBlockEntity.MAX_ACCELERATION_CARDS; i++) {
                     cpu.getUpgrades().addItems(
                             new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
@@ -508,13 +568,31 @@ public final class AcoPlots {
                         "無限セルが名乗る丸石が long を超えていない: " + cobblestone);
 
                 var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(3, 0, 0));
+                //? if >=1.21 {
                 Object[] furnace = new Object[] {
                         Items.COBBLESTONE, Items.COBBLESTONE, Items.COBBLESTONE,
                         Items.COBBLESTONE, null, Items.COBBLESTONE,
                         Items.COBBLESTONE, Items.COBBLESTONE, Items.COBBLESTONE};
+                //?} else {
+                /*ItemStack[] sparse = new ItemStack[9];
+                for (int slot = 0; slot < sparse.length; slot++) {
+                    sparse[slot] = slot == 4 ?
+                            ItemStack.EMPTY
+                            : new ItemStack(Items.COBBLESTONE);
+                }
+                var furnaceRecipe = helper.getLevel().getRecipeManager()
+                        .byKey(ResourceLocation.fromNamespaceAndPath("minecraft", "furnace"))
+                        .orElseThrow(() -> new GameTestAssertException("かまどのレシピが無い"));
+                *///?}
                 cpu.getLogic().getPatternInv().addItems(
+                        //? if >=1.21 {
                         CraftingPatternHelper.encodeCraftingPattern(
                                 helper.getLevel(), furnace, false, false));
+                        //?} else {
+                        /*PatternDetailsHelper.encodeCraftingPattern(
+                                (CraftingRecipe) furnaceRecipe,
+                                sparse, new ItemStack(Items.FURNACE), false, false));
+                        *///?}
                 for (int i = 0; i < QuantumCpuBlockEntity.MAX_ACCELERATION_CARDS; i++) {
                     cpu.getUpgrades().addItems(
                             new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));

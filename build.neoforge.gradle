@@ -1,0 +1,402 @@
+plugins {
+    id 'idea'
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.148'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    // jar 名に MC バージョンを入れる (insaneae-1.21.1-1.0.2.1.jar)。
+    // 1.20.1 ブランチと同名の jar が出ると GitHub Releases で区別できなくなるため。
+    archivesName = "${mod_id}-${minecraft_version}"
+}
+
+// Mojang は 1.20.5 以降 Java 21 を配布しているので、Mod も 21 を狙う。
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+repositories {
+    // 依存 Mod はすべて CurseForge から取る (1.20.1 ブランチと同じ)。
+    // 座標のバージョン部分は CurseForge の「ファイル ID」で、人間が読めるバージョン番号は
+    // gradle.properties のコメントに書いてある。更新するときは両方直すこと。
+    maven {
+        name = 'CurseMaven'
+        url = 'https://cursemaven.com'
+        content { includeGroup 'curse.maven' }
+    }
+}
+
+// ゲームテスト (AE2 のテストプロットに相乗りした検証) は配布 jar に入れない。
+// 本体のクラスとクラスパスをそのまま使う別のソースセットにして、gameTestServer の実行にだけ載せる。
+sourceSets {
+    gametest {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+
+neoForge {
+    version = project.neo_version
+
+    parchment {
+        mappingsVersion = project.parchment_mappings_version
+        minecraftVersion = project.parchment_minecraft_version
+    }
+
+    runs {
+        client {
+            client()
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // -PquickPlay="<ワールド名>" で、メニューを通らず直接そのワールドへ入る。
+            // Pendulum で操作するときに要る: メニュー画面の遷移はマウス座標が
+            // GUI スケール分ずれて使えない上、SelectWorldScreen は
+            // this.minecraft が null のまま描画されて NPE で落ちることがある。
+            if (project.findProperty('quickPlay')) {
+                programArguments.addAll '--quickPlaySingleplayer',
+                        project.findProperty('quickPlay').toString()
+            }
+        }
+
+        server {
+            server()
+            programArgument '--nogui'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        // 登録済みの GameTest を全部走らせて終了する。
+        gameTestServer {
+            type = 'gameTestServer'
+            sourceSet = sourceSets.gametest
+            // AE2 のテストプロット基盤に相乗りしているので ae2 名前空間も有効にする
+            // (自前のプロットも ae2.<plot id> という名前で走る)。
+            systemProperty 'neoforge.enabledGameTestNamespaces', "${project.mod_id},ae2"
+            // これが無いと AE2 はプロットを GameTest として登録しない。
+            systemProperty 'appeng.tests', 'true'
+        }
+
+        data {
+            data()
+            // --existing-mod: 流用している AE2 / MEGA Cells / AppliedFlux のテクスチャを
+            // ExistingFileHelper に見せるため (無いとモデル生成時に存在チェックで落ちる)。
+            programArguments.addAll '--mod', project.mod_id, '--all',
+                    '--output', file('src/generated/resources/').getAbsolutePath(),
+                    '--existing', file('src/main/resources/').getAbsolutePath(),
+                    '--existing', rootProject.file('src/main/resources/').getAbsolutePath(),
+                    '--existing-mod', 'ae2', '--existing-mod', 'megacells',
+                    // FE セルの筐体は AppliedFlux のテクスチャを借りている。
+                    '--existing-mod', 'appflux', '--existing-mod', 'ae2things'
+        }
+
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            logLevel = org.slf4j.event.Level.DEBUG
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+            sourceSet(sourceSets.gametest)
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+// ---------------------------------------------------------------- ACO の API jar
+//
+// ACO の公開連携境界はインターフェイス実装が前提なので compileOnly が要る。
+// CurseForge にも Maven にも上がっていないので、GitHub Releases から取ってくる。
+// 取得済みなら何もしない (オフラインでもビルドできる)。
+// -PacoVersion=... で差し替えられる。ACO の main を手元でビルドして
+// libs/aco-<その名前>-<MC バージョン>.jar に置けば、未リリースの修正を dev 実行で試せる
+// (ファイルが既にあれば downloadAco は何もしない)。
+ext.aco_version = project.findProperty('acoVersion') ?: '1.5.22'
+ext.acoJarFile = rootProject.file("libs/aco-${aco_version}-${minecraft_version}.jar")
+
+// dev 実行にだけ別バージョンを載せたいとき用 (-PacoRuntimeVersion=1.5.19)。
+// 「新しい ACO でコンパイルしたものを、古い ACO の環境で動かす」を試すためにある。
+// うちは新 API を Mixin 越しにしか触らず、無ければ AcoMixinPlugin が
+// その Mixin だけ当てないので落ちない。それをテストで確かめるのが目的。
+ext.aco_runtime_version = project.findProperty('acoRuntimeVersion') ?: aco_version
+ext.acoRuntimeJarFile = rootProject.file("libs/aco-${aco_runtime_version}-${minecraft_version}.jar")
+
+var fetchAco = { File target, String wanted ->
+    target.parentFile.mkdirs()
+    var url = "https://github.com/syarukasu/ae2-crafting-optimizer/releases/download/" +
+            "v${wanted}/aco${wanted}_${minecraft_version}.jar"
+    logger.lifecycle("ACO ${wanted} を取得: ${url}")
+    new java.net.URL(url).withInputStream { input ->
+        target.withOutputStream { it << input }
+    }
+}
+
+var downloadAco = tasks.register('downloadAco') {
+    description = 'GitHub Releases から ACO の jar を取得する (compileOnly 用)'
+    outputs.file(acoJarFile)
+    // 取得済みなら up-to-date。ネットワークが無くてもビルドが通る。
+    onlyIf { !acoJarFile.exists() }
+    doLast { fetchAco(acoJarFile, aco_version) }
+}
+
+var downloadAcoRuntime = tasks.register('downloadAcoRuntime') {
+    description = 'dev 実行に載せる ACO の jar を取得する'
+    outputs.file(acoRuntimeJarFile)
+    onlyIf { !acoRuntimeJarFile.exists() }
+    doLast { fetchAco(acoRuntimeJarFile, aco_runtime_version) }
+}
+
+// files(...) にタスクを紐付けておかないと、jar がまだ無い状態で compileJava が走る。
+ext.acoApiJar = files(acoJarFile) { builtBy downloadAco }
+ext.acoRuntimeJar = files(acoRuntimeJarFile) { builtBy downloadAcoRuntime }
+
+// localRuntime は「dev 実行では要るが、この Mod への依存として公開はしない」もの。
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+dependencies {
+    // NeoForge の Mod は Mojang 公式マッピングのまま配布されているので、
+    // 1.20.1 の fg.deobf() のような再マッピングは要らない。そのまま依存に足せる。
+
+    // Applied Energistics 2 — 必須依存。1.21.1 は NeoForge 版のみ。
+    implementation "curse.maven:applied-energistics-2-223794:${ae2_file}"
+    // GuideME — 1.20.1 では AE2 に同梱されていたガイド機能が別 Mod に分離された。
+    // AE2 が必須依存として要求するので dev 実行にも要る。
+    implementation "curse.maven:guideme-1173950:${guideme_file}"
+    // MEGA Cells — 必須依存。1M〜256M のクラフトストレージはこちらが提供し、
+    // InsaneAE はその上 (1G〜) を担当する。
+    implementation "curse.maven:mega-cells-622112:${megacells_file}"
+
+    // Applied Mekanistics (+ Mekanism) — 化学物質セル用の【任意】依存。
+    // 無くても動くよう ModList で分岐しているが、コンパイルには型が要るので compileOnly。
+    compileOnly "curse.maven:applied-mekanistics-574300:${appmek_file}"
+    compileOnly "curse.maven:mekanism-268560:${mekanism_file}"
+    // -PwithAppMek=false を付けると dev 実行から外れる (未導入時の動作確認用)。
+    if (project.findProperty('withAppMek') != 'false') {
+        localRuntime "curse.maven:applied-mekanistics-574300:${appmek_file}"
+        localRuntime "curse.maven:mekanism-268560:${mekanism_file}"
+        // Mekanism Generators — この Mod は参照しないが、MEGA Cells の
+        // 放射性化学物質セルのレシピが reactor_glass を要求するので dev 実行時に要る
+        // (無いと runData / runServer のたびにレシピの解析エラーが出る)。
+        localRuntime "curse.maven:mekanism-generators-268566:${mekanism_generators_file}"
+    }
+
+    // AppliedFlux — FE ストレージセル用の【任意】依存 (appmek と同じ扱い)。
+    // FE セルは AppliedFlux の IFluxCell を実装し、セルの中身は AppliedFlux 自身の
+    // セルハンドラが扱うので、型を見るために compileOnly が要る。
+    compileOnly "curse.maven:applied-flux-965012:${appflux_file}"
+    // -PwithAppFlux=false を付けると dev 実行から外れる (未導入時の動作確認用)。
+    if (project.findProperty('withAppFlux') != 'false') {
+        localRuntime "curse.maven:applied-flux-965012:${appflux_file}"
+        // AppliedFlux の mandatory 依存 (作者の共通ライブラリ)。
+        localRuntime "curse.maven:glodium-957920:${glodium_file}"
+    }
+
+    // AE2 Things — InsaneAE 階層の DISK を足す【任意】依存。DISK は AE2 Things の DISKDrive を
+    // 継承し、中身は AE2 Things 自身の保存データ (disk_manager) に入るので型を見るために要る。
+    // -PwithAE2Things=false を付けると dev 実行から外れる (未導入時の動作確認用)。
+    compileOnly "curse.maven:ae2-things-forge-609977:${ae2things_file}"
+    if (project.findProperty('withAE2Things') != 'false') {
+        localRuntime "curse.maven:ae2-things-forge-609977:${ae2things_file}"
+    }
+
+    // AE2 Crafting Optimizer。
+    //
+    // <b>compileOnly は常に入る。</b>ACO の公開連携境界 (api.contract / api.craftingtable /
+    // api.batch.v2) は「インターフェイスを実装する」形なので、反射では代用できないため。
+    // 実行時は<b>従来どおり任意依存</b>で、ACO が無ければ連携クラスをロードしない。
+    // jar は GitHub Releases から downloadAco が取ってくる (CI でも引ける)。
+    compileOnly acoApiJar
+    //
+    // dev 実行に載せるのは -PwithAco=true のときだけ。既定でオフなのは、
+    // (1) ACO は AE2 の挙動自体を変える (実行バッチの乗っ取り等) ため
+    // ACO 前提でないゲームテストが落ちる、(2) ACO 1.5.12 の計算デデュープ Mixin が
+    // AE2 のテスト基盤 (TestCraftingJob) で「beginCraftingCalculation is not cancellable」の
+    // CancellationException を出しサーバーごと落ちるバグがあるため。
+    if (project.findProperty('withAco') == 'true') {
+        localRuntime acoRuntimeJar
+    }
+
+    // ME Infinity Cell — 無限セルの在庫を ACO に BigInteger で見せる @Pseudo Mixin の
+    // 実機確認用【任意・オプトイン】。-PwithInfinityCell=true で dev 実行に載る。
+    // Mixin は文字列でクラスを指すので、コンパイルにも型は要らない。
+    if (project.findProperty('withInfinityCell') == 'true') {
+        localRuntime "curse.maven:me-infinity-cell-1320551:${infinity_cell_file}"
+    }
+
+    // Advanced AE — 自前のクラフト CPU (AdvCraftingCPULogic) へ入れている compat Mixin
+    // (compat.AdvCraftingCpuLogicMixin / compat.AdvCraftingCpuBudgetMixin) の実機確認用
+    // 【任意・オプトイン】。-PwithAdvancedAe=true で dev 実行に載る。
+    // 既定でオフなのは、Advanced AE 自身が AE2 の挙動を変えるためゲームテストの前提が変わるから。
+    if (project.findProperty('withAdvancedAe') == 'true') {
+        localRuntime "curse.maven:advancedae-1084104:8564177"
+        // Advanced AE の mandatory 依存。FML が止まってから分かる類なので明示しておく。
+        localRuntime "curse.maven:geckolib-388172:8350073"
+    }
+
+    // Advanced Quantum Engineering (syarukasu)【任意・オプトイン】。
+    // -PwithAqe=true で dev 実行に載る。BigInteger 量子コアの実機確認用。
+    //
+    // <b>-PwithAdvancedAe とは併用できない。</b>AQE 2.2.7 は advanced_ae を
+    // [1.6.11,1.6.12) で要求する = <b>1.6.11 ちょうど</b>なので、
+    // withAdvancedAe が入れる 1.6.12 (file 8564177) では FML が止まる。
+    // こちらは 1.6.11 (file 7849217) を自分で連れてくる。
+    //
+    // ae2omnicells は AQE の必須依存。CurseForge には無いので Modrinth から
+    // libs/ へ取ること (gitignore 済み):
+    //   ae2omnicells-1.21.1-neoforge-1.1.6.jar
+    //     https://cdn.modrinth.com/data/RYE1pYyr/versions/k444ySGT/ae2omnicells-1.21.1-neoforge-1.1.6.jar
+    //   aqe<版>_1.21.1.jar
+    //     gh release download v<版> -R syarukasu/advanced-quantum-engineering
+    //
+    // <b>既定が 2.2.4 なのは 2.2.5 以降が 1.21.1 で起動できないから。</b>
+    // AQEDiagnostics.checkExactVersion が advanced_ae のバージョン文字列を
+    // String.equals("1.6.11") で見るのに、AAE が名乗るのは "1.6.11-1.21.1" なので
+    // 必ず食い違い、commonSetup が IllegalStateException を投げる。
+    // -PaqeVersion=2.2.7 で上書きできる (直ったかの確認用)。
+    if (project.findProperty('withAqe') == 'true') {
+        if (project.findProperty('withAdvancedAe') == 'true') {
+            throw new GradleException('-PwithAqe と -PwithAdvancedAe は併用できない '
+                    + '(AQE は Advanced AE 1.6.11 ちょうどを要求する)')
+        }
+        localRuntime files(
+                "libs/aqe${project.findProperty('aqeVersion') ?: '2.2.4'}_1.21.1.jar",
+                rootProject.file('libs/ae2omnicells-1.21.1-neoforge-1.1.6.jar'))
+        // Advanced AE のファイル ID。既定は 1.6.12 (file 8564177)。
+        // <b>ここは AQE と ACO で要求が食い違う。</b>
+        //   AQE 2.2.4     : advanced_ae [1.6.11,1.7.0) → 1.6.12 で可
+        //   AQE 2.2.5+    : advanced_ae [1.6.11,1.6.12) → 1.6.11 ちょうど (が、前述のとおり起動しない)
+        //   ACO 1.5.23    : AAE 向け Mixin が 1.6.12 前提。1.6.11 だと
+        //                   ExperimentalCompatibilityValidator が
+        //                   「does not implement ...Access」でサーバ起動時に落とす
+        // 以上から、1.6.12 + AQE 2.2.4 が今のところ唯一そろう組み合わせ。
+        // 1.6.11 が要るときは -PaaeFile=7849217。
+        localRuntime "curse.maven:advancedae-1084104:${project.findProperty('aaeFile') ?: '8564177'}"
+        localRuntime "curse.maven:geckolib-388172:8350073"
+    }
+
+    // Advanced Assembly Computing (ACC) + Neo ECO AE【任意・オプトイン】。
+    // -PwithAcc=true で dev 実行に載る。
+    //
+    // <b>ACO の物理実行が本来想定している実行系がこれ。</b>
+    // PhysicalCraftingTreeTransaction の待ち理由の文字列はほとんどが NeoECO を名指ししている
+    // (waiting for a NeoECO crafting-table Pattern Bus / all NeoECO crafting-table workers are busy 等)。
+    // うちの Quantum CPU は汎用の CraftingTableBatchTarget として乗っているが、
+    // <b>そちらの経路が実際に駆動されているのか</b>を確かめるための対照として要る (ACO #125)。
+    //
+    // jar は libs/ へ (gitignore 済み):
+    //   aac1.0.7_1.21.1.jar  gh release download aac-v1.0.7-mc1.21.1 -R syarukasu/advanced-assembly-computing
+    //   neoecoae-21.1.1.jar  https://cdn.modrinth.com/data/udZtKfzP/versions/gWMhHBje/neoecoae-21.1.1.jar
+    //   ldlib2-...-all.jar   https://cdn.modrinth.com/data/B1CBVXHX/versions/DwvxthOm/ldlib2-neoforge-1.21.1-2.2.36.a-all.jar
+    // ACC は ACO を<b>必須</b>で要求する ([1.5.15,1.6.0)) ので -PwithAco=true と併用すること。
+    if (project.findProperty('withAcc') == 'true') {
+        localRuntime files(
+                rootProject.file('libs/aac1.0.7_1.21.1.jar'),
+                rootProject.file('libs/neoecoae-21.1.1.jar'),
+                rootProject.file('libs/ldlib2-neoforge-1.21.1-2.2.36.a-all.jar'))
+    }
+
+    // Pendulum — クライアント側のスクリプト実行 Mod【任意・オプトイン】。
+    // -PwithPendulum=true で dev クライアントに載る。
+    //
+    // 目的は<b>手動の実機確認を自動化すること</b>。ゲームテストはヘッドレスのサーバなので、
+    // GUI を開いて表示を読む・コマンドを叩いて結果を見る、ができない。ACO や AQE 絡みの
+    // 「クラフト中 100% で止まる」のような症状はそこにしか出ないため、
+    // MCP サーバ (既定 TCP 25566) 経由でクライアントを操作して観測する。
+    //
+    // <b>クライアント専用</b> (server_side=unsupported)。ゲームテストには一切載せないこと。
+    //
+    // jar は libs/ に置く (gitignore 済みなので各自で取得すること)。
+    // 依存の Jupiter (設定 GUI) と Rhino (JS エンジン) も一緒に要る。
+    //   pendulum-1.0-1.21.1-neoforge.jar  https://mediafilez.forgecdn.net/files/8654/865/pendulum-1.0-1.21.1-neoforge.jar
+    //   jupiter-2.3.7-1.21.1-neoforge.jar https://cdn.modrinth.com/data/XbiLGMMU/versions/Jpcw76rq/jupiter-2.3.7-1.21.1-neoforge.jar
+    //   rhino-2101.2.8-build.91.jar       https://cdn.modrinth.com/data/sk9knFPE/versions/SqkDvOLG/rhino-2101.2.8-build.91.jar
+    //
+    // <b>1.0 未満は使えない。</b>beta.3 は @SubscribeEvent を抽象基底の Event に付けており、
+    // 今の NeoForge (21.1.247) は「Cannot register listeners for abstract class Event」で
+    // 蹴るため、Mod の生成自体に失敗する。1.0 で型付き (ClientTickEvent.Pre) に直っている。
+    if (project.findProperty('withPendulum') == 'true') {
+        localRuntime files(
+                rootProject.file('libs/pendulum-1.0-1.21.1-neoforge.jar'),
+                rootProject.file('libs/jupiter-2.3.7-1.21.1-neoforge.jar'),
+                rootProject.file('libs/rhino-2101.2.8-build.91.jar'))
+    }
+
+    // JEI — 【任意】。AE2 19.x は JEI 連携を持たないので、刻印機・チャージャーのレシピを
+    // こちらから出している (integration/jei)。@JeiPlugin なので JEI が無ければ読まれない。
+    compileOnly "curse.maven:jei-238222:${jei_file}"
+    localRuntime "curse.maven:jei-238222:${jei_file}"
+    testImplementation platform("org.junit:junit-bom:5.10.2")
+    testImplementation "org.junit.jupiter:junit-jupiter"
+    // Gradle 9 からは JUnit Platform の起動部分を自分で足す必要がある。
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+    // NeoForge ModDevが生成するMinecraft統合JARを通常JUnitの実行時にも渡す。
+    // これがないと、ComponentやICraftingUnitTypeを使う境界テストだけが実行時に欠落する。
+    testRuntimeOnly files("$buildDir/moddev/artifacts/neoforge-${neo_version}.jar")
+}
+
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
+}
+
+// src/main/templates 内の ${} を gradle.properties の値で置換する。
+// neoforge.mods.toml はここに置いてある。
+var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            neo_version_range      : neo_version_range,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description,
+    ]
+    inputs.properties replaceProperties
+    // これが無いと ${} 展開のときにプラットフォーム既定の文字コードで読まれ、
+    // TOML 内の日本語コメントが文字化けする (Windows だと Shift_JIS 扱いになる)。
+    filteringCharset = 'UTF-8'
+    expand replaceProperties
+    from 'src/main/templates'
+    into 'build/generated/sources/modMetadata'
+}
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+tasks.named('jar', Jar).configure {
+    manifest {
+        attributes([
+                'Specification-Title'     : mod_id,
+                'Specification-Vendor'    : mod_authors,
+                'Specification-Version'   : '1',
+                'Implementation-Title'    : rootProject.name,
+                'Implementation-Version'  : project.version,
+                'Implementation-Vendor'   : mod_authors,
+        ])
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    // 既定の 100 件で打ち切られるとエラーの全体像が見えないので、上限を上げる。
+    options.compilerArgs << '-Xmaxerrs' << '2000'
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}
+
+// 複数バージョンの Minecraft の展開を同時に走らせると重すぎるので、1 つずつにする。
+interface MinecraftArtifactsMutex extends org.gradle.api.services.BuildService<org.gradle.api.services.BuildServiceParameters.None> {}
+def artifactsMutex = gradle.sharedServices.registerIfAbsent('createMinecraftArtifactsMutex', MinecraftArtifactsMutex) {
+    maxParallelUsages = 1
+}
+tasks.matching { it.name == 'createMinecraftArtifacts' }.configureEach { usesService(artifactsMutex) }

@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "a": {
+      "tag": "insaneae:compressed_dense_cables"
+    },
+    "b": {
+      "tag": "forge:dyes/cyan"
+    }
+  },
+  "pattern": [
+    "aaa",
+    "aba",
+    "aaa"
+  ],
+  "result": {
+    "count": 8,
+    "item": "insaneae:cyan_compressed_dense_cable"
+  },
+  "show_notification": true
+}

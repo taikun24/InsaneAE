@@ -24,7 +24,11 @@ public abstract class ExCircuitCutterMixin {
     @ModifyArg(method = "tickingRequest(Lappeng/api/networking/IGridNode;I)"
             + "Lappeng/api/networking/ticking/TickRateModulation;",
             at = @At(value = "INVOKE",
+                    //? if >=1.21 {
                     target = "Lcom/glodblock/github/extendedae/util/RecipeExecutor;"
+                    //?} else {
+                    /*target = "Lcom/glodblock/github/extendedae/util/recipe/RecipeExecutor;"
+                    *///?}
                             + "execute(IZ)Lappeng/api/networking/ticking/TickRateModulation;"),
             index = 0, require = 0)
     private int insaneae$boostProgress(int progress) {

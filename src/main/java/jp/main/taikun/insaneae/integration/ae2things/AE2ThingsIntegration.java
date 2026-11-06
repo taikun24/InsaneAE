@@ -10,17 +10,24 @@ import jp.main.taikun.insaneae.datagen.ModRecipeProvider;
 import jp.main.taikun.insaneae.integration.AddonIntegration;
 import jp.main.taikun.insaneae.registries.ModCells;
 import jp.main.taikun.insaneae.registries.ModItems;
-import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
-import net.neoforged.neoforge.registries.DeferredHolder;
 
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.ToIntBiFunction;
+//? if >=1.21 {
+import net.minecraft.data.recipes.RecipeOutput;
+import net.neoforged.neoforge.registries.DeferredHolder;
+//?}
+//? if <1.21 {
+/*import net.minecraft.data.recipes.FinishedRecipe;
+import net.neoforged.neoforge.registries.RegistryObject;
+import java.util.function.Consumer;
+*///?}
 
 /**
  * AE2 Things 連携: 1G〜8E のアイテム用 DISK を足す (AE2 Things の 256k、AE2 MEGA Things の 256M の続き)。
@@ -40,7 +47,11 @@ public final class AE2ThingsIntegration implements AddonIntegration {
     private static final ResourceLocation DRIVE_MODEL =
             ResourceLocation.fromNamespaceAndPath(MODID, "model/drive/cells/disk_256k");
 
+    //? if >=1.21 {
     private final Map<InsaneCraftingUnitType, DeferredHolder<Item, Item>> disks =
+    //?} else {
+    /*private final Map<InsaneCraftingUnitType, RegistryObject<Item>> disks =
+    *///?}
             new EnumMap<>(InsaneCraftingUnitType.class);
 
     @Override
@@ -70,7 +81,11 @@ public final class AE2ThingsIntegration implements AddonIntegration {
     @Override
     public void registerUpgrades() {
         String group = "text.ae2things.disk_drives";
+        //? if >=1.21 {
         for (DeferredHolder<Item, Item> disk : disks.values()) {
+        //?} else {
+        /*for (RegistryObject<Item> disk : disks.values()) {
+        *///?}
             Upgrades.add(AEItems.FUZZY_CARD, disk.get(), 1, group);
             Upgrades.add(AEItems.INVERTER_CARD, disk.get(), 1, group);
             StorageCellModels.registerModel(disk.get(), DRIVE_MODEL);
@@ -79,7 +94,11 @@ public final class AE2ThingsIntegration implements AddonIntegration {
 
     /** 作り方も AE2 Things と同じく DISK ハウジング + セルコンポーネント。分解でもこの 2 つに戻る。 */
     @Override
+    //? if >=1.21 {
     public void buildRecipes(RecipeOutput output, InsaneCraftingUnitType tier, ItemLike component) {
+    //?} else {
+    /*public void buildRecipes(Consumer<FinishedRecipe> output, InsaneCraftingUnitType tier, ItemLike component) {
+    *///?}
         ModRecipeProvider.shapeless(output, disks.get(tier).get(), component,
                 builder -> builder.requires(AETItems.DISK_HOUSING.get()).requires(component));
     }

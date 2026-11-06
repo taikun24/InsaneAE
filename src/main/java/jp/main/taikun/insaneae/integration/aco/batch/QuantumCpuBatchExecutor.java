@@ -4,8 +4,6 @@ import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.GenericStack;
 import com.mojang.logging.LogUtils;
-import com.syaru.ae2craftingoptimizer.api.contract.IntegrationCapabilities;
-import com.syaru.ae2craftingoptimizer.api.contract.IntegrationCapabilitiesRegistry;
 import com.syaru.ae2craftingoptimizer.api.craftingtable.CraftingTableBatchMode;
 import com.syaru.ae2craftingoptimizer.api.craftingtable.CraftingTableBatchRequest;
 import com.syaru.ae2craftingoptimizer.api.craftingtable.CraftingTableBatchSnapshot;
@@ -21,6 +19,14 @@ import jp.main.taikun.insaneae.quantum.batch.QuantumBatchReceipts;
 import jp.main.taikun.insaneae.util.LogOnce;
 import net.minecraft.world.item.ItemStack;
 import org.slf4j.Logger;
+//? if >=1.21 {
+import com.syaru.ae2craftingoptimizer.api.contract.IntegrationCapabilities;
+import com.syaru.ae2craftingoptimizer.api.contract.IntegrationCapabilitiesRegistry;
+//?}
+//? if <1.21 {
+/*import java.lang.reflect.Method;
+import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * ACO の craftingtable batch を Quantum CPU で実行する本体。
@@ -51,16 +57,49 @@ public final class QuantumCpuBatchExecutor {
 
     /** これ未満の craftingtable API では受けない。 */
     private static final int REQUIRED_CRAFTING_TABLE_API = 1;
+    //? if <1.21 {
+    /*@Nullable
+    private static final Method CAPABILITIES_PEEK = findCapabilitiesPeek();
+    *///?}
 
     private QuantumCpuBatchExecutor() {
     }
+    //? if <1.21 {
+    /*@Nullable
+    private static Method findCapabilitiesPeek() {
+        try {
+            return Class.forName("com.syaru.ae2craftingoptimizer.api.contract"
+                    + ".IntegrationCapabilitiesRegistry").getMethod("peek");
+        } catch (ReflectiveOperationException | LinkageError absent) {
+            return null;
+        }
+    }
+    *///?}
 
     /** ACO 側の API バージョンが足りているか。足りなければ<b>一切受けない</b>。 */
     public static boolean isSupported() {
+        //? if >=1.21 {
         Optional<IntegrationCapabilities> capabilities = IntegrationCapabilitiesRegistry.peek();
         return capabilities
                 .filter(caps -> caps.craftingTableBatchApiVersion() >= REQUIRED_CRAFTING_TABLE_API)
                 .isPresent();
+        //?} else {
+        /*if (CAPABILITIES_PEEK == null) {
+            return true;
+        }
+        try {
+            Object capabilities = CAPABILITIES_PEEK.invoke(null);
+            if (!(capabilities instanceof Optional<?> present) || present.isEmpty()) {
+                return false;
+            }
+            Object caps = present.get();
+            int version = (int) caps.getClass().getMethod("craftingTableBatchApiVersion").invoke(caps);
+            return version >= REQUIRED_CRAFTING_TABLE_API;
+        } catch (ReflectiveOperationException | RuntimeException failure) {
+            // 交渉できないなら受けない (fail closed)。
+            return false;
+        }
+        *///?}
     }
 
     public static boolean accept(QuantumCpuBlockEntity host, CraftingTableBatchRequest request) {

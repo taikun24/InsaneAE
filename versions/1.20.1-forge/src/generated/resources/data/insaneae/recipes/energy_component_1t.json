@@ -1,0 +1,40 @@
+{
+  "type": "forge:conditional",
+  "recipes": [
+    {
+      "conditions": [
+        {
+          "type": "forge:mod_loaded",
+          "modid": "appflux"
+        }
+      ],
+      "recipe": {
+        "type": "minecraft:crafting_shaped",
+        "category": "misc",
+        "key": {
+          "A": {
+            "item": "ae2:singularity"
+          },
+          "B": {
+            "item": "appflux:energy_processor"
+          },
+          "C": {
+            "item": "insaneae:energy_component_256g"
+          },
+          "D": {
+            "item": "ae2:quartz_vibrant_glass"
+          }
+        },
+        "pattern": [
+          "ABA",
+          "CDC",
+          "ACA"
+        ],
+        "result": {
+          "item": "insaneae:energy_component_1t"
+        },
+        "show_notification": true
+      }
+    }
+  ]
+}

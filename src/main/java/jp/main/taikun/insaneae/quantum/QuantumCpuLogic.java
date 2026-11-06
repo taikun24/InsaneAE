@@ -27,6 +27,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+//? if <1.21 {
+/*import java.math.BigInteger;
+*///?}
 
 /**
  * Quantum CPU の頭脳。パターンプロバイダのロジックをそのまま使いつつ、
@@ -242,12 +245,23 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
     private void storeOutputs(Assembly assembly, long times) {
         ItemStack output = assembly.output();
         // 掛け算結果を long へ戻さない。ここが BigInteger 会計へ入る唯一の出力境界。
+        //? if >=1.21 {
         java.math.BigInteger factor = java.math.BigInteger.valueOf(times);
         host.addPendingOutput(AEItemKey.of(output),
                 factor.multiply(java.math.BigInteger.valueOf(output.getCount())));
+        //?} else {
+        /*BigInteger count = BigInteger.valueOf(times).multiply(BigInteger.valueOf(output.getCount()));
+        host.addPendingOutput(AEItemKey.of(output), count);
+        *///?}
         for (ItemStack remainder : assembly.remainders()) {
+            //? if >=1.21 {
             host.addPendingOutput(AEItemKey.of(remainder),
                     factor.multiply(java.math.BigInteger.valueOf(remainder.getCount())));
+            //?} else {
+            /*BigInteger remainderCount = BigInteger.valueOf(times)
+                    .multiply(BigInteger.valueOf(remainder.getCount()));
+            host.addPendingOutput(AEItemKey.of(remainder), remainderCount);
+            *///?}
         }
     }
 
@@ -386,7 +400,11 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
         for (int slot = 0; slot < GRID_SLOTS; slot++) {
             ItemStack expected = grid[slot];
             ItemStack actual = craftingInv.getItem(slot);
+            //? if >=1.21 {
             if (expected.getCount() != actual.getCount() || !ItemStack.isSameItemSameComponents(expected, actual)) {
+            //?} else {
+            /*if (expected.getCount() != actual.getCount() || !ItemStack.isSameItemSameTags(expected, actual)) {
+            *///?}
                 return false;
             }
         }
@@ -404,8 +422,12 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
 
         // レシピの入力は CraftingContainer ではなく CraftingInput で渡す。
         // asCraftInput() は中身の入っている範囲に切り詰めた不変のビューを返す。
+        //? if >=1.21 {
         var craftInput = craftingInv.asCraftInput();
         ItemStack output = pattern.assemble(craftInput, level);
+        //?} else {
+        /*ItemStack output = pattern.assemble(craftingInv, level);
+        *///?}
         if (output.isEmpty()) {
             if (!warnedAboutFailedAssembly) {
                 warnedAboutFailedAssembly = true;
@@ -423,7 +445,11 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
 
         // ここでは端材を「スロット位置に戻す」のではなく非空のものを集めるだけなので、
         // CraftingInput が切り詰められていても取りこぼしは起きない。
+        //? if >=1.21 {
         NonNullList<ItemStack> remainders = pattern.getRemainingItems(craftInput);
+        //?} else {
+        /*NonNullList<ItemStack> remainders = pattern.getRemainingItems(craftingInv);
+        *///?}
         List<ItemStack> kept = new ArrayList<>();
         for (ItemStack remainder : remainders) {
             if (!remainder.isEmpty()) {

@@ -78,8 +78,8 @@ public final class AcoBigIntegerLimitBridge {
         while (fraction.endsWith("0")) {
             fraction = fraction.substring(0, fraction.length() - 1);
         }
-        String mantissa = fraction.isEmpty()
-                ? decimal.substring(0, 1)
+        String mantissa = fraction.isEmpty() ?
+                decimal.substring(0, 1)
                 : decimal.substring(0, 1) + "." + fraction;
         return mantissa + " × 10^" + (decimal.length() - 1) + " B";
     }

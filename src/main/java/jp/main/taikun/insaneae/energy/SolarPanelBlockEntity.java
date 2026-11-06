@@ -4,13 +4,18 @@ import appeng.api.config.Actionable;
 import appeng.api.networking.IGrid;
 import appeng.api.util.AECableType;
 import appeng.blockentity.ServerTickingBlockEntity;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+//? if >=1.21 {
+import appeng.blockentity.grid.AENetworkedBlockEntity;
+//?}
+//? if <1.21 {
+/*import appeng.blockentity.grid.AENetworkBlockEntity;
+*///?}
 
 /**
  * AE ソーラーパネル。日射量に応じて毎 tick グリッドに発電する。
@@ -25,7 +30,11 @@ import net.minecraft.world.level.block.state.BlockState;
  * 「電力が無い → パネルが呼ばれない → 永遠に電力が来ない」とデッドロックする。
  * 発電機は自力で起動できないといけないので、ブロック側の ticker から動かしている。</p>
  */
+//? if >=1.21 {
 public class SolarPanelBlockEntity extends AENetworkedBlockEntity implements ServerTickingBlockEntity {
+//?} else {
+/*public class SolarPanelBlockEntity extends AENetworkBlockEntity implements ServerTickingBlockEntity {
+*///?}
 
     /** 真上に太陽があるときの日射量 (バニラの日照センサーと同じ 0〜15 スケール)。 */
     private static final int MAX_SUNLIGHT = 15;

@@ -12,6 +12,10 @@ import org.slf4j.Logger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+//? if <1.21 {
+/*import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+*///?}
 
 /**
  * 対応している AE2 アドオンの名簿と、そのうち実際に入っているものの一覧。
@@ -75,6 +79,18 @@ public final class AddonIntegrations {
         }
         return active;
     }
+    //? if <1.21 {
+    /*public static void notifyNeighborChanged(Object logic, BlockPos pos, BlockPos neighbor) {
+        for (Direction side : Direction.values()) {
+            if (pos.relative(side).equals(neighbor)) {
+                for (AddonIntegration integration : active()) {
+                    integration.onInsaneHostNeighborChanged(logic, side);
+                }
+                return;
+            }
+        }
+    }
+    *///?}
 
     /** 名簿に載っているが入っていないアドオン (datagen で「レシピが欠ける」警告を出す用)。 */
     public static List<String> missingModIds() {

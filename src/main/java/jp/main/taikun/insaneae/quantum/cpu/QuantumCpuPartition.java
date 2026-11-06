@@ -5,13 +5,15 @@ import appeng.api.stacks.KeyCounter;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.me.helpers.MachineSource;
 import jp.main.taikun.insaneae.mixin.cpu.CraftingCpuClusterAccessor;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
 
 import java.math.BigInteger;
 import jp.main.taikun.insaneae.util.SaturatingMath;
+//? if >=1.21 {
+import net.minecraft.core.HolderLookup;
+//?}
 
 /**
  * Quantum CPU の中の<b>クラフト 1 本ぶんの区画</b>。AE2 のクラスタを 1 個持つ。
@@ -206,14 +208,27 @@ public final class QuantumCpuPartition implements QuantumCpuClusterOwner {
 
     // ------------------------------------------------------------ 保存
 
+    //? if >=1.21 {
     void writeToNBT(CompoundTag data, HolderLookup.Provider registries) {
+    //?} else {
+    /*void writeToNBT(CompoundTag data) {
+    *///?}
         if (cluster != null) {
+            //? if >=1.21 {
             cluster.writeToNBT(data, registries);
+            //?} else {
+            /*cluster.writeToNBT(data);
+            *///?}
         }
     }
 
+    //? if >=1.21 {
     void readFromNBT(CompoundTag data, HolderLookup.Provider registries) {
         cluster().readFromNBT(data, registries);
+    //?} else {
+    /*void readFromNBT(CompoundTag data) {
+        cluster().readFromNBT(data);
+    *///?}
     }
 
     void cancelJob() {
