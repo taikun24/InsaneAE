@@ -22,9 +22,17 @@
   作り方は AE2 Things と同じく DISK ハウジング + セルコンポーネントです。中身は
   AE2 Things の保存データに入るので、`/ae2things recover` もそのまま使えます。
   AE2 Things の容量計算 (int) は 2 GiB で止まるため、InsaneAE の DISK だけ long にしています。
+- **他の Mod の機械を、Quantum CPU / クラフト CPU のまとめ処理に乗せる登録口を追加しました** (#19)。
+  `IBulkCraftingProvider` を実装できない (InsaneAE を任意依存にしている) Mod は、
+  `BulkCraftingProviderAdapters.register(機械のクラス, 機械 -> まとめ処理)` でアダプタを登録できます。
+  アダプタが実装するのは容量と実行 (`BulkCraftingHandler`) だけで、忙しいかどうかは元の機械で判定します。
+  受け取った材料の扱い (全部 / 0 / 一部を返したとき) などの契約も `BulkCraftingHandler` の説明に書きました。
 
 ### 修正
 
+- **ACO 導入時に、ログが「ACO BigInteger amount ledger integration enabled」で埋まるのを直しました** (#18)。
+  Quantum CPU が作られるたびに ACO の台帳を作って INFO を出していたのを、実際に使うときまで作らず、
+  ログも最初の 1 回だけにしました。
 - **AE2 19.2.18 でクラフト CPU の選択画面を開くとクラッシュするのを直しました** (1.21.1、#17)。
   AE2 側で単位表が private になったためです。1.20.1 も同じ変更に備えて揃えました。
 - **加速カードを挿した機械が、材料が少しずつ届くと遅くなるのを直しました** (#15)。

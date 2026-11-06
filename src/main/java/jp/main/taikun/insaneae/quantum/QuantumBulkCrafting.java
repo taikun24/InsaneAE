@@ -35,7 +35,8 @@ import jp.main.taikun.insaneae.util.SaturatingMath;
  * 材料の取り出し・{@code KeyCounter} の生成・電力の消費・帳簿の更新を行うため、
  * クラフト数に比例したコストが必ずかかる。ここではそれを
  * <b>「N 回ぶんの材料をまとめて取り出し、1 回だけ組み立てて結果を N 倍する」</b>
- * に置き換える ({@link IBulkCraftingProvider} を実装したプロバイダ限定)。</p>
+ * に置き換える ({@link IBulkCraftingProvider} を実装したプロバイダと、
+ * {@link BulkCraftingProviderAdapters} にアダプタが登録されたプロバイダ限定)。</p>
  *
  * <p>置き換えるのは AE2 と同じ処理内容 (材料の消費・電力・{@code waitingFor}・残り回数) で、
  * <b>回数のぶんだけ掛け算しているだけ</b>。1 回も処理できなければ 0 を返し、
@@ -65,7 +66,7 @@ public final class QuantumBulkCrafting {
      * @param view どの Mod のクラフト CPU かを問わないジョブの窓口 ({@link CraftingJobView})。
      *             null なら何もしない。
      * @return まとめ処理で消費した<b>操作数</b>。通常はクラフト回数と同じだが、
-     *         タスク統合 ({@link IBulkCraftingProvider#fusesOperations}) 中のプロバイダは
+     *         タスク統合 ({@link BulkCraftingHandler#fusesOperations}) 中のプロバイダは
      *         何回まとめても 1 と数える。0 なら CPU 本来の処理を続行させること。
      */
     public static int execute(CraftingJobView view, int maxPatterns,
@@ -95,7 +96,7 @@ public final class QuantumBulkCrafting {
             // 同じパターンを持つプロバイダが複数あれば順に回す。加工パターンは搬入先が
             // 埋まった時点でそのプロバイダの受け入れ回数が 0 になり、次のプロバイダが選ばれる。
             while (remaining > 0 && pushed < maxPatterns) {
-                IBulkCraftingProvider provider = findBulkProvider(craftingService, details);
+                BulkCraftingHandler provider = findBulkProvider(craftingService, details);
                 if (provider == null) {
                     break;
                 }
@@ -167,7 +168,7 @@ public final class QuantumBulkCrafting {
         // 往復しないと段数のぶんだけ tick がかかる。
         // 往復の回数ではなく<b>窓の総数</b>で頭打ちにするので、1 tick の重さは変わらない。
         // この呼び出しで触ったプロバイダ。周回の合間に完成品を清算するために覚えておく。
-        Set<IBulkCraftingProvider> touched =
+        Set<BulkCraftingHandler> touched =
                 Collections.newSetFromMap(new IdentityHashMap<>());
 
         while (progressed && windows.remaining() > 0) {
@@ -178,7 +179,7 @@ public final class QuantumBulkCrafting {
              * 「下の段は作ったのに上の段が材料切れ」で 1 周ごとに空振りし、
              * 1 tick に 1 段しか進まない。
              */
-            for (IBulkCraftingProvider settled : touched) {
+            for (BulkCraftingHandler settled : touched) {
                 settled.settleCompletedOutputs();
             }
             cursor.rewind();
@@ -189,7 +190,7 @@ public final class QuantumBulkCrafting {
                     continue;
                 }
                 IPatternDetails details = cursor.details();
-                IBulkCraftingProvider provider = findBulkProvider(craftingService, details);
+                BulkCraftingHandler provider = findBulkProvider(craftingService, details);
                 if (provider == null) {
                     // 親Patternの材料がまだMEへ戻っていなくても、同じ窓の別Patternは進められる。
                     continue;
@@ -275,7 +276,7 @@ public final class QuantumBulkCrafting {
      *
      * <p>1 窓に組める回数は long の会計で頭打ちになる (完成品は
      * {@code Long.MAX_VALUE / 出力数}、材料の取り出しも同様) ので、BigInteger 級の残りは
-     * 1 窓では終わらない。窓と窓の間で {@link IBulkCraftingProvider#settleCompletedOutputs()} を
+     * 1 窓では終わらない。窓と窓の間で {@link BulkCraftingHandler#settleCompletedOutputs()} を
      * 呼び、組み上がった完成品をネットワークへ流して<b>クラフト CPU の完成待ちを清算する</b>。
      * こうするとどの瞬間の帳簿も long に収まったまま、1 tick の合計だけが long を超えられる。</p>
      *
@@ -289,7 +290,7 @@ public final class QuantumBulkCrafting {
      * @return 削り切れずに残った回数
      */
     private static BigInteger repeatWindows(CraftingJobView view, IPatternDetails details,
-            IBulkCraftingProvider provider, boolean fused, BigInteger remaining,
+            BulkCraftingHandler provider, boolean fused, BigInteger remaining,
             WindowBudget windows, IEnergyService energyService, Level level) {
         if (!fused || !provider.repeatsWindowsWithinTick()) {
             return remaining;
@@ -317,7 +318,7 @@ public final class QuantumBulkCrafting {
 
     /** 材料の取り出しから帳簿の更新まで。処理できた回数を返す。 */
     private static long pushBulk(CraftingJobView view, IPatternDetails details,
-            IBulkCraftingProvider provider, long limit, IEnergyService energyService, Level level) {
+            BulkCraftingHandler provider, long limit, IEnergyService energyService, Level level) {
         ListCraftingInventory inventory = view.getInventory();
         KeyCounter containerItems = new KeyCounter();
         boolean exactWindow = view.hasExactCraftingPlan();
@@ -661,10 +662,10 @@ public final class QuantumBulkCrafting {
     private record Extracted(KeyCounter[] inputs, KeyCounter networkInputs, long times) {
     }
 
-    private static IBulkCraftingProvider findBulkProvider(CraftingService craftingService, IPatternDetails details) {
+    private static BulkCraftingHandler findBulkProvider(CraftingService craftingService, IPatternDetails details) {
         for (ICraftingProvider provider : craftingService.getProviders(details)) {
-            if (provider instanceof IBulkCraftingProvider bulk && !provider.isBusy()
-                    && bulk.getBulkCapacity(details) > 0) {
+            BulkCraftingHandler bulk = BulkCraftingProviderAdapters.find(provider);
+            if (bulk != null && !provider.isBusy() && bulk.getBulkCapacity(details) > 0) {
                 return bulk;
             }
         }

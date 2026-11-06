@@ -335,6 +335,9 @@ dependencies {
     // NeoForge ModDevが生成するMinecraft統合JARを通常JUnitの実行時にも渡す。
     // これがないと、ComponentやICraftingUnitTypeを使う境界テストだけが実行時に欠落する。
     testRuntimeOnly files("$buildDir/moddev/artifacts/neoforge-${neo_version}.jar")
+    // Minecraft のライブラリ (ログと Guava) もテストの実行時には載らないので、本体と同じ版を足す。
+    testRuntimeOnly "org.slf4j:slf4j-api:2.0.9"
+    testRuntimeOnly "com.google.guava:guava:32.1.2-jre"
 }
 
 tasks.named('test', Test).configure {
