@@ -1,21 +1,10 @@
-buildscript {
-    repositories {
-        // These repositories are only for Gradle plugins, put any other repositories in the repository block further below
-        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
-    }
-}
-
 plugins {
-    id 'eclipse'
     id 'idea'
-    id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
+    id 'java-library'
+    // 1.21.1 ブランチと同じ ModDevGradle の Forge 1.20.1 版。両ブランチを同じプラグインにそろえ、
+    // Gradle 9 が要る新しい Stonecutter に載せられるようにしている (ForgeGradle 6 は Gradle 8 まで)。
+    id 'net.neoforged.moddev.legacyforge' version '2.0.91'
 }
-
-apply plugin: 'org.spongepowered.mixin'
 
 group = mod_group_id
 version = mod_version
@@ -30,56 +19,56 @@ java {
     toolchain.languageVersion = JavaLanguageVersion.of(17)
 }
 
-minecraft {
-    mappings channel: mapping_channel, version: mapping_version
-
-    // IDE の出力先でも ProcessResources を走らせる。これが true でないとテンプレートが動かない。
-    copyIdeResources = true
+legacyForge {
+    version = "${minecraft_version}-${forge_version}"
 
     runs {
-        configureEach {
-            workingDirectory project.file('run')
-
-            property 'forge.logging.markers', 'REGISTRIES'
-
-            property 'forge.logging.console.level', 'debug'
-
-            mods {
-                "${mod_id}" {
-                    source sourceSets.main
-                }
-            }
-        }
-
         client {
+            client()
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
-            property 'forge.enabledGameTestNamespaces', mod_id
+            systemProperty 'forge.enabledGameTestNamespaces', mod_id
         }
 
         server {
-            property 'forge.enabledGameTestNamespaces', mod_id
-            args '--nogui'
+            server()
+            systemProperty 'forge.enabledGameTestNamespaces', mod_id
+            programArgument '--nogui'
         }
 
         // 登録済みの GameTest を全部走らせて終了する。GameTest が 1 つも無いとサーバーはクラッシュする。
         gameTestServer {
+            type = 'gameTestServer'
             // AE2 のテストプロット基盤に相乗りしているので ae2 名前空間も有効にする
             // (自前のプロットも ae2.<plot id> という名前で走る)。
-            property 'forge.enabledGameTestNamespaces', "${mod_id},ae2"
+            systemProperty 'forge.enabledGameTestNamespaces', "${mod_id},ae2"
             // これが無いと AE2 はプロットを GameTest として登録しない。
-            property 'appeng.tests', 'true'
+            systemProperty 'appeng.tests', 'true'
         }
 
         data {
-            workingDirectory project.file('run-data')
+            data()
+            gameDirectory = project.file('run-data')
 
             // --existing-mod: 流用している AE2 / MEGA Cells / AppliedFlux のテクスチャを
             // ExistingFileHelper に見せるため (無いとモデル生成時に存在チェックで落ちる)。
-            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'),
-                    '--existing', file('src/main/resources/'),
+            programArguments.addAll '--mod', mod_id, '--all',
+                    '--output', file('src/generated/resources/').getAbsolutePath(),
+                    '--existing', file('src/main/resources/').getAbsolutePath(),
                     '--existing-mod', 'ae2', '--existing-mod', 'megacells',
                     // FE セルの筐体は AppliedFlux のテクスチャを借りている。
                     '--existing-mod', 'appflux', '--existing-mod', 'ae2things'
+        }
+
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            systemProperty 'forge.logging.console.level', 'debug'
+            logLevel = org.slf4j.event.Level.DEBUG
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
         }
     }
 }
@@ -102,7 +91,7 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 // ACO の公開連携境界はインターフェイス実装が前提なので compileOnly が要る。
 // CurseForge にも Maven にも上がっていないので、GitHub Releases から取ってくる。
 // 取得済みなら何もしない (オフラインでもビルドできる)。
-// 実行時は fg.deobf を通す必要があるので、flatDir 経由の blank:aco:<ver> を使う。
+// 実行時は SRG 名から戻す必要があるので、flatDir 経由の blank:aco:<ver> を modRuntimeOnly に渡す。
 // -PacoVersion=... で差し替えられる (未リリースの ACO を試すとき用)。
 ext.aco_version = project.findProperty('acoVersion') ?: '1.5.22'
 ext.acoJarFile = file("libs/aco-${aco_version}.jar")
@@ -146,42 +135,42 @@ repositories {
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-    implementation fg.deobf("maven.modrinth:ae2:15.4.10")
+    // @Nullable 用。ModDevGradle ではマイクラ本体の依存として付いてこない。
+    compileOnly 'org.jetbrains:annotations:24.1.0'
+    modImplementation "maven.modrinth:ae2:15.4.10"
     // MEGA Cells (megacells) — 1M〜256M のクラフトストレージはこちらに委譲するため必須依存。
-    implementation fg.deobf("curse.maven:mega-cells-622112:6175008")
+    modImplementation "curse.maven:mega-cells-622112:6175008"
     // Cloth Config API — MEGA Cells が mandatory 依存として要求する (無いと FML の依存解決で落ちる)。
-    runtimeOnly fg.deobf("curse.maven:cloth-config-348521:5729105")
+    modRuntimeOnly "curse.maven:cloth-config-348521:5729105"
     // Applied Mekanistics (+ Mekanism) — 化学物質セル用の【任意】依存。
     // 無くても動くよう ModList で分岐しているが、コンパイルには型が要るので compileOnly。
     // runtimeOnly は dev で実際に化学物質セルを触るためのもの。
-    compileOnly fg.deobf("curse.maven:mekanism-268560:6552911")
-    compileOnly fg.deobf("curse.maven:applied-mekanistics-574300:7244744")
+    modCompileOnly "curse.maven:mekanism-268560:6552911"
+    modCompileOnly "curse.maven:applied-mekanistics-574300:7244744"
     // -PwithAppMek=false を付けると dev 実行から外れる (未導入時の動作確認用)。
     if (project.findProperty('withAppMek') != 'false') {
-        runtimeOnly fg.deobf("curse.maven:mekanism-268560:6552911")
-        runtimeOnly fg.deobf("curse.maven:applied-mekanistics-574300:7244744")
+        modRuntimeOnly "curse.maven:mekanism-268560:6552911"
+        modRuntimeOnly "curse.maven:applied-mekanistics-574300:7244744"
     }
     // AppliedFlux — FE ストレージセル用の【任意】依存 (appmek と同じ扱い)。
     // FE セルは AppliedFlux の IFluxCell を実装し、セルの中身は AppliedFlux 自身の
     // セルハンドラが扱うので、型を見るために compileOnly が要る。
-    compileOnly fg.deobf("curse.maven:applied-flux-965012:7651647")
+    modCompileOnly "curse.maven:applied-flux-965012:7651647"
     // -PwithAppFlux=false を付けると dev 実行から外れる (未導入時の動作確認用)。
     // (-PwithAstral=true でも同じものが入る。座標が同じなので重複はしない)
     if (project.findProperty('withAppFlux') != 'false') {
-        runtimeOnly fg.deobf("curse.maven:applied-flux-965012:7651647")
+        modRuntimeOnly "curse.maven:applied-flux-965012:7651647"
         // AppliedFlux の mandatory 依存 (作者の共通ライブラリ)。
-        runtimeOnly fg.deobf("curse.maven:glodium-957920:5226922")
+        modRuntimeOnly "curse.maven:glodium-957920:5226922"
     }
-    runtimeOnly fg.deobf("curse.maven:guideme-1173950:8204776")
+    modRuntimeOnly "curse.maven:guideme-1173950:8204776"
     // AE2 Things 1.2.1 — InsaneAE 階層の DISK を足す【任意】依存。DISK は AE2 Things の DISKDrive を
     // 継承し、中身は AE2 Things 自身の保存データ (disk_manager) に入るので型を見るために要る。
     // -PwithAE2Things=false を付けると dev 実行から外れる (未導入時の動作確認用)。
-    compileOnly fg.deobf("curse.maven:ae2-things-forge-609977:4616683")
+    modCompileOnly "curse.maven:ae2-things-forge-609977:4616683"
     if (project.findProperty('withAE2Things') != 'false') {
-        runtimeOnly fg.deobf("curse.maven:ae2-things-forge-609977:4616683")
+        modRuntimeOnly "curse.maven:ae2-things-forge-609977:4616683"
     }
     // AE2 Crafting Optimizer。
     //
@@ -193,7 +182,7 @@ dependencies {
     compileOnly acoApiJar
     //
     // 実行時は<b>従来どおり任意依存</b>。dev に載せるのは -PwithAco=true のときだけで、
-    // <b>配布 jar は SRG 名なので fg.deobf が必須</b> (そのまま run/mods に置くと dev では落ちる)。
+    // <b>配布 jar は SRG 名なので mod* 構成で名前を戻す必要がある</b> (そのまま run/mods に置くと dev では落ちる)。
     // 既定でオフなのは、ACO が AE2 の挙動自体を変える (実行バッチの乗っ取り・プロバイダ結合等) ため
     // ACO 前提でないゲームテストが複数落ちるから。回すときは落ちる前提で読むこと。
     if (project.findProperty('withAco') == 'true') {
@@ -208,7 +197,7 @@ dependencies {
                 acoRuntimeJarFile.withOutputStream { it << input }
             }
         }
-        runtimeOnly fg.deobf("blank:aco:${aco_runtime_version}")
+        modRuntimeOnly "blank:aco:${aco_runtime_version}"
     }
     // Astral Mekanism & Energistics — 自動搬出をネットワークへ流す互換 Mixin
     // (compat.AstralEjectorMixin) の実機テスト用【任意・オプトイン】。
@@ -218,31 +207,31 @@ dependencies {
     // Astral は必須依存が 14 個ある (mods.toml が全部 mandatory=true)。
     // バージョンの組み合わせは実際に遊んでいるモッドパックの manifest.json から取った。
     if (project.findProperty('withAstral') == 'true') {
-        runtimeOnly fg.deobf("curse.maven:astral-mekanism-1415150:8601842")
-        runtimeOnly fg.deobf("curse.maven:mekanism-generators-268566:6552914")
-        runtimeOnly fg.deobf("curse.maven:mekanism-tools-268567:6552915")
-        runtimeOnly fg.deobf("curse.maven:evolved-mekanism-1230085:7599591")
-        runtimeOnly fg.deobf("curse.maven:mekanism-extras-1026040:8247562")
-        runtimeOnly fg.deobf("curse.maven:evolved-mekanism-extras-1268159:8294797")
-        runtimeOnly fg.deobf("curse.maven:compact-mekanism-machines-1161015:7388773")
-        runtimeOnly fg.deobf("curse.maven:mekanism-elements-1103224:6537553")
-        runtimeOnly fg.deobf("curse.maven:advancedae-1084104:7939754")
-        runtimeOnly fg.deobf("curse.maven:ae2addonlib-1366135:7668681")
-        runtimeOnly fg.deobf("curse.maven:applied-flux-965012:7651647")
-        runtimeOnly fg.deobf("curse.maven:botany-pots-353928:7612402")
-        runtimeOnly fg.deobf("curse.maven:bookshelf-228525:7612389")
-        runtimeOnly fg.deobf("curse.maven:stack-upgrade-integration-1510741:8298822")
+        modRuntimeOnly "curse.maven:astral-mekanism-1415150:8601842"
+        modRuntimeOnly "curse.maven:mekanism-generators-268566:6552914"
+        modRuntimeOnly "curse.maven:mekanism-tools-268567:6552915"
+        modRuntimeOnly "curse.maven:evolved-mekanism-1230085:7599591"
+        modRuntimeOnly "curse.maven:mekanism-extras-1026040:8247562"
+        modRuntimeOnly "curse.maven:evolved-mekanism-extras-1268159:8294797"
+        modRuntimeOnly "curse.maven:compact-mekanism-machines-1161015:7388773"
+        modRuntimeOnly "curse.maven:mekanism-elements-1103224:6537553"
+        modRuntimeOnly "curse.maven:advancedae-1084104:7939754"
+        modRuntimeOnly "curse.maven:ae2addonlib-1366135:7668681"
+        modRuntimeOnly "curse.maven:applied-flux-965012:7651647"
+        modRuntimeOnly "curse.maven:botany-pots-353928:7612402"
+        modRuntimeOnly "curse.maven:bookshelf-228525:7612389"
+        modRuntimeOnly "curse.maven:stack-upgrade-integration-1510741:8298822"
         // 上の 2 つが要求する図書館 Mod。
-        runtimeOnly fg.deobf("curse.maven:glodium-957920:5226922")
-        runtimeOnly fg.deobf("curse.maven:iglee-library-541199:6987117")
-        runtimeOnly fg.deobf("curse.maven:geckolib-388172:8285794")
+        modRuntimeOnly "curse.maven:glodium-957920:5226922"
+        modRuntimeOnly "curse.maven:iglee-library-541199:6987117"
+        modRuntimeOnly "curse.maven:geckolib-388172:8285794"
     }
 
     // ME Infinity Cell 1.20.1-5.0.0 — 無限セルの在庫を ACO に BigInteger で見せる @Pseudo Mixin の
     // 実機確認用【任意・オプトイン】。-PwithInfinityCell=true で dev 実行に載る。
     // Mixin は文字列でクラスを指すので、コンパイルにも型は要らない。
     if (project.findProperty('withInfinityCell') == 'true') {
-        runtimeOnly fg.deobf("curse.maven:me-infinity-cell-1320551:7277426")
+        modRuntimeOnly "curse.maven:me-infinity-cell-1320551:7277426"
     }
 
     // Advanced AE — 自前のクラフト CPU (AdvCraftingCPULogic) へ入れている compat Mixin
@@ -250,19 +239,24 @@ dependencies {
     // 【任意・オプトイン】。-PwithAdvancedAe=true で dev 実行に載る (-PwithAstral=true にも含まれる)。
     // 既定でオフなのは、Advanced AE 自身が AE2 の挙動を変えるためゲームテストの前提が変わるから。
     if (project.findProperty('withAdvancedAe') == 'true') {
-        runtimeOnly fg.deobf("curse.maven:advancedae-1084104:7939754")
+        modRuntimeOnly "curse.maven:advancedae-1084104:7939754"
         // Advanced AE の mandatory 依存。FML が止まってから分かる類なので明示しておく。
-        runtimeOnly fg.deobf("curse.maven:ae2addonlib-1366135:7668681")
-        runtimeOnly fg.deobf("curse.maven:geckolib-388172:8285794")
+        modRuntimeOnly "curse.maven:ae2addonlib-1366135:7668681"
+        modRuntimeOnly "curse.maven:geckolib-388172:8285794"
     }
 
     // JEI — 【任意】。AE2 15.x の JEI 連携のチャージャーに改良チャージャーを触媒として足す
     // (integration/jei)。@JeiPlugin なので JEI が無ければ読まれない。
-    compileOnly fg.deobf("curse.maven:jei-238222:8500005")
-    runtimeOnly fg.deobf("curse.maven:jei-238222:8500005")
+    modCompileOnly "curse.maven:jei-238222:8500005"
+    modRuntimeOnly "curse.maven:jei-238222:8500005"
     testImplementation platform("org.junit:junit-bom:5.10.2")
     testImplementation "org.junit.jupiter:junit-jupiter"
 }
+
+// 単体テストは一部でマイクラの型 (Component など) を使うが、ModDevGradle はテストの
+// クラスパスに本体を載せないので、本体側のものを渡す。
+sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
+sourceSets.test.runtimeClasspath += sourceSets.main.runtimeClasspath
 
 tasks.named('test', Test).configure {
     useJUnitPlatform()
@@ -292,10 +286,13 @@ tasks.named('jar', Jar).configure {
                     "Implementation-Title"    : project.name,
                     "Implementation-Version"  : project.jar.archiveVersion,
                     "Implementation-Vendor"   : mod_authors,
-                    "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")])
+                    "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                    // 本番の Forge はこの属性から Mixin 設定を読む。ModDevGradle の mixin { config } は
+                    // 開発実行の起動引数にしか渡さないので、ここで書く。
+                    "MixinConfigs"            : ["${mod_id}.mixins.json", "${mod_id}.compat.mixins.json",
+                                                 "${mod_id}.aco.mixins.json"].join(",")])
     }
 
-    finalizedBy 'reobfJar'
 }
 
 tasks.withType(JavaCompile).configureEach {
