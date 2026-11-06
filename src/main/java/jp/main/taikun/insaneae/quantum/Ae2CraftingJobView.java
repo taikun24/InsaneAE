@@ -6,8 +6,8 @@ import appeng.api.storage.MEStorage;
 import java.util.Optional;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
-import jp.main.taikun.insaneae.mixin.ExecutingCraftingJobAccessor;
-import jp.main.taikun.insaneae.mixin.TaskProgressAccessor;
+import jp.main.taikun.insaneae.mixin.cpu.ExecutingCraftingJobAccessor;
+import jp.main.taikun.insaneae.mixin.cpu.TaskProgressAccessor;
 import appeng.api.networking.security.IActionSource;
 import jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership;
 

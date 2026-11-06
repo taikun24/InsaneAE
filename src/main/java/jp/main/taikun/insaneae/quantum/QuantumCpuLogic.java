@@ -14,7 +14,7 @@ import appeng.menu.AutoCraftingMenu;
 import appeng.util.inv.AppEngInternalInventory;
 import appeng.util.inv.filter.IAEItemFilter;
 import com.mojang.logging.LogUtils;
-import jp.main.taikun.insaneae.mixin.PatternProviderLogicAccessor;
+import jp.main.taikun.insaneae.mixin.crafting.PatternProviderLogicAccessor;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderLogic;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.inventory.CraftingContainer;

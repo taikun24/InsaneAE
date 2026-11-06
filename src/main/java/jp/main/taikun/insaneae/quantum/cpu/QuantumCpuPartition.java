@@ -4,7 +4,7 @@ import appeng.api.networking.IGridNode;
 import appeng.api.stacks.KeyCounter;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.me.helpers.MachineSource;
-import jp.main.taikun.insaneae.mixin.CraftingCpuClusterAccessor;
+import jp.main.taikun.insaneae.mixin.cpu.CraftingCpuClusterAccessor;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;

@@ -27,6 +27,15 @@ repositories {
     }
 }
 
+// ゲームテスト (AE2 のテストプロットに相乗りした検証) は配布 jar に入れない。
+// 本体のクラスとクラスパスをそのまま使う別のソースセットにして、gameTestServer の実行にだけ載せる。
+sourceSets {
+    gametest {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+
 neoForge {
     version = project.neo_version
 
@@ -58,6 +67,7 @@ neoForge {
         // 登録済みの GameTest を全部走らせて終了する。
         gameTestServer {
             type = 'gameTestServer'
+            sourceSet = sourceSets.gametest
             // AE2 のテストプロット基盤に相乗りしているので ae2 名前空間も有効にする
             // (自前のプロットも ae2.<plot id> という名前で走る)。
             systemProperty 'neoforge.enabledGameTestNamespaces', "${project.mod_id},ae2"
@@ -86,6 +96,7 @@ neoForge {
     mods {
         "${mod_id}" {
             sourceSet(sourceSets.main)
+            sourceSet(sourceSets.gametest)
         }
     }
 }

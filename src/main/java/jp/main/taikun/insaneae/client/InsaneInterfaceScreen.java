@@ -15,7 +15,7 @@ import appeng.menu.slot.AppEngSlot;
 import appeng.menu.slot.FakeSlot;
 import jp.main.taikun.insaneae.iface.InsaneInterfaceBlockEntity;
 import jp.main.taikun.insaneae.menu.InsaneInterfaceMenu;
-import jp.main.taikun.insaneae.mixin.SlotAccessor;
+import jp.main.taikun.insaneae.mixin.ui.SlotAccessor;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
