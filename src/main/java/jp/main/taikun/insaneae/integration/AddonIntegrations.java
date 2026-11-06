@@ -2,6 +2,7 @@ package jp.main.taikun.insaneae.integration;
 
 import com.mojang.logging.LogUtils;
 import jp.main.taikun.insaneae.integration.advancedae.AdvancedAeIntegration;
+import jp.main.taikun.insaneae.integration.ae2things.AE2ThingsIntegration;
 import jp.main.taikun.insaneae.integration.appflux.AppFluxIntegration;
 import jp.main.taikun.insaneae.integration.appmek.AppMekIntegration;
 import jp.main.taikun.insaneae.integration.extendedae.ExtendedAeIntegration;
@@ -35,6 +36,8 @@ public final class AddonIntegrations {
                     () -> new AppMekIntegration()),
             new Known(AppFluxIntegration.MODID, "FE storage cells",
                     () -> new AppFluxIntegration()),
+            new Known(AE2ThingsIntegration.MODID, "DISK drives",
+                    () -> new AE2ThingsIntegration()),
             new Known(ExtendedAeIntegration.MODID, "acceleration cards on ExtendedAE machines",
                     () -> new ExtendedAeIntegration()),
             new Known(AdvancedAeIntegration.MODID, "acceleration cards on AdvancedAE machines",

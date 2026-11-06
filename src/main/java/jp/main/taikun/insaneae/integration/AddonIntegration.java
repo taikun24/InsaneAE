@@ -3,9 +3,13 @@ package jp.main.taikun.insaneae.integration;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import net.minecraft.core.Direction;
 import net.minecraft.data.recipes.FinishedRecipe;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.ToIntBiFunction;
 import java.util.function.Consumer;
 
 /**
@@ -48,6 +52,14 @@ public interface AddonIntegration {
      */
     default List<? extends ItemLike> portableCells() {
         return List.of();
+    }
+
+    /**
+     * 色ハンドラを相手の Mod のものにするセル (AE2 Things の DISK など)。値は
+     * {@code ItemColor} と同じ (スタック, tintindex) → 色。クリエイティブタブにも並ぶ。
+     */
+    default Map<Item, ToIntBiFunction<ItemStack, Integer>> cellsWithOwnColor() {
+        return Map.of();
     }
 
     /**

@@ -3,6 +3,8 @@ package jp.main.taikun.insaneae;
 import appeng.api.storage.StorageCells;
 import com.mojang.logging.LogUtils;
 import jp.main.taikun.insaneae.cell.InsaneCreativeCellHandler;
+import jp.main.taikun.insaneae.cell.storage.CellCommands;
+import jp.main.taikun.insaneae.cell.storage.CellContentStore;
 import jp.main.taikun.insaneae.client.InsaneAEClient;
 import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.datagen.ModBlockLootProvider;
@@ -22,12 +24,17 @@ import jp.main.taikun.insaneae.registries.ModParts;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
 import jp.main.taikun.insaneae.testplots.InsaneAETestPlots;
 import net.minecraft.data.DataGenerator;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.loot.LootTableProvider;
 import net.minecraft.data.tags.TagsProvider;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.data.ExistingFileHelper;
+import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.level.LevelEvent;
+import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.data.event.GatherDataEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -65,6 +72,14 @@ public class InsaneAE {
         ModCreativeTabs.register(bus);
 
         bus.addListener(this::commonSetup);
+        MinecraftForge.EVENT_BUS.addListener((RegisterCommandsEvent event) ->
+                CellCommands.register(event.getDispatcher()));
+        MinecraftForge.EVENT_BUS.addListener((LevelEvent.Save event) -> {
+            if (event.getLevel() instanceof ServerLevel level) {
+                CellContentStore.onLevelSaved(level);
+            }
+        });
+        MinecraftForge.EVENT_BUS.addListener((ServerStoppedEvent event) -> CellContentStore.forget());
         bus.addListener(this::gatherData);
 
         // formed モデルの組み込み登録は ModelBakery より前に済ませる必要があるため、

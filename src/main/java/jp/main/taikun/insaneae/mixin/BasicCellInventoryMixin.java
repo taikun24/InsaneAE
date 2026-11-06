@@ -6,12 +6,12 @@ import appeng.api.storage.cells.ISaveProvider;
 import appeng.me.cells.BasicCellInventory;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import jp.main.taikun.insaneae.cell.IHugeCellItem;
+import jp.main.taikun.insaneae.cell.storage.CellNbt;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -63,12 +63,6 @@ public abstract class BasicCellInventoryMixin {
      */
     @Shadow
     private Object2LongMap<AEKey> storedAmounts;
-
-    /**
-     * AE2 の {@code BasicCellInventory.STACK_AMOUNTS} と同じタグ名。
-     */
-    @Unique
-    private static final String STACK_AMOUNTS_TAG = "amts";
 
     @Shadow
     public abstract long getFreeBytes();
@@ -123,9 +117,10 @@ public abstract class BasicCellInventoryMixin {
         if (!(cellType instanceof IHugeCellItem)) {
             return;
         }
+        // 中身を保存データに置いているセルは amts が無いので、アイテムに残した要約の種類数を読む。
         long types = storedAmounts != null
                 ? storedAmounts.size()
-                : i.getOrCreateTag().getLongArray(STACK_AMOUNTS_TAG).length;
+                : CellNbt.storedTypes(i);
         cir.setReturnValue(types);
     }
 }

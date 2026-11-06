@@ -1,0 +1,28 @@
+{
+  "type": "forge:conditional",
+  "recipes": [
+    {
+      "conditions": [
+        {
+          "type": "forge:mod_loaded",
+          "modid": "ae2things"
+        }
+      ],
+      "recipe": {
+        "type": "minecraft:crafting_shapeless",
+        "category": "misc",
+        "ingredients": [
+          {
+            "item": "ae2things:disk_housing"
+          },
+          {
+            "item": "insaneae:cell_component_4t"
+          }
+        ],
+        "result": {
+          "item": "insaneae:disk_drive_4t"
+        }
+      }
+    }
+  ]
+}

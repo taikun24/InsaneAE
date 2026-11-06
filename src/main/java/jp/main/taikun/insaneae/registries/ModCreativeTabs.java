@@ -51,6 +51,7 @@ public class ModCreativeTabs {
                     addon.materials().forEach(output::accept);
                     addon.storageCells().forEach(output::accept);
                     addon.portableCells().forEach(output::accept);
+                    addon.cellsWithOwnColor().keySet().forEach(output::accept);
                 }
             })
             .build());

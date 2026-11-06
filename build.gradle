@@ -79,7 +79,7 @@ minecraft {
                     '--existing', file('src/main/resources/'),
                     '--existing-mod', 'ae2', '--existing-mod', 'megacells',
                     // FE セルの筐体は AppliedFlux のテクスチャを借りている。
-                    '--existing-mod', 'appflux'
+                    '--existing-mod', 'appflux', '--existing-mod', 'ae2things'
         }
     }
 }
@@ -176,6 +176,13 @@ dependencies {
         runtimeOnly fg.deobf("curse.maven:glodium-957920:5226922")
     }
     runtimeOnly fg.deobf("curse.maven:guideme-1173950:8204776")
+    // AE2 Things 1.2.1 — InsaneAE 階層の DISK を足す【任意】依存。DISK は AE2 Things の DISKDrive を
+    // 継承し、中身は AE2 Things 自身の保存データ (disk_manager) に入るので型を見るために要る。
+    // -PwithAE2Things=false を付けると dev 実行から外れる (未導入時の動作確認用)。
+    compileOnly fg.deobf("curse.maven:ae2-things-forge-609977:4616683")
+    if (project.findProperty('withAE2Things') != 'false') {
+        runtimeOnly fg.deobf("curse.maven:ae2-things-forge-609977:4616683")
+    }
     // AE2 Crafting Optimizer。
     //
     // <b>compileOnly は常に入る。</b>ACO の公開連携境界 (api.contract / api.craftingtable /

@@ -4,6 +4,7 @@ import jp.main.taikun.insaneae.energy.SolarPanelTier;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerLimitBridge;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModParts;
+import jp.main.taikun.insaneae.cell.storage.CellNbt;
 import net.minecraft.ChatFormatting;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
@@ -14,6 +15,7 @@ import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import java.util.IdentityHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * アイテムの説明文 (ロア) をツールチップに足す。
@@ -40,6 +42,7 @@ import java.util.Map;
  */
 public final class InsaneTooltips {
 
+    private static final String CELL_ID = "insaneae.tooltip.cell_id";
     private static final String SUFFIX = ".desc";
     private static final String SOLAR_PANEL = "insaneae.desc.solar_panel";
     /** 超次元 ME ケーブルは 17 色あるが説明は共通なので、色ごとの .desc は置かない。 */
@@ -66,6 +69,12 @@ public final class InsaneTooltips {
 
     private static void onTooltip(ItemTooltipEvent event) {
         Item item = event.getItemStack().getItem();
+        // 中身を失ったセルを /insaneae cells recover で作り直すときに要る。普段は邪魔なので詳細表示のときだけ。
+        UUID cellId = CellNbt.id(event.getItemStack());
+        if (cellId != null && event.getFlags().isAdvanced()) {
+            event.getToolTip().add(Component.translatable(CELL_ID, cellId.toString())
+                    .withStyle(ChatFormatting.DARK_GRAY));
+        }
         Description description = descriptionFor(item);
         if (description != null) {
             String text = Component.translatable(description.key(), description.args()).getString();
