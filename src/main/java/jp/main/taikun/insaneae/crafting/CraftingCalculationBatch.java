@@ -4,7 +4,7 @@ import appeng.crafting.CraftBranchFailure;
 import appeng.crafting.CraftingTreeProcess;
 import appeng.crafting.inv.ChildCraftingSimulationState;
 import appeng.crafting.inv.CraftingSimulationState;
-import jp.main.taikun.insaneae.mixin.CraftingTreeProcessInvoker;
+import jp.main.taikun.insaneae.mixin.crafting.CraftingTreeProcessInvoker;
 
 import java.util.ArrayList;
 import java.util.List;

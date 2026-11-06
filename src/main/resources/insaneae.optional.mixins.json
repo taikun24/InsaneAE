@@ -1,0 +1,39 @@
+{
+  "_comment": "他 Mod と共存するための Mixin (加速カードの速度倍率 + AE2 の機械に登録されたカードを超次元版へ写す登録の見張り + 画面スタイルの寛容化 + クラフト CPU の 1 tick 予算の long 化 + 他 Mod のクラフト CPU へのまとめ処理)。required=false なので、注入に失敗してもログにエラーが出るだけでゲームは起動する (その機能が働かなくなるだけ)。compat.* は @Pseudo 付きで、対象 Mod が入っていなければ黙って読み飛ばされる。壊れると危険な容量系・スレッド上限系は insaneae.mixins.json のまま required=true。",
+  "required": false,
+  "minVersion": "0.8",
+  "package": "jp.main.taikun.insaneae.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "insaneae.refmap.json",
+  "priority": 1500,
+  "mixins": [
+    "cpu.CraftingCpuBudgetMixin",
+    "crafting.CraftingTreeNodeMixin",
+    "crafting.CraftingTreeProcessInvoker",
+    "upgrade.InscriberBlockEntityMixin",
+    "upgrade.IOBusPartMixin",
+    "upgrade.IOPortBlockEntityMixin",
+    "upgrade.MolecularAssemblerBlockEntityMixin",
+    "upgrade.TickManagerServiceMixin",
+    "compat.advancedae.AAEQuantumCrafterMixin",
+    "compat.astral.AstralEjectorMixin",
+    "compat.advancedae.AAEReactionChamberMixin",
+    "compat.advancedae.AdvCraftingCpuBudgetMixin",
+    "compat.advancedae.AdvCraftingCpuStorageMixin",
+    "compat.advancedae.AdvCraftingCpuLogicMixin",
+    "compat.ae2things.DiskCellInventoryMixin",
+    "compat.extendedae.ExCircuitCutterMixin",
+    "compat.extendedae.ExCraftingThreadMixin",
+    "compat.extendedae.ExFormationPlaneMixin",
+    "compat.extendedae.ExIOPortMixin",
+    "compat.extendedae.ExInscriberThreadMixin",
+    "crafting.PatternProviderDecodeCacheMixin",
+    "upgrade.UpgradesMixin"
+  ],
+  "client": [
+    "ui.ScreenStyleMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

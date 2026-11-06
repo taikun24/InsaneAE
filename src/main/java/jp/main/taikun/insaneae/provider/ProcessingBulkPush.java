@@ -11,7 +11,7 @@ import appeng.api.stacks.KeyCounter;
 import appeng.crafting.pattern.AEProcessingPattern;
 import appeng.helpers.patternprovider.PatternProviderTarget;
 import jp.main.taikun.insaneae.config.InsaneAEConfig;
-import jp.main.taikun.insaneae.mixin.PatternProviderLogicAccessor;
+import jp.main.taikun.insaneae.mixin.crafting.PatternProviderLogicAccessor;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;

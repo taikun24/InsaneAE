@@ -22,7 +22,6 @@ import jp.main.taikun.insaneae.registries.ModItems;
 import jp.main.taikun.insaneae.registries.ModMenus;
 import jp.main.taikun.insaneae.registries.ModParts;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
-import jp.main.taikun.insaneae.testplots.InsaneAETestPlots;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.data.PackOutput;
@@ -129,8 +128,18 @@ public class InsaneAE {
         // 検証用のテストプロット。AE2 のテスト基盤が有効なときだけ載せる
         // (`./gradlew runGameTestServer`)。通常のプレイでは何も登録されない。
         if (Boolean.getBoolean("appeng.tests")) {
-            event.enqueueWork(InsaneAETestPlots::register);
+            // プロットは配布 jar に入らない別のソースセットにあるので、クラス名で呼ぶ。
+            event.enqueueWork(InsaneAE::registerTestPlots);
         }
         LOGGER.info("InsaneAE: {} crafting storage tiers registered.", ModBlocks.CRAFTING_STORAGE.size());
+    }
+
+    private static void registerTestPlots() {
+        try {
+            Class.forName("jp.main.taikun.insaneae.testplots.InsaneAETestPlots")
+                    .getMethod("register").invoke(null);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("InsaneAE: test plots are missing from the classpath", e);
+        }
     }
 }

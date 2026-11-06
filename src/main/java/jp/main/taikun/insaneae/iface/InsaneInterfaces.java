@@ -12,7 +12,7 @@ import appeng.api.storage.StorageHelper;
 import appeng.helpers.InterfaceLogic;
 import appeng.helpers.InterfaceLogicHost;
 import appeng.util.ConfigInventory;
-import jp.main.taikun.insaneae.mixin.ConfigInventoryAccessor;
+import jp.main.taikun.insaneae.mixin.iface.ConfigInventoryAccessor;
 import net.minecraft.world.item.Item;
 
 /**

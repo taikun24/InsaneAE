@@ -2,7 +2,7 @@ package jp.main.taikun.insaneae.quantum;
 
 import appeng.api.stacks.AEKeyType;
 import com.mojang.logging.LogUtils;
-import jp.main.taikun.insaneae.mixin.ElapsedTimeTrackerInvoker;
+import jp.main.taikun.insaneae.mixin.cpu.ElapsedTimeTrackerInvoker;
 import org.slf4j.Logger;
 
 import java.lang.reflect.Method;

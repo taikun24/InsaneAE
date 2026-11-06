@@ -12,7 +12,7 @@ import appeng.menu.SlotSemantics;
 import appeng.menu.slot.AppEngSlot;
 import com.mojang.logging.LogUtils;
 import jp.main.taikun.insaneae.menu.QuantumCpuMenu;
-import jp.main.taikun.insaneae.mixin.SlotAccessor;
+import jp.main.taikun.insaneae.mixin.ui.SlotAccessor;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;

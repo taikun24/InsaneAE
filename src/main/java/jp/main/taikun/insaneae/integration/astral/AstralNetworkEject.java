@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>Mekanism の自動搬出は「1 tick に N mB」「1 スタックずつ」で刻むので、
  * Astral の機械が作る桁 (long 級) には到底追いつかない。
  * 搬出先が ME インターフェイスなら、<b>その場で全量をネットワークへ渡せる</b>ので、
- * 刻まずに 1 回で流し込む ({@link jp.main.taikun.insaneae.mixin.compat.AstralEjectorMixin})。</p>
+ * 刻まずに 1 回で流し込む ({@link jp.main.taikun.insaneae.mixin.compat.astral.AstralEjectorMixin})。</p>
  *
  * <h2>インターフェイスの設定は尊重する</h2>
  * <ul>
