@@ -28,6 +28,7 @@ This branch is **1.21.1 (NeoForge)**.
 | [MEGA Cells](https://github.com/62832/MEGACells) | 4.11 or later (required) |
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) | 1.6 or later (optional, for chemical cells) |
 | [AppliedFlux](https://www.curseforge.com/minecraft/mc-mods/applied-flux) | 1.21-2.1.6 or later (optional, for FE cells) |
+| [AE2 Things](https://www.curseforge.com/minecraft/mc-mods/ae2-things-forge) | 1.4.2-beta or later (optional, for DISK drives) |
 | [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) | 1.5.12 or later, **1.5.18+ recommended** (optional, for BigInteger accounting and exact planning) |
 
 AE2 requires [GuideME](https://github.com/AppliedEnergistics/GuideME) as a hard dependency (on 1.20.1 it was bundled with AE2).
@@ -58,6 +59,11 @@ NeoForge version.
   16T, and the 16T one holds 8T: AppliedFlux computes capacity as bytes × "FE per byte" (default
   1,048,576) in a long, which 8T just fits (about 9.2 quintillion FE). Like AppliedFlux, they are
   built from dedicated Energy Storage Components (1G–16T, continuing from AppliedFlux's 256M).
+  Except for FE cells, the contents live in the world (`data/insaneae_cells.dat`) keyed by UUID,
+  and the item only keeps the UUID and a summary. A lost cell can be rebuilt with
+  `/insaneae cells list` and `/insaneae cells recover <uuid>`.
+- **ME DISK drives** (needs AE2 Things) — 1G to 8E, for items. No type limit, but one item takes
+  one byte. The contents are stored in AE2 Things' own saved data.
 - **Crafting storage** — 1G to 8E. A Mixin works around AE2 displaying byte counts as 32-bit.
   When several 4E-or-larger units share a CPU, the total is recomputed in BigInteger before being
   rounded to a long. The AE2-compatible long getter saturates at `Long.MAX_VALUE`, but other mods

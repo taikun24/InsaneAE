@@ -3,6 +3,8 @@ package jp.main.taikun.insaneae;
 import appeng.api.storage.StorageCells;
 import com.mojang.logging.LogUtils;
 import jp.main.taikun.insaneae.cell.InsaneCreativeCellHandler;
+import jp.main.taikun.insaneae.cell.storage.CellCommands;
+import jp.main.taikun.insaneae.cell.storage.CellContentStore;
 import jp.main.taikun.insaneae.client.InsaneAEClient;
 import jp.main.taikun.insaneae.config.InsaneAEConfig;
 import jp.main.taikun.insaneae.datagen.ModBlockLootProvider;
@@ -16,6 +18,7 @@ import jp.main.taikun.insaneae.registries.ModBlockEntities;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModCapabilities;
 import jp.main.taikun.insaneae.registries.ModCells;
+import jp.main.taikun.insaneae.registries.ModDataComponents;
 import jp.main.taikun.insaneae.registries.ModCreativeTabs;
 import jp.main.taikun.insaneae.registries.ModItems;
 import jp.main.taikun.insaneae.registries.ModMenus;
@@ -23,6 +26,7 @@ import jp.main.taikun.insaneae.registries.ModParts;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.DataGenerator;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.loot.LootTableProvider;
 import net.minecraft.data.tags.TagsProvider;
@@ -34,7 +38,11 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 import org.slf4j.Logger;
 
@@ -53,6 +61,7 @@ public class InsaneAE {
         container.registerConfig(ModConfig.Type.COMMON, InsaneAEConfig.SPEC);
         ModBlocks.register(bus);
         ModItems.register(bus);
+        ModDataComponents.register(bus);
         // ケーブルに貼る版。部品のモデル申告が凍結前に済む必要があるのでここで。
         ModParts.register(bus);
         // 他の AE2 アドオンとの連携 (化学物質セル・FE セル・他 Mod の機械への加速カードなど)。
@@ -65,6 +74,14 @@ public class InsaneAE {
         ModCreativeTabs.register(bus);
 
         bus.addListener(this::commonSetup);
+        NeoForge.EVENT_BUS.addListener((RegisterCommandsEvent event) ->
+                CellCommands.register(event.getDispatcher()));
+        NeoForge.EVENT_BUS.addListener((LevelEvent.Save event) -> {
+            if (event.getLevel() instanceof ServerLevel level) {
+                CellContentStore.onLevelSaved(level);
+            }
+        });
+        NeoForge.EVENT_BUS.addListener((ServerStoppedEvent event) -> CellContentStore.forget());
         bus.addListener(this::gatherData);
         // NeoForge では capability を BlockEntityType / Item ごとに専用イベントで登録する。
         // AE2 の一括登録は AE2 自身の型しか見ないので、自前の型はここで全部登録する。

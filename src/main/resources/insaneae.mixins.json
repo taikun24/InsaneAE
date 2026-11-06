@@ -6,6 +6,7 @@
   "_comment": "壊れると危険な注入 (容量・スレッド上限・ツールチップ) はこちら。required=true なので失敗したら起動時に落ちる。NeoForge は実行時も Mojang 公式マッピングなので refmap は不要。",
   "mixins": [
     "BasicCellInventoryMixin",
+    "BasicCellInventoryUuidMixin",
     "CraftingCPUClusterMixin",
     "CraftingCPUNameMixin",
     "CraftingCpuLogicMixin",

@@ -139,6 +139,8 @@ public final class InsaneAEClient {
         for (AddonIntegration addon : AddonIntegrations.active()) {
             addon.storageCells().forEach(cell -> event.register(basic, cell));
             addon.portableCells().forEach(cell -> event.register(portable, cell));
+            addon.cellsWithOwnColor().forEach((cell, color) ->
+                    event.register(opaque(color::applyAsInt), cell));
         }
     }
 

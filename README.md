@@ -28,6 +28,7 @@ Minecraft のバージョンごとにブランチを分けています。**不�
 | [MEGA Cells](https://github.com/62832/MEGACells) | 4.11 以上 (必須) |
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) | 1.6 以上 (任意 / 化学物質セル用) |
 | [AppliedFlux](https://www.curseforge.com/minecraft/mc-mods/applied-flux) | 1.21-2.1.6 以上 (任意 / FE セル用) |
+| [AE2 Things](https://www.curseforge.com/minecraft/mc-mods/ae2-things-forge) | 1.4.2-beta 以上 (任意 / DISK 用) |
 | [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) | 1.5.12 以上、**1.5.18 以上を推奨** (任意 / BigInteger量会計・厳密計算連携用) |
 
 AE2 が [GuideME](https://github.com/AppliedEnergistics/GuideME) を必須依存として要求します (1.20.1 では AE2 に同梱されていました)。
@@ -54,6 +55,11 @@ AE2 のバージョン範囲は実際に検証した `[19.2.15,20)` に固定し
   FE セルは AppliedFlux の容量計算 (バイト × 1 バイトあたりの FE、既定 1,048,576) が long なので
   16T までで、16T だけ容量は 8T です (既定設定でちょうど約 922 京 FE)。芯は AppliedFlux と同じく
   専用のエネルギーストレージコンポーネント (1G〜16T、AppliedFlux の 256M の続き) です。
+  FE 以外のセルの中身はワールド (`data/insaneae_cells.dat`) に UUID ごとに保存し、アイテムには
+  UUID と要約だけを持たせます。失ったセルは `/insaneae cells list` と
+  `/insaneae cells recover <uuid>` で作り直せます。
+- **ME DISK ドライブ** (AE2 Things 導入時) — アイテム用の 1G 〜 8E。型数の上限が無い代わりに
+  アイテム 1 個 = 1 バイトです。中身は AE2 Things の保存データに入ります。
 - **クラフトストレージ** — 1G 〜 8E。AE2 のバイト表示が 32bit で溢れる問題を Mixin で回避しています。
   同じCPUに複数の4E以上を接続した合計は、longへ丸める前にBigIntegerで再計算します。
   AE2互換のlong getterはLong.MAX_VALUEへ飽和しますが、連携Modは

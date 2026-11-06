@@ -8,6 +8,7 @@
   "item.insaneae.portable_fluid_cell": "%s ポータブル液体セル",
   "item.insaneae.portable_chemical_cell": "%s ポータブル化学物質セル",
   "item.insaneae.chemical_storage_cell": "%s ME化学物質ストレージセル",
+  "item.insaneae.disk_drive": "%s ME DISKドライブ",
   "item.insaneae.fe_storage_cell": "%s ME FEストレージセル",
   "item.insaneae.portable_fe_cell": "%s ポータブルFEセル",
   "item.insaneae.energy_component": "%s MEエネルギーストレージコンポーネント",
@@ -111,5 +112,13 @@
   "item.insaneae.fluix_compressed_dense_cable": "フルーシュの圧縮ME高密度スマートケーブル",
   "insaneae.desc.compressed_dense_cable": "32チャンネル 細いので部品を貼れる",
   "gui.insaneae.quantum_cpu.accelerator_units": "協調処理ユニットを入れる枠",
-  "gui.insaneae.quantum_cpu.crafting_units": "クラフトストレージを入れる枠"
+  "gui.insaneae.quantum_cpu.crafting_units": "クラフトストレージを入れる枠",
+  "insaneae.tooltip.cell_id": "セルの UUID: %s",
+  "commands.insaneae.cells.unavailable": "今はセルの保存データを読めません。",
+  "commands.insaneae.cells.list.header": "このワールドに保存されているセル: %s 個 (%s/%s ページ)",
+  "commands.insaneae.cells.list.click": "クリックで復旧コマンドを入力欄に入れます",
+  "commands.insaneae.cells.list.contents": " — %s 種類、合計 %s",
+  "commands.insaneae.cells.not_found": "UUID が %s のセルは保存されていません。",
+  "commands.insaneae.cells.unknown_item": "セルのアイテム %s が存在しません。",
+  "commands.insaneae.cells.recovered": "セル %s を復旧しました。元のセルが残っている場合は一緒に使わないでください (同じ中身を読み書きします)。"
 }

@@ -80,6 +80,11 @@ public class ModItemModelProvider extends ItemModelProvider {
      */
     private static final ResourceLocation FE_HOUSING = mega("appflux", "item/fe_cell_housing");
     private static final ResourceLocation PORTABLE_FE_HOUSING = mega("appflux", "item/portable_cell_fe_housing");
+    /**
+     * AE2 Things 連携の DISK の下地。窓が MEGA のハウジングと同じ形・同じ 3 階調なので、
+     * 通常セルの階層色レイヤ ({@code standardCell}) がそのまま重なって 1k の色を覆う。
+     */
+    private static final ResourceLocation DISK_BASE = mega("ae2things", "item/disk_drive_1k");
     private static final ResourceLocation SPEED_CARD = mega("ae2", "item/card_speed");
     /** AE2 の {@code InitItemModelsProperties} が登録するエネルギーセルの残量プロパティ。 */
     private static final ResourceLocation ENERGY_FILL_LEVEL = mega("ae2", "fill_level");
@@ -117,6 +122,7 @@ public class ModItemModelProvider extends ItemModelProvider {
             layered("item_storage_cell_" + id, ITEM_HOUSING, CELL_LED, standardCell(id));
             layered("fluid_storage_cell_" + id, FLUID_HOUSING, CELL_LED, standardCell(id));
             layered("chemical_storage_cell_" + id, CHEMICAL_HOUSING, CELL_LED, standardCell(id));
+            layered("disk_drive_" + id, DISK_BASE, CELL_LED, standardCell(id));
 
             layered("portable_item_cell_" + id,
                     PORTABLE_ITEM_HOUSING, PORTABLE_LED, PORTABLE_ITEM_SCREEN, portableSide(id));

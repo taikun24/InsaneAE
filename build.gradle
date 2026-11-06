@@ -74,7 +74,7 @@ neoForge {
                     '--existing', file('src/main/resources/').getAbsolutePath(),
                     '--existing-mod', 'ae2', '--existing-mod', 'megacells',
                     // FE セルの筐体は AppliedFlux のテクスチャを借りている。
-                    '--existing-mod', 'appflux'
+                    '--existing-mod', 'appflux', '--existing-mod', 'ae2things'
         }
 
         configureEach {
@@ -180,6 +180,14 @@ dependencies {
         localRuntime "curse.maven:applied-flux-965012:${appflux_file}"
         // AppliedFlux の mandatory 依存 (作者の共通ライブラリ)。
         localRuntime "curse.maven:glodium-957920:${glodium_file}"
+    }
+
+    // AE2 Things — InsaneAE 階層の DISK を足す【任意】依存。DISK は AE2 Things の DISKDrive を
+    // 継承し、中身は AE2 Things 自身の保存データ (disk_manager) に入るので型を見るために要る。
+    // -PwithAE2Things=false を付けると dev 実行から外れる (未導入時の動作確認用)。
+    compileOnly "curse.maven:ae2-things-forge-609977:${ae2things_file}"
+    if (project.findProperty('withAE2Things') != 'false') {
+        localRuntime "curse.maven:ae2-things-forge-609977:${ae2things_file}"
     }
 
     // AE2 Crafting Optimizer。

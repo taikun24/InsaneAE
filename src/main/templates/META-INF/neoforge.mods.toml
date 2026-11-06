@@ -74,6 +74,15 @@ versionRange = "[1.21-2.1.6-neoforge,)"
 ordering = "AFTER"
 side = "BOTH"
 
+# AE2 Things - 任意。導入されている場合のみ InsaneAE 階層の DISK を追加する。
+# DISK は AE2 Things のクラスを継承し容量計算に Mixin を当てているので、確認済みの版以降に絞る。
+[[dependencies."${mod_id}"]]
+modId = "ae2things"
+type = "optional"
+versionRange = "[1.4.2-beta,)"
+ordering = "AFTER"
+side = "BOTH"
+
 # AE2 Crafting Optimizer - 任意。導入時は公開BigInteger APIを通常クラフトCPUの
 # 正確な容量とQuantum CPUの完成品待ち台帳へ接続し、未導入時はlong互換経路へ戻る。
 [[dependencies."${mod_id}"]]

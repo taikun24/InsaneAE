@@ -19,6 +19,7 @@
     "compat.AdvCraftingCpuBudgetMixin",
     "compat.AdvCraftingCpuStorageMixin",
     "compat.AdvCraftingCpuLogicMixin",
+    "compat.DiskCellInventoryMixin",
     "compat.ExCircuitCutterMixin",
     "compat.ExCraftingThreadMixin",
     "compat.ExCrystalAssemblerMixin",

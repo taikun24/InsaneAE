@@ -1,4 +1,4 @@
-// 1.21.1	2026-10-02T16:36:03.2998904	Item Models: insaneae
+// 1.21.1	2026-11-06T17:54:00.0933945	Item Models: insaneae
 f529f4a37c476252be1cb472861b0a1e9db434ff assets/insaneae/models/item/16g_crafting_storage.json
 b8297d2e4d0e57b588bb33a68b7cbbec467a6a8e assets/insaneae/models/item/16k_crafting_accelerator.json
 401cf74a997cde406b246a8d310885200181f7ae assets/insaneae/models/item/16m_crafting_accelerator.json
@@ -82,6 +82,24 @@ aeed43dbdef15c9cd02a5edd00fcc2ddfb5fbce6 assets/insaneae/models/item/chemical_st
 e68e56d7a99239465fb62b994968df8cb5c08364 assets/insaneae/models/item/cyan_compressed_dense_cable.json
 1fac9074a50278167723d041264464e9d160a372 assets/insaneae/models/item/cyan_hyper_cable.json
 7ee6f470a8e4519d73889522daa26ca52e7893d3 assets/insaneae/models/item/degenerate_energy_cell.json
+e14b25fd46b87f26f138ea5f04929865c2f2bfd8 assets/insaneae/models/item/disk_drive_16g.json
+fadc75c927b36e0a980fa1b87a9a36d827648b52 assets/insaneae/models/item/disk_drive_16p.json
+8adcd10575902c2037c0574b3a10d7d8e4db52dd assets/insaneae/models/item/disk_drive_16t.json
+ce5a379cf4d952036e4f032393925b2437700823 assets/insaneae/models/item/disk_drive_1e.json
+8fd96c3ea585997122cfc45afa5a9e919f8734ed assets/insaneae/models/item/disk_drive_1g.json
+20e004d1d9c1cc988a0ef74683fa9438c852ccdf assets/insaneae/models/item/disk_drive_1p.json
+ddd92ad6a56927f7d9cf686c0f8354c2cbead054 assets/insaneae/models/item/disk_drive_1t.json
+bb8370ee2303d3e607cf54c811891ccb47b6d2f9 assets/insaneae/models/item/disk_drive_256g.json
+acfd3adaf82cab468654aad1738cb9949b9ee7a8 assets/insaneae/models/item/disk_drive_256p.json
+e81431ed883c213f681d9300278d03c1cb838da5 assets/insaneae/models/item/disk_drive_256t.json
+407e5009b0cec39a8639f5c02a3abc87382da5a5 assets/insaneae/models/item/disk_drive_4e.json
+b0afb0338c7044a3a36506bf2640fc1c90dc9f02 assets/insaneae/models/item/disk_drive_4g.json
+3dbfe0682ab53c401650c5e7c1511d0e93f90be0 assets/insaneae/models/item/disk_drive_4p.json
+41913d5af681f90e1841ec8f25f6952c91cd21eb assets/insaneae/models/item/disk_drive_4t.json
+d45c37c826e6d4308344b5ab382d93dbc62e9f66 assets/insaneae/models/item/disk_drive_64g.json
+cec0ec1209d65a17fb8fc4c15cb911bfbd7ce11b assets/insaneae/models/item/disk_drive_64p.json
+c1d056af1f0f038c014c56d6b4b6cd076c566de3 assets/insaneae/models/item/disk_drive_64t.json
+fe915038326ecd94891c6a4b1f202c90d7f9760c assets/insaneae/models/item/disk_drive_8e.json
 c2a15f97590879cdf0d0e17e292a7e2083e94bf3 assets/insaneae/models/item/elite_solar_panel.json
 7badab8fa91502618fec534db45a0fd31d638815 assets/insaneae/models/item/energy_component_16g.json
 957f601dcf7f19d65e31097b884cb0a87776e2bd assets/insaneae/models/item/energy_component_16t.json

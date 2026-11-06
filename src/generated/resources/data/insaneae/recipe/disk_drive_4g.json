@@ -1,0 +1,22 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ae2things"
+    }
+  ],
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "ae2things:disk_housing"
+    },
+    {
+      "item": "insaneae:cell_component_4g"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "insaneae:disk_drive_4g"
+  }
+}
