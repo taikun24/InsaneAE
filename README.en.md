@@ -2,6 +2,11 @@
 
 # InsaneAE
 
+> [!IMPORTANT]
+> **This branch (`1.21.1`) is no longer updated.** Both 1.20.1 and 1.21.1 are now built from a single
+> source tree on [`main`](https://github.com/taikun24/InsaneAE/tree/main). Please send changes, bug reports
+> and pull requests to `main`.
+
 > More Storage, Better Gameplay...?
 
 A Minecraft add-on that picks up where Applied Energistics 2 / MEGA Cells leave off.

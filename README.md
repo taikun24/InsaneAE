@@ -2,6 +2,11 @@
 
 # InsaneAE
 
+> [!IMPORTANT]
+> **このブランチ (`1.21.1`) は更新を止めました。** 1.20.1 と 1.21.1 は
+> [`main`](https://github.com/taikun24/InsaneAE/tree/main) の 1 つのソースから両方作るようになったので、
+> 以後の変更・不具合報告・Pull Request は `main` へお願いします。
+
 > More Storage, Better Gameplay...?
 
 Applied Energistics 2 / MEGA Cells の「その先」を足す Minecraft アドオンです。
