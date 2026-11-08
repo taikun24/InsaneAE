@@ -20,8 +20,8 @@ item_ids:
   <ItemImage id="warp_card" scale="2" />
 </Row>
 
-<ItemLink id="ae2:speed_card" /> の上位版で、ターボ 8倍、オーバークロック 64倍、ハイパーソニック 512倍、ワープ 4096倍 です。
-カードの枚数を増やすのではなく、機械の速度そのものに掛けます。インポートバス・エクスポートバス・分子組立装置・刻印機・
-ME IO ポートと、加速カードを挿せる ExtendedAE / AdvancedAE の機械に使えます。
+<ItemLink id="ae2:speed_card" /> の上位版で、ターボは 8 倍、オーバークロックは 64 倍、ハイパーソニックは 512 倍、ワープは 4096 倍の速度になります[cite: 1]。
+カードの枚数を増やすのではなく、機械の速度そのものに倍率が乗算されます[cite: 1]。インポートバス、エクスポートバス、分子組立装置、刻印機、
+ME IO ポートや、加速カードを挿せる ExtendedAE / AdvancedAE の機械で使用できます[cite: 1]。
 
 <RecipeFor id="turbo_card" />

@@ -18,18 +18,18 @@ import net.minecraft.core.Direction;
 *///?}
 
 /**
- * 対応している AE2 アドオンの名簿と、そのうち実際に入っているものの一覧。
+ * 対応しているAE2アドオンの名簿と、そのうち実際に入っているものの一覧。
  *
- * <p><b>生成はラムダの中に閉じ込めること</b> ({@code AppFluxIntegration::new} ではなく
+ * <p>生成はラムダの中に閉じ込めること。{@code AppFluxIntegration::new}ではなく
  * {@code () -> new AppFluxIntegration()})。メソッド参照は名簿を作った時点で参照先クラスを
- * 解決するので、相手 Mod が居ない環境でその型を引きにいって落ちる。ラムダの本体なら
+ * 解決するので、相手Modが居ない環境でその型を引きにいって落ちる。ラムダの本体なら
  * 実行されるまでクラスはロードされない。</p>
  */
 public final class AddonIntegrations {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** 対応先の 1 行。{@code feature} はログに出すだけの説明。 */
+    /** 対応先の1行。{@code feature} はログに出すだけの説明。 */
     private record Known(String modId, String feature, Supplier<AddonIntegration> factory) {
     }
 
@@ -51,9 +51,9 @@ public final class AddonIntegrations {
     }
 
     /**
-     * Mod 構築時に 1 回だけ呼ぶ。入っているアドオンの連携を作り、アイテムを登録させる。
-     * <b>{@code ModCells.register(bus)} より前</b>に呼ぶこと (セルは ModCells の
-     * DeferredRegister に相乗りしているので、バスに繋ぐ前に足し終える必要がある)。
+     * Mod構築時に1回だけ呼ぶ。入っているアドオンの連携を作り、アイテムを登録させる。
+     * {@code ModCells.register(bus)}より前に呼ぶこと。セルはModCellsの
+     * DeferredRegisterに相乗りしているので、バスに繋ぐ前に足し終える必要がある)。
      */
     public static void init() {
         if (active != null) {
@@ -92,7 +92,7 @@ public final class AddonIntegrations {
     }
     *///?}
 
-    /** 名簿に載っているが入っていないアドオン (datagen で「レシピが欠ける」警告を出す用)。 */
+    /** 名簿に載っているが入っていないアドオン。datagenで「レシピが欠ける」警告を出す用。 */
     public static List<String> missingModIds() {
         return KNOWN.stream()
                 .map(Known::modId)

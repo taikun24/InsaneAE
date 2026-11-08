@@ -25,10 +25,10 @@ import net.neoforged.neoforge.registries.RegistryObject;
 *///?}
 
 /**
- * 独自の {@link CraftingBlockEntity} 用 BlockEntityType。
+ * 独自の {@link CraftingBlockEntity} 用BlockEntityType。
  *
- * AE2 のクラスタ判定は型ではなく {@code instanceof CraftingBlockEntity} なので、
- * AE2 の BlockEntity クラスをそのまま自前の型で登録すれば CPU クラスタに合流する。
+ * AE2のクラスタ判定は型ではなく {@code instanceof CraftingBlockEntity} なので、
+ * AE2のBlockEntityクラスをそのまま自前の型で登録すればCPUクラスタに合流する。
  */
 public class ModBlockEntities {
     private static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =
@@ -43,9 +43,9 @@ public class ModBlockEntities {
     *///?}
             BLOCK_ENTITY_TYPES.register("crafting_storage", () -> {
                 Block[] blocks = ModBlocks.allCraftingBlocks().toArray(Block[]::new);
-                // build(null): 全階層ブロックで有効な CraftingBlockEntity 型を構築。
-                // CraftingBlockEntity のコンストラクタは type を要求するため、遅延解決する
-                // DeferredHolder を参照するラムダで供給する (実行はワールドロード時)。
+                // build(null): 全階層ブロックで有効なCraftingBlockEntity型を構築
+                // CraftingBlockEntityのコンストラクタはtypeを要求するため、遅延解決する
+                // DeferredHolderを参照するラムダで供給する。実行はワールドロード時
                 return BlockEntityType.Builder
                         .of((pos, state) -> new CraftingBlockEntity(type(), pos, state), blocks)
                         .build(null);
@@ -62,10 +62,10 @@ public class ModBlockEntities {
                     .build(null));
 
     /**
-     * 全階層のエネルギーセルで共有する BlockEntityType。
+     * 全階層のエネルギーセルで共有するBlockEntityType。
      *
      * <p>{@link EnergyCellBlockEntity} は容量・充電速度・優先度をすべて
-     * {@code getBlockState().getBlock()} 経由で引くので、AE2 のクラスをそのまま使える。</p>
+     * {@code getBlockState().getBlock()} 経由で引くので、AE2のクラスをそのまま使える。</p>
      */
     //? if >=1.21 {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EnergyCellBlockEntity>> ENERGY_CELL =
@@ -78,7 +78,7 @@ public class ModBlockEntities {
                     .build(null));
 
     /**
-     * 全階層のソーラーパネルで共有する BlockEntityType。
+     * 全階層のソーラーパネルで共有するBlockEntityType。
      * 階層はブロックステートの {@link SolarPanelBlock} から引く。
      */
     //? if >=1.21 {
@@ -157,11 +157,11 @@ public class ModBlockEntities {
     }
 
     /**
-     * 登録済みの BlockEntityType を全部返す。capability の登録に使う ({@link ModCapabilities})。
+     * 登録済みのBlockEntityTypeを全部返す。capabilityの登録に使う ({@link ModCapabilities})。
      *
-     * <p>個別に並べるとブロックを増やしたときに<b>登録漏れに気づけない</b> (ネットワークに
-     * 繋がらないブロックができる) ので、DeferredRegister の中身をそのまま回す。
-     * レジストリ凍結後に呼ぶこと (capability の登録イベントはその後に来る)。</p>
+     * <p>個別に並べるとブロックを増やしたときに登録漏れに気づけない。ネットワークに
+     * 繋がらないブロックができる) ので、DeferredRegisterの中身をそのまま回す。
+     * レジストリ凍結後に呼ぶこと。capabilityの登録イベントはその後に来る。</p>
      */
     public static List<BlockEntityType<?>> allTypes() {
         return BLOCK_ENTITY_TYPES.getEntries().stream()
@@ -171,26 +171,26 @@ public class ModBlockEntities {
     }
 
     /**
-     * 各ストレージブロックに BlockEntityType を結びつける。
-     * ブロックと BlockEntityType の両方が登録済みとなる commonSetup で呼ぶこと。
+     * 各ストレージブロックにBlockEntityTypeを結びつける。
+     * ブロックとBlockEntityTypeの両方が登録済みとなるcommonSetupで呼ぶこと。
      */
     public static void bindBlockEntities() {
         BlockEntityType<CraftingBlockEntity> type = CRAFTING_STORAGE.get();
         ModBlocks.allCraftingBlocks().forEach(block ->
                 block.setBlockEntity(CraftingBlockEntity.class, type, null, null));
 
-        // Quantum CPU は完成品をまとめて ME に戻すために毎 tick 動く必要がある。
+        // Quantum CPUは完成品をまとめてMEに戻すために毎tick動く必要がある
         ModBlocks.QUANTUM_CPU.get().setBlockEntity(QuantumCpuBlockEntity.class, QUANTUM_CPU.get(), null,
                 (level, pos, state, be) -> be.serverTick());
 
-        // エネルギーセルは IGridTickable なのでグリッド側から呼ばれる (ブロックの ticker は不要)。
+        // エネルギーセルはIGridTickableなのでグリッド側から呼ばれる。ブロックのtickerは不要
         BlockEntityType<EnergyCellBlockEntity> energyCellType = ENERGY_CELL.get();
         ModBlocks.allEnergyCells().forEach(block ->
                 block.setBlockEntity(EnergyCellBlockEntity.class, energyCellType, null, null));
 
         // ソーラーパネルは「電力ゼロのネットワークを起動できる」必要があるので、
-        // グリッドのティックマネージャ (アクティブなノードしか呼ばない) ではなく
-        // ブロック側の ticker から動かす。
+        // グリッドのティックマネージャではなく、アクティブなノードしか呼ばない
+        // ブロック側のtickerから動かす
         BlockEntityType<SolarPanelBlockEntity> solarPanelType = SOLAR_PANEL.get();
         ModBlocks.allSolarPanels().forEach(block ->
                 block.setBlockEntity(SolarPanelBlockEntity.class, solarPanelType, null,
@@ -198,12 +198,12 @@ public class ModBlockEntities {
         ModBlocks.IMPROVED_CHARGER.get().setBlockEntity(
                 ImprovedChargerBlockEntity.class, IMPROVED_CHARGER.get(), null, null);
 
-        // 超特大インターフェイスは IGridTickable (InterfaceLogic の Ticker) なので
-        // グリッド側から呼ばれる。ブロックの ticker は不要。
+        // 超特大インターフェイスはIGridTickable、つまりInterfaceLogicのTickerなので
+        // グリッド側から呼ばれる。ブロックのtickerは不要
         ModBlocks.INSANE_INTERFACE.get().setBlockEntity(
                 InsaneInterfaceBlockEntity.class, INSANE_INTERFACE.get(), null, null);
 
-        // 特大パターンプロバイダーは、まとめてあるパターン更新を流すために毎 tick 動く。
+        // 特大パターンプロバイダーは、まとめてあるパターン更新を流すために毎tick動く
         ModBlocks.INSANE_PATTERN_PROVIDER.get().setBlockEntity(
                 InsanePatternProviderBlockEntity.class, INSANE_PATTERN_PROVIDER.get(), null,
                 (level, pos, state, be) -> be.serverTick());
@@ -212,18 +212,18 @@ public class ModBlockEntities {
     }
 
     /**
-     * BlockEntityType ごとの「代表アイテム」を AE2 に教える。
+     * BlockEntityTypeごとの「代表アイテム」をAE2に教える。
      *
-     * <p>AE2 の {@code AEBaseBlockEntity#getItemFromBlockEntity} は、AE2 が自分の型だけを入れた表から
-     * 引き、<b>載っていない型には空気 ({@code minecraft:air}) を返す</b>。この値は
-     * <b>アップグレード枠がどのカードを受けるか</b> ({@code InterfaceLogic} が
+     * <p>AE2の {@code AEBaseBlockEntity#getItemFromBlockEntity} は、AE2が自分の型だけを入れた表から
+     * 引き、載っていない型には空気 ({@code minecraft:air}) を返す。この値は
+     * アップグレード枠がどのカードを受けるか。{@code InterfaceLogic}が
      * {@code UpgradeInventories.forMachine(item, ...)} に渡す) と、名前を付けていないときの表示名に使われる。
-     * 登録しないと、カードの対応付けをどれだけ足してもアップグレード枠が 1 枚も受け付けず、
+     * 登録しないと、カードの対応付けをどれだけ足してもアップグレード枠が1枚も受け付けず、
      * 端末には「空気」と表示される。</p>
      *
-     * <p>対象はブロックが 1 種類だけの型。階層ごとにブロックが違う型 (クラフトストレージ・
-     * エネルギーセル・ソーラーパネル) は AE2 の親クラスがブロックから名前を引くので載せない。
-     * {@link #bindBlockEntities()} と同じく commonSetup で呼ぶ (ワールドの読み込み = BE の生成より前)。</p>
+     * <p>対象はブロックが1種類だけの型。階層ごとにブロックが違う型、たとえばクラフトストレージは
+     * エネルギーセル・ソーラーパネル) はAE2の親クラスがブロックから名前を引くので載せない。
+     * {@link #bindBlockEntities()}と同じくcommonSetupで呼ぶ。ワールドの読み込み、つまりBEの生成より前だから。</p>
      */
     private static void registerRepresentativeItems() {
         AEBaseBlockEntity.registerBlockEntityItem(QUANTUM_CPU.get(), ModBlocks.QUANTUM_CPU.get().asItem());

@@ -8,10 +8,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 /**
- * Advanced AE の Quantum Crafter にも加速カードの倍率を掛ける。
+ * Advanced AEのQuantum Crafterにも加速カードの倍率を掛ける。
  *
  * <p>速度は {@code tickingRequest} の {@code speedFactor} 局所変数
- * (AE2 の加速カード枚数の switch で 1/8/16/32/64) が決めている。そこに掛ける。</p>
+ * AE2の加速カード枚数のswitchで1/8/16/32/64と決まっている。そこに掛ける。</p>
  */
 @Pseudo
 @Mixin(targets = "net.pedroksl.advanced_ae.common.entities.QuantumCrafterEntity",

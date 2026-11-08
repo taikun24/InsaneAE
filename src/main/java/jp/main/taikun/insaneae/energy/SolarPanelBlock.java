@@ -3,7 +3,7 @@ package jp.main.taikun.insaneae.energy;
 import appeng.block.AEBaseEntityBlock;
 
 /**
- * AE ソーラーパネルのブロック。階層ごとに 1 インスタンス。
+ * AEソーラーパネルのブロック。階層ごとに1インスタンス。
  *
  * <p>{@link SolarPanelBlockEntity} は階層を知る必要があるが、
  * ブロックステートには持たせず、ブロック側から渡している。</p>

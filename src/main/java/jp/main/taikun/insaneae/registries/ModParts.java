@@ -29,31 +29,31 @@ import net.neoforged.neoforge.registries.RegistryObject;
 *///?}
 
 /**
- * ケーブルに貼れる版 (プレート)。
+ * ケーブルに貼れる版、つまりプレート。
  *
- * <p>AE2 の「ME インターフェイス」と「ME パターンプロバイダ」にブロック版とケーブル版が
+ * <p>AE2の「MEインターフェイス」と「MEパターンプロバイダ」にブロック版とケーブル版が
  * あるのと同じで、こちらの超特大インターフェイス / 特大パターンプロバイダーにも
  * ケーブル版を用意する。中身はブロック版とまったく同じロジックで、
  * 器がブロックか部品かだけが違う
- * (部品側は {@link InsaneInterfacePart} / {@link InsanePatternProviderPart})。</p>
+ * 部品側は{@link InsaneInterfacePart}と{@link InsanePatternProviderPart}。</p>
  *
  * <h2>部品は「ブロック」ではなく「アイテム」として登録する</h2>
- * <p>AE2 の部品はワールド上ではケーブルバス ({@code ae2:cable_bus}) の一部で、
- * 自分のブロックも BlockEntity も持たない。したがって
- * <b>登録するのはアイテムだけ</b>で、{@link PartItem} が
- * 「どのクラスの部品を、どう作るか」を持つ。AE2 は
+ * <p>AE2の部品はワールド上ではケーブルバス ({@code ae2:cable_bus}) の一部で、
+ * 自分のブロックもBlockEntityも持たない。したがって
+ * 登録するのはアイテムだけで、{@link PartItem} が
+ * 「どのクラスの部品を、どう作るか」を持つ。AE2は
  * {@code BuiltInRegistries.ITEM} から直接引く ({@code IPartItem.byId}) ので、
  * 部品用の追加レジストリに名乗りを上げる必要は無い。</p>
  *
  * <h2>モデルだけは自分で申告する</h2>
  * <p>部品のモデルはブロックステートからは辿れないので、焼く対象を
  * {@link PartModels#registerModels} で先に渡しておかないと
- * <b>読み込まれず紫黒のブロックになる</b>。AE2 は自分の部品クラスに付いた
+ * 読み込まれず紫黒のブロックになる。AE2は自分の部品クラスに付いた
  * {@code @PartModels} 注釈を走査しているが、ここでは注釈に頼らず
- * 各部品クラスの {@code models()} をそのまま渡す (走査より読みやすく、
+ * 各部品クラスの{@code models()}をそのまま渡す。走査より読みやすく、
  * 借りているインジケータも取りこぼさない)。</p>
  *
- * <p>{@link PartModels} は途中で凍結されるので、登録は<b>Mod のコンストラクタ中</b>
+ * <p>{@link PartModels} は途中で凍結されるので、登録はModのコンストラクタ中
  * (= {@link #register}) に済ませること。</p>
  */
 public final class ModParts {
@@ -70,19 +70,19 @@ public final class ModParts {
                             InsanePatternProviderPart::new));
 
     /**
-     * 超次元 ME ケーブル。AE2 のケーブルと同じく<b>16 色 + fluix の 17 種類</b>を出す。
+     * 超次元MEケーブル。AE2のケーブルと同じく16色 + fluixの17種類を出す。
      *
-     * <p>登録名は AE2 に合わせて {@code <色>_hyper_cable} ({@code fluix_hyper_cable} ほか)。
-     * 色は {@code AEColor#registryPrefix} をそのまま使うので、AE2 のケーブルと
-     * <b>並び順も名前の付き方も揃う</b>。</p>
+     * <p>登録名はAE2に合わせて{@code <色>_hyper_cable}、たとえば{@code fluix_hyper_cable}とする。
+     * 色は {@code AEColor#registryPrefix} をそのまま使うので、AE2のケーブルと
+     * 並び順も名前の付き方も揃う。</p>
      *
-     * <p>色を変える経路は 2 つあり、どちらも<b>アイテムを差し替える</b>方式:
+     * <p>色を変える経路は2つあり、どちらもアイテムを差し替える方式:
      * 色塗り器 / ペイントボールは {@link HyperCablePart#changeColor}、
      * クラフトは染料レシピ ({@code ModRecipeProvider})。したがって
-     * <b>ここの 17 種が揃っていないと色替えが失敗する</b>。</p>
+     * ここの17種が揃っていないと色替えが失敗する。</p>
      *
      * <p>ケーブルは他の部品と違って {@link PartModels} への申告が要らない。
-     * ワールド上の描画は部品のモデルではなく AE2 の {@code CableBuilder} が
+     * ワールド上の描画は部品のモデルではなくAE2の {@code CableBuilder} が
      * {@code AECableType} と {@code AEColor} から直接組み立てるため。</p>
      */
     public static final Map<AEColor, DeferredItem<ColoredPartItem<HyperCablePart>>> HYPER_CABLES =
@@ -100,19 +100,19 @@ public final class ModParts {
                             InsanePatternProviderPart.class, InsanePatternProviderPart::new));
 
     /^*
-     * 超次元 ME ケーブル。AE2 のケーブルと同じく<b>16 色 + fluix の 17 種類</b>を出す。
+     * 超次元MEケーブル。AE2のケーブルと同じく16色 + fluixの17種類を出す。
      *
-     * <p>登録名は AE2 に合わせて {@code <色>_hyper_cable} ({@code fluix_hyper_cable} ほか)。
-     * 色は {@code AEColor#registryPrefix} をそのまま使うので、AE2 のケーブルと
-     * <b>並び順も名前の付き方も揃う</b>。</p>
+     * <p>登録名はAE2に合わせて{@code <色>_hyper_cable}、たとえば{@code fluix_hyper_cable}とする。
+     * 色は {@code AEColor#registryPrefix} をそのまま使うので、AE2のケーブルと
+     * 並び順も名前の付き方も揃う。</p>
      *
-     * <p>色を変える経路は 2 つあり、どちらも<b>アイテムを差し替える</b>方式:
+     * <p>色を変える経路は2つあり、どちらもアイテムを差し替える方式:
      * 色塗り器 / ペイントボールは {@link HyperCablePart#changeColor}、
      * クラフトは染料レシピ ({@code ModRecipeProvider})。したがって
-     * <b>ここの 17 種が揃っていないと色替えが失敗する</b>。</p>
+     * ここの17種が揃っていないと色替えが失敗する。</p>
      *
      * <p>ケーブルは他の部品と違って {@link PartModels} への申告が要らない。
-     * ワールド上の描画は部品のモデルではなく AE2 の {@code CableBuilder} が
+     * ワールド上の描画は部品のモデルではなくAE2の {@code CableBuilder} が
      * {@code AECableType} と {@code AEColor} から直接組み立てるため。</p>
      ^/
     public static final Map<AEColor, RegistryObject<ColoredPartItem<HyperCablePart>>> HYPER_CABLES =
@@ -120,10 +120,10 @@ public final class ModParts {
             new EnumMap<>(AEColor.class);
 
     /**
-     * 圧縮 ME 高密度スマートケーブル。超次元 ME ケーブルと同じく<b>17 色</b>を出す。
+     * 圧縮ME高密度スマートケーブル。超次元MEケーブルと同じく17色を出す。
      *
-     * <p>登録名は {@code <色>_compressed_dense_cable}。本数は高密度ケーブルと同じ 32 本で、
-     * 違うのは<b>細くて部品が貼れる</b>こと ({@link CompressedCablePart})。</p>
+     * <p>登録名は {@code <色>_compressed_dense_cable}。本数は高密度ケーブルと同じ32本で、
+     * 違うのは細くて部品が貼れること ({@link CompressedCablePart})。</p>
      */
     //? if >=1.21 {
     public static final Map<AEColor, DeferredItem<ColoredPartItem<CompressedCablePart>>> COMPRESSED_CABLES =
@@ -156,22 +156,22 @@ public final class ModParts {
         }
     }
 
-    /** その色の超次元 ME ケーブルのアイテム。全色そろえてあるので null にはならない。 */
+    /** その色の超次元MEケーブルのアイテム。全色そろえてあるのでnullにはならない。 */
     public static ColoredPartItem<HyperCablePart> hyperCable(AEColor color) {
         return HYPER_CABLES.get(color).get();
     }
 
-    /** 全色の超次元 ME ケーブル (クリエイティブタブ / レシピ生成用)。AE2 と同じ並び順。 */
+    /** 全色の超次元MEケーブル。クリエイティブタブとレシピ生成用で、AE2と同じ並び順。 */
     public static List<ColoredPartItem<HyperCablePart>> allHyperCables() {
         return Arrays.stream(AEColor.values()).map(ModParts::hyperCable).toList();
     }
 
-    /** その色の圧縮 ME 高密度スマートケーブルのアイテム。全色そろえてあるので null にはならない。 */
+    /** その色の圧縮ME高密度スマートケーブルのアイテム。全色そろえてあるのでnullにはならない。 */
     public static ColoredPartItem<CompressedCablePart> compressedCable(AEColor color) {
         return COMPRESSED_CABLES.get(color).get();
     }
 
-    /** 全色の圧縮 ME 高密度スマートケーブル (クリエイティブタブ / レシピ生成用)。 */
+    /** 全色の圧縮ME高密度スマートケーブル。クリエイティブタブ / レシピ生成用。 */
     public static List<ColoredPartItem<CompressedCablePart>> allCompressedCables() {
         return Arrays.stream(AEColor.values()).map(ModParts::compressedCable).toList();
     }

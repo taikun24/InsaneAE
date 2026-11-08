@@ -36,25 +36,25 @@ import net.minecraft.network.FriendlyByteBuf;
 *///?}
 
 /**
- * AE2 のチャージャーの「限界突破」版。
+ * AE2のチャージャーの「限界突破」版。
  *
- * <p>AE2 のチャージャーは <b>1 スロット 1 個</b>しか持てず、変換も
- * {@code random.nextFloat() > 0.8} の抽選で 1 個ずつ、しかも内部バッファ 1600 AE を
- * 800 AE/tick でしか補充しないため、実効で 1 個 / 5tick 程度しか出ない。
+ * <p>AE2のチャージャーは1スロット1個しか持てず、変換も
+ * {@code random.nextFloat() > 0.8} の抽選で1個ずつ、しかも内部バッファ1600 AEを
+ * 800 AE/tickでしか補充しないため、実効で1個 / 5tick程度しか出ない。
  * こちらは以下を変えている:</p>
  *
  * <ul>
- *   <li>入力 / 出力の 2 スロット構成で、それぞれ 64 個まで持てる。</li>
- *   <li>抽選を廃止し、<b>1 tick で買えるだけまとめて変換</b>する
- *       (1 個あたりの電力コスト 1600 AE は AE2 と同じ)。</li>
- *   <li>電力は内部バッファを介さず<b>グリッドから直接</b>引く。
- *       電力さえ足りていれば 64 個が 1 tick で終わる。</li>
- *   <li>充電可能アイテム ({@link IAEItemPowerStorage}) は<b>速度上限なし</b>で満充電にする。
- *       AE2 はアイテム側の {@code chargeRate} で刻むが、こちらはグリッドの電力だけが制約。</li>
+ *   <li>入力 / 出力の2スロット構成で、それぞれ64個まで持てる。</li>
+ *   <li>抽選を廃止し、1 tickで買えるだけまとめて変換する
+ *       1個あたりの電力コスト1600 AEはAE2と同じ。</li>
+ *   <li>電力は内部バッファを介さずグリッドから直接引く。
+ *       電力さえ足りていれば64個が1 tickで終わる。</li>
+ *   <li>充電可能アイテム ({@link IAEItemPowerStorage}) は速度上限なしで満充電にする。
+ *       AE2はアイテム側の {@code chargeRate} で刻むが、こちらはグリッドの電力だけが制約。</li>
  * </ul>
  *
  * <p>速度は既に「ネットワークの電力量で決まる」ところまで来ているので、
- * 加速カードのスロットは持たせていない (挿しても意味が無いため)。</p>
+ * 加速カードのスロットは持たせていない。挿しても意味が無いため。</p>
  */
 //? if >=1.21 {
 public class ImprovedChargerBlockEntity extends AENetworkedInvBlockEntity implements IGridTickable {
@@ -62,7 +62,7 @@ public class ImprovedChargerBlockEntity extends AENetworkedInvBlockEntity implem
 /*public class ImprovedChargerBlockEntity extends AENetworkInvBlockEntity implements IGridTickable {
 *///?}
 
-    /** 1 個変換するのに必要な電力。AE2 のチャージャーと同じ。 */
+    /** 1個変換するのに必要な電力。AE2のチャージャーと同じ。 */
     public static final double POWER_PER_CONVERSION = ChargerBlockEntity.POWER_MAXIMUM_AMOUNT;
 
     public static final int INPUT_SLOT = 0;
@@ -104,8 +104,8 @@ public class ImprovedChargerBlockEntity extends AENetworkedInvBlockEntity implem
         return working;
     }
 
-    // ItemStack の読み書きは StreamCodec 経由で、データコンポーネントを解決するためバッファも
-    // レジストリ参照つき (RegistryFriendlyByteBuf) になる。空スタックを許すので OPTIONAL_STREAM_CODEC を使う。
+    // ItemStackの読み書きはStreamCodec経由で、データコンポーネントを解決するためバッファも
+    // レジストリ参照つき (RegistryFriendlyByteBuf) になる。空スタックを許すのでOPTIONAL_STREAM_CODECを使う
     @Override
     //? if >=1.21 {
     protected boolean readFromStream(RegistryFriendlyByteBuf data) {
@@ -143,7 +143,7 @@ public class ImprovedChargerBlockEntity extends AENetworkedInvBlockEntity implem
 
     /**
      * 右クリック時の挙動。手持ちが入るなら入れ、そうでなければ
-     * 出力 → 入力の順に取り出す (AE2 のチャージャーと同じ操作感)。
+     * 出力、入力の順に取り出す。AE2のチャージャーと同じ操作感。
      */
     public void activate(Player player) {
         if (!Platform.hasPermissions(new DimensionalBlockPos(this), player)) {
@@ -198,9 +198,9 @@ public class ImprovedChargerBlockEntity extends AENetworkedInvBlockEntity implem
     /**
      * 充電可能アイテムを満充電にする。
      *
-     * <p>スタックしていても NBT は 1 つしか無い (＝全部が同時に満タンになる) ので、
-     * <b>個数ぶんの電力をまとめて払う</b>こと。これを忘れると 1 個ぶんの電力で
-     * 64 個が満充電になる抜け道になる。</p>
+     * <p>スタックしていてもNBTは1つしか無い。全部が同時に満タンになるので、
+     * 個数ぶんの電力をまとめて払うこと。これを忘れると1個ぶんの電力で
+     * 64個が満充電になる抜け道になる。</p>
      */
     private void chargeItem(IEnergyService energy, ItemStack stack) {
         IAEItemPowerStorage storage = (IAEItemPowerStorage) stack.getItem();
@@ -219,7 +219,7 @@ public class ImprovedChargerBlockEntity extends AENetworkedInvBlockEntity implem
         working = true;
     }
 
-    /** チャージャーレシピ (水晶 → 帯電水晶 など) を、電力で買えるぶんだけまとめて処理する。 */
+    /** チャージャーレシピ、たとえば水晶から帯電水晶を、電力で買えるぶんだけまとめて処理する。 */
     private void convert(IEnergyService energy, ItemStack input) {
         ChargerRecipe recipe = ChargerRecipes.findRecipe(level, input);
         if (recipe == null) {
@@ -227,7 +227,7 @@ public class ImprovedChargerBlockEntity extends AENetworkedInvBlockEntity implem
         }
         ItemStack output = inv.getStackInSlot(OUTPUT_SLOT);
         int outputSpace = SLOT_CAPACITY - output.getCount();
-        // ChargerRecipe#result は ItemStack なので、アイテムだけでなくコンポーネントも比べる。
+        // ChargerRecipe#resultはItemStackなので、アイテムだけでなくコンポーネントも比べる
         //? if >=1.21 {
         if (!output.isEmpty() && !ItemStack.isSameItemSameComponents(output, recipe.result)) {
         //?} else {
@@ -240,7 +240,7 @@ public class ImprovedChargerBlockEntity extends AENetworkedInvBlockEntity implem
             return;
         }
 
-        // 買える個数を電力から決める (SIMULATE してから必要ぶんだけ MODULATE)。
+        // 買える個数を電力から決める。SIMULATEしてから、必要ぶんだけMODULATEする
         double available = energy.extractAEPower(
                 POWER_PER_CONVERSION * limit, Actionable.SIMULATE, PowerMultiplier.ONE);
         int converted = (int) Math.min(limit, Math.floor(available / POWER_PER_CONVERSION));
@@ -283,7 +283,7 @@ public class ImprovedChargerBlockEntity extends AENetworkedInvBlockEntity implem
             ItemStack stack = inv.getStackInSlot(slot);
             if (Platform.isChargeable(stack)) {
                 IAEItemPowerStorage storage = (IAEItemPowerStorage) stack.getItem();
-                // 満充電になったものだけ搬出させる (充電途中で持ち出されないように)。
+                // 満充電になったものだけ搬出させる。充電途中で持ち出されないように
                 return storage.getAECurrentPower(stack) >= storage.getAEMaxPower(stack);
             }
             return level == null || ChargerRecipes.allowExtract(level, stack);

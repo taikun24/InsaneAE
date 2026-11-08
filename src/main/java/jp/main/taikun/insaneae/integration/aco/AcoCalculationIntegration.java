@@ -10,7 +10,7 @@ import org.slf4j.Logger;
  * ACOの計算境界を、任意依存のまま確認する。
  *
  * <p>InsaneAEはACOへコンパイル依存しない。ACOが無い場合やAPIが古い場合は
- * falseを返し、従来のInsaneAE計算バッチへ戻る。クラス参照はこのクラス内の
+ * falseを返し、InsaneAEの計算バッチへ戻る。クラス参照はこのクラス内の
  * 反射に閉じ込め、Dedicated Serverでクライアント専用型を読み込まない。</p>
  */
 public final class AcoCalculationIntegration {

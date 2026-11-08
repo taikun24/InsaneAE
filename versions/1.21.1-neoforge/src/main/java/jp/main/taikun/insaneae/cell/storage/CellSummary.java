@@ -14,10 +14,10 @@ import java.util.List;
 import java.util.PriorityQueue;
 
 /**
- * UUID で管理しているセルの、アイテム側に残す要約。
+ * UUIDで管理しているセルの、アイテム側に残す要約。
  *
- * <p>{@code preview} は量の多い順の先頭だけ。AE2 のツールチップは中身を
- * {@code tooltipMaxCellContentShown} (既定 5) 件まで描き、それより多いと「…」を付けるので、
+ * <p>{@code preview} は量の多い順の先頭だけ。AE2のツールチップは中身を
+ * {@code tooltipMaxCellContentShown}、既定では5件まで描き、それより多いと「…」を付けるので、
  * その判定が付くよう既定値より少し多めに持たせている。</p>
  */
 public record CellSummary(int types, long count, List<GenericStack> preview) {
@@ -43,7 +43,7 @@ public record CellSummary(int types, long count, List<GenericStack> preview) {
 
     public static CellSummary of(List<GenericStack> stacks) {
         long count = 0;
-        // 先頭 PREVIEW_SIZE 件だけを残す。全体を並べ替えると数億種のセルで重い。
+        // 先頭PREVIEW_SIZE件だけを残す。全体を並べ替えると数億種のセルで重い
         PriorityQueue<GenericStack> top = new PriorityQueue<>(PREVIEW_SIZE + 1,
                 Comparator.comparingLong(GenericStack::amount));
         for (GenericStack stack : stacks) {

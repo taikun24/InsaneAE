@@ -29,8 +29,8 @@ import jp.main.taikun.insaneae.registries.ModDataComponents;
  * {@code /insaneae cells list [page]} と {@code /insaneae cells recover <uuid>}。
  *
  * <p>中身はワールド側にあるので、セルのアイテムを溶岩に落とすなどして失っても保存データは残る。
- * 一覧で UUID を探し、同じ UUID のセルを作り直して取り戻すためのもの (AE2 Things の
- * {@code /ae2things recover} と同じ考え方)。</p>
+ * 一覧でUUIDを探し、同じUUIDのセルを作り直して取り戻すためのもの。AE2 Thingsの
+ * {@code /ae2things recover}と同じ考え方。</p>
  */
 public final class CellCommands {
 

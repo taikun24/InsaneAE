@@ -21,7 +21,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * 特大パターンプロバイダーのブロック。中身は {@link InsanePatternProviderBlockEntity}。
  *
- * <p>AE2 のパターンプロバイダと違って向き (押し出し方向) を持たない。
+ * <p>AE2のパターンプロバイダと違って向き、つまり押し出し方向を持たない。
  * 右クリックで画面を開くだけ。</p>
  */
 public class InsanePatternProviderBlock extends AEBaseEntityBlock<InsanePatternProviderBlockEntity> {
@@ -33,7 +33,7 @@ public class InsanePatternProviderBlock extends AEBaseEntityBlock<InsanePatternP
     @Override
     public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block,
             BlockPos fromPos, boolean isMoving) {
-        // レッドストーンでのクラフトロック用。
+        // レッドストーンでのクラフトロック用
         InsanePatternProviderBlockEntity be = getBlockEntity(level, pos);
         if (be != null) {
             be.getLogic().updateRedstoneState();

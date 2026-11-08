@@ -9,10 +9,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * ExtendedAE のアクティブ成形プレーンにも加速カードの倍率を掛ける。
+ * ExtendedAEのアクティブ成形プレーンにも加速カードの倍率を掛ける。
  *
- * <p>{@code PartActiveFormationPlane} は AE2 の加速カード枚数から
- * 「1 回に置く個数」({@code getDropMultiplier}) を決めている。その戻り値に掛ける。</p>
+ * <p>{@code PartActiveFormationPlane} はAE2の加速カード枚数から
+ * 「1回に置く個数」({@code getDropMultiplier}) を決めている。その戻り値に掛ける。</p>
  */
 @Pseudo
 @Mixin(targets = "com.glodblock.github.extendedae.common.parts.PartActiveFormationPlane",

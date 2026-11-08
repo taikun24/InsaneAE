@@ -24,16 +24,16 @@ import net.neoforged.neoforge.common.data.ExistingFileHelper;
  *
  * <p>{@code formed=false} は普通のキューブ、{@code formed=true} は
  * {@code BuiltInModelHooks} でマルチブロック用モデルに差し替えられるので
- * <b>中身が空のモデル ({@code {}}) を置くだけ</b>でよい (実ファイルが無いとモデル解決に失敗する)。</p>
+ * 中身が空のモデルを置くだけでよい。実ファイルが無いとモデル解決に失敗するため。</p>
  *
- * <p><b>どこまで datagen が持つか</b>:</p>
+ * <p>どこまでdatagenが持つか:</p>
  * <ul>
- *   <li>ブロックステートは<b>全ブロックぶんここで生成する</b> (手書きしないこと。
+ *   <li>ブロックステートは全ブロックぶんここで生成する。手書きしないこと。
  *       {@code src/generated/resources} に出たものが正)。</li>
- *   <li>ブロックモデルも基本はここで生成するが、<b>ソーラーパネル 4 種 /
- *       Quantum CPU / Improved Crystal Charger だけは手書き</b>
+ *   <li>ブロックモデルも基本はここで生成するが、ソーラーパネル4種 /
+ *       Quantum CPU / Improved Crystal Chargerだけは手書き
  *       ({@code src/main/resources/assets/insaneae/models/block/<id>.json}) を参照する
- *       → {@link #handwritten}。凝った形にしたいので JSON を直接触れるようにしてある。</li>
+ *       → {@link #handwritten}。凝った形にしたいのでJSONを直接触れるようにしてある。</li>
  *   <li>クラフトストレージ／協調処理ユニット／エネルギーセルのテクスチャは
  *       {@code tools/gen_*_textures.py} が階層の色から生成している。</li>
  * </ul>
@@ -41,14 +41,14 @@ import net.neoforged.neoforge.common.data.ExistingFileHelper;
 public class ModBlockStateProvider extends BlockStateProvider {
 
     /**
-     * エネルギーセルの筐体テクスチャ (ベース + 階層色)。残量に依らず常に出る。
+     * エネルギーセルの筐体テクスチャ。ベースと階層色を使い、残量に依らず常に出る。
      * {@code tools/gen_energy_textures.py} が階層の色から生成している。
      */
     public static ResourceLocation energyCellTexture(InsaneEnergyCellTier tier) {
         return ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/energy/" + tier.id());
     }
 
-    /** 同上、残量ぶんのセグメントだけを描いた発光レイヤ (透過あり)。 */
+    /** 同上、残量ぶんのセグメントだけを描いた発光レイヤ。透過あり。 */
     public static ResourceLocation energyCellLightTexture(InsaneEnergyCellTier tier, int fullness) {
         return ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID,
                 "block/energy/" + tier.id() + "_" + fullness + "_light");
@@ -65,11 +65,11 @@ public class ModBlockStateProvider extends BlockStateProvider {
 
     @Override
     protected void registerStatesAndModels() {
-        // テクスチャは tools/gen_crafting_textures.py が階層の色から生成している
-        // (モデル名とテクスチャ名が同じなので、生成先を変えたらここも合わせること)。
+        // テクスチャはtools/gen_crafting_textures.pyが階層の色から生成している
+        // モデル名とテクスチャ名が同じなので、生成先を変えたらここも合わせること
         for (InsaneCraftingUnitType tier : InsaneCraftingUnitType.values()) {
-            // ModelProvider#getBuilder はパスに "/" を含むとフォルダを補完しないので、
-            // "block/" から明示的に書く。
+            // ModelProvider#getBuilderはパスに "/" を含むとフォルダを補完しないので、
+            // "block/" から明示的に書く
             String base = "block/crafting/" + tier.id() + "_storage";
             craftingUnit(ModBlocks.CRAFTING_STORAGE.get(tier).get(), base,
                     ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, base), tier.formedModel());
@@ -84,43 +84,45 @@ public class ModBlockStateProvider extends BlockStateProvider {
             energyCell(tier);
         }
 
-        // ここから下の 3 種はブロックモデルを<b>手書き</b>している ({@link #handwritten})。
-        // datagen はブロックステートを出して手書きモデルを指すだけで、モデル本体は触らない。
+        // ここから下の3種はブロックモデルを手書きしている ({@link #handwritten})
+        // datagenはブロックステートを出して手書きモデルを指すだけで、モデル本体は触らない
         for (SolarPanelTier tier : SolarPanelTier.values()) {
             simpleBlock(ModBlocks.SOLAR_PANELS.get(tier).get(), handwritten(tier.id()));
         }
         simpleBlock(ModBlocks.QUANTUM_CPU.get(), handwritten("quantum_cpu"));
-        // 通常クラフトストレージとしてformed状態を持つが、両状態とも意図的にmissing-textureを使う。
+        // 通常クラフトストレージとしてformed状態を持つが、両状態とも意図的にmissing-textureを使う
         craftingUnitWithSingleModel(ModBlocks.BIG_INTEGER_CPU.get(), handwritten("big_integer_cpu"));
-        // チャージャーは向きを持つ (facing x 6 × spin x 4)。
+        // チャージャーは向きを持つ。facing × 6、spin × 4
         orientedBlock(ModBlocks.IMPROVED_CHARGER.get(), handwritten("improved_charger"));
+        // 人形は水平4方向。手書きモデルは正面が北
+        horizontalBlock(ModBlocks.GAMERTAIKUN_DOLL.get(), handwritten("gamertaikun_doll"));
 
-        // 超特大インターフェイスはただのキューブ。テクスチャは AE2 の ME インターフェイスの
-        // 色相を回したもので、tools/gen_interface_texture.py が生成している。
+        // 超特大インターフェイスはただのキューブ。テクスチャはAE2のMEインターフェイスの
+        // 色相を回したもので、tools/gen_interface_texture.pyが生成している
         simpleBlock(ModBlocks.INSANE_INTERFACE.get(), models().cubeAll("insane_interface",
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/insane_interface")));
 
-        // 特大パターンプロバイダーも同様に、AE2 のパターンプロバイダの色相を回したキューブ。
-        // tools/gen_pattern_provider_texture.py が生成している。
+        // 特大パターンプロバイダーも同様に、AE2のパターンプロバイダの色相を回したキューブ
+        // tools/gen_pattern_provider_texture.pyが生成している
         simpleBlock(ModBlocks.INSANE_PATTERN_PROVIDER.get(), models().cubeAll("insane_pattern_provider",
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/insane_pattern_provider")));
     }
 
     /**
-     * 向き付きブロック 1 個ぶんのブロックステートを出す
-     * ({@code facing} 6 方向 × {@code spin} 4 回転 = 24 通り)。
+     * 向き付きブロック1個ぶんのブロックステートを出す
+     * {@code facing}が6方向、{@code spin}が4回転で、24通り。
      *
-     * <p>AE2 の {@code OrientationStrategies.full()} を使うブロック用。
-     * 角度は {@link BlockOrientation} から引くので、AE2 のチャージャーなどと
-     * <b>同じ向き付けになる</b>ことが保証される。</p>
+     * <p>AE2の {@code OrientationStrategies.full()} を使うブロック用。
+     * 角度は {@link BlockOrientation} から引くので、AE2のチャージャーなどと
+     * 同じ向き付けになることが保証される。</p>
      *
-     * <p><b>{@code getVariantBuilder} が使えない理由</b>: 24 通りのうち半分は
-     * <b>Z 軸回転</b>を要求するが、バニラのブロックステートは x / y しか持たない。
-     * AE2 は {@code ae2:z} という独自キーを足し、その解釈を Mixin
+     * <p>{@code getVariantBuilder} が使えない理由: 24通りのうち半分は
+     * Z軸回転を要求するが、バニラのブロックステートはx / yしか持たない。
+     * AE2は {@code ae2:z} という独自キーを足し、その解釈をMixin
      * ({@code VariantDeserializerMixin}) でバニラのパーサに入れている。
-     * これは名前空間に関係なく効くのでこちらの JSON でも使えるが、
-     * NeoForge の {@code ConfiguredModel} には z を書く口が無いので、
-     * ここだけ JSON を直接組んで {@code registeredBlocks} に入れている。</p>
+     * これは名前空間に関係なく効くのでこちらのJSONでも使えるが、
+     * NeoForgeの {@code ConfiguredModel} にはzを書く口が無いので、
+     * ここだけJSONを直接組んで {@code registeredBlocks} に入れている。</p>
      */
     private void orientedBlock(Block block, ModelFile model) {
         JsonObject variants = new JsonObject();
@@ -141,7 +143,7 @@ public class ModBlockStateProvider extends BlockStateProvider {
         registeredBlocks.put(block, () -> blockState);
     }
 
-    /** 0 度は書かない (AE2 が出す JSON と同じ形にするため)。 */
+    /** 0度は書かない。AE2が出すJSONと同じ形にするため。 */
     private static void putAngle(JsonObject variant, String key, int angle) {
         int normalized = Math.floorMod(angle, 360);
         if (normalized != 0) {
@@ -154,11 +156,11 @@ public class ModBlockStateProvider extends BlockStateProvider {
      *
      * <p>実体は {@code src/main/resources/assets/insaneae/models/block/<id>.json}。
      * {@code runData} の引数に {@code --existing src/main/resources} があるので
-     * ExistingFileHelper から見えており、<b>ファイルが無ければ datagen が落ちて気付ける</b>
-     * (typo で真っ黒なモデルになるのを防ぐため、あえて存在チェック付きで参照している)。</p>
+     * ExistingFileHelperから見えており、ファイルが無ければdatagenが落ちて気付ける
+     * typoで真っ黒なモデルになるのを防ぐため、あえて存在チェック付きで参照している。</p>
      *
      * <p>アイテムモデルは {@code ModItemModelProvider} が
-     * 「このブロックモデルを親にするだけ」の JSON を出しているので、
+     * 「このブロックモデルを親にするだけ」のJSONを出しているので、
      * ここを差し替えれば持ち手の見た目も一緒に変わる。</p>
      */
     private ModelFile handwritten(String id) {
@@ -166,10 +168,10 @@ public class ModBlockStateProvider extends BlockStateProvider {
     }
 
     /**
-     * formed / 未 formed の 2 状態を持つクラフトユニット 1 種ぶんを出す。
+     * formed / 未formedの2状態を持つクラフトユニット1種ぶんを出す。
      *
-     * <p>formed 側は実ファイルを出さない。{@link jp.main.taikun.insaneae.crafting.FormedModels}
-     * のとおり ae2 名前空間の組み込みモデルに差し替わるので、JSON は読まれない。</p>
+     * <p>formed側は実ファイルを出さない。{@link jp.main.taikun.insaneae.crafting.FormedModels}
+     * のとおりae2名前空間の組み込みモデルに差し替わるので、JSONは読まれない。</p>
      */
     private void craftingUnit(Block block, String base,
             ResourceLocation texture, ResourceLocation formedModel) {
@@ -191,7 +193,7 @@ public class ModBlockStateProvider extends BlockStateProvider {
                 .modelForState().modelFile(model).addModel();
     }
 
-    /** 残量 0〜4 の 5 状態を持つエネルギーセル 1 種ぶんを出す。 */
+    /** 残量0〜4の5状態を持つエネルギーセル1種ぶんを出す。 */
     private void energyCell(InsaneEnergyCellTier tier) {
         var builder = getVariantBuilder(ModBlocks.ENERGY_CELLS.get(tier).get());
         for (int fullness = 0; fullness <= EnergyCellBlock.MAX_FULLNESS; fullness++) {
@@ -201,15 +203,15 @@ public class ModBlockStateProvider extends BlockStateProvider {
     }
 
     /**
-     * エネルギーセルのブロックモデル。<b>筐体キューブ + ひとまわり大きい発光キューブ</b>の
-     * 2 要素で組む。
+     * エネルギーセルのブロックモデル。筐体キューブ + ひとまわり大きい発光キューブの
+     * 2要素で組む。
      *
      * <p>筐体側は「ベース + 階層色」を焼いた残量非依存のテクスチャで、発光側が残量ぶんの
      * セグメントだけを描いた透過テクスチャ。</p>
      *
-     * <p>キューブを 0.01 だけ大きくしているのは Z ファイティング避け。透過を含むので
-     * モデル全体の描画層は {@code cutout} にする必要がある (発光テクスチャは
-     * 完全不透明か完全透明かの 2 値なので alpha test で足りる)。</p>
+     * <p>キューブを0.01だけ大きくしているのはZファイティング避け。透過を含むので
+     * モデル全体の描画層は{@code cutout}にする必要がある。発光テクスチャは
+     * 完全不透明か完全透明かの2値なのでalpha testで足りる)。</p>
      */
     private ModelFile energyCellModel(InsaneEnergyCellTier tier, int fullness) {
         ResourceLocation base = energyCellTexture(tier);

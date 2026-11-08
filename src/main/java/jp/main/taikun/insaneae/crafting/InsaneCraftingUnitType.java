@@ -11,24 +11,24 @@ import java.util.Locale;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * CrazyAE 相当の「限界突破」クラフトストレージ階層 (1G 〜 8E)。
+ * CrazyAE相当の「限界突破」クラフトストレージ階層。1Gから8Eまで。
  *
- * <p>1M〜256M は MEGA Cells が同じバイト数 ({@code 1024*1024*N}) で提供しており、
+ * <p>1M〜256MはMEGA Cellsが同じバイト数 ({@code 1024*1024*N}) で提供しており、
  * 同じく {@code CraftingUnitBlock} + {@link ICraftingUnitType} で実装されているため
- * InsaneAE の階層と同一の CPU クラスタに合流する。よって重複を避け、InsaneAE は
- * その上 (1G〜) だけを担当する。</p>
+ * InsaneAEの階層と同一のCPUクラスタに合流する。よって重複を避け、InsaneAEは
+ * その上、1G以上だけを担当する。</p>
  *
- * <p>容量は 1 段ごとに 4 倍 (2 ビットシフト)。最上段の {@link #STORAGE_8E} は
+ * <p>容量は1段ごとに4倍、つまり2ビットシフトで伸ばす。最上段の {@link #STORAGE_8E} は
  * AE2へ返す単体long互換値だけ{@code Long.MAX_VALUE}へ飽和させ、正確な値は
  * {@code 2^63 B = 8 EiB}として保持する。複数ブロックの合計はInsaneAEの
  * クラスタMixinがBigIntegerで計算するため、8Eを2個接続すれば正確に16Eになる。</p>
  *
- * <p><b>long境界:</b> AE2の {@code CraftingCPUCluster.storage} は {@code long} だが、
+ * <p>long境界: AE2の {@code CraftingCPUCluster.storage} は {@code long} だが、
  * InsaneAEは別に正確なBigInteger容量を保持する。AE2互換のlong getterへ返すときだけ
  * {@code Long.MAX_VALUE}へ飽和させるので、4Eを2個以上、または8Eと他ストレージを
  * 接続しても負値へ折り返さない。連携Modは {@code IBigCraftingCapacity} を使って正確値を読む。</p>
  *
- * <p>見た目は AE2 の 256k テクスチャ／モデルを全階層で流用中 ({@link #PLACEHOLDER_LOOK})。
+ * <p>見た目はAE2の256kテクスチャ／モデルを全階層で流用中 ({@link #PLACEHOLDER_LOOK})。
  * 専用アートを用意するまでの暫定だが、機能面は完全に動作する。</p>
  */
 public enum InsaneCraftingUnitType implements ExactCraftingUnitType {
@@ -49,17 +49,17 @@ public enum InsaneCraftingUnitType implements ExactCraftingUnitType {
     STORAGE_256P("256p", 1L << 58),
     STORAGE_1E("1e", 1L << 60),
     STORAGE_4E("4e", 1L << 62),
-    /** AE2互換値はlong上限、BigIntegerの値は2^63バイト (正確な8 EiB)。 */
+    /** AE2互換値はlong上限、BigIntegerの値は2^63バイト。正確な8 EiB。 */
     STORAGE_8E("8e", Long.MAX_VALUE, BigInteger.ONE.shiftLeft(63));
 
-    /** 全階層で流用している AE2 の見た目 (専用アート未用意のため)。 */
+    /** 全階層で流用しているAE2の見た目。専用アート未用意のため。 */
     public static final CraftingUnitType PLACEHOLDER_LOOK = CraftingUnitType.STORAGE_256K;
 
     private final String id;
     private final long storageBytes;
     private final BigInteger exactStorageBytes;
 
-    /** 登録後に {@code ModBlocks} が設定する、この階層に対応する BlockItem のサプライヤ。 */
+    /** 登録後に {@code ModBlocks} が設定する、この階層に対応するBlockItemのサプライヤ。 */
     private Supplier<Item> item = () -> Items.AIR;
 
     InsaneCraftingUnitType(String id, long storageBytes) {
@@ -72,12 +72,12 @@ public enum InsaneCraftingUnitType implements ExactCraftingUnitType {
         this.exactStorageBytes = exactStorageBytes;
     }
 
-    /** 階層 ID。例: "1g"。 */
+    /** 階層ID。例: "1g"。 */
     public String id() {
         return id;
     }
 
-    /** 表示名に差し込む階層ラベル。例: "1G"。lang は書式キー 1 つで済ませている。 */
+    /** 表示名に差し込む階層ラベル。例: "1G"。langは書式キー1つで済ませている。 */
     public String label() {
         return id.toUpperCase(Locale.ROOT);
     }
@@ -92,7 +92,7 @@ public enum InsaneCraftingUnitType implements ExactCraftingUnitType {
         return "cell_component_" + id;
     }
 
-    /** formed モデルの ID。ae2 名前空間に置く必要がある。理由は {@link FormedModels} を参照。 */
+    /** formedモデルのID。ae2名前空間に置く必要がある。理由は {@link FormedModels} を参照。 */
     public ResourceLocation formedModel() {
         return FormedModels.of(id + "_storage");
     }

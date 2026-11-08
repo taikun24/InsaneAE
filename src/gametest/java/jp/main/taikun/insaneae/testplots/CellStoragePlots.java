@@ -41,7 +41,7 @@ public final class CellStoragePlots {
     private CellStoragePlots() {
     }
 
-    /** 入れると UUID と要約だけがアイテムに残り、空にすると両方消えて保存データからも消える。 */
+    /** 入れるとUUIDと要約だけがアイテムに残り、空にすると両方消えて保存データからも消える。 */
     @TestPlot("insaneae_cell_uuid_storage")
     public static void uuidStorage(PlotBuilder plot) {
         plot.creativeEnergyCell("0 -1 0");
@@ -77,7 +77,7 @@ public final class CellStoragePlots {
                     "要約が違う: " + cell.getTag());
             *///?}
 
-            // 開き直しても保存データから読める。
+            // 開き直しても保存データから読める
             StorageCell reopened = inventory(helper, cell);
             helper.check(reopened.getAvailableStacks().get(COBBLE) == 1000, "開き直すと中身が見えない");
 
@@ -87,7 +87,7 @@ public final class CellStoragePlots {
             helper.check(!cell.has(ModDataComponents.CELL_ID.get()), "空にしても UUID が残る");
             helper.check(!cell.has(ModDataComponents.CELL_SUMMARY.get()), "空にしても要約が残る");
             //?} else {
-            /*helper.check(CellNbt.id(cell) == null, "空にしても UUID が残る");
+            /*helper.check(CellNbt.id(cell) == null, "空にしてもUUIDが残る");
             helper.check(cell.getTag() == null || !cell.getTag().contains(CellNbt.SUMMARY), "空にしても要約が残る");
             *///?}
             helper.check(store(helper).get(id) == null, "空にしても保存データが残る");
@@ -99,7 +99,7 @@ public final class CellStoragePlots {
         }));
     }
 
-    /** 以前の版の形 (中身がアイテム側) のセルは、そのまま読めて、次の書き込みで保存データへ移る。 */
+    /** 中身をアイテム側に持つ形のセルは、そのまま読めて、次の書き込みで保存データへ移る。 */
     @TestPlot("insaneae_cell_uuid_migration")
     public static void migration(PlotBuilder plot) {
         plot.creativeEnergyCell("0 -1 0");
@@ -143,7 +143,7 @@ public final class CellStoragePlots {
         }));
     }
 
-    /** 中身の入ったセルを別のセルに入れられない (中身がアイテムに無くても AE2 の判定が効く)。 */
+    /** 中身の入ったセルを別のセルに入れられない。中身がアイテムに無くてもAE2の判定が効く。 */
     @TestPlot("insaneae_cell_uuid_no_nesting")
     public static void noNesting(PlotBuilder plot) {
         plot.creativeEnergyCell("0 -1 0");
@@ -160,7 +160,7 @@ public final class CellStoragePlots {
         }));
     }
 
-    /** AE2 Things 連携の DISK (相手が居なければ素通り)。 */
+    /** AE2 Things連携のDISK。相手が居なければ素通り。 */
     @TestPlot("insaneae_ae2things_huge_disk")
     public static void hugeDisk(PlotBuilder plot) {
         plot.creativeEnergyCell("0 -1 0");

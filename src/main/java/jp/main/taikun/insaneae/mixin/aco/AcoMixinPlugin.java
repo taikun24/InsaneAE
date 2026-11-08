@@ -9,52 +9,52 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
 /**
- * ACO が入っているときだけ {@code insaneae.aco.mixins.json} を適用する。
+ * ACOが入っているときだけ {@code insaneae.aco.mixins.json} を適用する。
  *
  * <h2>なぜ要るのか</h2>
- * <p>この設定に並ぶ Mixin は、うちのクラスに<b>ACO のインターフェイスを実装させる</b>もの
- * ({@code CraftingTableBatchTarget} 等)。反射では代用できないので Mixin 側が ACO の型を直接参照する。
- * ACO が無い環境でそのまま適用しようとすると、存在しないインターフェイスを実装した
- * クラスができあがって<b>検証に失敗する</b> — つまり Quantum CPU がロードできなくなる。</p>
+ * <p>この設定に並ぶMixinは、うちのクラスにACOのインターフェイスを実装させるもの
+ * {@code CraftingTableBatchTarget}などの型。反射では代用できないので、Mixin側がACOの型を直接参照する。
+ * ACOが無い環境でそのまま適用しようとすると、存在しないインターフェイスを実装した
+ * クラスができあがって検証に失敗する — つまりQuantum CPUがロードできなくなる。</p>
  *
- * <p>そこで、ACO のクラスが読めるかどうかで適用可否を判定する。
+ * <p>そこで、ACOのクラスが読めるかどうかで適用可否を判定する。
  * {@code ModList} はこの段階ではまだ使えないので、クラスの有無で見る。</p>
  */
 public class AcoMixinPlugin implements IMixinConfigPlugin {
 
     /**
-     * 目印にするクラス。ここが読めなければ ACO は居ない (か古すぎる)。
+     * 目印にするクラス。ここが読めなければACOは居ないか、古すぎる。
      *
-     * <p><b>実際に実装するインターフェイスそのものを見ること。</b>
-     * {@code api.contract} を目印にすると 1.20.1 版の ACO では常に「居ない」になる —
-     * あちらには contract パッケージがまだ入っていない (1.5.19 時点)。</p>
+     * <p>実際に実装するインターフェイスそのものを見ること。
+     * {@code api.contract} を目印にすると1.20.1版のACOでは常に「居ない」になる —
+     * あちらにはcontractパッケージがまだ入っていない。1.5.19時点の話。</p>
      */
     private static final String ACO_MARKER =
             "com.syaru.ae2craftingoptimizer.api.craftingtable.CraftingTableBatchTarget";
 
     /**
-     * 在庫を BigInteger で名乗る<b>公開契約</b>。<b>ACO 1.5.20 で入った</b>ので、
-     * それより古い ACO では目印のクラスがあってもこれは無い。
-     * これを実装する Mixin だけは、実在を別に確かめてから当てる
-     * (無いまま当てると、存在しないインターフェイスを実装したクラスとして
+     * 在庫をBigIntegerで名乗る公開契約。ACO 1.5.20で入ったので、
+     * それより古いACOでは目印のクラスがあってもこれは無い。
+     * これを実装するMixinだけは、実在を別に確かめてから当てる
+     * 無いまま当てると、存在しないインターフェイスを実装したクラスとして
      * 検証に失敗し、セルごとロードできなくなる)。
      */
     private static final String ACO_EXACT_STORAGE_PROVIDER =
             "com.syaru.ae2craftingoptimizer.api.contract.ExactStorageAmountProvider";
 
-    /** 上のクラスを実装する Mixin。ここだけ追加の条件が要る。 */
+    /** 上のクラスを実装するMixin。ここだけ追加の条件が要る。 */
     private static final Set<String> EXACT_STORAGE_PROVIDER_MIXINS = Set.of(
             "jp.main.taikun.insaneae.mixin.aco.UltraCreativeCellExactAmountProviderMixin",
             "jp.main.taikun.insaneae.mixin.aco.InfinityCellExactAmountProviderMixin");
 
     /**
-     * exact 実行の納品先ポリシー。<b>ACO 1.5.23 で入った</b>公開契約なので、
-     * これを実装する Mixin にも同じ形の追加条件が要る。
+     * exact実行の納品先ポリシー。ACO 1.5.23で入った公開契約なので、
+     * これを実装するMixinにも同じ形の追加条件が要る。
      */
     private static final String ACO_EXACT_INSERT_POLICY =
             "com.syaru.ae2craftingoptimizer.api.vector.ExactVectorStoragePolicy";
 
-    /** 上のクラスを実装する Mixin。 */
+    /** 上のクラスを実装するMixin。 */
     private static final Set<String> EXACT_INSERT_POLICY_MIXINS = Set.of(
             "jp.main.taikun.insaneae.mixin.aco.UltraCreativeCellExactInsertPolicyMixin",
             "jp.main.taikun.insaneae.mixin.aco.InfinityCellExactInsertPolicyMixin");
@@ -71,19 +71,19 @@ public class AcoMixinPlugin implements IMixinConfigPlugin {
     }
 
     /**
-     * ACO のクラスが見えるか。
+     * ACOのクラスが見えるか。
      *
-     * <p><b>{@code Class.forName} だけでは足りない。</b>Forge 1.20.1 の Mixin フェーズでは
-     * 他 Mod のクラスがまだこのクラスローダから見えず、常に「居ない」と判定してしまう
-     * (NeoForge 1.21.1 では見えるので、片方だけ黙って連携が無効になる)。
-     * Mixin サービスのバイトコード提供者なら、その段階でも読めるかどうかを答えられる。</p>
+     * <p>{@code Class.forName} だけでは足りない。Forge 1.20.1のMixinフェーズでは
+     * 他Modのクラスがまだこのクラスローダから見えず、常に「居ない」と判定してしまう
+     * NeoForge 1.21.1では見えるので、片方だけ黙って連携が無効になる。
+     * Mixinサービスのバイトコード提供者なら、その段階でも読めるかどうかを答えられる。</p>
      */
     private static boolean insaneae$canSee(String className) {
         try {
             MixinService.getService().getBytecodeProvider().getClassNode(className.replace('.', '/'));
             return true;
         } catch (ClassNotFoundException | IOException | RuntimeException | LinkageError absent) {
-            // 読めなければ Class.forName も試す (サービスの実装によっては前者が使えない)。
+            // 読めなければClass.forNameも試す。サービスの実装によっては前者が使えないため
             try {
                 Class.forName(className, false, AcoMixinPlugin.class.getClassLoader());
                 return true;

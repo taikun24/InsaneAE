@@ -6,12 +6,12 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import org.spongepowered.asm.mixin.Mixin;
 
 /**
- * ACO に「このクラフトプロバイダの実体はこの BlockEntity」と教える。
+ * ACOに「このクラフトプロバイダの実体はこのBlockEntity」と教える。
  *
- * <p>ACO は {@code CraftingService.getProviders(pattern)} で候補を集め、
- * {@code ProviderOwnedPatternBatchTarget} を実装しているものから BlockEntity を引き、
- * それが {@code CraftingTableBatchTarget} なら batch のターゲットにする。
- * つまり<b>この 1 メソッドが無いと Quantum CPU は候補にすら入らない</b>。</p>
+ * <p>ACOは {@code CraftingService.getProviders(pattern)} で候補を集め、
+ * {@code ProviderOwnedPatternBatchTarget} を実装しているものからBlockEntityを引き、
+ * それが {@code CraftingTableBatchTarget} ならbatchのターゲットにする。
+ * つまりこの1メソッドが無いとQuantum CPUは候補にすら入らない。</p>
  */
 @Mixin(QuantumCpuLogic.class)
 public abstract class QuantumCpuProviderTargetMixin implements ProviderOwnedPatternBatchTarget {

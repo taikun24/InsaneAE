@@ -13,15 +13,15 @@ import net.minecraft.core.HolderLookup;
 //?}
 
 /**
- * 完成品待ち台帳の保存形式。<b>どの台帳実装が有効かに関係なく常にこの形式</b>で読み書きする。
- * ACO 有効時に ACO 側の形式で保存してしまうと、後から ACO を抜いたときに読めなくなるため。
+ * 完成品待ち台帳の保存形式。どの台帳実装が有効かに関係なく常にこの形式で読み書きする。
+ * ACO有効時にACO側の形式で保存してしまうと、後からACOを抜いたときに読めなくなるため。
  *
  * <p>形式: {@code {schemaVersion: 1, entries: [{key: <AEKey generic tag>, amount: byte[]}]}}。
- * amount は {@link BigInteger#toByteArray()} (符号付きビッグエンディアン)。</p>
+ * amountは{@link BigInteger#toByteArray()}、符号付きビッグエンディアンで書く。</p>
  *
- * <p><b>読み込みは何があっても例外を投げない。</b>ここはブロック読み込み経路なので、
- * 投げるとチャンク読み込みが壊れる。解決できないキー (そのアイテムの Mod が抜かれた場合など)・
- * 壊れた量・異常に巨大な NBT は、警告ログを出してそのエントリだけ捨てる。</p>
+ * <p>読み込みは何があっても例外を投げない。ここはブロック読み込み経路なので、
+ * 投げるとチャンク読み込みが壊れる。解決できないキー、つまりそのアイテムのModが抜かれた場合など、
+ * 壊れた量・異常に巨大なNBTは、警告ログを出してそのエントリだけ捨てる。</p>
  */
 public final class PendingOutputNbt {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -32,7 +32,7 @@ public final class PendingOutputNbt {
     private static final String NBT_KEY = "key";
     private static final String NBT_AMOUNT = "amount";
 
-    /** 1 エントリの量の上限ビット数。壊れた NBT を無制限に展開しないための上限。 */
+    /** 1エントリの量の上限ビット数。壊れたNBTを無制限に展開しないための上限。 */
     private static final int MAXIMUM_BITS = 1_048_576;
     /** エントリ数の上限。同上。 */
     private static final int MAX_ENTRIES = 1_048_576;
@@ -65,7 +65,7 @@ public final class PendingOutputNbt {
         return saved;
     }
 
-    /** {@code saved} の中身を {@code ledger} へ流し込む (追記)。読めないエントリは警告して飛ばす。 */
+    /** {@code saved}の中身を{@code ledger}へ流し込む。追記する。読めないエントリは警告して飛ばす。 */
     //? if >=1.21 {
     public static void load(PendingOutputLedger ledger, CompoundTag saved,
             HolderLookup.Provider registries) {
@@ -77,7 +77,7 @@ public final class PendingOutputNbt {
         }
         int schema = saved.getInt(NBT_SCHEMA);
         if (schema != 0 && schema != SCHEMA_VERSION) {
-            // 将来の形式。読める保証が無いので全部落とすが、ワールドは壊さない。
+            // 将来の形式。読める保証が無いので全部落とすが、ワールドは壊さない
             LOGGER.warn("InsaneAE: unknown Quantum CPU pending output schema {}; dropping pending outputs",
                     schema);
             return;
@@ -96,7 +96,7 @@ public final class PendingOutputNbt {
             /*AEKey key = AEKey.fromTagGeneric(value.getCompound(NBT_KEY));
             *///?}
             if (key == null) {
-                // そのアイテムの Mod が抜かれた場合にここへ来る。1 エントリ捨てるだけで済ませる。
+                // そのアイテムのModが抜かれた場合にここへ来る。1エントリ捨てるだけで済ませる
                 LOGGER.warn("InsaneAE: dropping a Quantum CPU pending output whose key cannot be resolved: {}",
                         value.getCompound(NBT_KEY));
                 continue;

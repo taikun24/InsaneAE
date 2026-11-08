@@ -8,8 +8,8 @@ import java.util.Map;
 /**
  * {@code Map<IPatternDetails, TaskProgress>} を走査するカーソル。
  *
- * <p>AE2 も、それを複製した CPU も、タスクを<b>この形の Map</b>で持っている。
- * 違うのは値の型 (それぞれ自前の {@code TaskProgress}) だけなので、
+ * <p>AE2も、それを複製したCPUも、タスクをこの形のMapで持っている。
+ * 違うのは値の型だけなので、それぞれ自前の{@code TaskProgress}を使う。
  * 残り回数の読み書きだけを {@link #read} / {@link #write} に切り出してある。</p>
  */
 abstract class MapTaskCursor implements CraftingJobView.TaskCursor {
@@ -21,7 +21,7 @@ abstract class MapTaskCursor implements CraftingJobView.TaskCursor {
         this.iterator = tasks.entrySet().iterator();
     }
 
-    /** 残り回数を読む。{@code progress} は表の値 (CPU ごとに型が違う)。 */
+    /** 残り回数を読む。{@code progress}は表の値で、CPUごとに型が違う。 */
     protected abstract long read(Object progress);
 
     /** 残り回数を書く。 */
@@ -53,23 +53,23 @@ abstract class MapTaskCursor implements CraftingJobView.TaskCursor {
     }
 
     /**
-     * 「このタスクは終わった」を伝える。<b>表からは抜かない。</b>
+     * 「このタスクは終わった」を伝える。表からは抜かない。
      *
      * <h2>抜いてはいけない理由</h2>
-     * <p>タスクの表は CPU 本体のもので、<b>誰が抜いたかを見ている第三者がいる</b>。
-     * ACO は BigInteger の正確な台帳を別に持っており、コミットのたびに
+     * <p>タスクの表はCPU本体のもので、誰が抜いたかを見ている第三者がいる。
+     * ACOはBigIntegerの正確な台帳を別に持っており、コミットのたびに
      * 「ジョブに入っているパターンの集合」が自分の台帳と一致するかを
      * {@code Set.equals} で検査する ({@code AdvancedAeExecutingCraftingJobTransactionAccessMixin})。
-     * こちらが表から直接抜くと、ACO の台帳からは<b>消えたことが見えない</b>ので集合が食い違い、</p>
+     * こちらが表から直接抜くと、ACOの台帳からは消えたことが見えないので集合が食い違い、</p>
      *
      * <pre>
      * IllegalStateException: exact task definitions do not match the Advanced AE job
      * → Quarantined Advanced AE exact CPU ...
      * </pre>
      *
-     * <p>でジョブごと隔離される。残り 0 のタスクを抜くのは元々 CPU 本体のループが
-     * 各 tick の先頭でやっていることなので、<b>そちらに任せれば台帳も一緒に更新される</b>。
-     * こちらは残りを 0 にするところまでで止める。</p>
+     * <p>でジョブごと隔離される。残り0のタスクを抜くのは元々CPU本体のループが
+     * 各tickの先頭でやっていることなので、そちらに任せれば台帳も一緒に更新される。
+     * こちらは残りを0にするところまでで止める。</p>
      */
     @Override
     public void remove() {

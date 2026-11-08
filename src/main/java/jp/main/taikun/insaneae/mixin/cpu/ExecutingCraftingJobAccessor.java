@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 import java.util.Map;
 
-/** 実行中クラフトジョブの内部 (パッケージプライベート) への入口。まとめ処理の帳簿更新に使う。 */
+/** 実行中クラフトジョブの内部への入口。パッケージプライベートなので、まとめ処理の帳簿更新に使う。 */
 @Mixin(value = ExecutingCraftingJob.class, remap = false)
 public interface ExecutingCraftingJobAccessor {
 
@@ -16,7 +16,7 @@ public interface ExecutingCraftingJobAccessor {
     @Accessor("tasks")
     Map<Object, Object> insaneae$getTasks();
 
-    /** 完成待ちのアイテム。ここに入れておかないと CPU がクラフト結果を受け取らない。 */
+    /** 完成待ちのアイテム。ここに入れておかないとCPUがクラフト結果を受け取らない。 */
     @Accessor("waitingFor")
     ListCraftingInventory insaneae$getWaitingFor();
 

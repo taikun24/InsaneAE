@@ -16,21 +16,21 @@ import net.minecraft.core.HolderLookup;
 //?}
 
 /**
- * Quantum CPU の中の<b>クラフト 1 本ぶんの区画</b>。AE2 のクラスタを 1 個持つ。
+ * Quantum CPUの中のクラフト1本ぶんの区画。AE2のクラスタを1個持つ。
  *
- * <p>AE2 のクラフト CPU は<b>1 個につきジョブ 1 本</b>で、実行中は容量が丸ごと塞がる。
- * Quantum CPU は容量が桁違いなので、それだと「1000K あるのに 100K のクラフトを
- * 始めた時点で何も発注できない」ことになる。そこで<b>クラスタを 1 個に固定せず</b>、
- * 発注のたびに区画を切り出す ({@link QuantumCraftingCpu} が親)。</p>
+ * <p>AE2のクラフトCPUは1個につきジョブ1本で、実行中は容量が丸ごと塞がる。
+ * Quantum CPUは容量が桁違いなので、それだと「1000Kあるのに100Kのクラフトを
+ * 始めた時点で何も発注できない」ことになる。そこでクラスタを1個に固定せず、
+ * 発注のたびに区画を切り出す。親は{@link QuantumCraftingCpu}。</p>
  *
- * <p>区画は AE2 から見ると<b>普通のクラフト CPU がもう 1 台ある</b>のと区別が付かない。
- * 名簿にも 1 台ずつ載り、毎 tick の実行も CPU 選択も AE2 の経路をそのまま通る。</p>
+ * <p>区画はAE2から見ると普通のクラフトCPUがもう1台あるのと区別が付かない。
+ * 名簿にも1台ずつ載り、毎tickの実行もCPU選択もAE2の経路をそのまま通る。</p>
  *
  * <h2>持っている数字</h2>
  * <ul>
- *   <li>{@link #allotment} … この区画の容量。<b>空き区画は残り全部</b>、
- *       発注を受けた区画は<b>そのジョブが要求したバイト数ちょうど</b>に縮む
- *       (余りが空き区画へ戻る。これが分割の実体)。</li>
+ *   <li>{@link #allotment} … この区画の容量。空き区画は残り全部、
+ *       発注を受けた区画はそのジョブが要求したバイト数ちょうどに縮む
+     *       余りが空き区画へ戻る。これが分割の実体。</li>
  *   <li>{@link #threads} … 親が配った協調処理スレッド数。</li>
  * </ul>
  */
@@ -38,7 +38,7 @@ public final class QuantumCpuPartition implements QuantumCpuClusterOwner {
 
     private final QuantumCraftingCpu pool;
 
-    /** 表示名に付ける番号。1 は素の名前のまま。空いた番号は使い回す。 */
+    /** 表示名に付ける番号。1は素の名前のまま。空いた番号は使い回す。 */
     private final int id;
 
     private CraftingCPUCluster cluster;
@@ -50,7 +50,7 @@ public final class QuantumCpuPartition implements QuantumCpuClusterOwner {
     /** 発注を受けたか。受けた区画は容量が固定され、空き区画ではなくなる。 */
     private boolean taken;
 
-    /** 中身が変わるたびに増える版番号 ({@code CraftingCPUClusterMixin} の数え直しの目印)。 */
+    /** 中身が変わるたびに増える版番号。{@code CraftingCPUClusterMixin} の数え直しの目印。 */
     private int revision;
 
     QuantumCpuPartition(QuantumCraftingCpu pool, int id) {
@@ -63,17 +63,17 @@ public final class QuantumCpuPartition implements QuantumCpuClusterOwner {
     }
 
     /**
-     * AE2 のクラスタ本体。作るのは 1 回だけ。
+     * AE2のクラスタ本体。作るのは1回だけ。
      *
-     * <p>境界は Quantum CPU 自身の 1 ブロックぶん。クラフト端末の
-     * 「どこにある CPU か」の表示に使われる。</p>
+     * <p>境界はQuantum CPU自身の1ブロックぶん。クラフト端末の
+     * 「どこにあるCPUか」の表示に使われる。</p>
      */
     public CraftingCPUCluster cluster() {
         if (cluster == null) {
             CraftingCPUCluster created = new CraftingCPUCluster(
                     pool.blockPos(), pool.blockPos());
             ((QuantumOwnedCluster) (Object) created).insaneae$setOwner(this);
-            // getSrc() は Objects.requireNonNull するので、使われる前に必ず入れておく。
+            // getSrc() はObjects.requireNonNullするので、使われる前に必ず入れておく
             ((CraftingCpuClusterAccessor) (Object) created)
                     .insaneae$setMachineSource(new MachineSource(pool.owner()));
             cluster = created;
@@ -82,14 +82,14 @@ public final class QuantumCpuPartition implements QuantumCpuClusterOwner {
         return cluster;
     }
 
-    /** まだ作られていなければ null。保存や破棄で「無いのに作る」のを避けるため。 */
+    /** まだ作られていなければnull。保存や破棄で「無いのに作る」のを避けるため。 */
     CraftingCPUCluster clusterIfPresent() {
         return cluster;
     }
 
     // ------------------------------------------------------------ 状態
 
-    /** 発注を受けた区画か (= 容量が固定されているか)。 */
+    /** 発注を受けた区画か。= 容量が固定されているか。 */
     public boolean isTaken() {
         return taken;
     }
@@ -101,8 +101,8 @@ public final class QuantumCpuPartition implements QuantumCpuClusterOwner {
     /**
      * 役目を終えて畳んでよいか。
      *
-     * <p>ジョブが終わっていても、<b>ネットワークが満杯で中間物を戻せていない</b>間は
-     * まだ畳めない ({@code CraftingCpuLogic#tickCraftingLogic} は job が無くても
+     * <p>ジョブが終わっていても、ネットワークが満杯で中間物を戻せていない間は
+     * まだ畳めない。{@code CraftingCpuLogic#tickCraftingLogic}はjobが無くても
      * {@code storeItems()} を試し続けるので、名簿に残しておけばいずれ捌ける)。
      * ここで畳むとその中身ごと消える。</p>
      */
@@ -141,12 +141,12 @@ public final class QuantumCpuPartition implements QuantumCpuClusterOwner {
         pushTotals();
     }
 
-    /** 発注を受けた印を付ける (容量はこの時点の必要量に縮む)。 */
+    /** 発注を受けた印を付ける。容量はこの時点の必要量に縮む。 */
     void markTaken() {
         taken = true;
     }
 
-    /** 合計値を AE2 のクラスタのフィールドへ書き戻す。 */
+    /** 合計値をAE2のクラスタのフィールドへ書き戻す。 */
     void pushTotals() {
         if (cluster == null) {
             return;
@@ -157,7 +157,7 @@ public final class QuantumCpuPartition implements QuantumCpuClusterOwner {
         accessor.insaneae$setName(displayName());
     }
 
-    /** CPU 一覧に出す名前。2 台目からは番号を付けて見分けられるようにする。 */
+    /** CPU一覧に出す名前。2台目からは番号を付けて見分けられるようにする。 */
     Component displayName() {
         Component base = pool.displayName();
         return id <= 1 ? base : base.copy().append(" #" + id);
@@ -198,7 +198,7 @@ public final class QuantumCpuPartition implements QuantumCpuClusterOwner {
     /**
      * この区画がジョブを受け取った時点で呼ばれる ({@code CraftingCpuClusterOwnerMixin})。
      *
-     * <p>ここで<b>容量をそのジョブのぶんだけに縮める</b>。残りは親が新しい空き区画に回すので、
+     * <p>ここで容量をそのジョブのぶんだけに縮める。残りは親が新しい空き区画に回すので、
      * 実行中でも残量ぶんの発注を続けられる。</p>
      */
     @Override
@@ -231,9 +231,17 @@ public final class QuantumCpuPartition implements QuantumCpuClusterOwner {
     *///?}
     }
 
-    void cancelJob() {
-        if (cluster != null) {
-            cluster.cancelJob();
+    void cancelJobAndTakeLeftovers(KeyCounter leftovers) {
+        if (cluster == null) {
+            return;
         }
+        // cancelはジョブが無いとstoreItemsを呼ばないので、終わったジョブの返し残しも自分で戻す
+        // storeItemsはグリッドが無ければ何もしない
+        cluster.cancelJob();
+        cluster.craftingLogic.storeItems();
+        KeyCounter inventory = cluster.craftingLogic.getInventory().list;
+        leftovers.addAll(inventory);
+        inventory.clear();
+        cluster.markDirty();
     }
 }

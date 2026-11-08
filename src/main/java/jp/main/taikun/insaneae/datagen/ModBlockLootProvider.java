@@ -17,7 +17,7 @@ import net.minecraft.core.HolderLookup;
  */
 public class ModBlockLootProvider extends BlockLootSubProvider {
 
-    // BlockLootSubProvider はレジストリ参照 (HolderLookup.Provider) を要求する。
+    // BlockLootSubProviderはレジストリ参照 (HolderLookup.Provider) を要求する
     //? if >=1.21 {
     public ModBlockLootProvider(HolderLookup.Provider registries) {
         super(Set.of(), FeatureFlags.REGISTRY.allFlags(), registries);
@@ -43,7 +43,8 @@ public class ModBlockLootProvider extends BlockLootSubProvider {
                         ModBlocks.allEnergyCells().stream().map(block -> (Block) block),
                         ModBlocks.allSolarPanels().stream().map(block -> (Block) block),
                         Stream.<Block>of(ModBlocks.QUANTUM_CPU.get(), ModBlocks.IMPROVED_CHARGER.get(),
-                                ModBlocks.INSANE_INTERFACE.get(), ModBlocks.INSANE_PATTERN_PROVIDER.get()))
+                                ModBlocks.INSANE_INTERFACE.get(), ModBlocks.INSANE_PATTERN_PROVIDER.get(),
+                                ModBlocks.GAMERTAIKUN_DOLL.get()))
                 .flatMap(stream -> stream)
                 .toList();
     }

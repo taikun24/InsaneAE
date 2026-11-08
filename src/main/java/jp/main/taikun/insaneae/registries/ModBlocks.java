@@ -11,6 +11,7 @@ import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.util.TieredBlockItem;
 import jp.main.taikun.insaneae.util.TieredNames;
 import jp.main.taikun.insaneae.charger.ImprovedChargerBlock;
+import jp.main.taikun.insaneae.decoration.PlayerDollBlock;
 import jp.main.taikun.insaneae.energy.InsaneEnergyCellTier;
 import jp.main.taikun.insaneae.energy.SolarPanelBlock;
 import jp.main.taikun.insaneae.energy.SolarPanelTier;
@@ -94,7 +95,7 @@ public class ModBlocks {
             BLOCKS.register("big_integer_cpu",
                     () -> new CraftingUnitBlock(BigIntegerCraftingUnitType.INSTANCE));
 
-    /** AE2 のチャージャーの限界突破版。 */
+    /** AE2のチャージャーの限界突破版。 */
     //? if >=1.21 {
     public static final DeferredHolder<Block, ImprovedChargerBlock> IMPROVED_CHARGER =
     //?} else {
@@ -102,7 +103,7 @@ public class ModBlocks {
     *///?}
             BLOCKS.register("improved_charger", ImprovedChargerBlock::new);
 
-    /** ME インターフェイスの限界突破版 (9x9 枠 × 1 枠 21 億)。 */
+    /** MEインターフェイスの限界突破版。9x9枠 × 1枠21億。 */
     //? if >=1.21 {
     public static final DeferredHolder<Block, InsaneInterfaceBlock> INSANE_INTERFACE =
     //?} else {
@@ -110,7 +111,7 @@ public class ModBlocks {
     *///?}
             BLOCKS.register("insane_interface", InsaneInterfaceBlock::new);
 
-    /** パターンプロバイダの限界突破版 (Quantum CPU と同じ 1620 枠)。加工パターンの置き場。 */
+    /** パターンプロバイダの限界突破版。Quantum CPUと同じ1620枠で、加工パターンの置き場。 */
     //? if >=1.21 {
     public static final DeferredHolder<Block, InsanePatternProviderBlock> INSANE_PATTERN_PROVIDER =
     //?} else {
@@ -118,8 +119,16 @@ public class ModBlocks {
     *///?}
             BLOCKS.register("insane_pattern_provider", InsanePatternProviderBlock::new);
 
+    /** 作者 (gamertaikun) の人形。飾りで、機能は無い。 */
+    //? if >=1.21 {
+    public static final DeferredHolder<Block, PlayerDollBlock> GAMERTAIKUN_DOLL =
+    //?} else {
+    /*public static final RegistryObject<PlayerDollBlock> GAMERTAIKUN_DOLL =
+    *///?}
+            BLOCKS.register("gamertaikun_doll", PlayerDollBlock::new);
+
     static {
-        // 表示名は階層ごとの lang キーではなく「書式キー + 階層ラベル」で作る (TieredNames を参照)。
+        // 表示名は階層ごとのlangキーではなく、「書式キー + 階層ラベル」で作る。TieredNamesを参照
         for (InsaneCraftingUnitType type : InsaneCraftingUnitType.values()) {
             //? if >=1.21 {
             DeferredHolder<Block, CraftingUnitBlock> block = BLOCKS.register(type.blockId(),
@@ -129,7 +138,7 @@ public class ModBlocks {
                     () -> new InsaneCraftingUnitBlock(type, TieredNames.CRAFTING_STORAGE, type.label()));
             BLOCK_ITEMS.register(type.blockId(),
                     () -> new TieredBlockItem(block.get(), new Item.Properties()));
-            // ICraftingUnitType.getItemFromType() が返すアイテムを、登録された BlockItem に結びつける。
+            // ICraftingUnitType.getItemFromType() が返すアイテムを、登録されたBlockItemに結びつける
             type.setItem(() -> block.get().asItem());
             CRAFTING_STORAGE.put(type, block);
         }
@@ -146,9 +155,9 @@ public class ModBlocks {
             CRAFTING_ACCELERATOR.put(type, block);
         }
         for (InsaneEnergyCellTier tier : InsaneEnergyCellTier.values()) {
-            // AE2 の EnergyCellBlock / EnergyCellBlockItem をそのまま使う。
-            // AE2 側は「registry を走査して EnergyCellBlockItem なら fill_level を登録」する作りなので、
-            // アイテムモデルの残量表示もクライアント側の追加処理なしで動く。
+            // AE2のEnergyCellBlock / EnergyCellBlockItemをそのまま使う
+            // AE2側は「registryを走査してEnergyCellBlockItemならfill_levelを登録」する作りなので、
+            // アイテムモデルの残量表示もクライアント側の追加処理なしで動く
             //? if >=1.21 {
             DeferredHolder<Block, EnergyCellBlock> block = BLOCKS.register(tier.id(),
             //?} else {
@@ -170,20 +179,22 @@ public class ModBlocks {
             SOLAR_PANELS.put(tier, block);
         }
         BLOCK_ITEMS.register("quantum_cpu", () -> new BlockItem(QUANTUM_CPU.get(), new Item.Properties()));
-        // サバイバルレシピは追加せず、クリエイティブタブから検証用ストレージを取得できるようにする。
+        // サバイバルレシピは追加せず、クリエイティブタブから検証用ストレージを取得できるようにする
         BLOCK_ITEMS.register("big_integer_cpu", () -> new BlockItem(BIG_INTEGER_CPU.get(), new Item.Properties()));
         BigIntegerCraftingUnitType.INSTANCE.setItem(() -> BIG_INTEGER_CPU.get().asItem());
         BLOCK_ITEMS.register("improved_charger",
                 () -> new BlockItem(IMPROVED_CHARGER.get(), new Item.Properties()));
-        // 名前を 1% で差し替えるお遊びがあるので、素の BlockItem ではなく専用のもの
-        // (アイテムの名前はブロックの getName() ではなくアイテム側が決めるため)。
+        // 名前を1% で差し替えるお遊びがあるので、素のBlockItemではなく専用のもの
+        // アイテムの名前はブロックのgetName()ではなくアイテム側が決めるため
         BLOCK_ITEMS.register("insane_interface",
                 () -> new InsaneInterfaceBlockItem(INSANE_INTERFACE.get(), new Item.Properties()));
         BLOCK_ITEMS.register("insane_pattern_provider",
                 () -> new BlockItem(INSANE_PATTERN_PROVIDER.get(), new Item.Properties()));
+        BLOCK_ITEMS.register("gamertaikun_doll",
+                () -> new BlockItem(GAMERTAIKUN_DOLL.get(), new Item.Properties()));
     }
 
-    /** ストレージ + アクセラレータの全ブロック (BlockEntityType やドロップ生成用)。 */
+    /** ストレージ + アクセラレータの全ブロック。BlockEntityTypeやドロップ生成用。 */
     public static List<CraftingUnitBlock> allCraftingBlocks() {
         return Stream.concat(
                         Stream.concat(CRAFTING_STORAGE.values().stream(), CRAFTING_ACCELERATOR.values().stream()),

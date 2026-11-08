@@ -37,7 +37,7 @@ import appeng.server.testplots.TestPlots;
 //?}
 
 /**
- * クラフト計算のまとめ処理 (AE2 本来の計算と同じ結果になるか、long あふれの門番)。
+ * クラフト計算のまとめ処理。AE2本来の計算と同じ結果になるか、longあふれの門番として働くか。
  *
  * <p>走らせ方は {@link TestPlotSupport} を参照。</p>
  */
@@ -49,15 +49,15 @@ public final class CraftingCalculationPlots {
     private CraftingCalculationPlots() {
     }
 
-    /** ケーキ 1 個につきバケツ 3 個が行き来する = コンテナアイテム持ちのパターン。 */
+    /** ケーキ1個につきバケツ3個が行き来する = コンテナアイテム持ちのパターン。 */
     private static final long CAKES = 4096;
 
     /**
-     * クラフト計算のまとめ処理が<b>AE2 本来の計算と同じ結果になる</b>ことを確かめる。
+     * クラフト計算のまとめ処理がAE2本来の計算と同じ結果になることを確かめる。
      *
      * <p>ケーキのレシピは牛乳バケツを使う = コンテナアイテム持ちなので、
-     * AE2 は本来 1 クラフトずつシミュレートする ({@code CraftingTreeProcess#limitsQuantity})。
-     * 同じ発注を「まとめ処理あり」「なし」で 1 回ずつ計算し、
+     * AE2は本来1クラフトずつシミュレートする ({@code CraftingTreeProcess#limitsQuantity})。
+     * 同じ発注を「まとめ処理あり」「なし」で1回ずつ計算し、
      * 必要バイト数・消費アイテム・パターンの実行回数がすべて一致することを見る。</p>
      */
     @TestPlot("insaneae_crafting_batch")
@@ -65,7 +65,7 @@ public final class CraftingCalculationPlots {
         plot.creativeEnergyCell("0 -1 0");
         plot.cable("[0,2] 0 0");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
-            // 材料は無限に用意する (計算だけを見たいので在庫不足を絡めない)。
+            // 材料は無限に用意する。計算だけを見たいので、在庫不足を絡めない
             drive.getInternalInventory().addItems(CreativeCellItem.ofItems(
                     Items.MILK_BUCKET, Items.SUGAR, Items.EGG, Items.WHEAT));
         });
@@ -128,20 +128,20 @@ public final class CraftingCalculationPlots {
     }
 
     /**
-     * <b>連鎖クラフト</b>でも計算結果が変わらないことを確かめる。
+     * 連鎖クラフトでも計算結果が変わらないことを確かめる。
      *
      * <p>「中間素材のパターンが反映されない」という報告を受けての回帰テスト。
-     * ダイヤ ← 銅 ← 鉄 の 2 段構えにして、さらに<b>銅を作れるパターンを 2 つ</b>登録する
-     * (2 つ目は材料が在庫に無いので必ず失敗する枝)。
-     * パターンが複数あるノードは AE2 が {@code limitsQuantity()} に関係なく
-     * 1 クラフトずつ回すので、まとめ処理が一番効く一方で一番危ない経路になる。</p>
+     * ダイヤ ← 銅 ← 鉄 の2段構えにして、さらに銅を作れるパターンを2つ登録する
+     * 2つ目は材料が在庫に無いので、必ず失敗する枝になる。
+     * パターンが複数あるノードはAE2が {@code limitsQuantity()} に関係なく
+     * 1クラフトずつ回すので、まとめ処理が一番効く一方で一番危ない経路になる。</p>
      */
     @TestPlot("insaneae_crafting_batch_chain")
     public static void craftingBatchChain(PlotBuilder plot) {
         plot.creativeEnergyCell("0 -1 0");
         plot.cable("[0,2] 0 0");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
-            // 鉄だけ無限にある。金は無いので「金 → 銅」の枝は必ず失敗する。
+            // 鉄だけ無限にある。金は無いので「金 → 銅」の枝は必ず失敗する
             drive.getInternalInventory().addItems(CreativeCellItem.ofItems(Items.IRON_INGOT));
         });
         plot.block("2 0 0", AEBlocks.PATTERN_PROVIDER);
@@ -160,7 +160,7 @@ public final class CraftingCalculationPlots {
                 var provider = (PatternProviderBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
                 var patterns = provider.getLogic().getPatternInv();
                 patterns.addItems(processingPattern(Items.IRON_INGOT, 2, Items.COPPER_INGOT, 1));
-                // 金 2 → 銅 1 (材料が無いので使えない枝)
+                // 金2から銅1を作る。材料が無いので使えない枝
                 patterns.addItems(processingPattern(Items.GOLD_INGOT, 2, Items.COPPER_INGOT, 1));
                 patterns.addItems(processingPattern(Items.COPPER_INGOT, 4, Items.DIAMOND, 1));
             });
@@ -203,10 +203,10 @@ public final class CraftingCalculationPlots {
     }
 
     /**
-     * <b>特大パターンプロバイダーに入れたパターン</b>が連鎖クラフトで使われることを確かめる。
+     * 特大パターンプロバイダーに入れたパターンが連鎖クラフトで使われることを確かめる。
      *
      * <p>「登録してあるクラフトパターンが反映されない」という報告を受けての回帰テスト。
-     * パターンの読み直しは {@code InsanePatternProviderLogic#updatePatterns} で 1 tick 遅れるので、
+     * パターンの読み直しは {@code InsanePatternProviderLogic#updatePatterns} で1 tick遅れるので、
      * グリッドのクラフト索引に載り損ねていないかをここで見る。</p>
      */
     @TestPlot("insaneae_pattern_provider_patterns")
@@ -233,7 +233,7 @@ public final class CraftingCalculationPlots {
                 patterns.addItems(processingPattern(Items.COPPER_INGOT, 4, Items.DIAMOND, 1));
             });
 
-            // パターン投入の直後に計算を始める (遅延した読み直しが間に合っているかを見たいので待たない)。
+            // パターン投入の直後に計算を始める。遅延した読み直しが間に合っているかを見たいので、待たない
             sequence.thenExecute(() -> state.pending = beginCalculation(helper, AEItemKey.of(Items.DIAMOND), 64));
             sequence.thenWaitUntil(() -> state.plan = awaitPlan(state.pending));
 
@@ -244,7 +244,7 @@ public final class CraftingCalculationPlots {
                         "不足アイテムが出た: " + toMap(state.plan.missingItems()));
                 helper.check(state.plan.patternTimes().size() == 2,
                         "使われたパターンが 2 種類ではない: " + state.plan.patternTimes().size());
-                // ダイヤ 64 個 = 銅 256 個 = 鉄 512 個
+                // ダイヤ64個 = 銅256個 = 鉄512個
                 helper.check(toMap(state.plan.usedItems()).getOrDefault(AEItemKey.of(Items.IRON_INGOT), 0L) == 512L,
                         "鉄の消費数が合わない: " + toMap(state.plan.usedItems()));
             });
@@ -254,19 +254,19 @@ public final class CraftingCalculationPlots {
     }
 
     /**
-     * long あふれの門番: 材料合計が long で表現できない要求が、<b>黙って負の量を流さず</b>
-     * 綺麗に失敗する (craft 可能な計画に化けない) ことを確かめる。
+     * longあふれの門番: 材料合計がlongで表現できない要求が、黙って負の量を流さず
+     * 綺麗に失敗して、craft可能な計画に化けないことを確かめる。
      *
-     * <p>入れ子 8^21 = 2^63 がちょうど long を超える。AE2 の
+     * <p>入れ子8^21 = 2^63がちょうどlongを超える。AE2の
      * {@code CraftingTreeProcess.request} は「材料数 × times」をガード無しで掛けるので、
      * まとめ計算がこの規模を現実に計算可能にした結果、そこが最初に溢れる
-     * (報告: @syarukasu さん)。門番は {@code CraftBranchFailure} で枝を落とすため、
+     * 報告は@syarukasuさんから受けた。門番は {@code CraftBranchFailure} で枝を落とすため、
      * 計算は「失敗またはシミュレーション」で終わり、負の量が計画に載ることは無い。</p>
      *
-     * <p>検証するのは<b>単一パターンの一括計算</b> (times が一度に来る) — 8^21 の入れ子が
-     * 実際に踏む経路。もう一方の 1 回ずつループ側の門番 (10^18 超の直接発注が必要) は、
-     * シミュレーションが AE2 素の「終わらない 1 回ずつ計算」に落ちる仕様のため
-     * ここでは待てない (実行パスの保護は同じ throw で効いている)。</p>
+     * <p>検証するのは単一パターンの一括計算で、timesが一度に来る8^21の入れ子が
+     * 実際に踏む経路。もう一方の1回ずつループ側の門番は、10^18超の直接発注が必要になる。
+     * シミュレーションがAE2素の「終わらない1回ずつ計算」に落ちる仕様なので、
+     * ここでは待てない。実行パスの保護は同じthrowで効いている。</p>
      */
     @TestPlot("insaneae_calc_overflow_guard")
     public static void calcOverflowGuard(PlotBuilder plot) {
@@ -285,12 +285,12 @@ public final class CraftingCalculationPlots {
 
             sequence.thenExecute(() -> {
                 var provider = (PatternProviderBlockEntity) helper.getBlockEntity(new BlockPos(2, 0, 0));
-                // 丸太 9 → ダイヤ 1 (加工パターン): 単一パターンの一括計算経路。
+                // 丸太9からダイヤ1を作る加工パターン。単一パターンの一括計算経路
                 provider.getLogic().getPatternInv().addItems(
                         processingPattern(Items.OAK_LOG, 9, Items.DIAMOND, 1));
             });
 
-            // ダイヤ × (Long.MAX/4): 材料は × 9 なので合計が long を超える。
+            // ダイヤ × (Long.MAX/4): 材料は × 9なので合計がlongを超える
             sequence.thenExecuteAfter(1, () -> state.pending = beginCalculation(helper,
                     AEItemKey.of(Items.DIAMOND), Long.MAX_VALUE / 4));
             sequence.thenWaitUntil(() -> checkOverflowRejected(helper, state.pending, "ダイヤ"));
@@ -303,9 +303,9 @@ public final class CraftingCalculationPlots {
      * 溢れる要求の正解は「作成不可のシミュレーション計画」ただ一つ。
      *
      * <ul>
-     *   <li>craft 可能な計画 → 不合格 (負の量が載っている可能性)</li>
-     *   <li>null や例外 → 不合格 (プランが null だと提出側の
-     *       {@code result.simulation()} が NPE になる。実機で発生した回帰)</li>
+     *   <li>craft可能な計画は不合格。負の量が載っている可能性があるため</li>
+     *   <li>nullや例外は不合格。プランがnullだと提出側の
+     *       {@code result.simulation()} がNPEになるため、この回帰を防ぐ</li>
      * </ul>
      */
     private static void checkOverflowRejected(PlotTestHelper helper,
@@ -329,9 +329,9 @@ public final class CraftingCalculationPlots {
     /**
      * 計算のまとめ処理が働いたか。
      *
-     * <p>ACO 同居中は<b>働かないのが正しい</b> — 厳密計算は ACO が所有し、こちらの計算バッチは
-     * {@code AcoCalculationIntegration} で譲るため。そのときは「結果が AE2 と一致すること」
-     * だけを見る (実行側のまとめ処理は譲らない — {@code insaneae_bulk_execution_live} が見ている)。</p>
+     * <p>ACO同居中は働かないのが正しい — 厳密計算はACOが所有し、こちらの計算バッチは
+     * {@code AcoCalculationIntegration} で譲るため。そのときは「結果がAE2と一致すること」
+     * だけを見る。実行側のまとめ処理は譲らない。{@code insaneae_bulk_execution_live}が見ている。</p>
      */
     private static boolean insaneBatchingRan(long before) {
         if (AcoCalculationIntegration.shouldDeferCalculationBatch()) {
@@ -354,7 +354,7 @@ public final class CraftingCalculationPlots {
                 CalculationStrategy.REPORT_MISSING_ITEMS);
     }
 
-    /** 計算が終わるまで待つ ({@code thenWaitUntil} は例外が出なくなるまで繰り返す)。 */
+    /** 計算が終わるまで待つ。{@code thenWaitUntil} は例外が出なくなるまで繰り返す。 */
     private static ICraftingPlan awaitPlan(Future<ICraftingPlan> pending) {
         if (!pending.isDone()) {
             throw new GameTestAssertException("クラフト計算がまだ終わっていない");

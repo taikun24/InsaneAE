@@ -9,27 +9,27 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 /**
- * Quantum CPU の完成品待ちの台帳。実体 (ACO か内蔵) を<b>初めて何かを積むときに</b>選び、
- * 実体が例外を投げたら<b>その場で内蔵台帳に乗り換える</b>。
+ * Quantum CPUの完成品待ちの台帳。実体、つまりACOか内蔵かは、初めて何かを積むときに選び、
+ * 実体が例外を投げたらその場で内蔵台帳に乗り換える。
  *
  * <h2>なぜ遅らせるのか</h2>
- * <p>ブロックエンティティは、チャンクの読み込みやクライアント側の表示、他 Mod の走査などで
- * 頻繁に作られる。そのたびに ACO の台帳を作ると、反射の呼び出しが毎回走るうえ、
+ * <p>ブロックエンティティは、チャンクの読み込みやクライアント側の表示、他Modの走査などで
+ * 頻繁に作られる。そのたびにACOの台帳を作ると、反射の呼び出しが毎回走るうえ、
  * 何も積まれないまま捨てられることがほとんどになる。完成品待ちが実際に発生するまでは
  * 「空の台帳」として振る舞い、実体を作らない。</p>
  *
  * <h2>乗り換え</h2>
  * <p>{@link PendingOutputLedger} は「例外を投げない」約束だが、外部実装にそれを
- * 強制はできない。ここで受け止めないと serverTick やクラフト処理ごと落ちる。
+ * 強制はできない。ここで受け止めないとserverTickやクラフト処理ごと落ちる。
  * 乗り換え時はまず {@code snapshot()} で中身の救出を試み、それも失敗したときだけ
- * 空で再出発する (損害は「未搬入の完成品」に限られ、ワールドは壊れない)。</p>
+ * 空で再出発する。損害は「未搬入の完成品」に限られ、ワールドは壊れない。</p>
  */
 final class LazyFailsafeLedger implements PendingOutputLedger {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private final Supplier<PendingOutputLedger> opener;
 
-    /** 実体。まだ何も積まれていなければ null。 */
+    /** 実体。まだ何も積まれていなければnull。 */
     @Nullable
     private volatile PendingOutputLedger delegate;
     private boolean failedOver;
@@ -71,7 +71,7 @@ final class LazyFailsafeLedger implements PendingOutputLedger {
     @Override
     public void add(AEKey key, BigInteger amount) {
         if (key == null || amount == null || amount.signum() <= 0) {
-            // 何も積まないなら実体を作る理由も無い。
+            // 何も積まないなら実体を作る理由も無い
             return;
         }
         try {

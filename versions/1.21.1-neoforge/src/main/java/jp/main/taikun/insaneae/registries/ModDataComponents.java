@@ -23,7 +23,7 @@ public final class ModDataComponents {
                     .build());
 
     /**
-     * クライアントにはワールドの保存データが無いので、ツールチップと LED に要る分だけを
+     * クライアントにはワールドの保存データが無いので、ツールチップとLEDに要る分だけを
      * アイテム側に写しておく。
      */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<CellSummary>> CELL_SUMMARY =

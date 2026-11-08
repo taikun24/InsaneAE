@@ -16,7 +16,7 @@ import net.minecraft.world.item.Item;
 *///?}
 
 /**
- * Quantum CPU 専用の加速カード。1 枚ごとに組み立て速度が
+ * Quantum CPU専用の加速カード。1枚ごとに組み立て速度が
  * {@link QuantumCpuBlockEntity#MULTIPLIER_PER_CARD} 倍になる。
  */
 public class QuantumAccelerationCardItem extends UpgradeCardItem {

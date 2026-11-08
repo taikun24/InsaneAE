@@ -24,8 +24,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * 超特大インターフェイスのブロック。中身は {@link InsaneInterfaceBlockEntity}。
  *
- * <p>AE2 の {@code InterfaceBlock} と同じで、右クリックで画面を開くだけ
- * (メモリーカード等の持ち物ありの操作は {@link AEBaseEntityBlock} が先に処理する)。</p>
+ * <p>AE2の {@code InterfaceBlock} と同じで、右クリックで画面を開くだけ
+ * メモリーカードなど持ち物ありの操作は、{@link AEBaseEntityBlock}が先に処理する。</p>
  */
 public class InsaneInterfaceBlock extends AEBaseEntityBlock<InsaneInterfaceBlockEntity> {
 

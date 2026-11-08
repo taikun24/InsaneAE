@@ -16,32 +16,32 @@ import org.jetbrains.annotations.Nullable;
 /**
  * 外の機械に見せる超特大インターフェイスのインベントリ。
  *
- * <p>中身は {@code InterfaceLogic} の在庫インベントリそのままだが、<b>設定していない枠</b>
- * に入ってきたぶんは<b>枠を経由せず ME ネットワークへ直接入れる</b>。</p>
+ * <p>中身は {@code InterfaceLogic} の在庫インベントリそのままだが、設定していない枠
+ * に入ってきたぶんは枠を経由せずMEネットワークへ直接入れる。</p>
  *
  * <h2>なぜ必要か</h2>
  *
- * <p>NeoForge の {@code IItemHandler} は 1 回の受け渡しが int (というより ItemStack) なので
- * 問題にならないが、<b>Mekanism 系の化学物質は 1 回の受け渡しが long</b> になる
- * (Applied Mekanistics の {@code GenericStackChemicalStorage#insertChemical} が
- * {@code ChemicalStack#getAmount()} をそのまま流す)。1 枠の上限は
- * {@link InsaneInterfaceBlockEntity#MAX_PER_SLOT} = 21 億なので、
- * 素通しにすると<b>それを超えるぶんが機械側に押し戻される</b>。
- * ネットワークの在庫は long なので、そちらに直接入れれば桁を落とさずに受け取れる。</p>
+ * <p>NeoForgeの{@code IItemHandler}は1回の受け渡しがint、というよりItemStackなので
+ * 問題にならないが、Mekanism系の化学物質は1回の受け渡しがlongになる
+ * Applied Mekanisticsの{@code GenericStackChemicalStorage#insertChemical}が
+ * {@code ChemicalStack#getAmount()} をそのまま流す)。1枠の上限は
+ * {@link InsaneInterfaceBlockEntity#MAX_PER_SLOT} = 21億なので、
+ * 素通しにするとそれを超えるぶんが機械側に押し戻される。
+ * ネットワークの在庫はlongなので、そちらに直接入れれば桁を落とさずに受け取れる。</p>
  *
  * <h2>設定済みの枠には適用しない</h2>
  *
- * <p>設定済みの枠 (= 何をいくつ在庫するか決めてある枠) は「決めた数で頭打ち」が
- * インターフェイス本来の動作なので、そこは AE2 のままにしてある。
+ * <p>設定済みの枠、つまり何をいくつ在庫するか決めてある枠は、「決めた数で頭打ち」が
+ * インターフェイス本来の動作なので、そこはAE2のままにしてある。
  * 溢れたぶんまで飲み込むと、在庫指定が「なんでも吸い込む口」になってしまう。</p>
  *
  * <p>取り出し側は枠の中身だけ。ネットワークの中身をここから抜けるようにすると、
  * 隣にホッパーを置くだけでネットワークが空になってしまう
- * (AE2 が {@code GENERIC_INTERNAL_INV} に在庫インベントリしか出していないのと同じ理由)。</p>
+ * AE2が{@code GENERIC_INTERNAL_INV}に在庫インベントリしか出していないのと同じ理由。</p>
  *
  * <p>ブロック版 ({@link InsaneInterfaceBlockEntity}) とケーブル版 ({@link InsaneInterfacePart}) の
  * 両方が同じものを出す。どちらも {@link InterfaceLogicHost} とグリッドノードを持つので、
- * その 2 つだけを受け取る。</p>
+ * その2つだけを受け取る。</p>
  */
 public class InterfaceOverflowInventory implements GenericInternalInventory {
 
@@ -74,12 +74,12 @@ public class InterfaceOverflowInventory implements GenericInternalInventory {
     @Override
     public long insert(int slot, AEKey what, long amount, Actionable mode) {
         if (insertingIntoNetwork || slot >= config().size() || config().getKey(slot) != null) {
-            // 設定済みの枠 (と再入) は AE2 と同じ挙動。
+            // 設定済みの枠と再入はAE2と同じ挙動
             return storage().insert(slot, what, amount, mode);
         }
 
         // 未設定の枠はネットワークへ直通。入り切らないぶんだけ枠に置いて、
-        // 次の tick に InterfaceLogic が押し出す (ネットワークが落ちていても取りこぼさない)。
+        // 次のtickにInterfaceLogicが押し出す。ネットワークが落ちていても取りこぼさない
         long inserted = insertIntoNetwork(what, amount, mode);
         if (inserted < amount) {
             inserted += storage().insert(slot, what, amount - inserted, mode);

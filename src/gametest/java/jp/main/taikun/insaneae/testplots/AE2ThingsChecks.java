@@ -13,13 +13,13 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-/** AE2 Things のクラスに触る検査。ae2things が入っているときだけ {@link CellStoragePlots} から呼ぶ。 */
+/** AE2 Thingsのクラスに触る検査。ae2thingsが入っているときだけ {@link CellStoragePlots} から呼ぶ。 */
 final class AE2ThingsChecks {
 
     private AE2ThingsChecks() {
     }
 
-    /** 8E の DISK が AE2 Things のハンドラに拾われ、int を超える量が入り、UUID で保存される。 */
+    /** 8EのDISKがAE2 Thingsのハンドラに拾われ、intを超える量が入り、UUIDで保存される。 */
     static void hugeDisk(PlotTestHelper helper) {
         var item = BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "disk_drive_8e"));
         helper.check(item != Items.AIR, "disk_drive_8e が登録されていない");

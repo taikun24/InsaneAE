@@ -17,19 +17,19 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Astral Mekanism の機械が<b>ME インターフェイスへ自動搬出しているとき</b>の受け皿。
+ * Astral Mekanismの機械がMEインターフェイスへ自動搬出しているときの受け皿。
  *
- * <p>Mekanism の自動搬出は「1 tick に N mB」「1 スタックずつ」で刻むので、
- * Astral の機械が作る桁 (long 級) には到底追いつかない。
- * 搬出先が ME インターフェイスなら、<b>その場で全量をネットワークへ渡せる</b>ので、
- * 刻まずに 1 回で流し込む ({@link jp.main.taikun.insaneae.mixin.compat.astral.AstralEjectorMixin})。</p>
+ * <p>Mekanismの自動搬出は「1 tickにN mB」「1スタックずつ」で刻むので、
+ * Astralの機械が作る桁、つまりlong級には到底追いつかない。
+ * 搬出先がMEインターフェイスなら、その場で全量をネットワークへ渡せるので、
+ * 刻まずに1回で流し込む ({@link jp.main.taikun.insaneae.mixin.compat.astral.AstralEjectorMixin})。</p>
  *
  * <h2>インターフェイスの設定は尊重する</h2>
  * <ul>
- *   <li><b>設定枠が空 (ストレージとして使っている)</b>: インターフェイスが受け取れるだけ受け取り、
+ *   <li>設定枠が空。ストレージとして使っている場合は、インターフェイスが受け取れるだけ受け取り、
  *       溢れたぶんはネットワークへ直接入れる。「全部ネットワークへ」はこの経路。</li>
- *   <li><b>設定枠がある (在庫確保に使っている)</b>: インターフェイスが受け取るぶんだけ。
- *       設定に無いものを裏からネットワークへ流し込むと、AE2 の見た目の挙動と食い違うため。</li>
+ *   <li>設定枠がある。在庫確保に使っている場合は、インターフェイスが受け取るぶんだけ。
+ *       設定に無いものを裏からネットワークへ流し込むと、AE2の見た目の挙動と食い違うため。</li>
  * </ul>
  */
 public final class AstralNetworkEject {
@@ -46,10 +46,10 @@ public final class AstralNetworkEject {
     }
 
     /**
-     * {@code machinePos} の {@code side} 側に ME インターフェイスがあれば受け皿を作る。
+     * {@code machinePos} の {@code side} 側にMEインターフェイスがあれば受け皿を作る。
      *
-     * <p>ブロック版だけでなく<b>ケーブルに付けたインターフェイス (パーツ)</b> も見る。
-     * どちらでもなければ null で、呼び出し側は Mekanism 本来の搬出に任せること。</p>
+     * <p>ブロック版だけでなく、ケーブルに付けたインターフェイス、つまりパーツも見る。
+     * どちらでもなければnullで、呼び出し側はMekanism本来の搬出に任せること。</p>
      */
     @Nullable
     public static AstralNetworkEject at(@Nullable Level level, BlockPos machinePos, Direction side) {
@@ -58,7 +58,7 @@ public final class AstralNetworkEject {
         }
         BlockPos targetPos = machinePos.relative(side);
         if (!level.isLoaded(targetPos)) {
-            // 読み込まれていないチャンクを触らない (Mekanism 側も同じ判断で飛ばしている)。
+            // 読み込まれていないチャンクを触らない。Mekanism側も同じ判断で飛ばしている
             return null;
         }
         BlockEntity target = level.getBlockEntity(targetPos);
@@ -82,7 +82,7 @@ public final class AstralNetworkEject {
         if (logic == null) {
             return null;
         }
-        // 設定枠が入っているインターフェイスは「在庫確保」用。ネットワークへの直接投入はしない。
+        // 設定枠が入っているインターフェイスは「在庫確保」用。ネットワークへの直接投入はしない
         MEStorage network = logic.getConfig().isEmpty() ? networkOf(target, facingMachine) : null;
         return new AstralNetworkEject(logic.getInventory(), network);
     }
@@ -103,8 +103,8 @@ public final class AstralNetworkEject {
     /**
      * 入るだけ入れて、実際に入った量を返す。
      *
-     * <p>まずインターフェイスへ、入り切らなければ (ストレージとして使われている場合だけ)
-     * ネットワークへ直接。<b>戻り値のぶんだけ機械側から取り出すこと</b>。</p>
+     * <p>まずインターフェイスへ、入り切らなければ。ストレージとして使われている場合だけ
+     * ネットワークへ直接。戻り値のぶんだけ機械側から取り出すこと。</p>
      */
     public long push(AEKey key, long amount) {
         if (key == null || amount <= 0) {

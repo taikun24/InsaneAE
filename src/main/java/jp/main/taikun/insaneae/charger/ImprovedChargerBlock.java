@@ -27,29 +27,29 @@ import net.minecraft.world.ItemInteractionResult;
 *///?}
 
 /**
- * Improved Crystal Charger のブロック。中身は {@link ImprovedChargerBlockEntity}。
+ * Improved Crystal Chargerのブロック。中身は {@link ImprovedChargerBlockEntity}。
  *
- * <p>AE2 のチャージャーと同じく GUI は持たず、右クリックで出し入れする。
- * 自動化する場合は入出力とも NeoForge のアイテムハンドラ (ホッパー / インポートバス等) 経由。</p>
+ * <p>AE2のチャージャーと同じくGUIは持たず、右クリックで出し入れする。
+ * 自動化する場合は入出力ともNeoForgeのアイテムハンドラ経由で、ホッパーやインポートバスなどを使う。</p>
  *
- * <p>向き・当たり判定も AE2 のチャージャーに合わせてある
+ * <p>向き・当たり判定もAE2のチャージャーに合わせてある
  * ({@link #getOrientationStrategy()} / {@link #getShape}) — 見た目が同じ形なので、
  * 判定だけフルキューブだと「開いている所に当たる」ことになるため。</p>
  */
 public class ImprovedChargerBlock extends AEBaseEntityBlock<ImprovedChargerBlockEntity> {
 
     public ImprovedChargerBlock() {
-        // noOcclusion: フルキューブでないモデルなので、隣のブロックの面を消させない。
-        // 付けないと隣接面がカリングされ、開いている部分から地形の裏が見える (AE2 のチャージャーと同じ対策)。
+        // noOcclusion: フルキューブでないモデルなので、隣のブロックの面を消させない
+        // 付けないと隣接面がカリングされ、開いている部分から地形の裏が見える。AE2のチャージャーと同じ対策
         super(metalProps().noOcclusion());
     }
 
     /**
-     * 置いた向き (と回転) を持たせる。AE2 のチャージャーと同じ {@code full}:
-     * 6 方向 × 4 回転 = 24 通りを {@code facing} / {@code spin} のブロックステートで持つ。
+     * 置いた向きと回転を持たせる。AE2のチャージャーと同じ {@code full}:
+     * 6方向 × 4回転 = 24通りを {@code facing} / {@code spin} のブロックステートで持つ。
      *
      * <p>ここを変えるとブロックステートの一覧も変わるので、
-     * {@code ModBlockStateProvider} 側の生成 (24 通り) と必ず揃えること。</p>
+     * {@code ModBlockStateProvider}側の生成、24通りと必ず揃えること。</p>
      */
     @Override
     public IOrientationStrategy getOrientationStrategy() {
@@ -57,9 +57,9 @@ public class ImprovedChargerBlock extends AEBaseEntityBlock<ImprovedChargerBlock
     }
 
     /**
-     * 見た目どおりの当たり判定。AE2 のチャージャーと同じ組み立て方で、
-     * 中央の柱 (各面 2px 内側) を<b>上下方向は端まで</b>伸ばし、
-     * さらに<b>正面側</b>だけ端まで伸ばした箱を返す。
+     * 見た目どおりの当たり判定。AE2のチャージャーと同じ組み立て方で、
+     * 中央の柱は各面の2px内側に置き、上下方向は端まで伸ばし、
+     * さらに正面側だけ端まで伸ばした箱を返す。
      *
      * <p>向きは {@code facing} / {@code spin} から引くので、置き方を変えると判定も一緒に回る。</p>
      */
@@ -101,7 +101,7 @@ public class ImprovedChargerBlock extends AEBaseEntityBlock<ImprovedChargerBlock
     }
 
     /**
-     * 当たり判定 (移動用) はフルキューブ。AE2 のチャージャーと同じで、
+     * 移動用の当たり判定はフルキューブ。AE2のチャージャーと同じで、
      * 見た目の隙間にプレイヤーがめり込まないようにするため。
      */
     @Override
@@ -111,7 +111,7 @@ public class ImprovedChargerBlock extends AEBaseEntityBlock<ImprovedChargerBlock
     }
 
     /**
-     * 光の遮り方。AE2 のチャージャーに合わせて 2 だけ減衰させる
+     * 光の遮り方。AE2のチャージャーに合わせて2だけ減衰させる
      * ({@code noOcclusion()} の既定は「光を全く遮らない」なので、そのままだと素通りする)。
      */
     @Override
@@ -119,8 +119,8 @@ public class ImprovedChargerBlock extends AEBaseEntityBlock<ImprovedChargerBlock
         return 2;
     }
 
-    // 右クリックは「手に持っている場合 (useItemOn)」と「素手の場合 (useWithoutItem)」に分かれている。
-    // どちらも同じ「入れる／取り出す」を行うので、実処理は activate() にまとめてある。
+    // 右クリックは「手に持っている場合 (useItemOn)」と「素手の場合 (useWithoutItem)」に分かれている
+    // どちらも同じ「入れる／取り出す」を行うので、実処理はactivate() にまとめてある
 
     @Override
     //? if >=1.21 {
@@ -129,7 +129,7 @@ public class ImprovedChargerBlock extends AEBaseEntityBlock<ImprovedChargerBlock
         if (InteractionUtil.isInAlternateUseMode(player)) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
-        // メモリーカード等、AE2 側が処理するものを先に通す。
+        // メモリーカード等、AE2側が処理するものを先に通す
         var handled = super.useItemOn(heldItem, state, level, pos, player, hand, hit);
         if (handled != ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION) {
             return handled;

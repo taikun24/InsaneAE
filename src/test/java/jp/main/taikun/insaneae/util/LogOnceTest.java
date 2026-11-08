@@ -26,7 +26,7 @@ class LogOnceTest {
         for (int i = 0; i < LogOnce.MAX_KEYS; i++) {
             assertTrue(LogOnce.first("key-" + i));
         }
-        // 上限を超えた新しい鍵は出さない側に倒す (ログが増え続けないこと)。
+        // 上限を超えた新しい鍵は出さない側に倒す。ログが増え続けないこと
         assertFalse(LogOnce.first("one-more"));
         assertFalse(LogOnce.first("key-0"));
     }

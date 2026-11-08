@@ -21,13 +21,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * {@code CraftingCPUCluster} が<b>構成ブロックを持たなくても成立する</b>ようにする。
+ * {@code CraftingCPUCluster} が構成ブロックを持たなくても成立するようにする。
  *
- * <p>Quantum CPU の内蔵 CPU は AE2 の<b>本物の {@code CraftingCPUCluster}</b> を使う。
- * こうすると実行エンジン ({@code CraftingCpuLogic}) も、クラフト端末の CPU 一覧も、
- * ジョブ投入も AE2 のものがそのまま動き、既存の最適化 Mixin も適用されたままになる。
- * ただ 1 点だけ合わないのが「クラスタは構成ブロックの集まりである」という前提で、
- * AE2 は次の 3 メソッドで代表ブロック ({@code getCore()}) を辿る。</p>
+ * <p>Quantum CPUの内蔵CPUはAE2の本物の {@code CraftingCPUCluster}を使う。
+ * こうすると実行エンジン ({@code CraftingCpuLogic}) も、クラフト端末のCPU一覧も、
+ * ジョブ投入もAE2のものがそのまま動き、既存の最適化Mixinも適用されたままになる。
+ * ただ1点だけ合わないのが「クラスタは構成ブロックの集まりである」という前提で、
+ * AE2は次の3メソッドで代表ブロック ({@code getCore()}) を辿る。</p>
  *
  * <ul>
  *   <li>{@code getNode()} — 代表ブロックのグリッドノード</li>
@@ -35,12 +35,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *   <li>{@code markDirty()} — 代表ブロックの {@code saveChanges()}</li>
  * </ul>
  *
- * <p>内蔵 CPU の構成ブロックは空なので、そのままだと {@code getCore()} が
- * <b>{@code MachineSource} に入れた Quantum CPU を {@code CraftingBlockEntity} にキャストして落ちる</b>。
- * ここで持ち主に差し替えて、{@code getCore()} を<b>そもそも呼ばせない</b>。</p>
+ * <p>内蔵CPUの構成ブロックは空なので、そのままだと {@code getCore()} が
+ * {@code MachineSource} に入れたQuantum CPUを {@code CraftingBlockEntity} にキャストして落ちる。
+ * ここで持ち主に差し替えて、{@code getCore()} をそもそも呼ばせない。</p>
  *
- * <p>持ち主が null のとき (= AE2 が自分で組んだクラスタ) は何もしないので、
- * <b>本来のクラフト CPU の挙動は変わらない</b>。</p>
+ * <p>持ち主がnullのとき、つまりAE2が自分で組んだクラスタは何もしないので、
+ * 本来のクラフトCPUの挙動は変わらない。</p>
  */
 @Mixin(value = CraftingCPUCluster.class, remap = false)
 public abstract class CraftingCpuClusterOwnerMixin implements QuantumOwnedCluster {
@@ -73,15 +73,15 @@ public abstract class CraftingCpuClusterOwnerMixin implements QuantumOwnedCluste
     }
 
     /**
-     * ジョブを受け取ったら持ち主へ伝える (容量の切り分けはそちらの仕事)。
+     * ジョブを受け取ったら持ち主へ伝える。容量の切り分けはそちらの仕事。
      *
-     * <p>失敗した結果でも RETURN は通るので、<b>成功したときだけ</b>伝える。
-     * 容量が足りないときに InsaneAE 自身が返す {@code CPU_TOO_SMALL}
+     * <p>失敗した結果でもRETURNは通るので、成功したときだけ伝える。
+     * 容量が足りないときにInsaneAE自身が返す {@code CPU_TOO_SMALL}
      * ({@code CraftingCPUClusterMixin}) もここで弾かれる。</p>
      *
-     * <p>要求量は ACO の BigInteger 計画ならその正確値を使う。
-     * {@code ICraftingPlan#bytes()} は long なので、桁が溢れた計画では
-     * 予約量が実際より小さくなる (= 残量を多く見せてしまう)。</p>
+     * <p>要求量はACOのBigInteger計画ならその正確値を使う。
+     * {@code ICraftingPlan#bytes()} はlongなので、桁が溢れた計画では
+     * 予約量が実際より小さくなる。つまり、残量を多く見せてしまう。</p>
      */
     @Inject(method = "submitJob", at = @At("RETURN"))
     private void insaneae$onJobSubmitted(IGrid grid, ICraftingPlan plan, IActionSource src,

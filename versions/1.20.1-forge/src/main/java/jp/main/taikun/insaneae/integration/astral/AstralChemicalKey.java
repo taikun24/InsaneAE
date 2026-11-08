@@ -7,11 +7,11 @@ import net.minecraftforge.fml.ModList;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * 化学物質 (ガス・注入型・顔料・スラリー) を AE2 のキーに変換する。
+ * 化学物質、つまりガス、注入型、顔料、スラリーをAE2のキーに変換する。
  *
- * <p>ネットワークが化学物質を持てるのは Applied Mekanistics があるときだけなので、
- * <b>appmek の型に触るのはこのクラスの中だけ</b>に閉じ込めてある
- * (未導入の環境で {@code MekanismKey} を読みに行って落ちないように、
+ * <p>ネットワークが化学物質を持てるのはApplied Mekanisticsがあるときだけなので、
+ * appmekの型に触るのはこのクラスの中だけに閉じ込めてある
+ * 未導入の環境で{@code MekanismKey}を読みに行って落ちないように、
  * 分岐してから初めてクラスをロードする)。</p>
  */
 public final class AstralChemicalKey {
@@ -21,7 +21,7 @@ public final class AstralChemicalKey {
     private AstralChemicalKey() {
     }
 
-    /** appmek が無い、または変換できない中身なら null (Mekanism 本来の搬出に任せる)。 */
+    /** appmekが無い、または変換できない中身ならnull。Mekanism本来の搬出に任せる。 */
     @Nullable
     public static AEKey of(@Nullable ChemicalStack<?> stack) {
         if (!APPMEK_LOADED || stack == null || stack.isEmpty()) {
@@ -30,7 +30,7 @@ public final class AstralChemicalKey {
         return Holder.key(stack);
     }
 
-    /** appmek 未導入の環境で {@code MekanismKey} をロードしないための入れ子。 */
+    /** appmek未導入の環境で {@code MekanismKey} をロードしないための入れ子。 */
     private static final class Holder {
 
         private static AEKey key(ChemicalStack<?> stack) {

@@ -12,7 +12,7 @@ import net.minecraft.network.chat.MutableComponent;
  *
  * <p>AE2のCPU一覧は容量をlongで受け取るため、実値そのものではなく
  * 「10進桁数」と「先頭桁」だけを同期する。これでクライアント側は容量を
- * {@code 仮数 × 10^指数} として再構成でき、無限記号へ丸めずに表示できる。</p>
+ * {@code仮数 × 10^指数} として再構成でき、無限記号へ丸めずに表示できる。</p>
  */
 public final class BigIntegerCapacityDisplayMarker {
     /** AQEのCPU表示経路とも共有できるよう、表示マーカーは固定識別子にする。 */
@@ -45,7 +45,7 @@ public final class BigIntegerCapacityDisplayMarker {
         }
 
         MutableComponent marked = name.copy();
-        // 容量更新のたびに古い不可視マーカーを連結し続けない。
+        // 容量更新のたびに古い不可視マーカーを連結し続けない
         marked.getSiblings().removeIf(BigIntegerCapacityDisplayMarker::isMarker);
         marked.append(Component.empty().withStyle(style ->
                 style.withInsertion(PREFIX + value.encode())));
@@ -69,11 +69,11 @@ public final class BigIntegerCapacityDisplayMarker {
         //?} else {
         /*DisplayValue latest = null;
         *///?}
-        // 外部から渡されたComponentでも、表示処理の走査量を固定する。
+        // 外部から渡されたComponentでも、表示処理の走査量を固定する
         while (!pending.isEmpty() && scanned++ < MAX_COMPONENTS_TO_SCAN) {
             Component current = pending.removeFirst();
             String insertion = current.getStyle().getInsertion();
-            // 最新の正常なマーカーだけを採用し、壊れた値は表示へ反映しない。
+            // 最新の正常なマーカーだけを採用し、壊れた値は表示へ反映しない
             if (insertion != null && insertion.startsWith(PREFIX)) {
                 //? if >=1.21 {
                 Optional<BigIntegerCapacityDisplayValue> decoded = BigIntegerCapacityDisplayValue.decode(
@@ -103,7 +103,7 @@ public final class BigIntegerCapacityDisplayMarker {
         String leading = value.leadingDigits();
         int significant = Math.min(SCIENTIFIC_SIGNIFICANT_DIGITS, leading.length());
         String fraction = leading.substring(1, significant);
-        // 仮数末尾の0を除いて、表示幅を増やさない。
+        // 仮数末尾の0を除いて、表示幅を増やさない
         while (fraction.endsWith("0")) {
             fraction = fraction.substring(0, fraction.length() - 1);
         }
@@ -115,7 +115,7 @@ public final class BigIntegerCapacityDisplayMarker {
 
     /^* 全桁を同期できた値がEiBの整数倍なら、短いE表記へ変換する。 ^/
     private static String formatExactEib(DisplayValue value) {
-        // 先頭桁しか持たない巨大値を、正確な容量だと推測しない。
+        // 先頭桁しか持たない巨大値を、正確な容量だと推測しない
         if (value.leadingDigits().length() != value.decimalDigits()) {
             return null;
         }
@@ -125,7 +125,7 @@ public final class BigIntegerCapacityDisplayMarker {
             return null;
         }
         String eib = quotientAndRemainder[0].toString();
-        // 長い整数をそのままGUIへ出さず、幅を超える場合は科学表記へ戻す。
+        // 長い整数をそのままGUIへ出さず、幅を超える場合は科学表記へ戻す
         if (eib.length() > MAX_EIB_INTEGER_DIGITS) {
             return null;
         }
@@ -142,14 +142,14 @@ public final class BigIntegerCapacityDisplayMarker {
         private static final String SEPARATOR = ",";
 
         public DisplayValue {
-            // 桁数と先頭桁の形式を検証し、偽造した表示データを受け付けない。
+            // 桁数と先頭桁の形式を検証し、偽造した表示データを受け付けない
             if (decimalDigits < 1 || leadingDigits == null
                     || leadingDigits.isEmpty()
                     || leadingDigits.length() > LEADING_DIGITS
                     || !leadingDigits.chars().allMatch(Character::isDigit)) {
                 throw new IllegalArgumentException("invalid BigInteger capacity display value");
             }
-            // 0以外の値を先頭0で表すと指数がずれるため拒否する。
+            // 0以外の値を先頭0で表すと指数がずれるため拒否する
             if (decimalDigits > 1 && leadingDigits.charAt(0) == '0') {
                 throw new IllegalArgumentException("BigInteger capacity display has a leading zero");
             }
@@ -166,7 +166,7 @@ public final class BigIntegerCapacityDisplayMarker {
         }
 
         private static Optional<DisplayValue> decode(String encoded) {
-            // 区切りが一つだけの正規形以外は曖昧に解釈しない。
+            // 区切りが一つだけの正規形以外は曖昧に解釈しない
             if (encoded == null) {
                 return Optional.empty();
             }

@@ -22,34 +22,34 @@ import appeng.menu.locator.MenuHostLocator;
 *///?}
 
 /**
- * 特大パターンプロバイダーのケーブル版 (プレート)。
+ * 特大パターンプロバイダーのケーブル版、つまりプレート。
  *
  * <p>枠数は {@link InsanePatternProviderBlockEntity} と同じ
  * {@value QuantumCpuBlockEntity#PATTERN_SLOTS} 枠。枠を広げているのも
  * まとめ更新を入れているのも {@link InsanePatternProviderLogic} なので、
- * AE2 の {@link PatternProviderPart} を継承して <b>{@link #createLogic()} だけ差し替える</b>。</p>
+ * AE2の {@link PatternProviderPart} を継承して{@link #createLogic()} だけ差し替える。</p>
  *
- * <h2>毎 tick の flush が要らない理由</h2>
+ * <h2>毎tickのflushが要らない理由</h2>
  * <p>ブロック版は {@code serverTick()} で {@code flushPatternUpdate()} を流しているが、
- * ケーブル版に相当する tick は無い。{@link InsanePatternProviderLogic} は
- * <b>その tick の最初の更新をその場で流し</b>、パターンを実際に読む経路
+ * ケーブル版に相当するtickは無い。{@link InsanePatternProviderLogic} は
+ * そのtickの最初の更新をその場で流し、パターンを実際に読む経路
  * ({@code getAvailablePatterns()} / {@code hasPattern}) も必ず先に流すので、
- * tick が無くても古い一覧が見えることはない
- * (溜まるのは「同じ tick に 2 回以上いじったとき」だけで、次の読み出しで解消する)。</p>
+ * tickが無くても古い一覧が見えることはない
+ * 溜まるのは「同じtickに2回以上いじったとき」だけで、次の読み出しで解消する。</p>
  *
  * <h2>ブロック版との違い</h2>
- * <p>押し出し先は AE2 の部品と同じく<b>取り付けた面の隣</b>だけになる
- * (ブロック版は 6 方向すべて)。返却インベントリ ({@code GENERIC_INTERNAL_INV}) は
- * ブロック版と同じく外へ見せる。AE2 の {@code PatternProviderPart} 向けの登録は
+ * <p>押し出し先はAE2の部品と同じく取り付けた面の隣だけになる
+ * ブロック版は6方向すべて。返却インベントリ、{@code GENERIC_INTERNAL_INV}は
+ * ブロック版と同じく外へ見せる。AE2の {@code PatternProviderPart} 向けの登録は
  * クラスの完全一致でしか効かないので、{@code ModCapabilities#registerParts} で登録し直している。</p>
  */
 public class InsanePatternProviderPart extends PatternProviderPart {
 
-    /** 板の本体。AE2 のパターンプロバイダ部品と同じ形で、正面だけこちらのテクスチャにしたもの。 */
+    /** 板の本体。AE2のパターンプロバイダ部品と同じ形で、正面だけこちらのテクスチャにしたもの。 */
     public static final ResourceLocation MODEL_BASE = ResourceLocation.fromNamespaceAndPath(
             InsaneAE.MODID, "part/insane_pattern_provider_base");
 
-    // 状態表示のインジケータ (側面の 4 本線) は AE2 のものをそのまま借りる。
+    // 状態表示のインジケータ、つまり側面の4本線はAE2のものをそのまま借りる
     private static final ResourceLocation INDICATOR_OFF = ae2("part/interface_off");
     private static final ResourceLocation INDICATOR_ON = ae2("part/interface_on");
     private static final ResourceLocation INDICATOR_HAS_CHANNEL = ae2("part/interface_has_channel");
@@ -58,7 +58,7 @@ public class InsanePatternProviderPart extends PatternProviderPart {
     public static final PartModel MODELS_ON = new PartModel(MODEL_BASE, INDICATOR_ON);
     public static final PartModel MODELS_HAS_CHANNEL = new PartModel(MODEL_BASE, INDICATOR_HAS_CHANNEL);
 
-    /** モデルの焼き込み対象として AE2 に知らせるモデル一式。{@code ModParts} が使う。 */
+    /** モデルの焼き込み対象としてAE2に知らせるモデル一式。{@code ModParts} が使う。 */
     public static List<ResourceLocation> models() {
         return List.of(MODEL_BASE, INDICATOR_OFF, INDICATOR_ON, INDICATOR_HAS_CHANNEL);
     }
@@ -74,7 +74,7 @@ public class InsanePatternProviderPart extends PatternProviderPart {
     /**
      * 枠を広げた {@link InsanePatternProviderLogic} に差し替える。
      *
-     * <p><b>super のコンストラクタから呼ばれる。</b>このクラスのフィールドはまだ
+     * <p>superのコンストラクタから呼ばれる。このクラスのフィールドはまだ
      * 初期化されていないので、{@code getMainNode()} 以外に触ってはいけない。</p>
      */
     @Override
@@ -90,8 +90,8 @@ public class InsanePatternProviderPart extends PatternProviderPart {
         return isPowered() ? MODELS_ON : MODELS_OFF;
     }
 
-    // AE2 の PatternProviderLogicHost の既定実装は ae2:pattern_provider の画面を開いてしまう。
-    // 1620 枠はそのレイアウトに収まらないので、ブロック版と同じ画面に差し替える。
+    // AE2のPatternProviderLogicHostの既定実装はae2:pattern_providerの画面を開いてしまう
+    // 1620枠はそのレイアウトに収まらないので、ブロック版と同じ画面に差し替える
 
     @Override
     //? if >=1.21 {

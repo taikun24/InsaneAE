@@ -11,28 +11,28 @@ import jp.main.taikun.insaneae.util.LogOnce;
 import org.slf4j.Logger;
 
 /**
- * ACO (AE2 Crafting Optimizer) の公開 BigInteger 台帳 API を呼ぶ任意連携アダプター。
+ * ACO (AE2 Crafting Optimizer) の公開BigInteger台帳APIを呼ぶ任意連携アダプター。
  *
- * <p>ACO は任意依存なので、このクラスだけが外部 API を名前で解決する。InsaneAE 本体の
- * Quantum CPU 処理は ACO のクラスを直接参照せず、古い ACO や ACO なしでもロードできる。</p>
+ * <p>ACOは任意依存なので、このクラスだけが外部APIを名前で解決する。InsaneAE本体の
+ * Quantum CPU処理はACOのクラスを直接参照せず、古いACOやACOなしでもロードできる。</p>
  *
- * <p>注意点 2 つ (ACO 1.5.11 の jar を javap で確認済み):</p>
+ * <p>注意点は2つ。ACO 1.5.11のjarをjavapで確認済み:</p>
  * <ul>
  *   <li>{@code BigIntegerAmountLedger<K>} はジェネリックなので、消去後のシグネチャは
  *       {@code add(Object, BigInteger)} / {@code drain(Object, long)}。
- *       引数の型で厳密に引かず、{@link #findKeyAmountMethod} で「AEKey を渡せる」ものを探す。</li>
+ *       引数の型で厳密に引かず、{@link #findKeyAmountMethod} で「AEKeyを渡せる」ものを探す。</li>
  *   <li>{@code createAmountLedger} の引数型 ({@code engine.BigCraftingKeyCodec}) は
- *       ACO の内部パッケージにある。型を {@code Class.forName} で名指ししないよう、
+ *       ACOの内部パッケージにある。型を {@code Class.forName} で名指ししないよう、
  *       内部型を要求しない {@code createAeKeyAmountLedger} を使う。</li>
  * </ul>
  *
- * <h2>解決は 1 回だけ</h2>
- * <p>台帳は Quantum CPU 1 台につき 1 つ作るが、API の解決 (クラスとメソッドの検索・
- * バージョンの確認) とログは<b>プロセスで 1 回だけ</b>にしている。台帳を作るたびに
- * 解決とログの出力をすると、Quantum CPU の多いワールドではブロックエンティティが
- * 作られるたびに INFO が 1 行出てコンソールが埋まる (issue #18)。</p>
+ * <h2>解決は1回だけ</h2>
+ * <p>台帳はQuantum CPU 1台につき1つ作る。APIの解決、つまりクラスとメソッドの検索・
+ * バージョンの確認) とログはプロセスで1回だけにしている。台帳を作るたびに
+ * 解決とログの出力をすると、Quantum CPUの多いワールドではブロックエンティティが
+ * 作られるたびにINFOが1行出てコンソールが埋まる (issue #18)。</p>
  *
- * <p>実行時に ACO 側が例外を投げた場合のローカル台帳への退避は
+ * <p>実行時にACO側が例外を投げた場合のローカル台帳への退避は
  * {@link LazyFailsafeLedger} が受け持つ。ここでは {@link IllegalStateException} に包んで投げ上げるだけ。</p>
  */
 final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
@@ -43,10 +43,10 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
     private static final int REQUIRED_LEDGER_API_VERSION = 2;
     private static final int REQUIRED_API_VERSION = 3;
 
-    /** 解決済みの API。空なら ACO の台帳は使えない (古い・見つからない)。 */
+    /** 解決済みのAPI。空ならACOの台帳は使えない。古い・見つからない。 */
     private static volatile Optional<Binding> binding;
 
-    /** ACO の台帳 API のメソッド一式。 */
+    /** ACOの台帳APIのメソッド一式。 */
     private record Binding(
             Method isEnabled,
             Method create,
@@ -72,7 +72,7 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
             return Optional.empty();
         }
         try {
-            // 有効・無効は ACO の設定で変わり得るので、解決とは別に毎回聞く。
+            // 有効・無効はACOの設定で変わり得るので、解決とは別に毎回聞く
             if (!(Boolean) api.isEnabled().invoke(null)) {
                 if (LogOnce.first("aco-ledger-disabled")) {
                     LOGGER.info("InsaneAE: ACO BigInteger backend is disabled; using local ledger");
@@ -136,7 +136,7 @@ final class AcoBigIntegerOutputLedger implements PendingOutputLedger {
     /**
      * ジェネリックなKは実行時にObjectへ型消去されるため、AEKey固定の厳密検索を避ける。
      * 第1引数へAEKeyを渡せて、第2引数の量型が一致する公開メソッドだけを採用する
-     * (BigInteger の加算と long の取り出しを取り違えないよう、量の型は一致させる)。
+     * BigIntegerの加算とlongの取り出しを取り違えないよう、量の型は一致させる。
      */
     private static Method findKeyAmountMethod(Class<?> type, String name, Class<?> amountType)
             throws NoSuchMethodException {

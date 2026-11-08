@@ -27,19 +27,19 @@ import net.minecraftforge.network.NetworkHooks;
 /**
  * 超特大インターフェイスの画面。
  *
- * <p>中身は AE2 の {@link InterfaceMenu} そのままでよい。{@code InterfaceMenu} は
- * <b>ホストの持つ枠数だけスロットを並べる</b>作りなので、枠数を増やしただけの
+ * <p>中身はAE2の {@link InterfaceMenu} そのままでよい。{@code InterfaceMenu} は
+ * ホストの持つ枠数だけスロットを並べる作りなので、枠数を増やしただけの
  * こちらでもそのまま動く。</p>
  *
- * <p>別クラスにしているのは {@code MenuType} を分けるため。AE2 の
+ * <p>別クラスにしているのは {@code MenuType} を分けるため。AE2の
  * {@code MenuTypeBuilder} は {@code MenuType} を必ず {@code ae2} 名前空間で登録し、
  * 画面レイアウトも {@code ae2:screens/interface.json} 固定になるので、
- * 9x9 の枠が収まらない。{@code insaneae:insane_interface} として登録し直し、
+ * 9x9の枠が収まらない。{@code insaneae:insane_interface} として登録し直し、
  * レイアウトは {@code assets/ae2/screens/insaneae/insane_interface.json} を使う
- * ({@code StyleManager} が ae2 名前空間固定で読むためそちらに置いてある)。</p>
+ * {@code StyleManager}がae2名前空間固定で読むため、そちらに置いてある。</p>
  *
- * <p>スロットは<b>全枠ぶん (設定 81 + 在庫 81) 並べてある</b>。表示するぶんを選ぶのは
- * クライアント側だけの処理 ({@code InsaneInterfaceScreen})。Quantum CPU の 1620 枠と違って
+ * <p>スロットは全枠ぶん、設定81と在庫81を並べてある。表示するぶんを選ぶのは
+ * クライアント側だけの処理 ({@code InsaneInterfaceScreen})。Quantum CPUの1620枠と違って
  * この程度ならバニラの差分同期で十分間に合う。</p>
  */
 public class InsaneInterfaceMenu extends InterfaceMenu {

@@ -11,13 +11,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 /**
- * 大量枠のプロバイダで、パターンを 1 枚変えるたびに<b>全枠をデコードし直す</b>のをやめる (issue #16)。
+ * 大量枠のプロバイダで、パターンを1枚変えるたびに全枠をデコードし直すのをやめる (issue #16)。
  *
- * <p>AE2 の {@code updatePatterns} は全スロットを {@code PatternDetailsHelper.decodePattern} し直す。
- * 1620 枠ではこれだけで 1 回 30ms ほどかかる。デコード結果は {@link InsanePatternProviderLogic} が
- * 覚えているので、そちらに問い合わせる。AE2 素のプロバイダはそのまま。</p>
+ * <p>AE2の {@code updatePatterns} は全スロットを {@code PatternDetailsHelper.decodePattern} し直す。
+ * 1620枠ではこれだけで1回30msほどかかる。デコード結果は {@link InsanePatternProviderLogic} が
+ * 覚えているので、そちらに問い合わせる。AE2素のプロバイダはそのまま。</p>
  *
- * <p>compat 側 (required=false) に置いてある。他 Mod が同じ呼び出しを差し替えていて当たらなくても、
+ * <p>compat側 (required=false) に置いてある。他Modが同じ呼び出しを差し替えていて当たらなくても、
  * 毎回デコードする元の遅い経路に戻るだけで動作は変わらない。</p>
  */
 @Mixin(value = PatternProviderLogic.class, remap = false)

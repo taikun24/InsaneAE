@@ -14,11 +14,11 @@ import net.neoforged.neoforge.registries.ForgeRegistries;
 *///?}
 
 /**
- * 1G 以上のポータブル FE セル。
+ * 1G以上のポータブルFEセル。
  *
- * <p>AppliedFlux の {@link ItemPortableFECell} を継承しているので、端末 GUI・内蔵電力・
- * 誘導カードによる持ち物への給電は AppliedFlux の実装が働く。容量・表示名・分解レシピの ID と、
- * 内蔵電力 (本体のポータブルセルと同じく ×8、充電速度 ×2) だけを変えている。</p>
+ * <p>AppliedFluxの {@link ItemPortableFECell} を継承しているので、端末GUI・内蔵電力・
+ * 誘導カードによる持ち物への給電はAppliedFluxの実装が働く。容量・表示名・分解レシピのIDと、
+ * 内蔵電力は本体のポータブルセルと同じく×8、充電速度は×2で、それだけを変えている。</p>
  */
 //? if >=1.21 {
 public class InsanePortableFECellItem extends ItemPortableFECell {
@@ -31,9 +31,9 @@ public class InsanePortableFECellItem extends ItemPortableFECell {
     private final String tierLabel;
 
     public InsanePortableFECellItem(long totalBytes, int screenColor, String nameKey, String tierLabel) {
-        // 第 1 引数 (KiB) は使わない (getBytes を上書きする)。0 なら AppliedFlux 側の
-        // MEGA 扱い (電力 ×8 / 充電 ×2) も掛からないので、倍率はこちらで掛ける。
-        // アイドル消費は MEGA Cells・本体のポータブルセルと同じく階層に依らず 1。
+        // 第1引数のKiBは使わない。getBytesを上書きするため。0ならAppliedFlux側の
+        // MEGA扱いの電力×8と充電×2も掛からないので、倍率はこちらで掛ける
+        // アイドル消費はMEGA Cells・本体のポータブルセルと同じく階層に依らず1
         super(0, 1.0, screenColor);
         this.totalBytes = totalBytes;
         this.nameKey = nameKey;
@@ -51,9 +51,9 @@ public class InsanePortableFECellItem extends ItemPortableFECell {
     }
 
     /**
-     * 分解 (インベントリ内で右クリック) 時に AE2 がレシピを引くための ID。
-     * AppliedFlux の実装は {@code appflux:} 名前空間を決め打ちしているので、
-     * こちらの登録名 (= レシピ ID) を返し直す。
+     * インベントリ内で右クリックして分解するとき、AE2がレシピを引くためのID。
+     * AppliedFluxの実装は {@code appflux:} 名前空間を決め打ちしているので、
+     * こちらの登録名、つまりレシピIDを返し直す。
      */
     @Override
     public ResourceLocation getRecipeId() {

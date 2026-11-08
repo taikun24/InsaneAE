@@ -10,18 +10,18 @@ import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
 import org.spongepowered.asm.mixin.Mixin;
 
 /**
- * Quantum CPU を ACO の craftingtable batch ターゲットにする。
+ * Quantum CPUをACOのcraftingtable batchターゲットにする。
  *
- * <p>ACO はターゲットを「{@code ICraftingProvider} が {@code ProviderOwnedPatternBatchTarget} で、
- * 返した BlockEntity が {@code CraftingTableBatchTarget}」という形で探す
+ * <p>ACOはターゲットを「{@code ICraftingProvider} が {@code ProviderOwnedPatternBatchTarget} で、
+ * 返したBlockEntityが {@code CraftingTableBatchTarget}」という形で探す
  * ({@code PhysicalCraftingTreeTransaction.selectTarget})。
- * <b>アダプタの登録は要らない。</b></p>
+ * アダプタの登録は要らない。</p>
  *
- * <p>インターフェイスの実装は反射では代用できないので、ACO の型をここで直接参照している。
- * ACO が無い環境では {@link AcoMixinPlugin} がこの Mixin ごと適用を止める
- * (実装したはずのインターフェイスが存在せず、Quantum CPU がロードできなくなるため)。</p>
+ * <p>インターフェイスの実装は反射では代用できないので、ACOの型をここで直接参照している。
+ * ACOが無い環境では {@link AcoMixinPlugin} がこのMixinごと適用を止める
+ * 実装したはずのインターフェイスが存在せず、Quantum CPUがロードできなくなるため。</p>
  *
- * <p>中身は {@link QuantumCpuBatchExecutor} に置いてある。Mixin のクラスは
+ * <p>中身は {@link QuantumCpuBatchExecutor} に置いてある。Mixinのクラスは
  * デバッグしづらいので、判定と会計は普通のクラスに出しておく。</p>
  */
 @Mixin(QuantumCpuBlockEntity.class)

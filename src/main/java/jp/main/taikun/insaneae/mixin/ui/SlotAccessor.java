@@ -8,11 +8,11 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 /**
  * {@link Slot#x} / {@link Slot#y} を書き換えられるようにする。
  *
- * <p>スロットの座標は {@code final} なので普通は代入できない。AE2 はアクセストランスフォーマで
- * 外していて ({@code AEBaseScreen#repositionSlots} が直接代入している)、こちらは
- * 同じことを Mixin のアクセサでやる (AT を足すと Minecraft の再セットアップが要るため)。</p>
+ * <p>スロットの座標は {@code final} なので普通は代入できない。AE2はアクセストランスフォーマで
+ * 外していて、{@code AEBaseScreen#repositionSlots}が直接代入している。こちらは
+ * 同じことをMixinのアクセサでやる。ATを足すとMinecraftの再セットアップが要るため。</p>
  *
- * <p>Quantum CPU のパターン枠のページ送りで、表示中のページのスロットだけを
+ * <p>Quantum CPUのパターン枠のページ送りで、表示中のページのスロットだけを
  * 並べ直すのに使う → {@code client/QuantumCpuScreen}。</p>
  */
 @Mixin(Slot.class)

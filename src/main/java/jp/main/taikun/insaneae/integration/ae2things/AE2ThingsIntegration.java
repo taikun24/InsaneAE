@@ -30,20 +30,20 @@ import java.util.function.Consumer;
 *///?}
 
 /**
- * AE2 Things 連携: 1G〜8E のアイテム用 DISK を足す (AE2 Things の 256k、AE2 MEGA Things の 256M の続き)。
+ * AE2 Things連携: 1G〜8Eのアイテム用DISKを足す。AE2 Thingsの256k、AE2 MEGA Thingsの256Mの続きになる。
  *
- * <p>DISK は種類の上限が無い代わりに、通常のセルの 1/8 (アイテム 1 個 = 1 バイト) しか入らない。
- * 中身は AE2 Things が UUID ごとにワールドへ保存する。液体・化学物質の DISK は AE2 Things 本体に
- * 無い (絵も無い) ので足していない。</p>
+ * <p>DISKは種類の上限が無い代わりに、通常のセルの1/8しか入らない。アイテム1個が1バイトになる。
+ * 中身はAE2 ThingsがUUIDごとにワールドへ保存する。液体・化学物質のDISKはAE2 Things本体に
+ * 無い。絵も無いので足していない。</p>
  *
- * <p>このクラスは AE2 Things のクラスを直接参照するので、ae2things が無い環境では
- * ロードしてはいけない (名簿 {@code AddonIntegrations} がラムダ越しに生成している)。</p>
+ * <p>このクラスはAE2 Thingsのクラスを直接参照するので、ae2thingsが無い環境では
+ * ロードしてはいけない。名簿の{@code AddonIntegrations}がラムダ越しに生成している。</p>
  */
 public final class AE2ThingsIntegration implements AddonIntegration {
 
     public static final String MODID = "ae2things";
 
-    /** ME ドライブに挿したときの見た目。AE2 Things の DISK と同じものを借りる。 */
+    /** MEドライブに挿したときの見た目。AE2 ThingsのDISKと同じものを借りる。 */
     private static final ResourceLocation DRIVE_MODEL =
             ResourceLocation.fromNamespaceAndPath(MODID, "model/drive/cells/disk_256k");
 
@@ -69,7 +69,7 @@ public final class AE2ThingsIntegration implements AddonIntegration {
         }
     }
 
-    /** DISK の LED は AE2 Things の色付けを使う (中身の量を保存データではなくアイテム側の値から読む)。 */
+    /** DISKのLEDはAE2 Thingsの色付けを使う。中身の量を保存データではなくアイテム側の値から読む。 */
     @Override
     public Map<Item, ToIntBiFunction<ItemStack, Integer>> cellsWithOwnColor() {
         Map<Item, ToIntBiFunction<ItemStack, Integer>> cells = new LinkedHashMap<>();
@@ -77,7 +77,7 @@ public final class AE2ThingsIntegration implements AddonIntegration {
         return cells;
     }
 
-    /** AE2 Things が自分の DISK にしている登録と同じ (あいまいカード・反転カード)。 */
+    /** AE2 Thingsが自分のDISKにしている登録と同じ。あいまいカード・反転カード。 */
     @Override
     public void registerUpgrades() {
         String group = "text.ae2things.disk_drives";
@@ -92,7 +92,7 @@ public final class AE2ThingsIntegration implements AddonIntegration {
         }
     }
 
-    /** 作り方も AE2 Things と同じく DISK ハウジング + セルコンポーネント。分解でもこの 2 つに戻る。 */
+    /** 作り方もAE2 Thingsと同じくDISKハウジング + セルコンポーネント。分解でもこの2つに戻る。 */
     @Override
     //? if >=1.21 {
     public void buildRecipes(RecipeOutput output, InsaneCraftingUnitType tier, ItemLike component) {

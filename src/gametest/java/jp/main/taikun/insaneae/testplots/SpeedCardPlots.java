@@ -36,14 +36,14 @@ public final class SpeedCardPlots {
     }
 
     /**
-     * インポートバス + 限界突破加速カードで「1 tick 1 スタック」の壁が無いことの検証。
+     * インポートバス + 限界突破加速カードで「1 tick 1スタック」の壁が無いことの検証。
      *
-     * <p>AE2 のインポートバスは {@code ExternalStorageFacade} 経由で隣接インベントリの
-     * <b>全スロットを long 量でまとめて</b>抜くので、パイプの押し込みと違い
-     * スタックサイズが速度の天井にならない。1 活性化あたりの移動量は
-     * {@code getOperationsPerTick} で、そこにうちの加速カードの倍率が掛かる
-     * ({@code IOBusPartMixin})。WARP カード 1 枚 (4096 倍) で 20 スタックが
-     * まとめて動くことを見る (素のバスは 1 活性化 1 個なので、カード無しでは
+     * <p>AE2のインポートバスは {@code ExternalStorageFacade} 経由で隣接インベントリの
+     * 全スロットをlong量でまとめて抜くので、パイプの押し込みと違い
+     * スタックサイズが速度の天井にならない。1活性化あたりの移動量は
+     * {@code getOperationsPerTick} で、そこにうちの加速カードの倍率が掛かる。
+     * この倍率は{@code IOBusPartMixin}で掛けている。WARPカード1枚の4096倍で20スタックが
+     * まとめて動くことを見る。素のバスは1活性化1個なので、カード無しでは
      * この時間内に数個しか動かない)。</p>
      */
     @TestPlot("insaneae_import_bus_speed_card")
@@ -68,7 +68,7 @@ public final class SpeedCardPlots {
             var pos = new BlockPos(0, 0, 0);
             var sequence = helper.startSequence();
 
-            // グリッドの起動 + バスの活性化 (最短 5 tick 間隔) を 2〜3 回ぶん待つ。
+            // グリッドの起動とバスの活性化を、最短5 tick間隔で2〜3回ぶん待つ
             sequence.thenIdle(30);
             sequence.thenExecute(() -> {
                 long inNetwork = countInNetwork(helper, Items.IRON_INGOT);
@@ -81,20 +81,20 @@ public final class SpeedCardPlots {
         });
     }
 
-    /** 刻印機の内部インベントリ (上 / 下 / 横の入力 / 横の出力 をつないだもの) の枠番号。 */
+    /** 刻印機の内部インベントリの枠番号。上、下、横の入力、横の出力をつないだもの。 */
     private static final int INSCRIBER_TOP = 0;
     private static final int INSCRIBER_INPUT = 2;
     private static final int INSCRIBER_OUTPUT = 3;
 
     /**
-     * <b>刻印機の強制クールダウンを貫通する</b>ことを確かめる。
+     * 刻印機の強制クールダウンを貫通することを確かめる。
      *
-     * <p>AE2 の刻印機は加工そのものが 1 tick で終わっても、そのあとプレス動作の 16 tick が
-     * 必ず挟まる。つまり加速カードで速度値をいくら上げても<b>16 tick に 1 個</b>が上限で、
-     * シリコン 64 個を刻むのに 1000 tick 以上かかる。{@code TickBoost} の追い tick が
-     * 働いていれば、同じ 1 tick のうちにその待ち時間ごと回してしまえる。</p>
+     * <p>AE2の刻印機は加工そのものが1 tickで終わっても、そのあとプレス動作の16 tickが
+     * 必ず挟まる。つまり加速カードで速度値をいくら上げても16 tickに1個が上限で、
+     * シリコン64個を刻むのに1000 tick以上かかる。{@code TickBoost} の追いtickが
+     * 働いていれば、同じ1 tickのうちにその待ち時間ごと回してしまえる。</p>
      *
-     * <p>40 tick (グリッドの起動を含む) で 64 個すべて刻めていれば貫通できている。</p>
+     * <p>40 tickで、グリッドの起動を含めて64個すべて刻めていれば貫通できている。</p>
      */
     @TestPlot("insaneae_inscriber_tick_burst")
     public static void inscriberTickBurst(PlotBuilder plot) {
@@ -130,14 +130,14 @@ public final class SpeedCardPlots {
     }
 
     /**
-     * 材料が<b>少しずつ届く</b>ときも追い tick で遅くならないこと (issue #15)。
+     * 材料が少しずつ届くときも追いtickで遅くならないこと (issue #15)。
      *
-     * <p>パターンプロバイダーからの搬入のように材料が 1 個ずつ届く場合、追い tick の途中で
-     * 材料が尽きる。そのとき機械が返す SLEEP / SLOWER をそのまま AE2 へ返すと、
-     * 仕事をした 1 回目の URGENT が上書きされて tick 間隔が延びてしまう。</p>
+     * <p>パターンプロバイダーからの搬入のように材料が1個ずつ届く場合、追いtickの途中で
+     * 材料が尽きる。そのとき機械が返すSLEEP / SLOWERをそのままAE2へ返すと、
+     * 仕事をした1回目のURGENTが上書きされてtick間隔が延びてしまう。</p>
      *
-     * <p>毎 tick、入力が空なら 1 個入れて出力を回収する。追い tick で 1 個を 1 tick で
-     * 刻み切れるので、200 tick あれば 150 個以上は刻めているはず。</p>
+     * <p>毎tick、入力が空なら1個入れて出力を回収する。追いtickで1個を1 tickで
+     * 刻み切れるので、200 tickあれば150個以上は刻めているはず。</p>
      */
     @TestPlot("insaneae_inscriber_trickle_feed")
     public static void inscriberTrickleFeed(PlotBuilder plot) {

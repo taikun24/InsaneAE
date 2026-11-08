@@ -17,25 +17,25 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 自前の画面 (Quantum CPU / 超特大インターフェイス) が、他の AE2 アドオンのせいで
+ * 自前の画面、つまりQuantum CPUと超特大インターフェイスが、他のAE2アドオンのせいで
  * 開けなくなるのを防ぐ。
  *
- * <p>AE2 の {@code WidgetContainer.add(id, widget)} は必ず
- * {@link ScreenStyle#getWidget(String)} を引き、<b>スタイル JSON に無い ID なら
- * {@code IllegalStateException} を投げる</b> (テキストの方は寛容)。
- * パターンプロバイダの画面にボタンを足すアドオンは、AE2 本体の
- * {@code ae2:screens/pattern_provider.json} をリソースパックとして上書きして ID を足す。
- * ところがこちらは<b>自前のスタイル</b>
+ * <p>AE2の {@code WidgetContainer.add(id, widget)} は必ず
+ * {@link ScreenStyle#getWidget(String)} を引き、スタイルJSONに無いIDなら
+ * {@code IllegalStateException}を投げる。テキストの方は寛容。
+ * パターンプロバイダの画面にボタンを足すアドオンは、AE2本体の
+ * {@code ae2:screens/pattern_provider.json} をリソースパックとして上書きしてIDを足す。
+ * ところがこちらは自前のスタイル
  * ({@code ae2:screens/insaneae/*.json}) を使うので、
- * アドオンが {@code PatternProviderScreen} 等に足したウィジェットの ID がどこにも定義されておらず、
- * 画面を開いた瞬間に落ちる (= dev では絶対に再現しない)。</p>
+ * アドオンが {@code PatternProviderScreen} 等に足したウィジェットのIDがどこにも定義されておらず、
+ * 画面を開いた瞬間に落ちる。devでは絶対に再現しない。</p>
  *
- * <p>そこで<b>こちらのスタイルに限って</b>、未定義の ID を例外ではなく
+ * <p>そこでこちらのスタイルに限って、未定義のIDを例外ではなく
  * 「画面外に置いた空のウィジェット」として返す。アドオンのボタンは見えないが、
- * 少なくとも画面は開ける。どの ID が足りなかったかは 1 回だけ警告に出すので、
- * 必要ならスタイル JSON に位置を書いて正しく表示させられる。</p>
+ * 少なくとも画面は開ける。どのIDが足りなかったかは1回だけ警告に出すので、
+ * 必要ならスタイルJSONに位置を書いて正しく表示させられる。</p>
  *
- * <p>他の画面 (AE2 本体や他 Mod のもの) は素の挙動のまま。判定は「このスタイルに
+ * <p>他の画面、つまりAE2本体や他Modのものは素の挙動のまま。判定は「このスタイルに
  * {@code nextPage} があるか」= 自前のページ送り付き画面かどうかで行う。</p>
  */
 @Mixin(value = ScreenStyle.class, remap = false)
@@ -44,11 +44,11 @@ public abstract class ScreenStyleMixin {
     @Unique
     private static final Logger INSANEAE_LOG = LogUtils.getLogger();
 
-    /** 同じ ID で毎フレーム警告しないための記録。 */
+    /** 同じIDで毎フレーム警告しないための記録。 */
     @Unique
     private static final Set<String> INSANEAE_REPORTED = new HashSet<>();
 
-    /** 自前のスタイルだけを見分けるための目印 (こちらの JSON にしかない ID)。 */
+    /** 自前のスタイルだけを見分けるための目印。こちらのJSONにしかないID。 */
     @Unique
     private static final String INSANEAE_MARKER = "nextPage";
 
@@ -66,14 +66,14 @@ public abstract class ScreenStyleMixin {
                     //? if >=1.21 {
                     + " (他の AE2 アドオンが AE2 の画面に足したもの)。"
                     //?} else {
-                    /*+ " (他の AE2 アドオンが PatternProviderScreen に足したもの)。"
+                    /*+ " (他のAE2アドオンがPatternProviderScreenに足したもの)。"
                     *///?}
                     + " 画面外に逃がして表示だけ諦める。", id);
         }
         cir.setReturnValue(insaneae$offscreen());
     }
 
-    /** 画面外・サイズ 0 のウィジェット枠。 */
+    /** 画面外・サイズ0のウィジェット枠。 */
     @Unique
     private static WidgetStyle insaneae$offscreen() {
         WidgetStyle style = new WidgetStyle();

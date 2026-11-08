@@ -21,23 +21,23 @@ import net.minecraft.world.ItemInteractionResult;
 *///?}
 
 /**
- * Quantum CPU のブロック。中身は {@link QuantumCpuBlockEntity}。
+ * Quantum CPUのブロック。中身は {@link QuantumCpuBlockEntity}。
  *
- * <p>パターンプロバイダと違って押し出し方向を持たない (自分で組み立てるため)。</p>
+ * <p>パターンプロバイダと違って押し出し方向を持たない。自分で組み立てるため。</p>
  */
 public class QuantumCpuBlock extends AEBaseEntityBlock<QuantumCpuBlockEntity> {
 
     public QuantumCpuBlock() {
-        // noOcclusion: モデルに透明な部分があるので、隣のブロックの面を消させない。
-        // 付けないと隣接面がカリングされ、透けた部分から地形の裏 (=何も無い空間) が見える。
+        // noOcclusion: モデルに透明な部分があるので、隣のブロックの面を消させない
+        // 付けないと隣接面がカリングされ、透けた部分から地形の裏、つまり何も無い空間が見える
         super(metalProps().noOcclusion());
     }
 
     /**
-     * 光の遮り方。AE2 のチャージャーと同じく完全遮光にはしない。
+     * 光の遮り方。AE2のチャージャーと同じく完全遮光にはしない。
      *
      * <p>{@code noOcclusion()} だけだと既定で「光を全く遮らない」扱いになり、
-     * 中身の詰まったブロックなのに光が通り抜けてしまうので、2 だけ減衰させる。</p>
+     * 中身の詰まったブロックなのに光が通り抜けてしまうので、2だけ減衰させる。</p>
      */
     @Override
     public int getLightBlock(BlockState state, BlockGetter level, BlockPos pos) {
@@ -54,8 +54,8 @@ public class QuantumCpuBlock extends AEBaseEntityBlock<QuantumCpuBlockEntity> {
     }
 
     // ブロックの右クリックは、手に持っている場合 (useItemOn) と素手の場合 (useWithoutItem) に
-    // 分かれていて、AE2 の onActivated は無い。
-    // どちらも画面を開くだけなので、実処理は openScreen() にまとめてある。
+    // 分かれていて、AE2のonActivatedは無い
+    // どちらも画面を開くだけなので、実処理はopenScreen() にまとめてある
 
     @Override
     //? if >=1.21 {
@@ -64,7 +64,7 @@ public class QuantumCpuBlock extends AEBaseEntityBlock<QuantumCpuBlockEntity> {
         if (InteractionUtil.isInAlternateUseMode(player)) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
-        // メモリーカード等、AE2 側が処理するものを先に通す。
+        // メモリーカード等、AE2側が処理するものを先に通す
         var handled = super.useItemOn(heldItem, state, level, pos, player, hand, hit);
         if (handled != ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION) {
             return handled;

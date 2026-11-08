@@ -11,13 +11,13 @@ import org.spongepowered.asm.mixin.Pseudo;
 import java.math.BigInteger;
 
 /**
- * ME Infinity Cell が exact 実行の納品を受けるかどうか。
+ * ME Infinity Cellがexact実行の納品を受けるかどうか。
  *
- * <p>AE2 の {@code insert} と同じ規約にする。セルの種類と同じものは全部受け入れて消し、
+ * <p>AE2の {@code insert} と同じ規約にする。セルの種類と同じものは全部受け入れて消し、
  * それ以外は受けない。量は在庫として名乗っている桁に抑える
- * ({@link UltraCreativeCellExactInsertPolicyMixin} と同じ理由)。</p>
+ * {@link UltraCreativeCellExactInsertPolicyMixin}と同じ理由。</p>
  *
- * <p>ACO 1.5.23 より前には無いインターフェイスなので、{@link AcoMixinPlugin} が実在を確かめてから当てる。</p>
+ * <p>ACO 1.5.23より前には無いインターフェイスなので、{@link AcoMixinPlugin} が実在を確かめてから当てる。</p>
  */
 @Pseudo
 @Mixin(targets = {

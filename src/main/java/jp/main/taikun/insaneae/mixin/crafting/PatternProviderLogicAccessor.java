@@ -13,10 +13,10 @@ import java.util.Set;
 
 /**
  * {@link PatternProviderLogic#pushPattern} を独自実装で置き換えたときに、
- * AE2 側の状態 (クラフトロック・送信待ち・押し出し先) をそのまま使うための入口。
+ * AE2側の状態、つまりクラフトロック、送信待ち、押し出し先をそのまま使うための入口。
  *
- * <p>どれも private なのでサブクラスからは触れない。状態を自前で持ち直すと
- * AE2 本来の 1 回ずつの経路とずれるので、Mixin で穴を開けて同じものを使う。</p>
+ * <p>どれもprivateなのでサブクラスからは触れない。状態を自前で持ち直すと
+ * AE2本来の1回ずつの経路とずれるので、Mixinで穴を開けて同じものを使う。</p>
  */
 @Mixin(value = PatternProviderLogic.class, remap = false)
 public interface PatternProviderLogicAccessor {

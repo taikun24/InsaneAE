@@ -58,7 +58,7 @@ import net.neoforged.fml.ModContainer;
 @Mod(InsaneAE.MODID)
 public class InsaneAE {
 
-    /** {@code META-INF/neoforge.mods.toml} の modId と一致させること。 */
+    /** {@code META-INF/neoforge.mods.toml} のmodIdと一致させること。 */
     public static final String MODID = "insaneae";
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -75,10 +75,10 @@ public class InsaneAE {
         //? if >=1.21 {
         ModDataComponents.register(bus);
         //?}
-        // ケーブルに貼る版。部品のモデル申告が凍結前に済む必要があるのでここで。
+        // ケーブルに貼る版。部品のモデル申告が凍結前に済む必要があるのでここで
         ModParts.register(bus);
-        // 他の AE2 アドオンとの連携 (化学物質セル・FE セル・他 Mod の機械への加速カードなど)。
-        // 入っているものだけ有効にする。セルは ModCells の登録に相乗りするので、その前に。
+        // 他のAE2アドオンとの連携。化学物質セル、FEセル、他Modの機械への加速カードなど
+        // 入っているものだけ有効にする。セルはModCellsの登録に相乗りするので、その前に
         AddonIntegrations.init();
         ModCells.register(bus);
         ModUpgrades.register(bus);
@@ -96,36 +96,36 @@ public class InsaneAE {
         });
         NeoForge.EVENT_BUS.addListener((ServerStoppedEvent event) -> CellContentStore.forget());
         bus.addListener(this::gatherData);
-        // NeoForge では capability を BlockEntityType / Item ごとに専用イベントで登録する。
-        // AE2 の一括登録は AE2 自身の型しか見ないので、自前の型はここで全部登録する。
+        // NeoForgeではcapabilityをBlockEntityType / Itemごとに専用イベントで登録する
+        // AE2の一括登録はAE2自身の型しか見ないので、自前の型はここで全部登録する
         //? if >=1.21 {
         bus.addListener(ModCapabilities::register);
-        // ケーブルに貼る版は AE2 の部品用イベントで登録する (AE2 の登録はクラスの完全一致でしか効かない)。
+        // ケーブルに貼る版はAE2の部品用イベントで登録する。AE2の登録はクラスの完全一致でしか効かないため
         bus.addListener(ModCapabilities::registerParts);
         //?}
 
-        // formed モデルの組み込み登録は ModelBakery より前に済ませる必要があるため、
-        // client でのみ Mod 構築時に行う (AE2 の AppEngClient コンストラクタと同タイミング)。
-        // 分離クラス経由なので dedicated server ではロードされない。
+        // formedモデルの組み込み登録はModelBakeryより前に済ませる必要があるため、
+        // clientでのみMod構築時に行う。AE2のAppEngClientコンストラクタと同じタイミングにするため
+        // 分離クラス経由なのでdedicated serverではロードされない
         if (FMLEnvironment.dist == Dist.CLIENT) {
             InsaneAEClient.init(bus);
         }
     }
 
     /**
-     * レシピ・ドロップ・モデル類は手書き JSON ではなく datagen で生成する
-     * ({@code ./gradlew runData} → {@code src/generated/resources})。
+     * レシピ・ドロップ・モデル類は手書きJSONではなくdatagenで生成する
+     * 生成は{@code ./gradlew runData}で行い、出力先は{@code src/generated/resources}。
      */
     private void gatherData(final GatherDataEvent event) {
         DataGenerator generator = event.getGenerator();
         PackOutput output = generator.getPackOutput();
         ExistingFileHelper existingFiles = event.getExistingFileHelper();
-        // レシピ・ドロップ系のプロバイダは HolderLookup.Provider を要求する
-        // (タグやデータコンポーネントをレジストリ越しに引くため)。
+        // レシピ・ドロップ系のプロバイダはHolderLookup.Providerを要求する
+        // タグやデータコンポーネントをレジストリ越しに引くため
         //? if >=1.21 {
         CompletableFuture<HolderLookup.Provider> registries = event.getLookupProvider();
 
-        // タグはレシピより先に (レシピがタグを材料に使うため、生成の順を揃えておく)。
+        // タグはレシピより先に生成する。レシピがタグを材料に使うため、生成の順を揃えておく
         generator.addProvider(event.includeServer(), new ModItemTagProvider(output, registries,
         //?} else {
         /*generator.addProvider(event.includeServer(), new ModItemTagProvider(output,
@@ -147,31 +147,31 @@ public class InsaneAE {
                 //?} else {
                         /*ModBlockLootProvider::new, LootContextParamSets.BLOCK))));
                 *///?}
-        // ブロックモデルを先に生成しておく (アイテムモデルが親として参照するため)。
+        // ブロックモデルを先に生成しておく。アイテムモデルが親として参照するため
         generator.addProvider(event.includeClient(), new ModBlockStateProvider(output, existingFiles));
         generator.addProvider(event.includeClient(), new ModItemModelProvider(output, existingFiles));
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-        // ブロックと BlockEntityType が揃った後で結びつける。
+        // ブロックとBlockEntityTypeが揃った後で結びつける
         event.enqueueWork(ModBlockEntities::bindBlockEntities);
-        // 強化クリエイティブセルを ME ドライブ等に認識させる。
-        // 判定は自前のアイテムだけなので AE2 側のハンドラとの登録順は問わない。
+        // 強化クリエイティブセルをMEドライブ等に認識させる
+        // 判定は自前のアイテムだけなのでAE2側のハンドラとの登録順は問わない
         event.enqueueWork(() -> StorageCells.addCellHandler(
                 InsaneCreativeCellHandler.INSTANCE));
         event.enqueueWork(ModUpgrades::registerUpgrades);
-        // ACO へ「BigInteger 計画を受け取る外部 CPU アドオン」として名乗る。
+        // ACOへ「BigInteger計画を受け取る外部CPUアドオン」として名乗る
         event.enqueueWork(
                 OptionalAcoBigIntegerIntegration
                         ::registerBigIntegerPlanConsumer);
         //? if <1.21 {
         /*if (Boolean.getBoolean("appeng.tests")) {
-            // プロットは配布 jar に入らない別のソースセットにあるので、クラス名で呼ぶ。
+            // プロットは配布jarに入らない別のソースセットにあるので、クラス名で呼ぶ
             event.enqueueWork(InsaneAE::registerTestPlots);
         }
         *///?}
         // 検証用のテストプロット (`./gradlew runGameTestServer`) は
-        // @TestPlotClass 経由で AE2 が自動的に拾うので、ここで登録する必要はない。
+        // @TestPlotClass経由でAE2が自動的に拾うので、ここで登録する必要はない
         LOGGER.info("InsaneAE: {} crafting storage tiers registered.", ModBlocks.CRAFTING_STORAGE.size());
     }
     //? if <1.21 {

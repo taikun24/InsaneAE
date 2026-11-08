@@ -38,8 +38,8 @@ import net.neoforged.neoforge.registries.ForgeRegistries;
 *///?}
 
 /**
- * AppliedFlux の FE セルの検査本体。AppliedFlux のクラスを直接使うので、
- * appflux が入っているときにだけ {@link AddonPlots} から呼ばれる。
+ * AppliedFluxのFEセルの検査本体。AppliedFluxのクラスを直接使うので、
+ * appfluxが入っているときにだけ {@link AddonPlots} から呼ばれる。
  */
 final class AppFluxChecks {
 
@@ -50,15 +50,15 @@ final class AppFluxChecks {
         FluxKey fe = FluxKey.of(EnergyType.FE);
         long perByte = FluxKeyType.TYPE.getAmountPerByte();
 
-        // 1G: 階層どおりの容量 (2^30 バイト × 1 バイトあたりの FE) まで入る。
+        // 1G: 階層どおりの容量まで入る。容量は2^30バイト × 1バイトあたりのFE
         StorageCell small = cellInventory(helper, "fe_storage_cell_1g");
         long smallCapacity = (1L << 30) * perByte;
         long accepted = small.insert(fe, Long.MAX_VALUE, Actionable.SIMULATE, IActionSource.empty());
         helper.check(accepted == smallCapacity,
                 "1G の FE セルの容量が " + accepted + " FE (期待値 " + smallCapacity + ")");
 
-        // 16T: 最上段。容量は 8T (= 2^43 バイト) で、既定設定ならちょうど long の際。
-        // 満杯まで入れたあと出し入れが壊れないこと。
+        // 16T: 最上段。容量は8Tで、2^43バイトに当たる。既定設定ならちょうどlongの際
+        // 満杯まで入れたあと出し入れが壊れないこと
         StorageCell top = cellInventory(helper, "fe_storage_cell_16t");
         long filled = top.insert(fe, Long.MAX_VALUE, Actionable.MODULATE, IActionSource.empty());
         helper.check(filled > smallCapacity, "16T の FE セルに " + filled + " FE しか入らない (long の溢れ?)");
@@ -76,7 +76,7 @@ final class AppFluxChecks {
         helper.check(taken == filled, "16T の FE セルから " + taken + " FE しか出ない (入れたのは " + filled + ")");
         helper.check(top.getStatus() == CellState.EMPTY, "全部出しても空にならない");
 
-        // 16T より上は出さない (AppliedFlux の容量計算が long なので)。
+        // 16Tより上は出さない。AppliedFluxの容量計算がlongなので
         //? if >=1.21 {
         helper.check(!BuiltInRegistries.ITEM.containsKey(
         //?} else {
@@ -85,7 +85,7 @@ final class AppFluxChecks {
                         ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "fe_storage_cell_64t")),
                 "16T より上の FE セルが登録されている");
 
-        // FE セルの芯のエネルギーコンポーネントも同じ階層ぶん。
+        // FEセルの芯のエネルギーコンポーネントも同じ階層ぶん
         item(helper, "energy_component_1g");
         item(helper, "energy_component_16t");
         //? if >=1.21 {
@@ -96,7 +96,7 @@ final class AppFluxChecks {
                         ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "energy_component_64t")),
                 "16T より上のエネルギーコンポーネントが登録されている");
 
-        // カード: AppliedFlux が自分の FE セルにしているのと同じ顔ぶれ。
+        // カード: AppliedFluxが自分のFEセルにしているのと同じ顔ぶれ
         Item cell = item(helper, "fe_storage_cell_1g");
         Item portable = item(helper, "portable_fe_cell_1g");
         helper.check(Upgrades.getMaxInstallable(AEItems.VOID_CARD, cell) > 0,
@@ -110,7 +110,7 @@ final class AppFluxChecks {
         helper.check(Upgrades.getMaxInstallable(AEItems.ENERGY_CARD, portable) > 0,
                 "ポータブル FE セルにエネルギーカードを登録していない");
 
-        // FE の capability (他 Mod の機械から FE セルとして見える)。
+        // FEのcapability。他Modの機械からFEセルとして見える
         //? if >=1.21 {
         helper.check(new ItemStack(cell).getCapability(Capabilities.EnergyStorage.ITEM) != null,
         //?} else {
@@ -126,13 +126,13 @@ final class AppFluxChecks {
     }
 
     /**
-     * 誘導カード: 超次元版の 4 つ (インターフェイス / パターンプロバイダー × ブロック / 部品) に挿せて、
-     * 挿すと FE の capability が現れて受電できること。
+     * 誘導カード: 超次元版のインターフェイスとパターンプロバイダーの、ブロックと部品の4つに挿せて、
+     * 挿すとFEのcapabilityが現れて受電できること。
      *
-     * <p>FE の口は AppliedFlux が {@code GENERIC_INTERNAL_INV} を包んで出すもので、
+     * <p>FEの口はAppliedFluxが {@code GENERIC_INTERNAL_INV} を包んで出すもので、
      * 「誘導カードが挿さっているか」を見てから開く ({@code AFUtil#shouldTryCast})。
-     * カードの登録 ({@code UpgradeMirrors}) と部品の capability ({@code ModCapabilities#registerParts}) の
-     * どちらが欠けても、ここで null のままになる。座標は {@link AddonPlots#appFluxInductionCard} を参照。</p>
+     * カードの登録 ({@code UpgradeMirrors}) と部品のcapability ({@code ModCapabilities#registerParts}) の
+     * どちらが欠けても、ここでnullのままになる。座標は {@link AddonPlots#appFluxInductionCard} を参照。</p>
      */
     static void inductionCard(PlotTestHelper helper) {
         BlockPos cable = new BlockPos(2, 0, 0);

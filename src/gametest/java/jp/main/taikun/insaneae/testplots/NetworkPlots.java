@@ -81,11 +81,11 @@ public final class NetworkPlots {
     }
 
     /**
-     * 自作の ME ストレージセルに<b>アップグレードカードが挿せる</b>ことを確かめる。
+     * 自作のMEストレージセルにアップグレードカードが挿せることを確かめる。
      *
      * <p>どのカードを挿せるかは {@code Upgrades.add} での登録がすべてで、
      * 登録が無いとセルワークベンチが何も受け付けない
-     * (「追加されたセルに拡張カードを挿せない」不具合の回帰テスト)。
+     * 「追加されたセルに拡張カードを挿せない」不具合の回帰テスト。
      * ワールドは使わないが、他のプロットと同じ場所で走らせる。</p>
      */
     @TestPlot("insaneae_cell_upgrades")
@@ -111,7 +111,7 @@ public final class NetworkPlots {
             helper.check(Upgrades.getMaxInstallable(
                             AEItems.ENERGY_CARD, portable) == 2,
                     "ポータブルセルにエネルギーカード ×2 を登録していない");
-            // MEGA Cells の Greater Energy Card。MEGA が自分のポータブルセルにしているのと同じ ×2。
+            // MEGA CellsのGreater Energy Card。MEGAが自分のポータブルセルにしているのと同じ ×2
             helper.check(Upgrades.getMaxInstallable(
                             gripe._90.megacells.definition.MEGAItems.GREATER_ENERGY_CARD, portable) == 2,
                     "ポータブルセルに Greater Energy Card ×2 を登録していない");
@@ -124,13 +124,13 @@ public final class NetworkPlots {
     }
 
     /**
-     * <b>パターンの受け入れルール</b>を確かめる。
+     * パターンの受け入れルールを確かめる。
      *
      * <ol>
-     *   <li>特大パターンプロバイダーは Quantum CPU と同じ 1620 枠あること。</li>
+     *   <li>特大パターンプロバイダーはQuantum CPUと同じ1620枠あること。</li>
      *   <li>特大パターンプロバイダーは加工・クラフト両方のパターンを受けること。</li>
-     *   <li>Quantum CPU は<b>加工パターンを受け付けない</b>こと
-     *       ({@code QuantumCpuLogic} のフィルタ。クラフトパターンは従来どおり受ける)。</li>
+     *   <li>Quantum CPUは加工パターンを受け付けないこと
+     *       {@code QuantumCpuLogic}のフィルタによる。クラフトパターンは受ける。</li>
      * </ol>
      */
     @TestPlot("insaneae_pattern_acceptance")
@@ -146,7 +146,7 @@ public final class NetworkPlots {
             sequence.thenExecute(() -> {
                 var level = helper.getLevel();
                 ItemStack processing = processingPattern(Items.IRON_INGOT, 2, Items.COPPER_INGOT, 1);
-                // 原木 → 板材 (shapeless)。Quantum CPU が自分で組めるパターンの代表。
+                // 原木 → 板材 (shapeless)。Quantum CPUが自分で組めるパターンの代表
                 ItemStack crafting = CraftingPatternHelper.encodeShapelessCraftingRecipe(level,
                         new ItemStack(Items.OAK_LOG));
 
@@ -173,13 +173,13 @@ public final class NetworkPlots {
     }
 
     /**
-     * 自前のブロックが<b>ME ネットワークに繋がる</b>ことを確かめる。
+     * 自前のブロックがMEネットワークに繋がることを確かめる。
      *
-     * <p>NeoForge の capability は BlockEntityType ごとの登録制で、AE2 のクラス
-     * ({@code CraftingBlockEntity} など) をそのまま使っていても
-     * <b>型が自前なら AE2 の一括登録には入らない</b>。
+     * <p>NeoForgeのcapabilityはBlockEntityTypeごとの登録制で、AE2のクラス
+     * {@code CraftingBlockEntity}などをそのまま使っていても
+     * 型が自前ならAE2の一括登録には入らない。
      * {@code AECapabilities.IN_WORLD_GRID_NODE_HOST} を登録し忘れると
-     * {@code GridHelper.getNodeHost} ({@code Level#getCapability} 一発) がノードを見つけられず、
+     * {@code GridHelper.getNodeHost}は{@code Level#getCapability}を一度引くだけなので、ノードを見つけられず、
      * 周りから見てただの石ころになる。{@code ModCapabilities} が抜けたときの回帰テスト。</p>
      */
     //? if >=1.21 {
@@ -192,7 +192,7 @@ public final class NetworkPlots {
         plot.creativeEnergyCell("0 -1 0");
     //? if >=1.21 {
         plot.cable("[0,6] 0 0");
-        // ケーブルの上に自前のブロックを 1 つずつ載せる (階層があるものは最下段で代表させる)。
+        // ケーブルの上に自前のブロックを1つずつ載せる。階層があるものは最下段で代表させる
         plot.blockState(new BlockPos(0, 1, 0), ModBlocks.allCraftingBlocks().get(0).defaultBlockState());
         plot.blockState(new BlockPos(1, 1, 0), ModBlocks.QUANTUM_CPU.get().defaultBlockState());
         plot.blockState(new BlockPos(2, 1, 0), ModBlocks.allEnergyCells().get(0).defaultBlockState());
@@ -204,7 +204,7 @@ public final class NetworkPlots {
         plot.test(helper -> {
             var sequence = helper.startSequence();
 
-            // グリッドが組み上がるまで少し待つ。
+            // グリッドが組み上がるまで少し待つ
             sequence.thenIdle(5);
             sequence.thenExecute(() -> {
                 IGrid grid = helper.getGrid(new BlockPos(0, 0, 0));
@@ -236,7 +236,7 @@ public final class NetworkPlots {
             helper.check(Upgrades.getMaxInstallable(
                             AEItems.ENERGY_CARD, portable) == 2,
                     "ポータブルセルにエネルギーカード ×2 を登録していない");
-            // MEGA Cells の Greater Energy Card。MEGA が自分のポータブルセルにしているのと同じ ×2。
+            // MEGA CellsのGreater Energy Card。MEGAが自分のポータブルセルにしているのと同じ ×2
             helper.check(Upgrades.getMaxInstallable(
                             MEGAItems.GREATER_ENERGY_CARD, portable) == 2,
                     "ポータブルセルに Greater Energy Card ×2 を登録していない");
@@ -248,12 +248,12 @@ public final class NetworkPlots {
     }
 
     /^*
-     * 超特大インターフェイスの画面が開くこと (「開けない」報告の再現テスト)。
+     * 超特大インターフェイスの画面が開くこと。「開けない」報告の再現テスト。
      *
-     * <p>FakePlayer はパケットを捨てるだけの接続を持つので、サーバ側の
-     * メニュー構築 ({@code NetworkHooks.openScreen} → コンストラクタでの
-     * スロット構築まで) をヘッドレスで検証できる。クライアント側 (画面クラスと
-     * スタイル JSON) はここでは検証できない。</p>
+     * <p>FakePlayerはパケットを捨てるだけの接続を持つので、サーバ側の
+     * メニュー構築を、{@code NetworkHooks.openScreen}からコンストラクタでのスロット構築まで
+     * ヘッドレスで検証できる。クライアント側の画面クラスと
+     * スタイルJSONは、ここでは検証できない。</p>
      ^/
     @TestPlot("insaneae_interface_menu_opens")
     public static void interfaceMenuOpens(PlotBuilder plot) {
@@ -279,17 +279,17 @@ public final class NetworkPlots {
     }
 
     /**
-     * 超特大インターフェイスの<b>枠数・1 枠の上限・long のまとめ受け</b>を確かめる。
+     * 超特大インターフェイスの枠数・1枠の上限・longのまとめ受けを確かめる。
      *
-     * <p>見ているのは 3 点。</p>
+     * <p>見ているのは3点。</p>
      * <ol>
-     *   <li>{@code GENERIC_INTERNAL_INV} が出ていて 81 枠あること
-     *       (出ていないと外の機械から中身が見えない)。</li>
-     *   <li>1 枠の上限が {@code Integer.MAX_VALUE} = 21 億であること。
-     *       容量を上げるだけでは<b>アイテムはスタック数 (64) で頭打ちになる</b>ので、
+     *   <li>{@code GENERIC_INTERNAL_INV} が出ていて81枠あること
+     *       出ていないと、外の機械から中身が見えない。</li>
+     *   <li>1枠の上限が {@code Integer.MAX_VALUE} = 21億であること。
+     *       容量を上げるだけではアイテムはスタック数 (64) で頭打ちになるので、
      *       {@code ConfigInventoryAccessor} (allowOverstacking) が反映されているかの回帰テストでもある。</li>
-     *   <li>1 枠に入り切らない量を 1 回で入れても<b>取りこぼさない</b>こと。
-     *       Mekanism 系の化学物質は long で来るので、ここで頭打ちにすると
+     *   <li>1枠に入り切らない量を1回で入れても取りこぼさないこと。
+     *       Mekanism系の化学物質はlongで来るので、ここで頭打ちにすると
      *       溢れたぶんが機械側に押し戻されるので、{@code InterfaceOverflowInventory} で受ける。</li>
      * </ol>
      */
@@ -297,12 +297,12 @@ public final class NetworkPlots {
     public static void insaneInterface(PlotBuilder plot) {
         plot.creativeEnergyCell("0 -1 0");
         plot.cable("[0,2] 0 0");
-        // 21 億を超える量を受け止められる在庫が要るので、自前の 1G セルを 1 枚積む。
+        // 21億を超える量を受け止められる在庫が要るので、自前の1Gセルを1枚積む
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> drive.getInternalInventory().addItems(
                 new ItemStack(ModCells.ITEM_CELLS.get(InsaneCraftingUnitType.STORAGE_1G).get())));
         plot.blockState("2 0 0", ModBlocks.INSANE_INTERFACE.get().defaultBlockState());
 
-        // int に収まらない量を 1 回で流し込む。
+        // intに収まらない量を1回で流し込む
         final long inserted = 3_000_000_000L;
 
         plot.test(helper -> {
@@ -312,7 +312,7 @@ public final class NetworkPlots {
             };
             var sequence = helper.startSequence();
 
-            // グリッドの起動 (チャネル割り当てまで) を待つ。
+            // グリッドの起動を待つ。チャネル割り当てまで
             sequence.thenIdle(10);
 
             sequence.thenExecute(() -> {
@@ -357,7 +357,7 @@ public final class NetworkPlots {
                         "1 枠の上限 (" + InsaneInterfaceBlockEntity.MAX_PER_SLOT + ") を超えるぶんが"
                                 + "押し戻された: " + state.accepted + " / " + inserted, pos);
 
-                // 未設定の枠なので、ネットワーク側に入っているはず (枠には残らない)。
+                // 未設定の枠なので、ネットワーク側に入っているはず。枠には残らない
                 var counter = new KeyCounter();
                 helper.getGrid(BlockPos.ZERO).getStorageService().getInventory()
                         .getAvailableStacks(counter);
@@ -375,9 +375,9 @@ public final class NetworkPlots {
                         "未設定の枠なのにネットワークへ直接入っていない (枠に " + inSlot + " 残っている)", pos);
             });
 
-            // 壊したときに中身がネットワークへ戻ること。
-            // AEItemKey#addDrops は 1000 スタックを超えたぶんを黙って捨てるので、
-            // ドロップ任せにすると 1 枠ぶんでも大半が消える。
+            // 壊したときに中身がネットワークへ戻ること
+            // AEItemKey#addDropsは1000スタックを超えたぶんを黙って捨てるので、
+            // ドロップ任せにすると1枠ぶんでも大半が消える
             final long parked = 1_000_000_000L;
             sequence.thenExecute(() -> {
                 var be = (InsaneInterfaceBlockEntity) helper.getBlockEntity(pos);
@@ -400,15 +400,15 @@ public final class NetworkPlots {
     }
 
     /**
-     * ケーブル版 (プレート) がブロック版と同じ中身を持ち、グリッドにも入ることの検証。
+     * ケーブル版のプレートがブロック版と同じ中身を持ち、グリッドにも入ることの検証。
      *
-     * <p>部品は AE2 の {@code InterfacePart} / {@code PatternProviderPart} を継承して
-     * {@code createLogic()} だけ差し替えている。<b>差し替えが反映されていないと
-     * 静かに AE2 の既定 (9 枠 / 36 枠) に戻る</b>ので、枠数と 1 枠の上限をここで押さえる。</p>
+     * <p>部品はAE2の {@code InterfacePart} / {@code PatternProviderPart} を継承して
+     * {@code createLogic()} だけ差し替えている。差し替えが反映されていないと
+     * 静かにAE2の既定の9枠と36枠に戻るので、枠数と1枠の上限をここで押さえる。</p>
      *
      * <p>あわせて「ケーブルに貼れて、チャネルが通り、電力が来ている」ことも見る。
      * 部品はブロックと違って {@code IInWorldGridNodeHost} の登録が要らない
-     * (ケーブルバスがまとめて面倒を見る) が、そこを取り違えていれば
+     * ケーブルバスがまとめて面倒を見るが、そこを取り違えていれば
      * {@code isActive()} が落ちる。</p>
      */
     @TestPlot("insaneae_cable_parts")
@@ -424,7 +424,7 @@ public final class NetworkPlots {
             var pos = new BlockPos(0, 0, 0);
             var sequence = helper.startSequence();
 
-            // グリッドの起動 (チャネル割り当てまで) を待つ。
+            // グリッドの起動を待つ。チャネル割り当てまで
             sequence.thenIdle(10);
 
             sequence.thenExecute(() -> {
@@ -461,9 +461,9 @@ public final class NetworkPlots {
                         "ケーブル版パターンプロバイダーがグリッドに入っていない", pos);
             });
 
-            // 部品の中身が外から見えること。AE2 は部品の capability をクラスの完全一致で引くので、
-            // ModCapabilities#registerParts が抜けると AE2 の InterfacePart 向けの登録も効かず、
-            // パイプや他 Mod の機械から何も見えなくなる。
+            // 部品の中身が外から見えること。AE2は部品のcapabilityをクラスの完全一致で引くので、
+            // ModCapabilities#registerPartsが抜けるとAE2のInterfacePart向けの登録も効かず、
+            // パイプや他Modの機械から何も見えなくなる
             sequence.thenExecute(() -> {
                 //? if >=1.21 {
                 var ifaceInv = helper.getCapability(pos, AECapabilities.GENERIC_INTERNAL_INV, Direction.UP);
@@ -490,7 +490,7 @@ public final class NetworkPlots {
                 *///?}
                         "ケーブル版パターンプロバイダーが返却インベントリを公開していない", pos);
 
-                // 未設定の枠に入れたぶんは、ブロック版と同じくネットワークへ直送される。
+                // 未設定の枠に入れたぶんは、ブロック版と同じくネットワークへ直送される
                 long inserted = ifaceInv.insert(0, AEItemKey.of(Items.IRON_INGOT), 100, Actionable.MODULATE);
                 helper.check(inserted == 100, "ケーブル版インターフェイスに入らない: " + inserted, pos);
             });
@@ -500,11 +500,11 @@ public final class NetworkPlots {
     }
 
     /**
-     * AE2 の機械に登録されたアップグレードカードが、<b>超次元版にも同じ枚数で登録されている</b>こと
-     * ({@code UpgradeMirrors} / {@code UpgradesMixin} の回帰テスト)。
+     * AE2の機械に登録されたアップグレードカードが、超次元版にも同じ枚数で登録されていること
+     * {@code UpgradeMirrors}と{@code UpgradesMixin}の回帰テスト。
      *
-     * <p>AE2 自身のカード (インターフェイスのクラフトカード・あいまいカード) に加えて、
-     * 他アドオンが AE2 の機械に登録したカード (AppliedFlux の誘導カードなど) も全部見る。
+     * <p>AE2自身のカード、つまりインターフェイスのクラフトカードとあいまいカードに加えて、
+     * 他アドオンがAE2の機械に登録したカード、たとえばAppliedFluxの誘導カードも全部見る。
      * 実際にインターフェイスのアップグレード枠へ挿せるところまで確かめる。</p>
      */
     @TestPlot("insaneae_insane_machine_upgrades")
@@ -540,7 +540,7 @@ public final class NetworkPlots {
                     }
                 }
             }
-            // AE2 自身のカードは必ずある (写す仕組みが丸ごと動いていない場合に気付けるように)。
+            // AE2自身のカードは必ずある。写す仕組みが丸ごと動いていない場合に気付けるように
             helper.check(Upgrades.getMaxInstallable(AEItems.CRAFTING_CARD, ModBlocks.INSANE_INTERFACE.get()) > 0,
                     "超特大インターフェイスにクラフトカードが登録されていない (UpgradesMixin が当たっていない?)");
             helper.check(Upgrades.getMaxInstallable(AEItems.FUZZY_CARD, ModParts.INSANE_INTERFACE.get()) > 0,
@@ -555,7 +555,7 @@ public final class NetworkPlots {
     }
 
     /**
-     * {@code PlotBuilder#part} は AE2 の {@code ItemDefinition} しか受け付けないので、
+     * {@code PlotBuilder#part} はAE2の {@code ItemDefinition} しか受け付けないので、
      * こちらの {@code DeferredItem} を包んで渡す。表示名はテストの出力にしか出ない。
      */
     private static <I extends Item> ItemDefinition<I> partDefinition(
@@ -568,7 +568,7 @@ public final class NetworkPlots {
         *///?}
     }
 
-    /** その位置のブロックが capability を公開していて、かつ同じグリッドに入っていること。 */
+    /** その位置のブロックがcapabilityを公開していて、かつ同じグリッドに入っていること。 */
     //? if >=1.21 {
     private static void checkOnGrid(PlotTestHelper helper, BlockPos pos, IGrid grid) {
         String name = helper.getBlockState(pos).getBlock().getName().getString();
@@ -587,14 +587,14 @@ public final class NetworkPlots {
     }
 
     /**
-     * 超次元 ME ケーブルの<b>細さ・部品の可否・チャンネル本数</b>を確かめる。
+     * 超次元MEケーブルの細さ・部品の可否・チャンネル本数を確かめる。
      *
-     * <p>見ているのは 3 点。</p>
+     * <p>見ているのは3点。</p>
      * <ol>
-     *   <li>接続の型が {@code SMART} = <b>細い</b>こと (高密度は太くて部品が貼れない)。</li>
-     *   <li>{@code supportsBuses()} が {@code CABLE} = <b>部品が貼れる</b>こと。
-     *       実際に AE2 のストレージバスを貼って、グリッドに入るところまで見る。</li>
-     *   <li>上限が<b>高密度 (32) ではなく設定値 (既定 128)</b> になっていること。
+     *   <li>接続の型が{@code SMART}、つまり細いこと。高密度は太くて部品が貼れない。</li>
+     *   <li>{@code supportsBuses()}が{@code CABLE}、つまり部品が貼れること。
+     *       実際にAE2のストレージバスを貼って、グリッドに入るところまで見る。</li>
+     *   <li>上限が高密度の32ではなく、設定値の既定128になっていること。
      *       解錠の条件は無く、置いた時点でこの本数になる。上限は
      *       {@code GridNode#getMaxChannels()} が全部の起点なので、そこだけを見れば
      *       経路計算も表示も追従する ({@link HyperNetwork})。</li>
@@ -604,7 +604,7 @@ public final class NetworkPlots {
     public static void hyperChannels(PlotBuilder plot) {
         plot.creativeEnergyCell("0 -1 0");
         plot.cable("[0,3] 0 0", ModParts.hyperCable(AEColor.TRANSPARENT));
-        // 高密度ケーブルには貼れない部品を、細い超次元ケーブルに貼る。
+        // 高密度ケーブルには貼れない部品を、細い超次元ケーブルに貼る
         plot.part("3 0 0", Direction.NORTH, AEParts.STORAGE_BUS);
 
         plot.test(helper -> {
@@ -629,9 +629,9 @@ public final class NetworkPlots {
                 helper.check(bus.isActive(),
                         "ストレージバスがグリッドに入っていない", new BlockPos(3, 0, 0));
 
-                // 色塗りで<b>普通のスマートケーブルに化けない</b>こと。
-                // CablePart#changeColor は接続の型で分岐して AE2 のケーブルに差し替えるので、
-                // override を外すとここが黙って壊れる。
+                // 色塗りで普通のスマートケーブルに化けないこと
+                // CablePart#changeColorは接続の型で分岐してAE2のケーブルに差し替えるので、
+                // overrideを外すとここが黙って壊れる
                 helper.check(cable.changeColor(AEColor.LIME, null),
                         "色塗りを受け付けない (changeColor が false を返した)", cablePos);
                 var recolored = helper.getPart(cablePos, null, HyperCablePart.class);
@@ -643,7 +643,7 @@ public final class NetworkPlots {
                 helper.check(recolored.getGridNode() != null
                                 && recolored.getGridNode().getGridColor() == AEColor.LIME,
                         "ノードの色が塗った色になっていない (接続の互換が元の色のまま残る)", cablePos);
-                // 以降の判定に影響しないよう fluix に戻す。
+                // 以降の判定に影響しないようfluixに戻す
                 recolored.changeColor(AEColor.TRANSPARENT, null);
 
                 IGrid grid = helper.getGrid(cablePos);
@@ -661,19 +661,19 @@ public final class NetworkPlots {
     }
 
     /**
-     * 圧縮 ME 高密度スマートケーブルの<b>細さ・部品の可否・チャンネル本数</b>を確かめる。
+     * 圧縮ME高密度スマートケーブルの細さ・部品の可否・チャンネル本数を確かめる。
      *
      * <p>超次元ケーブルとの違いは本数だけなので、ここで見るのは
-     * <b>上限が高密度と同じ 32 本のままであること</b>。ここが 128 になっていたら
+     * 上限が高密度と同じ32本のままであること。ここが128になっていたら
      * {@code GridNodeChannelMixin} が種類を見分けられていない
-     * (2 本とも {@code ThinDenseCablePart} を継承しているため、
-     * {@code instanceof} の相手を親クラスに広げると黙ってこうなる)。</p>
+     * 2本とも{@code ThinDenseCablePart}を継承しているため、
+     * {@code instanceof}の相手を親クラスに広げると黙ってこうなる。</p>
      */
     @TestPlot("insaneae_compressed_dense_cable")
     public static void compressedDenseCable(PlotBuilder plot) {
         plot.creativeEnergyCell("0 -1 0");
         plot.cable("[0,3] 0 0", ModParts.compressedCable(AEColor.TRANSPARENT));
-        // 高密度ケーブルには貼れない部品を、細い圧縮ケーブルに貼る。
+        // 高密度ケーブルには貼れない部品を、細い圧縮ケーブルに貼る
         plot.part("3 0 0", Direction.NORTH, AEParts.STORAGE_BUS);
 
         plot.test(helper -> {
@@ -698,7 +698,7 @@ public final class NetworkPlots {
                 helper.check(bus.isActive(),
                         "ストレージバスがグリッドに入っていない", new BlockPos(3, 0, 0));
 
-                // 色塗りで<b>普通のスマートケーブルにも超次元ケーブルにも化けない</b>こと。
+                // 色塗りで普通のスマートケーブルにも超次元ケーブルにも化けないこと
                 helper.check(cable.changeColor(AEColor.LIME, null),
                         "色塗りを受け付けない (changeColor が false を返した)", cablePos);
                 var recolored = helper.getPart(cablePos, null, CompressedCablePart.class);
@@ -737,7 +737,7 @@ public final class NetworkPlots {
         return node == null ? -1 : node.getMaxChannels();
     }
 
-    /** 高密度ケーブル相当の上限 (ChannelMode の倍率込み)。 */
+    /** 高密度ケーブル相当の上限。ChannelModeの倍率込み。 */
     private static int denseChannels(PlotTestHelper helper, BlockPos pos) {
         ChannelMode mode = helper.getGrid(pos).getPathingService().getChannelMode();
         return 32 * mode.getCableCapacityFactor();

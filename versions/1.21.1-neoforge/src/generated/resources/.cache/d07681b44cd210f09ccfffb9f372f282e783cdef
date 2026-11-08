@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-06T17:54:00.0933945	Item Models: insaneae
+// 1.21.1	2026-11-08T12:23:14.8586188	Item Models: insaneae
 f529f4a37c476252be1cb472861b0a1e9db434ff assets/insaneae/models/item/16g_crafting_storage.json
 b8297d2e4d0e57b588bb33a68b7cbbec467a6a8e assets/insaneae/models/item/16k_crafting_accelerator.json
 401cf74a997cde406b246a8d310885200181f7ae assets/insaneae/models/item/16m_crafting_accelerator.json
@@ -138,6 +138,7 @@ fd9cb46973564ba45b096eb5a1c28bf464f98bce assets/insaneae/models/item/fluid_stora
 7e818e18c4b01a5fae24cf6e3702a04ea6f5004f assets/insaneae/models/item/fluix_compressed_dense_cable.json
 16b37554659bcc88d766d3763b7762073eccdd9b assets/insaneae/models/item/fluix_hyper_cable.json
 5175574c4f08c4c5d6175cc76f07379ee1f1918e assets/insaneae/models/item/galactic_energy_cell.json
+467d5ee5d3c2a32ade0b24b8df66332acae64d6e assets/insaneae/models/item/gamertaikun_doll.json
 70cebfcb2d1109485ccf6ff95e8dd1aa7fdf015a assets/insaneae/models/item/gray_compressed_dense_cable.json
 0ccc80517bd1b66ddcd4d8d27b789f867d395a1e assets/insaneae/models/item/gray_hyper_cable.json
 6dda0f870b898c392b43089818e3c580c6dfe024 assets/insaneae/models/item/green_compressed_dense_cable.json

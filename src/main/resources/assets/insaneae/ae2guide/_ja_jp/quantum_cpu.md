@@ -14,10 +14,10 @@ item_ids:
 
 <BlockImage id="quantum_cpu" scale="4" />
 
-パターンプロバイダーと分子組立装置を 1 ブロックにまとめたものです。クラフトパターンを 1620 個 (54 個 × 30 ページ) 持ち、
-組立装置に渡す代わりに自分で組み立てて、完成品をネットワークに戻します。素の速度は 1 tick に 256 クラフトです。
+パターンプロバイダーと分子組立装置の機能を 1 ブロックに統合したデバイスです[cite: 7]。クラフトパターンを 1620 個（54 個 × 30 ページ）保持し、
+組立装置へ渡すことなく自身でクラフトを組み立てて完成品をネットワークへ返還します[cite: 7]。素の処理速度は 1 tick あたり 256 クラフトです[cite: 7]。
 
-加工パターンは入れられません。<ItemLink id="insane_pattern_provider" /> に入れてください。
+加工パターンは格納できないため、<ItemLink id="insane_pattern_provider" /> を使用してください[cite: 7]。
 
 <RecipeFor id="quantum_cpu" />
 
@@ -25,9 +25,9 @@ item_ids:
 
 <ItemImage id="quantum_acceleration_card" scale="2" />
 
-<ItemLink id="quantum_acceleration_card" /> は 1 枚ごとにクラフト速度を 256 倍にします。7 枚で long の上限 (1 tick に約 9.2E クラフト) に届きます。
+<ItemLink id="quantum_acceleration_card" /> は、1 枚につきクラフト速度を 256 倍にします[cite: 7]。7 枚装着することで long 型の上限（1 tick あたり約 9.2E クラフト）に到達します[cite: 7]。
 
 <ItemImage id="task_fusion_card" scale="2" />
 
-<ItemLink id="task_fusion_card" /> を挿すと、まとめクラフト 1 回 (1 パターン × 多数) がクラフトCPU の 1 tick の予算を 1 操作しか使わなくなります。
-並列クラフトユニットの数で速度が抑えられなくなります。
+<ItemLink id="task_fusion_card" /> を挿入すると、一括クラフト（1 つのパターンで大量生産する処理）において、クラフトCPU の 1 tick 分の処理コストが 1 操作分のみに軽減されます[cite: 7]。
+これにより、並列クラフトユニットの数量による速度制限を受けなくなります[cite: 7]。

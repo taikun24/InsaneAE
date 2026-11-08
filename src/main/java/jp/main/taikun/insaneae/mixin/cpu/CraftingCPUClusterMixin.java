@@ -31,43 +31,43 @@ import java.util.List;
 import jp.main.taikun.insaneae.util.SaturatingMath;
 
 /**
- * 16× 以上のクラフト協調処理ユニットを AE2 に受け入れさせ、合計スレッド数を <b>long で</b>数える。
+ * 16× 以上のクラフト協調処理ユニットをAE2に受け入れさせ、合計スレッド数をlongで数える。
  *
- * <p>AE2 の {@code CraftingCPUCluster.addBlockEntity} は
- * <b>1 ブロックあたり 16 スレッドを超えると例外を投げて弾く</b>:</p>
+ * <p>AE2の {@code CraftingCPUCluster.addBlockEntity} は
+ * 1ブロックあたり16スレッドを超えると例外を投げて弾く:</p>
  * <pre>throw new IllegalArgumentException("Co-processor threads may not exceed 16 per single unit block.");</pre>
  *
  * <p>上限の定数そのものを引き上げるのは {@link CraftingUnitThreadLimitMixin} の担当。
- * こちらは<b>それで上限を外せなかった場合の受け皿</b>と、<b>long での数え直し</b>を持つ
+ * こちらはそれで上限を外せなかった場合の受け皿と、longでの数え直しを持つ
  * ({@link ICoProcessorCount})。</p>
  *
- * <p>AE2 の {@code accelerator} フィールドは {@code int} の単純加算なので
- * 合計が 2^31-1 を超えると負値になり CPU が一切クラフトしなくなる。
- * <b>int 側は {@code Integer.MAX_VALUE - 1} で飽和</b>させて表示・比較用に残し、
- * <b>実際の 1 tick 予算は long 側から計算する</b> ({@code CraftingCpuBudgetMixin})。
- * int 側を {@code MAX_VALUE} ぴったりにしないのは、{@code getCoProcessors() + 1} を計算する箇所
- * (AE2 本体および他 Mod) で再びオーバーフローさせないため。</p>
+ * <p>AE2の {@code accelerator} フィールドは {@code int} の単純加算なので
+ * 合計が2^31-1を超えると負値になりCPUが一切クラフトしなくなる。
+ * int側は {@code Integer.MAX_VALUE - 1} で飽和させて表示・比較用に残し、
+ * 実際の1 tick予算はlong側から計算する ({@code CraftingCpuBudgetMixin})。
+ * int側を {@code MAX_VALUE} ぴったりにしないのは、{@code getCoProcessors() + 1} を計算する箇所
+ * AE2本体および他Modで再びオーバーフローさせないため。</p>
  *
- * <h2>他 Mod との共存</h2>
- * <p>同じ 16 スレッド上限を外すアドオンは他にもあり、{@code addBlockEntity} は混雑している。
- * 実際に報告のあった構成では BiggerAE2 (同じ {@code @ModifyConstant}、上限 1024)、
- * ExtendedAE_Plus (HEAD で自前処理して元メソッドを<b>キャンセル</b>)、
- * MAE2 ({@code @Redirect})、AE2OmniCells (RETURN で {@code accelerator} に加算) が同居していた。</p>
+ * <h2>他Modとの共存</h2>
+ * <p>同じ16スレッド上限を外すアドオンは他にもあり、{@code addBlockEntity} は混雑している。
+ * 実際に報告のあった構成では、BiggerAE2が同じ{@code @ModifyConstant}で上限1024、
+ * ExtendedAE_Plusはこれを、HEADで自前処理して元メソッドをキャンセルし、
+ * MAE2は{@code @Redirect}で、AE2OmniCellsはRETURNで{@code accelerator}に加算する。これらが同居する構成があった。</p>
  *
  * <p>そのため、</p>
  * <ol>
  *   <li>注入は全て {@code require = 0}。失敗しても起動は止めない。</li>
- *   <li><b>スレッド合計を {@code addBlockEntity} で積算しない</b>。
- *       上記のようにメソッドごとキャンセルされる場合があり、そのとき積算は 0 のままになる。
- *       ({@code CraftingCpuBudgetMixin} の 1 tick 予算がこの値を使うので、
- *       0 のままだと「クラッシュしないがクラフトが進まない」状態になる。)
- *       代わりに<b>クラスタが持つブロックから都度数え直す</b> ({@link #insaneae$recount})。</li>
- *   <li>priority を既定より高くしてある。他 Mod がこのメソッドを自分のものとしてマージした場合、
- *       <b>相手より priority が高くないと注入自体が例外になる</b> ({@code require = 0} では抑止できない)
- *       ため ({@code SpeedBoost#MIXIN_PRIORITY} と同じ理由)。</li>
+ *   <li>スレッド合計を {@code addBlockEntity} で積算しない。
+ *       上記のようにメソッドごとキャンセルされる場合があり、そのとき積算は0のままになる。
+     *       {@code CraftingCpuBudgetMixin}の1 tick予算がこの値を使うので、
+ *       0のままだと「クラッシュしないがクラフトが進まない」状態になる。)
+ *       代わりにクラスタが持つブロックから都度数え直す ({@link #insaneae$recount})。</li>
+ *   <li>priorityを既定より高くしてある。他Modがこのメソッドを自分のものとしてマージした場合、
+     *       相手よりpriorityが高くないと注入自体が例外になる。{@code require = 0}では抑止できない
+     *       ため。{@code SpeedBoost#MIXIN_PRIORITY}と同じ理由。</li>
  * </ol>
  *
- * <p>AE2 は自前 Mod なので難読化されておらず {@code remap = false}。</p>
+ * <p>AE2は自前Modなので難読化されておらず {@code remap = false}。</p>
  */
 @Mixin(value = CraftingCPUCluster.class, remap = false, priority = 1500)
 public abstract class CraftingCPUClusterMixin
@@ -76,7 +76,7 @@ public abstract class CraftingCPUClusterMixin
     @Unique
     private static final Logger INSANEAE$LOGGER = LoggerFactory.getLogger("InsaneAE");
 
-    /** 表示・比較用に AE2 の int フィールドへ入れておく上限。 */
+    /** 表示・比較用にAE2のintフィールドへ入れておく上限。 */
     @Unique
     private static final int INT_CAP = Integer.MAX_VALUE - 1;
 
@@ -91,7 +91,7 @@ public abstract class CraftingCPUClusterMixin
     @Shadow
     private long storage;
 
-    /** このクラスタを構成するブロック。AE2 はここへ足すだけで、抜くときはクラスタごと作り直す。 */
+    /** このクラスタを構成するブロック。AE2はここへ足すだけで、抜くときはクラスタごと作り直す。 */
     @Shadow
     @Final
     private List<CraftingBlockEntity> blockEntities;
@@ -104,11 +104,11 @@ public abstract class CraftingCPUClusterMixin
     @Unique
     private int insaneae$countedStorageBlocks = -1;
 
-    /** 数え直した合計スレッド数 (long)。こちらが 1 tick 予算の元になる。 */
+    /** 数え直した合計スレッド数 (long)。こちらが1 tick予算の元になる。 */
     @Unique
     private long insaneae$coProcessors;
 
-    /** {@link #insaneae$coProcessors} を数えたときのブロック数。-1 は「未計算」。 */
+    /** {@link #insaneae$coProcessors} を数えたときのブロック数。-1は「未計算」。 */
     @Unique
     private int insaneae$countedBlocks = -1;
 
@@ -119,12 +119,12 @@ public abstract class CraftingCPUClusterMixin
     }
 
     /**
-     * 上限に弾かれたときの受け皿。<b>例外を投げる直前</b>に割り込んでメソッドを打ち切り、
-     * 本来 AE2 がやるはずだった加算 ({@code accelerator += threads}) だけ自分で済ませる。
+     * 上限に弾かれたときの受け皿。例外を投げる直前に割り込んでメソッドを打ち切り、
+     * 本来AE2がやるはずだった加算 ({@code accelerator += threads}) だけ自分で済ませる。
      *
      * <p>{@link CraftingUnitThreadLimitMixin} が上限を外せていればこの分岐には入らない。
-     * 他 Mod が先に定数を押さえていた場合 (例: BiggerAE2 は上限を 1024 にするので、
-     * 4k 以上のユニットは依然として弾かれる) だけここに来る。</p>
+     * 他Modが先に定数を押さえていた場合、たとえばBiggerAE2は上限を1024にするので、
+     * 4k以上のユニットは依然として弾かれる) だけここに来る。</p>
      *
      * <p>例外が投げられる時点で「クラスタへの追加・ストレージの加算」は済んでいるので、
      * 残りはスレッド数の加算だけ = {@code addBlockEntity} を丸ごと真似する必要がない。</p>
@@ -144,16 +144,16 @@ public abstract class CraftingCPUClusterMixin
     }
 
     /**
-     * int 側の飽和。ブロックが足されるたびに呼ばれるので、
-     * 他 Mod や AE2 本体が {@code getCoProcessors()} を読む前に負値を上限へ戻せる。
+     * int側の飽和。ブロックが足されるたびに呼ばれるので、
+     * 他ModやAE2本体が {@code getCoProcessors()} を読む前に負値を上限へ戻せる。
      *
      * <p>合計そのものは {@link #insaneae$recount} が持つので、ここでは積算しない
-     * (このメソッドは他 Mod にキャンセルされうる)。</p>
+     * このメソッドは他Modにキャンセルされうる。</p>
      */
     @Inject(method = "addBlockEntity", at = @At("RETURN"), require = 0)
     private void insaneae$saturateIntCount(CraftingBlockEntity blockEntity, CallbackInfo ci) {
-        // ブロック 1 個ごとに呼ばれ、直前値が必ず INT_CAP 以下なので
-        // 1 回の加算でのラップは高々 1 周ぶん。
+        // ブロック1個ごとに呼ばれ、直前値が必ずINT_CAP以下なので
+        // 1回の加算でのラップは高々1周ぶん
         if (accelerator < 0 || accelerator > INT_CAP) {
             accelerator = INT_CAP;
         }
@@ -168,7 +168,7 @@ public abstract class CraftingCPUClusterMixin
      */
     @Inject(method = "getAvailableStorage", at = @At("HEAD"), cancellable = true, require = 0)
     private void insaneae$exposeSaturatedStorage(CallbackInfoReturnable<Long> cir) {
-        // AE2のUI・CPU選択・既存ジョブへは、BigIntegerの正本から作った互換longだけを返す。
+        // AE2のUI・CPU選択・既存ジョブへは、BigIntegerの正本から作った互換longだけを返す
         cir.setReturnValue(SaturatingMath.toLong(insaneae$recountStorage()));
     }
 
@@ -226,13 +226,13 @@ public abstract class CraftingCPUClusterMixin
     /**
      * クラスタのブロックから合計スレッド数を数え直す。
      *
-     * <p>ブロック数が前回と同じなら何もしない。AE2 はクラスタにブロックを<b>足すだけ</b>で、
-     * 構成が変わるときはクラスタごと作り直す (= このインスタンスごと捨てられる) ので、
+     * <p>ブロック数が前回と同じなら何もしない。AE2はクラスタにブロックを足すだけで、
+     * 構成が変わるときはクラスタごと作り直す。つまり、このインスタンスごと捨てられるので、
      * ブロック数だけ見ていれば取りこぼしはない。</p>
      */
     @Unique
     private void insaneae$recount() {
-        // Quantum CPU の内蔵 CPU には構成ブロックが無い。合計は内部スロットの持ち主が持っている。
+        // Quantum CPUの内蔵CPUには構成ブロックが無い。合計は内部スロットの持ち主が持っている
         QuantumCpuClusterOwner owner = insaneae$quantumOwner();
         if (owner != null) {
             if (insaneae$countedBlocks == owner.cpuRevision()) {
@@ -253,13 +253,13 @@ public abstract class CraftingCPUClusterMixin
         for (CraftingBlockEntity blockEntity : blockEntities) {
             int perBlock = blockEntity.getAcceleratorThreads();
             if (perBlock > 0) {
-                // long なのでブロックが何個あっても溢れない。
+                // longなのでブロックが何個あっても溢れない
                 threads += perBlock;
             }
         }
 
-        // getAcceleratorThreads() に出てこない加算をする Mod (例: AE2OmniCells) がいるので、
-        // AE2 の int 側が健全でこちらより大きければそちらを採用する。
+        // getAcceleratorThreads()に出てこない加算をするMod、たとえばAE2OmniCellsがいるので、
+        // AE2のint側が健全でこちらより大きければそちらを採用する
         if (accelerator > 0 && accelerator > threads) {
             threads = accelerator;
         }
@@ -267,7 +267,7 @@ public abstract class CraftingCPUClusterMixin
         insaneae$countedBlocks = blocks;
         insaneae$coProcessors = threads;
 
-        // 積算側 (insaneae$saturateIntCount) が他 Mod にキャンセルされていた場合の保険。
+        // 積算側 (insaneae$saturateIntCount) が他Modにキャンセルされていた場合の保険
         if (accelerator < 0 || accelerator > INT_CAP) {
             accelerator = (int) Math.min(threads, INT_CAP);
         }
@@ -281,7 +281,7 @@ public abstract class CraftingCPUClusterMixin
      */
     @Unique
     private BigInteger insaneae$recountStorage() {
-        // 内蔵 CPU のぶんは持ち主が数えている (構成ブロックが無いので数えようがない)。
+        // 内蔵CPUのぶんは持ち主が数えている。構成ブロックが無いので数えようがない
         QuantumCpuClusterOwner owner = insaneae$quantumOwner();
         if (owner != null) {
             if (insaneae$countedStorageBlocks != owner.cpuRevision()) {
@@ -300,13 +300,13 @@ public abstract class CraftingCPUClusterMixin
         BigInteger total = STORAGE_ZERO;
         for (CraftingBlockEntity blockEntity : blockEntities) {
             var unitType = blockEntity.getUnitBlock().type;
-            // long互換値と正確値が異なるユニットは、型が公開するBigInteger正本を加算する。
+            // long互換値と正確値が異なるユニットは、型が公開するBigInteger正本を加算する
             if (unitType instanceof ExactCraftingUnitType exactType) {
                 total = total.add(exactType.exactStorageBytes());
                 continue;
             }
             long perBlock = blockEntity.getStorageBytes();
-            // AE2の正のストレージ容量だけを合計し、特殊な負値を容量へ混ぜない。
+            // AE2の正のストレージ容量だけを合計し、特殊な負値を容量へ混ぜない
             if (perBlock > 0L) {
                 total = total.add(BigInteger.valueOf(perBlock));
             }
@@ -314,16 +314,16 @@ public abstract class CraftingCPUClusterMixin
 
         insaneae$exactStorage = total;
         insaneae$countedStorageBlocks = blocks;
-        // AE2本体のlongフィールドも常に正の互換値へ整え、他Modの直接参照を壊さない。
+        // AE2本体のlongフィールドも常に正の互換値へ整え、他Modの直接参照を壊さない
         storage = SaturatingMath.toLong(total);
         return total;
     }
 
     /**
-     * このクラスタが Quantum CPU の内蔵 CPU なら、その持ち主。AE2 が組んだクラスタなら null。
+     * このクラスタがQuantum CPUの内蔵CPUなら、その持ち主。AE2が組んだクラスタならnull。
      *
      * <p>持ち主は {@code CraftingCpuClusterOwnerMixin} が同じクラスへ生やしたフィールドに入っている。
-     * 別 Mixin のフィールドは直接見えないので、対象クラスが実装している窓口越しに引く。</p>
+     * 別Mixinのフィールドは直接見えないので、対象クラスが実装している窓口越しに引く。</p>
      */
     @Unique
     private QuantumCpuClusterOwner insaneae$quantumOwner() {

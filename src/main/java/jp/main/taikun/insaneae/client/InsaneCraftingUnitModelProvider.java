@@ -14,12 +14,12 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * formed 状態 (組み上がったマルチブロック) のモデル。
+ * formed状態、つまり組み上がったマルチブロックのモデル。
  *
- * <p>AE2 の {@code CraftingUnitModelProvider} は発光テクスチャを
- * {@code CraftingUnitType} の switch で決め打ちしているので、独自階層では使えない。
- * 枠 (ring/light_base) は AE2 のものをそのまま参照し、
- * <b>発光レイヤだけ階層ごとの色で差し替える</b>。</p>
+ * <p>AE2の {@code CraftingUnitModelProvider} は発光テクスチャを
+ * {@code CraftingUnitType} のswitchで決め打ちしているので、独自階層では使えない。
+ * 枠 (ring/light_base) はAE2のものをそのまま参照し、
+ * 発光レイヤだけ階層ごとの色で差し替える。</p>
  *
  * <p>発光テクスチャは {@code tools/gen_crafting_textures.py} が生成する
  * {@code insaneae:block/crafting/<id>_light} 系。</p>
@@ -34,7 +34,7 @@ public class InsaneCraftingUnitModelProvider extends AbstractCraftingUnitModelPr
     private final Material light;
 
     /**
-     * @param lightTexture 発光レイヤの名前。例: {@code "block/crafting/1g_storage_light"}
+     * @param lightTexture発光レイヤの名前。例: {@code "block/crafting/1g_storage_light"}
      */
     public InsaneCraftingUnitModelProvider(ICraftingUnitType type, String lightTexture) {
         super(type);

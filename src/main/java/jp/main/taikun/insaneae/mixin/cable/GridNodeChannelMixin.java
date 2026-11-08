@@ -12,19 +12,19 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * 超次元ケーブルのチャンネル上限を 32 から引き上げる。
+ * 超次元ケーブルのチャンネル上限を32から引き上げる。
  *
- * <p>AE2 19.2 でチャンネルの本数を決めているのは {@code GridNode#getMaxChannels()}
- * <b>ただ 1 箇所</b>で、経路計算も部分木の上限もこの値の {@code min} を取っていくだけ。
+ * <p>AE2 19.2でチャンネルの本数を決めているのは {@code GridNode#getMaxChannels()}
+ * ただ1箇所で、経路計算も部分木の上限もこの値の {@code min} を取っていくだけ。
  * したがってここだけを差し替えれば、経路計算・表示・ツールチップまで全部追従する
- * (どこを見て確かめたかは {@link HyperNetwork} に書いてある)。</p>
+ * どこを見て確かめたかは{@link HyperNetwork}に書いてある。</p>
  *
  * <h2>対象を狭く保つ</h2>
- * <p>{@code getMaxChannels()} は<b>経路計算のたびに全ノードで呼ばれる</b>ので、
+ * <p>{@code getMaxChannels()} は経路計算のたびに全ノードで呼ばれるので、
  * 最初の {@code instanceof} で落ちる形にしてある。グリッドを引く処理まで進むのは
  * 超次元ケーブルのノードだけ。</p>
  *
- * <p>条件はそれだけで、<b>ネットワークに何が在るかは見ない</b>。超次元ケーブルは
+ * <p>条件はそれだけで、ネットワークに何が在るかは見ない。超次元ケーブルは
  * 置いた時点で常にこの本数を運ぶ。コントローラのノードはチャンネルを運ばないので、
  * コントローラの有無で本数を変える意味は無い ({@link HyperNetwork})。</p>
  */
@@ -35,7 +35,7 @@ public abstract class GridNodeChannelMixin {
     public abstract Object getOwner();
 
     /**
-     * {@code myGrid} をそのまま返す (未接続なら null)。
+     * {@code myGrid}をそのまま返す。未接続ならnull。
      *
      * <p>{@code getGrid()} の方は破棄済みノードで {@code IllegalStateException} を投げるので、
      * 例外を投げない方を使う。</p>
@@ -54,7 +54,7 @@ public abstract class GridNodeChannelMixin {
         }
         ChannelMode mode = grid.getPathingService().getChannelMode();
         if (mode == ChannelMode.INFINITE) {
-            // 無制限設定では AE2 が Integer.MAX_VALUE を返すので、下げてはいけない。
+            // 無制限設定ではAE2がInteger.MAX_VALUEを返すので、下げてはいけない
             return;
         }
         cir.setReturnValue(HyperNetwork.channelCapacity(mode));

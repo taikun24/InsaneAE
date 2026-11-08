@@ -14,14 +14,14 @@ public record BigIntegerCapacityDisplayValue(int decimalDigits, String leadingDi
     private static final String SEPARATOR = ",";
 
     public BigIntegerCapacityDisplayValue {
-        // 桁数と先頭桁の形式を検証し、偽造した表示データを受け付けない。
+        // 桁数と先頭桁の形式を検証し、偽造した表示データを受け付けない
         if (decimalDigits < 1 || leadingDigits == null
                 || leadingDigits.isEmpty()
                 || leadingDigits.length() > LEADING_DIGITS
                 || !leadingDigits.chars().allMatch(Character::isDigit)) {
             throw new IllegalArgumentException("invalid BigInteger capacity display value");
         }
-        // 0以外の値を先頭0で表すと指数がずれるため拒否する。
+        // 0以外の値を先頭0で表すと指数がずれるため拒否する
         if (decimalDigits > 1 && leadingDigits.charAt(0) == '0') {
             throw new IllegalArgumentException("BigInteger capacity display has a leading zero");
         }
@@ -39,7 +39,7 @@ public record BigIntegerCapacityDisplayValue(int decimalDigits, String leadingDi
     }
 
     static Optional<BigIntegerCapacityDisplayValue> decode(String encoded) {
-        // 区切りが一つだけの正規形以外は曖昧に解釈しない。
+        // 区切りが一つだけの正規形以外は曖昧に解釈しない
         if (encoded == null) {
             return Optional.empty();
         }
@@ -65,7 +65,7 @@ public record BigIntegerCapacityDisplayValue(int decimalDigits, String leadingDi
 
         int significant = Math.min(SCIENTIFIC_SIGNIFICANT_DIGITS, leadingDigits.length());
         String fraction = leadingDigits.substring(1, significant);
-        // 仮数末尾の0を除いて、表示幅を増やさない。
+        // 仮数末尾の0を除いて、表示幅を増やさない
         while (fraction.endsWith("0")) {
             fraction = fraction.substring(0, fraction.length() - 1);
         }
@@ -77,7 +77,7 @@ public record BigIntegerCapacityDisplayValue(int decimalDigits, String leadingDi
 
     /** 全桁を同期できた値がEiBの整数倍なら、短いE表記へ変換する。 */
     private String formatExactEib() {
-        // 先頭桁しか持たない巨大値を、正確な容量だと推測しない。
+        // 先頭桁しか持たない巨大値を、正確な容量だと推測しない
         if (leadingDigits.length() != decimalDigits) {
             return null;
         }
@@ -87,7 +87,7 @@ public record BigIntegerCapacityDisplayValue(int decimalDigits, String leadingDi
             return null;
         }
         String eib = quotientAndRemainder[0].toString();
-        // 長い整数をそのままGUIへ出さず、幅を超える場合は科学表記へ戻す。
+        // 長い整数をそのままGUIへ出さず、幅を超える場合は科学表記へ戻す
         if (eib.length() > MAX_EIB_INTEGER_DIGITS) {
             return null;
         }

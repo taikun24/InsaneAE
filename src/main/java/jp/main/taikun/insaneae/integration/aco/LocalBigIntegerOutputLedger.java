@@ -8,8 +8,8 @@ import java.util.Map;
 /**
  * ACOが無い場合にも使える、同じ会計規則の最小実装。
  *
- * <p>{@link PendingOutputLedger} の約束どおり<b>例外を投げない</b>。
- * 不正な引数 (null・0 以下) は黙って無視する。</p>
+ * <p>{@link PendingOutputLedger} の約束どおり例外を投げない。
+ * 不正な引数、nullや0以下は黙って無視する。</p>
  */
 final class LocalBigIntegerOutputLedger implements PendingOutputLedger {
     private final Map<AEKey, BigInteger> amounts = new LinkedHashMap<>();

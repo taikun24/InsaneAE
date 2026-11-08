@@ -8,14 +8,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * AE2 の {@code Tooltips.getByteAmount} が 1000 GiB 以上で
+ * AE2の {@code Tooltips.getByteAmount} が1000 GiB以上で
  * {@code ArrayIndexOutOfBoundsException} を投げる問題への対処。
  *
- * <p>クラフト CPU 一覧のツールチップ ({@code CPUSelectionList.getTooltip} → {@code ofBytes})
- * などが呼ぶため、1T 以上の CPU にカーソルを合わせるとゲームがクラッシュする。
+ * <p>クラフトCPU一覧のツールチップ。{@code CPUSelectionList.getTooltip}から{@code ofBytes}へ
+ * などが呼ぶため、1T以上のCPUにカーソルを合わせるとゲームがクラッシュする。
  * 詳細は {@link HugeByteAmounts} を参照。</p>
  *
- * <p>AE2 は自前 Mod なので難読化されておらず {@code remap = false}。</p>
+ * <p>AE2は自前Modなので難読化されておらず {@code remap = false}。</p>
  */
 @Mixin(value = Tooltips.class, remap = false)
 public class TooltipsMixin {
@@ -24,7 +24,7 @@ public class TooltipsMixin {
             at = @At("HEAD"), cancellable = true)
     private static void insaneae$formatHugeByteAmounts(long bytes,
             CallbackInfoReturnable<Tooltips.Amount> cir) {
-        // AE2 が正しく処理できる範囲はそのまま任せる (表示を変えないため)。
+        // AE2が正しく処理できる範囲はそのまま任せる。表示を変えないため
         if (bytes >= HugeByteAmounts.AE2_LIMIT) {
             cir.setReturnValue(HugeByteAmounts.format(bytes));
         }

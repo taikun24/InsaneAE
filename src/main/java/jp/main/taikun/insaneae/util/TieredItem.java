@@ -4,7 +4,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
-/** 表示名を {@link TieredNames} の書式から作るだけのアイテム (セルコンポーネントなど)。 */
+/** 表示名を {@link TieredNames} の書式から作るだけのアイテム。セルコンポーネントなど。 */
 public class TieredItem extends Item {
 
     private final String nameKey;

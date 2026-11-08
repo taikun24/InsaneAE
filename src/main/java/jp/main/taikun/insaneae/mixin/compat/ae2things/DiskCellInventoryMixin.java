@@ -11,11 +11,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * AE2 Things の DISK は容量を {@code IDISKCellItem#getBytes} (int) から取るので 2 GiB で止まる。
- * InsaneAE の DISK だけ long の容量を返す。
+ * AE2 ThingsのDISKは容量を {@code IDISKCellItem#getBytes} (int) から取るので2 GiBで止まる。
+ * InsaneAEのDISKだけlongの容量を返す。
  *
- * <p>DISK はアイテム 1 個 = 1 バイトで数え、空き容量もこの値からの引き算しかしないので、
- * ここ 1 か所で足りる。</p>
+ * <p>DISKはアイテム1個 = 1バイトで数え、空き容量もこの値からの引き算しかしないので、
+ * ここ1か所で足りる。</p>
  */
 @Pseudo
 @Mixin(targets = "io.github.projectet.ae2things.storage.DISKCellInventory", remap = false)

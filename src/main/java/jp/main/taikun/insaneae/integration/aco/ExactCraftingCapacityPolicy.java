@@ -15,7 +15,7 @@ public final class ExactCraftingCapacityPolicy {
     public static boolean fits(BigInteger required, BigInteger capacity) {
         Objects.requireNonNull(required, "required");
         Objects.requireNonNull(capacity, "capacity");
-        // 負値は破損した外部入力なので、容量比較へ流さず明示的に拒否する。
+        // 負値は破損した外部入力なので、容量比較へ流さず明示的に拒否する
         if (required.signum() < 0 || capacity.signum() < 0) {
             return false;
         }
@@ -30,7 +30,7 @@ public final class ExactCraftingCapacityPolicy {
      */
     public static String describe(BigInteger amount) {
         Objects.requireNonNull(amount, "amount");
-        // long内の値は丸めず読めるので、そのまま出す。
+        // long内の値は丸めず読めるので、そのまま出す
         if (amount.abs().bitLength() < Long.SIZE) {
             return amount.toString();
         }

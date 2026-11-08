@@ -15,22 +15,22 @@ import jp.main.taikun.insaneae.integration.AddonIntegrations;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderPart;
 
 /**
- * このMod が公開する capability の登録。
+ * このModが公開するcapabilityの登録。
  *
- * <p><b>NeoForge の capability は継承されない。</b>1.20.1 の Forge では
- * {@code AEBaseBlockEntity#getCapability} を継承するだけで済んでいたが、NeoForge では
- * {@link RegisterCapabilitiesEvent} で <b>BlockEntityType ごとに</b>登録する方式になった。
- * AE2 のクラス ({@code CraftingBlockEntity} など) をそのまま使っていても、
- * <b>型が自前なら AE2 の登録には入らない</b>ので、ここで登録し直す必要がある。</p>
+ * <p>NeoForgeのcapabilityは継承されない。1.20.1のForgeでは
+ * {@code AEBaseBlockEntity#getCapability} を継承するだけで済んでいたが、NeoForgeでは
+ * {@link RegisterCapabilitiesEvent} でBlockEntityTypeごとに登録する方式になった。
+ * AE2のクラス、たとえば{@code CraftingBlockEntity}をそのまま使っていても、
+ * 型が自前ならAE2の登録には入らないので、ここで登録し直す必要がある。</p>
  *
- * <p>AE2 側は {@code InitCapabilityProviders} が
+ * <p>AE2側は {@code InitCapabilityProviders} が
  * {@code AEBlockEntities.getImplementorsOf(IInWorldGridNodeHost.class)} を回して登録しているが、
- * これは <b>AE2 自身の BlockEntityType だけ</b>が対象。MEGA Cells も同じ理由で
+ * これはAE2自身のBlockEntityTypeだけが対象。MEGA Cellsも同じ理由で
  * 自分の {@code DeferredRegister} を全部回して登録している。</p>
  *
  * <p>とくに {@link AECapabilities#IN_WORLD_GRID_NODE_HOST} が抜けていると、
- * {@code GridHelper.getNodeHost} ({@code Level#getCapability} 一発) がノードを見つけられず、
- * <b>ブロックがネットワークに繋がらない</b>。「置いてもケーブルが接続しない」という症状になる。</p>
+ * {@code GridHelper.getNodeHost}は{@code Level#getCapability}を一度引くだけなので、ノードを見つけられず、
+ * ブロックがネットワークに繋がらない。「置いてもケーブルが接続しない」という症状になる。</p>
  */
 public final class ModCapabilities {
 
@@ -38,34 +38,34 @@ public final class ModCapabilities {
     }
 
     public static void register(RegisterCapabilitiesEvent event) {
-        // グリッドノードの公開。自前の BlockEntity は全部 AENetworked(Inv)BlockEntity 派生 =
-        // IInWorldGridNodeHost なので、登録漏れが起きないよう個別に並べず全部回す。
+        // グリッドノードの公開。自前のBlockEntityは全部AENetworked(Inv)BlockEntity派生 =
+        // IInWorldGridNodeHostなので、登録漏れが起きないよう個別に並べず全部回す
         for (BlockEntityType<?> type : ModBlockEntities.allTypes()) {
             registerGridNodeHost(event, type);
         }
 
-        // Quantum CPU の取り出し用インベントリ (クラフト結果の戻り先)。
-        // AE2 も本家パターンプロバイダを InitCapabilityProviders で同じように登録している。
+        // Quantum CPUの取り出し用インベントリ。クラフト結果の戻り先
+        // AE2も本家パターンプロバイダをInitCapabilityProvidersで同じように登録している
         event.registerBlockEntity(
                 AECapabilities.GENERIC_INTERNAL_INV,
                 ModBlockEntities.QUANTUM_CPU.get(),
                 (blockEntity, context) -> blockEntity.getLogic().getReturnInv());
 
         // 特大パターンプロバイダーも同じく、返却インベントリを外へ見せる
-        // (隣接機械が完成品をここへ押し戻すための口)。
+        // 隣接機械が完成品をここへ押し戻すための口
         event.registerBlockEntity(
                 AECapabilities.GENERIC_INTERNAL_INV,
                 ModBlockEntities.INSANE_PATTERN_PROVIDER.get(),
                 (blockEntity, context) -> blockEntity.getLogic().getReturnInv());
 
-        // 超特大インターフェイス。AE2 は自分の InterfaceBlockEntity にしか登録しないので、
-        // 同じ 2 つをこちらの型にも登録する。
-        //   GENERIC_INTERNAL_INV: 外の機械から見える中身。AE2 は在庫インベントリをそのまま
-        //     出しているが、こちらは long でまとめて来たぶんを ME に流す包みを出す
-        //     (この capability を出しておくと、AE2 と Applied Mekanistics が
-        //      LOWEST 優先度で IItemHandler / IFluidHandler / IChemicalHandler の
-        //      アダプタを勝手に足してくれる)。
-        //   ME_STORAGE: AE2 を知っている相手向け。未設定なら ME ネットワーク直結になる。
+        // 超特大インターフェイス。AE2は自分のInterfaceBlockEntityにしか登録しないので、
+        // 同じ2つをこちらの型にも登録する
+        //   GENERIC_INTERNAL_INV: 外の機械から見える中身。AE2は在庫インベントリをそのまま
+        //     出しているが、こちらはlongでまとめて来たぶんをMEに流す包みを出す
+        //     このcapabilityを出しておくと、AE2とApplied Mekanisticsが
+        //      LOWEST優先度でIItemHandler / IFluidHandler / IChemicalHandlerの
+        //      アダプタを勝手に足してくれる)
+        //   ME_STORAGE: AE2を知っている相手向け。未設定ならMEネットワーク直結になる
         event.registerBlockEntity(
                 AECapabilities.GENERIC_INTERNAL_INV,
                 ModBlockEntities.INSANE_INTERFACE.get(),
@@ -76,36 +76,36 @@ public final class ModCapabilities {
                 (blockEntity, context) -> blockEntity.getInterfaceLogic().getInventory());
 
         // 改良チャージャーの入出力スロット。ホッパー等から挿入・取り出しできるようにする
-        // (フィルタは AppEngInternalInventory 側の IAEItemFilter がそのまま効く)。
-        // AE2 は AEBaseInvBlockEntity 派生に一括でこれを登録している。
+        // フィルタはAppEngInternalInventory側のIAEItemFilterがそのまま効く
+        // AE2はAEBaseInvBlockEntity派生に一括でこれを登録している
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.IMPROVED_CHARGER.get(),
                 (blockEntity, side) -> blockEntity.getExposedItemHandler(side));
 
-        // ポータブルセルの FE 受け取り口。AE2 も MEGA Cells も自分のポータブルセルに
-        // 個別に登録している (自前の改良チャージャーは IAEItemPowerStorage を直接叩くので
-        // これが無くても充電できるが、他 Mod の充電器や FE 表示はこの capability を見る)。
+        // ポータブルセルのFE受け取り口。AE2もMEGA Cellsも自分のポータブルセルに
+        // 個別に登録している。自前の改良チャージャーはIAEItemPowerStorageを直接叩くので
+        // これが無くても充電できるが、他Modの充電器やFE表示はこのcapabilityを見る)
         ModCells.PORTABLE_ITEM_CELLS.values().forEach(cell -> registerPoweredItem(event, cell.get()));
         ModCells.PORTABLE_FLUID_CELLS.values().forEach(cell -> registerPoweredItem(event, cell.get()));
 
-        // 他アドオンのセル (化学物質セル・FE セルなど) は各連携が自分で登録する。
+        // 他アドオンのセル、化学物質セルやFEセルなどは、各連携が自分で登録する
         AddonIntegrations.active().forEach(addon -> addon.registerCapabilities(event));
     }
 
     /**
-     * ケーブルに貼る版 (部品) の capability。
+     * ケーブルに貼る版、つまり部品のcapability。
      *
-     * <p>AE2 の部品の capability は<b>部品のクラスの完全一致</b>で引かれる
-     * ({@code RegisterPartCapabilitiesEvent} の中で {@code parts.get(part.getClass())})。
-     * {@code InterfacePart} / {@code PatternProviderPart} 向けの AE2 の登録は、
+     * <p>AE2の部品のcapabilityは部品のクラスの完全一致で引かれる
+     * {@code RegisterPartCapabilitiesEvent}の中で{@code parts.get(part.getClass())}を使う。
+     * {@code InterfacePart} / {@code PatternProviderPart} 向けのAE2の登録は、
      * それを継承したこちらの部品には効かないので、同じものを登録し直す。
-     * これが無いと、パイプや他 Mod の機械から部品の中身が見えない。</p>
+     * これが無いと、パイプや他Modの機械から部品の中身が見えない。</p>
      *
      * <p>中身はブロック版と同じ。{@code GENERIC_INTERNAL_INV} を出しておけば、
-     * AE2 / Applied Mekanistics / AppliedFlux がケーブルバス越しに
-     * IItemHandler / IFluidHandler / 化学物質 / FE のアダプタを足してくれる
-     * (AppliedFlux の誘導カードの受電もこの口を通る)。</p>
+     * AE2 / Applied Mekanistics / AppliedFluxがケーブルバス越しに
+     * IItemHandler / IFluidHandler / 化学物質 / FEのアダプタを足してくれる
+     * AppliedFluxの誘導カードの受電もこの口を通る。</p>
      */
     public static void registerParts(RegisterPartCapabilitiesEvent event) {
         event.register(AECapabilities.GENERIC_INTERNAL_INV,
@@ -120,7 +120,7 @@ public final class ModCapabilities {
      * ワールド上のグリッドノードとして自分を公開する。
      *
      * <p>型引数を受ける別メソッドにしているのは、{@code BlockEntityType<?>} のままだと
-     * {@code registerBlockEntity} の型が合わないため (ワイルドカードの捕捉)。</p>
+     * {@code registerBlockEntity}の型が合わないため。ワイルドカードの捕捉が原因。</p>
      */
     private static <T extends BlockEntity> void registerGridNodeHost(RegisterCapabilitiesEvent event,
             BlockEntityType<T> type) {
@@ -129,7 +129,7 @@ public final class ModCapabilities {
                         blockEntity instanceof IInWorldGridNodeHost host ? host : null);
     }
 
-    /** {@link IAEItemPowerStorage} なアイテムを NeoForge のエネルギー貯蔵として見せる。 */
+    /** {@link IAEItemPowerStorage} なアイテムをNeoForgeのエネルギー貯蔵として見せる。 */
     public static void registerPoweredItem(RegisterCapabilitiesEvent event, Item item) {
         if (item instanceof IAEItemPowerStorage powered) {
             event.registerItem(Capabilities.EnergyStorage.ITEM,

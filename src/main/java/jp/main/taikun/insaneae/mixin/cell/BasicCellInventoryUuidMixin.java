@@ -38,10 +38,10 @@ import net.minecraft.nbt.ListTag;
 /**
  * {@link IHugeCellItem} なセルの中身を、アイテムではなく {@link CellContentStore} に置く。
  *
- * <p>AE2 が中身を読み書きするのは {@code getStoredStacks()} と {@code persist()} の 2 か所だけなので、
- * そこを差し替えれば入出庫・パーティション・カード・容量計算は AE2 の実装のまま使える。</p>
+ * <p>AE2が中身を読み書きするのは {@code getStoredStacks()} と {@code persist()} の2か所だけなので、
+ * そこを差し替えれば入出庫・パーティション・カード・容量計算はAE2の実装のまま使える。</p>
  *
- * <p>UUID の無いセルは AE2 の形 ({@code ae2:storage_cell_inv}) のまま読む。以前の版で中身を入れた
+ * <p>UUIDの無いセルはAE2の形、{@code ae2:storage_cell_inv}のまま読む。中身をアイテム側に入れた
  * セルはこれに当たり、次に中身が変わって {@code persist()} が走ったときに保存データへ移る。</p>
  */
 @Mixin(value = BasicCellInventory.class, remap = false)
@@ -72,7 +72,7 @@ public abstract class BasicCellInventoryUuidMixin {
     private long storedItemCount;
 
     /**
-     * 保存データに届かない場所 (クライアント) で開いた UUID 付きのセル。アイテム側の要約しか
+     * 保存データに届かない場所、つまりクライアントで開いたUUID付きのセル。アイテム側の要約しか
      * 見えないので、書き戻すと要約の先頭数件だけが残って中身が消える。読むだけにする。
      */
     @Unique
@@ -132,8 +132,8 @@ public abstract class BasicCellInventoryUuidMixin {
     @Inject(method = "<init>", at = @At("RETURN"))
     private void insaneae$countsFromSummary(IBasicCellItem cellType, ItemStack o, ISaveProvider container,
                                             CallbackInfo ci) {
-        // コンストラクタは種類数と総数を getStoredStacks() から数えるが、読み取り専用のときは
-        // それが要約の先頭数件でしかない。ツールチップの使用バイトや LED の色が合うよう、要約の値で上書きする。
+        // コンストラクタは種類数と総数をgetStoredStacks() から数えるが、読み取り専用のときは
+        // それが要約の先頭数件でしかない。ツールチップの使用バイトやLEDの色が合うよう、要約の値で上書きする
         if (!insaneae$readOnly) {
             return;
         }
@@ -168,8 +168,8 @@ public abstract class BasicCellInventoryUuidMixin {
         *///?}
         CellContentStore store = CellContentStore.get();
         if (store == null) {
-            // 開いた後にサーバーが止まった。AE2 の形でアイテムへ書き戻させ、UUID は外して
-            // 次に読むときに古い保存データの方を拾わないようにする。
+            // 開いた後にサーバーが止まった。AE2の形でアイテムへ書き戻させ、UUIDは外して
+            // 次に読むときに古い保存データの方を拾わないようにする
             //? if >=1.21 {
             i.remove(ModDataComponents.CELL_ID.get());
             i.remove(ModDataComponents.CELL_SUMMARY.get());
@@ -211,7 +211,7 @@ public abstract class BasicCellInventoryUuidMixin {
         tag.remove(CellNbt.AMOUNTS);
         if (keys.isEmpty()) {
         *///?}
-            // 空のセルには何も残さない。UUID が残ると、新品のセルと重ならず分解もできなくなる。
+            // 空のセルには何も残さない。UUIDが残ると、新品のセルと重ならず分解もできなくなる
             if (id != null) {
                 store.remove(id);
             }

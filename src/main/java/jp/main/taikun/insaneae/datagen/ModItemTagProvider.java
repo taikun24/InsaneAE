@@ -15,17 +15,17 @@ import java.util.concurrent.CompletableFuture;
 import net.minecraft.world.level.block.Block;
 
 /**
- * この Mod のアイテムタグ。
+ * このModのアイテムタグ。
  *
- * <p>いまのところ<b>ケーブルの色をまとめる</b>ためだけにある。17 色を 1 つのタグにしておくと、
- * 染色・色落としのレシピを<b>色ごとに 17 本書かずに済む</b> ({@code ModRecipeProvider})。</p>
+ * <p>いまのところケーブルの色をまとめるためだけにある。17色を1つのタグにしておくと、
+ * 染色・色落としのレシピを色ごとに17本書かずに済む ({@code ModRecipeProvider})。</p>
  */
 public class ModItemTagProvider extends ItemTagsProvider {
 
-    /** 圧縮 ME 高密度スマートケーブル 17 色。 */
+    /** 圧縮ME高密度スマートケーブル17色。 */
     public static final TagKey<Item> COMPRESSED_DENSE_CABLES = tag("compressed_dense_cables");
 
-    /** 超次元 ME ケーブル 17 色。 */
+    /** 超次元MEケーブル17色。 */
     public static final TagKey<Item> HYPER_CABLES = tag("hyper_cables");
 
     private static TagKey<Item> tag(String name) {

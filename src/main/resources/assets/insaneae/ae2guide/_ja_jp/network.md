@@ -51,7 +51,7 @@ item_ids:
 
 <ItemImage id="fluix_hyper_cable" scale="3" />
 
-細いのに 128 チャンネル (設定 `hyperChannels`) を運ぶケーブルです。スマートケーブルと同じく部品を貼れます。16 色と fluix があります。
+細い見た目でありながら 128 チャンネル（設定 `hyperChannels`）を伝送できるケーブルです[cite: 6]。スマートケーブルと同様にカバーや部品を取り付けることができます[cite: 6]。16 色とフルイクスカラーが用意されています[cite: 6]。
 
 <RecipeFor id="fluix_hyper_cable" />
 
@@ -59,7 +59,7 @@ item_ids:
 
 <ItemImage id="fluix_compressed_dense_cable" scale="3" />
 
-高密度スマートケーブルを細くしたものです。チャンネル数は 32 のままですが、部品を貼れます。超次元MEケーブルの材料です。
+高密度スマートケーブルを細くスリムにしたものです[cite: 6]。チャンネル数は 32 のままですが、部品を取り付けることが可能です[cite: 6]。超次元MEケーブルのクラフト素材としても使用します[cite: 6]。
 
 <RecipeFor id="fluix_compressed_dense_cable" />
 
@@ -67,7 +67,7 @@ item_ids:
 
 <BlockImage id="insane_interface" scale="3" />
 
-81 枠で、1 枠に 21億4748万 個まで持てる ME インターフェースです。ケーブルに貼る版は、壊すと中身をドロップします。
+81 枠のスロットを持ち、1 スロットあたり最大 21 億 4748 万個までアイテムを格納できる ME インターフェースです[cite: 6]。ケーブル貼り付け版のパーツは、破壊しても内部のアイテムが地面にドロップします[cite: 6]。
 
 <RecipeFor id="insane_interface" />
 
@@ -75,7 +75,7 @@ item_ids:
 
 <BlockImage id="insane_pattern_provider" scale="3" />
 
-パターンを 1620 個持てるパターンプロバイダーです。クァンタムCPU と違ってどの種類のパターンも入れられ、
-普通のパターンプロバイダーと同じく押し出します。加工パターンはまとめて押し出します。
+合計 1620 個ものパターンを保持できるパターンプロバイダーです[cite: 6]。クァンタムCPU とは異なり、あらゆる種類のパターンを格納できます[cite: 6]。
+通常のパターンプロバイダーと同様に自動搬出を行い、加工パターンはまとめて押し出されます[cite: 6]。
 
 <RecipeFor id="insane_pattern_provider" />

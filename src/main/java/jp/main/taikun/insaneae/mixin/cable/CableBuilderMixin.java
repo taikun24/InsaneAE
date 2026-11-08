@@ -11,13 +11,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.function.Function;
 
 /**
- * 焼き上げ時に「AE2 のスプライト → こちらのスプライト」の対応表を作る。
+ * 焼き上げ時に「AE2のスプライト → こちらのスプライト」の対応表を作る。
  *
- * <p>AE2 が自分のスプライトを引くのに使っているものと<b>同じ取得関数</b>を借りるので、
- * 対応表の鍵は AE2 が実際に描画で使うインスタンスそのものになる
- * (だから {@link InsaneCableSprites} 側は同一性比較で済む)。</p>
+ * <p>AE2が自分のスプライトを引くのに使っているものと同じ取得関数を借りるので、
+ * 対応表の鍵はAE2が実際に描画で使うインスタンスそのものになる
+ * だから{@link InsaneCableSprites}側は同一性比較で済む。</p>
  *
- * <p>{@code CableBuilder} は package-private なので {@code targets} で名指しする。
+ * <p>{@code CableBuilder} はpackage-privateなので {@code targets} で名指しする。
  * リソース再読み込みのたびに作り直されるので、対応表もそのたびに作り直る。</p>
  */
 @Mixin(targets = "appeng.client.render.cablebus.CableBuilder", remap = false)

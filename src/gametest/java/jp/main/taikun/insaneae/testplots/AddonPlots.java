@@ -15,9 +15,9 @@ import appeng.server.testplots.TestPlotClass;
 /**
  * 他アドオン連携 ({@code integration/}) の検証。
  *
- * <p>相手 Mod のクラスに触る検査は別クラス ({@link AppFluxChecks} など) に分けてあり、
+ * <p>相手Modのクラスに触る検査は、別クラスの{@link AppFluxChecks}などに分けてあり、
  * 相手が入っていないときはそのクラスをロードせずに素通りで成功させる
- * (dev 実行から {@code -PwithAppFlux=false} で外しても全体が落ちないように)。</p>
+ * dev実行で{@code -PwithAppFlux=false}を付けて外しても全体が落ちないように。</p>
  */
 //? if >=1.21 {
 @TestPlotClass
@@ -27,7 +27,7 @@ public final class AddonPlots {
     private AddonPlots() {
     }
 
-    /** FE セル: 中身の出し入れ・long を溢れない容量・カード・FE の capability。 */
+    /** FEセル: 中身の出し入れ・longを溢れない容量・カード・FEのcapability。 */
     @TestPlot("insaneae_appflux_fe_cells")
     public static void appFluxFeCells(PlotBuilder plot) {
         plot.creativeEnergyCell("0 -1 0");
@@ -39,8 +39,8 @@ public final class AddonPlots {
     }
 
     /**
-     * AppliedFlux の誘導カードを超次元版のインターフェイス / パターンプロバイダー (ブロックと部品) に挿すと、
-     * <b>AE2 の機械と同じく FE の口が開く</b>こと。
+     * AppliedFluxの誘導カードを、超次元版のインターフェイス / パターンプロバイダーのブロックと部品の両方に挿すと、
+     * AE2の機械と同じくFEの口が開くこと。
      *
      * <p>並び: ケーブル (0..2, 0, 0) の上に超特大インターフェイス (0,1,0) と特大パターンプロバイダー (1,1,0)。
      * (2,0,0) のケーブルには上面にインターフェイス、北面にパターンプロバイダーの部品を貼る。</p>

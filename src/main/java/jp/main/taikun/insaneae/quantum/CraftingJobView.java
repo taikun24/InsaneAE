@@ -9,47 +9,47 @@ import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerJobRegistry;
 
 /**
  * 実行中クラフトジョブのうち、まとめ処理 ({@link QuantumBulkCrafting}) が必要とする部分だけを
- * 抜き出した窓口。<b>どの Mod のクラフト CPU かを問わない</b>ようにするための抽象。
+ * 抜き出した窓口。どのModのクラフトCPUかを問わないようにするための抽象。
  *
  * <h2>なぜ抽象が要るのか</h2>
- * <p>AE2 のクラフト CPU ({@code appeng.crafting.execution.CraftingCpuLogic}) は、
- * 各種アドオンに<b>まるごと複製されている</b>。Advanced AE の Quantum Computer
+ * <p>AE2のクラフトCPU ({@code appeng.crafting.execution.CraftingCpuLogic}) は、
+ * 各種アドオンにまるごと複製されている。Advanced AEのQuantum Computer
  * ({@code net.pedroksl.advanced_ae.common.logic.AdvCraftingCPULogic}) がその代表で、
- * {@code executeCrafting} の中身はほぼ同じなのに<b>クラスも、抱えているジョブの型も別物</b>
- * (AAE は同名の {@code ExecutingCraftingJob} を自前で持っている)。</p>
+ * {@code executeCrafting} の中身はほぼ同じなのにクラスも、抱えているジョブの型も別物
+ * AAEは同名の{@code ExecutingCraftingJob}を自前で持っている。</p>
  *
- * <p>そのため AE2 のクラスを直に触る作りにしていると、そういう CPU を使っている環境では
- * まとめ処理が丸ごと素通りされ、<b>1 クラフトずつの遅い経路に落ちる</b>。
+ * <p>そのためAE2のクラスを直に触る作りにしていると、そういうCPUを使っている環境では
+ * まとめ処理が丸ごと素通りされ、1クラフトずつの遅い経路に落ちる。
  * 実際にプロファイルで {@code AdvCraftingCPULogic.executeCrafting} →
- * {@code QuantumCpuLogic.pushPattern} が 1 回ずつ呼ばれているのが観測された。</p>
+ * {@code QuantumCpuLogic.pushPattern} が1回ずつ呼ばれているのが観測された。</p>
  *
- * <p>そこで「ジョブから何が要るか」だけをここに定義し、CPU ごとの差は実装側に閉じ込める。
- * 新しい CPU に対応するときは<b>この窓口の実装を 1 つ足して、注入点を 1 つ増やすだけ</b>で済む。</p>
+ * <p>そこで「ジョブから何が要るか」だけをここに定義し、CPUごとの差は実装側に閉じ込める。
+ * 新しいCPUに対応するときはこの窓口の実装を1つ足して、注入点を1つ増やすだけで済む。</p>
  *
  * <p>抱えている中身の型は {@link ListCraftingInventory} も {@link IPatternDetails} も
- * <b>AE2 のものがそのまま使われている</b>ことが多いが、進捗カウンタ
- * ({@code ElapsedTimeTracker}) だけは Advanced AE が自前のコピーを持っている
- * (1.3.6 / 1.6.12 で確認)。そのためカウンタは型を決めず {@link Object} で受け渡し、
+ * AE2のものがそのまま使われていることが多いが、進捗カウンタ
+ * ({@code ElapsedTimeTracker}) だけはAdvanced AEが自前のコピーを持っている
+ * 1.3.6と1.6.12で確認した。そのためカウンタは型を決めず{@link Object}で受け渡し、
  * 呼び方の差は {@link TimeTrackerAdapter} が吸収する。</p>
  *
- * @see Ae2CraftingJobView       AE2 本体のクラフト CPU 用 (コンパイル時に型が分かる)
- * @see ReflectiveCraftingJobView 複製された CPU 用 (フィールド名で辿る)
+ * @see Ae2CraftingJobView       AE2本体のクラフトCPU用。コンパイル時に型が分かる
+ * @see ReflectiveCraftingJobView複製されたCPU用。フィールド名で辿る
  */
 public interface CraftingJobView {
 
-    /** CPU の在庫。ここから材料を取り出す。 */
+    /** CPUの在庫。ここから材料を取り出す。 */
     ListCraftingInventory getInventory();
 
-    /** 完成待ちのアイテム。ここに入れておかないと CPU がクラフト結果を受け取らない。 */
+    /** 完成待ちのアイテム。ここに入れておかないとCPUがクラフト結果を受け取らない。 */
     ListCraftingInventory getWaitingFor();
 
     /**
-     * 進捗表示用のカウンタ。AE2 の {@code ElapsedTimeTracker} とは限らない
-     * (Advanced AE は自前のコピーを持つ) ので、{@link TimeTrackerAdapter} 経由で触ること。
+     * 進捗表示用のカウンタ。AE2の {@code ElapsedTimeTracker} とは限らない
+     * Advanced AEは自前のコピーを持つので、{@link TimeTrackerAdapter}経由で触ること。
      */
     Object getTimeTracker();
 
-    /** 保存が必要になったことを CPU に伝える。 */
+    /** 保存が必要になったことをCPUに伝える。 */
     void markDirty();
 
     /** Exact task cursor for an optional ACO BigInteger job. */
@@ -58,11 +58,11 @@ public interface CraftingJobView {
     }
 
     /**
-     * ACO の正確な BigInteger 実行がこのジョブを所有しているか。
+     * ACOの正確なBigInteger実行がこのジョブを所有しているか。
      *
-     * <p>true なら<b>まとめ処理は何もしない</b>。ACO 1.5.23 以降、exact ジョブの実行と納品は
-     * ACO の {@code PhysicalCraftingTreeTransaction} が丸ごと持っており、
-     * こちらが 1 回でも進めると ACO の台帳に無い実行になる
+     * <p>trueならまとめ処理は何もしない。ACO 1.5.23以降、exactジョブの実行と納品は
+     * ACOの {@code PhysicalCraftingTreeTransaction} が丸ごと持っており、
+     * こちらが1回でも進めるとACOの台帳に無い実行になる
      * ({@link jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership})。</p>
      */
     default boolean isOwnedByAcoExactExecution() {
@@ -84,16 +84,16 @@ public interface CraftingJobView {
         return null;
     }
 
-    /** 残っているタスク (パターン → 残り回数) をひとつずつ見ていく。 */
+    /** 残っているタスクを、パターンと残り回数の組でひとつずつ見ていく。 */
     TaskCursor tasks();
 
     /**
      * タスクの表を走査するためのカーソル。{@link java.util.Iterator} と同じ約束で、
-     * {@link #remove()} は<b>直前に {@link #next()} が返したタスク</b>を表から外す。
+     * {@link #remove()} は直前に {@link #next()} が返したタスクを表から外す。
      */
     interface TaskCursor {
 
-        /** 次のタスクへ進む。もう無ければ false。 */
+        /** 次のタスクへ進む。もう無ければfalse。 */
         boolean next();
 
         /** 今のタスクのパターン。 */
@@ -107,7 +107,7 @@ public interface CraftingJobView {
 
         /**
          * 今のタスクを終わったものとして扱う。表から実際に抜くかどうかは実装による
-         * ({@code MapTaskCursor} は残りを 0 にするだけで、抜くのは CPU 本体のループに任せる)。
+         * {@code MapTaskCursor}は残りを0にするだけで、抜くのはCPU本体のループに任せる。
          */
         void remove();
     }

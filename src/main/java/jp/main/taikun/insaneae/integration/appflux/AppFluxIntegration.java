@@ -35,22 +35,22 @@ import java.util.function.Consumer;
 *///?}
 
 /**
- * AppliedFlux 連携: 1G〜16T の FE ストレージセル (通常 / ポータブル) を足す
- * (16T だけ容量 8T。理由は {@link FluxTiers})。材料は AppliedFlux と同じく専用の
- * エネルギーストレージコンポーネントで、これも 1G〜16T を足す (AppliedFlux の 256M の続き)。
+ * AppliedFlux連携: 1G〜16TのFEストレージセルを、通常とポータブルで足す
+ * 16Tだけ容量は8T。理由は{@link FluxTiers}を参照。材料はAppliedFluxと同じく専用の
+ * エネルギーストレージコンポーネントで、これも1G〜16Tを足す。AppliedFluxの256Mの続きになる。
  *
- * <p>セルは AppliedFlux の {@link IFluxCell} 実装なので、ME ドライブ等に挿したときの中身は
- * AppliedFlux 自身のセルハンドラ ({@code FECellHandler}、{@code IFluxCell} なら誰のアイテムでも対象にする)
- * が扱う。<b>Mixin は要らない</b>。容量が long を溢れる件は {@link FluxCapacity} を参照。</p>
+ * <p>セルはAppliedFluxの {@link IFluxCell} 実装なので、MEドライブ等に挿したときの中身は
+ * AppliedFlux自身のセルハンドラは{@code FECellHandler}で、{@code IFluxCell}なら誰のアイテムでも対象にする
+ * が扱う。Mixinは要らない。容量がlongを溢れる件は {@link FluxCapacity} を参照。</p>
  *
- * <p>このクラスは AppliedFlux のクラスを直接参照するので、appflux が無い環境では
- * ロードしてはいけない (名簿 {@code AddonIntegrations} がラムダ越しに生成している)。</p>
+ * <p>このクラスはAppliedFluxのクラスを直接参照するので、appfluxが無い環境では
+ * ロードしてはいけない。名簿の{@code AddonIntegrations}がラムダ越しに生成している。</p>
  */
 public final class AppFluxIntegration implements AddonIntegration {
 
     public static final String MODID = "appflux";
 
-    /** 各階層のエネルギーストレージコンポーネント (FE セルの材料。AppliedFlux の 1k〜256M の続き)。 */
+    /** 各階層のエネルギーストレージコンポーネント。FEセルの材料。AppliedFluxの1k〜256Mの続き。 */
     //? if >=1.21 {
     private final Map<InsaneCraftingUnitType, DeferredHolder<Item, Item>> components =
     //?} else {
@@ -131,9 +131,9 @@ public final class AppFluxIntegration implements AddonIntegration {
     }
 
     /**
-     * AppliedFlux が自分の FE セルにしている登録と同じ: 通常 = 超過破棄カード、
-     * ポータブル = 超過破棄 + エネルギーカード ×2 + 誘導カード (持ち物の FE 機器へ給電)。
-     * FE は 1 種類しか無いので、あいまい/白黒/均等配分は意味が無く登録しない。
+     * AppliedFluxが自分のFEセルにしている登録と同じ: 通常 = 超過破棄カード、
+     * ポータブル = 超過破棄 + エネルギーカード ×2 + 誘導カード。持ち物のFE機器へ給電する。
+     * FEは1種類しか無いので、あいまい/白黒/均等配分は意味が無く登録しない。
      */
     @Override
     public void registerUpgrades() {
@@ -154,9 +154,9 @@ public final class AppFluxIntegration implements AddonIntegration {
     }
 
     /**
-     * FE の capability。AppliedFlux は自分のアイテムにしか登録しないので登録し直す。
-     * 中身は AppliedFlux と同じく {@link IFluxCell#getCapability} に任せる
-     * (通常セル = 貯めている FE、ポータブル = 内蔵電池)。
+     * FEのcapability。AppliedFluxは自分のアイテムにしか登録しないので登録し直す。
+     * 中身はAppliedFluxと同じく {@link IFluxCell#getCapability} に任せる
+     * 通常セルは貯めているFE、ポータブルは内蔵電池。
      */
     @Override
     //? if >=1.21 {
@@ -164,7 +164,7 @@ public final class AppFluxIntegration implements AddonIntegration {
         List<Item> all = new ArrayList<>(storageCells());
         all.addAll(portableCells());
         for (Item item : all) {
-            // IFluxCell 自体が ICapabilityProvider<ItemStack, Void, IEnergyStorage>。
+            // IFluxCell自体がICapabilityProvider<ItemStack, Void, IEnergyStorage>
             event.registerItem(Capabilities.EnergyStorage.ITEM, (IFluxCell) item, item);
     //?} else {
     /*public void onInsaneHostNeighborChanged(Object logic, Direction side) {
@@ -181,10 +181,10 @@ public final class AppFluxIntegration implements AddonIntegration {
     /*public void buildRecipes(Consumer<FinishedRecipe> output, InsaneCraftingUnitType tier, ItemLike cellComponent) {
     *///?}
         if (!cells.containsKey(tier)) {
-            return;  // FluxTiers.TOP より上の階層は出していない
+            return;  // FluxTiers.TOPより上の階層は出していない
         }
         // エネルギーコンポーネント: 通常のセルコンポーネントと同じ形で、プロセッサが
-        // AppliedFlux のエネルギープロセッサ。最下段 (1G) は AppliedFlux の 256M から作る。
+        // AppliedFluxのエネルギープロセッサ。最下段 (1G) はAppliedFluxの256Mから作る
         ItemLike core = components.get(tier).get();
         ItemLike lower = tier.ordinal() == 0 ?
                 //? if >=1.21 {
@@ -196,14 +196,14 @@ public final class AppFluxIntegration implements AddonIntegration {
         //? if >=1.21 {
         ModRecipeProvider.tieredComponent(output, core, lower, AFSingletons.ENERGY_PROCESSOR, tier);
 
-        // FE セル: AppliedFlux と同じく FE セル筐体 + エネルギーコンポーネント (分解でもこれに戻る)。
-        // 引数の cellComponent (通常のセルコンポーネント) は使わない。
+        // FEセル: AppliedFluxと同じくFEセル筐体 + エネルギーコンポーネント。分解でもこれに戻る
+        // 引数のcellComponentは、通常のセルコンポーネントなので使わない
         ItemLike housing = AFSingletons.FE_HOUSING;
         //?} else {
         /*ModRecipeProvider.tieredComponent(output, core, lower, AFItemAndBlock.ENERGY_PROCESSOR, tier);
 
-        // FE セル: MEGA の FE セル筐体 (AppliedFlux の 1M〜256M と同じ) + エネルギーコンポーネント。
-        // 分解でもこの 2 つに戻る。引数の cellComponent (通常のセルコンポーネント) は使わない。
+        // FEセル: MEGAのFEセル筐体 + エネルギーコンポーネント。AppliedFluxの1M〜256Mと同じ
+        // 分解でもこの2つに戻る。引数のcellComponentは、通常のセルコンポーネントなので使わない
         ItemLike housing = AFItemAndBlock.MEGA_FE_HOUSING;
         *///?}
         ModRecipeProvider.storageCell(output, cells.get(tier).get(), core, housing);

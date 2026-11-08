@@ -23,13 +23,13 @@ public abstract class CraftingCPUNameMixin {
         }
 
         BigInteger exact = capacity.insaneae$exactStorageCapacity();
-        // long内のCPUは既存のAE2表示を維持し、超過したCPUだけマーカーを付ける。
+        // long内のCPUは既存のAE2表示を維持し、超過したCPUだけマーカーを付ける
         if (exact.compareTo(LONG_MAX) <= 0) {
             return;
         }
 
         Component name = cir.getReturnValue();
-        // 未命名CPUには表示名を付けず、クライアントでAE2標準の連番名を復元できるようにする。
+        // 未命名CPUには表示名を付けず、クライアントでAE2標準の連番名を復元できるようにする
         if (name == null) {
             name = Component.empty();
         }

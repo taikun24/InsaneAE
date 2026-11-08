@@ -14,20 +14,20 @@ import net.minecraft.core.HolderLookup;
 //?}
 
 /**
- * ACO の craftingtable batch で受け取った取引の<b>レシートの記録</b>。
+ * ACOのcraftingtable batchで受け取った取引のレシートの記録。
  *
- * <p>ACO の手引き ({@code docs/BATCH_API.md}) が第三者連携に要求しているのは
- * 「自前の<b>永続的な</b>ターゲットレシートと、コピーワールドでの kill/restart 試験」。
- * 挿入シミュレーションが通ることは durable acceptance の証明にならない、と明記されている。
- * そこでレシートはここに持ち、Quantum CPU の NBT へ一緒に保存する。</p>
+ * <p>ACOの手引き ({@code docs/BATCH_API.md}) が第三者連携に要求しているのは
+ * 「自前の永続的なターゲットレシートと、コピーワールドでのkill/restart試験」。
+ * 挿入シミュレーションが通ることはdurable acceptanceの証明にならない、と明記されている。
+ * そこでレシートはここに持ち、Quantum CPUのNBTへ一緒に保存する。</p>
  *
- * <p><b>このクラスは ACO の型に触れない。</b>ACO が未導入の環境でも
+ * <p>このクラスはACOの型に触れない。ACOが未導入の環境でも
  * {@code QuantumCpuBlockEntity} が普通にロードできる必要があるため、
- * プロトコルの実装 (ACO 型を使う側) は別クラスに置いてある。</p>
+ * プロトコルの実装、つまりACO型を使う側は別クラスに置いてある。</p>
  */
 public final class QuantumBatchReceipts {
 
-    /** 1 台の CPU が同時に抱えられる取引の数。溢れたら受け付けない (上書きしない)。 */
+    /** 1台のCPUが同時に抱えられる取引の数。溢れたら受け付けない。上書きしない。 */
     public static final int MAX_RECEIPTS = 256;
 
     private static final String NBT_LIST = "acoBatchReceipts";
@@ -38,7 +38,7 @@ public final class QuantumBatchReceipts {
     private static final String NBT_KEY = "key";
     private static final String NBT_AMOUNT = "amount";
 
-    /** レシートの状態。ACO の {@code CraftingTableBatchSnapshot.State} と 1:1 で対応させる。 */
+    /** レシートの状態。ACOの {@code CraftingTableBatchSnapshot.State} と1:1で対応させる。 */
     public enum State {
         RUNNING,
         OUTPUT_READY,
@@ -47,11 +47,11 @@ public final class QuantumBatchReceipts {
     }
 
     /**
-     * 1 取引ぶん。
+     * 1取引ぶん。
      *
-     * @param digest       ACO が付けた payload digest。<b>照合に使う</b>。
-     *                     同じ UUID でも digest が違えば別物として拒否する。
-     * @param exactOutputs 完成品の正確な量 (BigInteger)。long へ丸めない。
+     * @param digest       ACOが付けたpayload digest。照合に使う。
+     *                     同じUUIDでもdigestが違えば別物として拒否する。
+     * @param exactOutputs完成品の正確な量 (BigInteger)。longへ丸めない。
      */
     public record Receipt(String digest, State state, Map<AEKey, BigInteger> exactOutputs) {
         public Receipt {
@@ -72,8 +72,8 @@ public final class QuantumBatchReceipts {
     /**
      * 新しい取引を記録する。
      *
-     * @return 記録できたか。<b>同じ UUID が既にあれば false</b> (上書きしない)。
-     *         ACO 側は重複取引を「拒否されるべきもの」として扱う。
+     * @return記録できたか。同じUUIDが既にあればfalseで、上書きしない。
+     *         ACO側は重複取引を「拒否されるべきもの」として扱う。
      */
     public boolean put(UUID transactionId, Receipt receipt) {
         if (transactionId == null || receipt == null || isFull()) {
@@ -82,7 +82,7 @@ public final class QuantumBatchReceipts {
         return receipts.putIfAbsent(transactionId, receipt) == null;
     }
 
-    /** digest まで一致したものだけ返す。食い違えば null (別の取引として扱う)。 */
+    /** digestまで一致したものだけ返す。食い違えばnull。別の取引として扱う。 */
     @Nullable
     public Receipt get(UUID transactionId, String digest) {
         Receipt receipt = receipts.get(transactionId);
@@ -92,7 +92,7 @@ public final class QuantumBatchReceipts {
         return receipt;
     }
 
-    /** 状態を進める。digest が一致しなければ何もしない。 */
+    /** 状態を進める。digestが一致しなければ何もしない。 */
     public boolean advance(UUID transactionId, String digest, State next) {
         Receipt receipt = get(transactionId, digest);
         if (receipt == null) {
@@ -102,7 +102,7 @@ public final class QuantumBatchReceipts {
         return true;
     }
 
-    /** 記録から消す (ACO が credit 済みで forget を呼んだとき)。 */
+    /** 記録から消す。ACOがcredit済みでforgetを呼んだとき。 */
     public boolean forget(UUID transactionId, String digest) {
         if (get(transactionId, digest) == null) {
             return false;
@@ -139,7 +139,7 @@ public final class QuantumBatchReceipts {
                 //?} else {
                 /*output.put(NBT_KEY, key.toTagGeneric());
                 *///?}
-                // BigInteger は 10 進文字列ではなくバイト列で持つ (桁数が大きいと文字列は無駄に長い)。
+                // BigIntegerは10進文字列ではなくバイト列で持つ。桁数が大きいと文字列は無駄に長い
                 output.putByteArray(NBT_AMOUNT, amount.toByteArray());
                 outputs.add(output);
             });
@@ -165,7 +165,7 @@ public final class QuantumBatchReceipts {
             try {
                 state = State.valueOf(entry.getString(NBT_STATE));
             } catch (IllegalArgumentException unknown) {
-                // 知らない状態は捨てる。壊れたレシートを credit させるより落とすほうが安全。
+                // 知らない状態は捨てる。壊れたレシートをcreditさせるより落とすほうが安全
                 continue;
             }
             Map<AEKey, BigInteger> outputs = new LinkedHashMap<>();

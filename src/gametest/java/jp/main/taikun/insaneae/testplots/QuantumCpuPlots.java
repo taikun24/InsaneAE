@@ -52,7 +52,7 @@ import appeng.server.testplots.TestPlotClass;
 //?}
 
 /**
- * Quantum CPU (まとめクラフト・内蔵 CPU・タスク統合カード・完成待ち帳簿) の検証。
+ * Quantum CPUの検証。対象は、まとめクラフト、内蔵CPU、タスク統合カード、完成待ち帳簿。
  *
  * <p>走らせ方は {@link TestPlotSupport} を参照。</p>
  */
@@ -65,17 +65,17 @@ public final class QuantumCpuPlots {
     }
 
     /**
-     * <b>AE2 を複製した他 Mod のクラフト CPU</b> でもまとめ処理が使えることを確かめる
-     * (Issue #2 の回帰テスト)。
+     * AE2を複製した他ModのクラフトCPUでもまとめ処理が使えることを確かめる
+     * Issue #2の回帰テスト。
      *
-     * <p>Advanced AE (1.3.6 / 1.6.12 で確認) は {@code ExecutingCraftingJob} だけでなく
-     * 進捗カウンタ {@code ElapsedTimeTracker} まで<b>自前のコピー</b>で持っている。
-     * 「timeTracker フィールドの型が AE2 の tracker であること」を要求すると、
-     * ここで弾かれてまとめ処理が丸ごと使えなくなる (1 クラフトずつの遅い経路に落ちる)。</p>
+     * <p>Advanced AEは1.3.6と1.6.12で確認したところ、{@code ExecutingCraftingJob}だけでなく
+     * 進捗カウンタ {@code ElapsedTimeTracker} まで自前のコピーで持っている。
+     * 「timeTrackerフィールドの型がAE2のtrackerであること」を要求すると、
+     * ここで弾かれてまとめ処理が丸ごと使えなくなる。1クラフトずつの遅い経路に落ちる。</p>
      *
-     * <p>AAE を dev 環境に入れられないので、<b>同じフィールド構造のフェイク CPU</b>
+     * <p>AAEをdev環境に入れられないので、同じフィールド構造のフェイクCPU
      * ({@link FakeForeignCpuLogic}: job / inventory / tasks / waitingFor /
-     * 自前型の timeTracker / markDirty()) を {@code ReflectiveCraftingJobView} に食わせて、
+     * 自前型のtimeTracker / markDirty()) を {@code ReflectiveCraftingJobView} に食わせて、
      * 受理される・まとめ処理が走る・カウンタも呼ばれることを見る。</p>
      */
     @TestPlot("insaneae_bulk_foreign_cpu")
@@ -105,14 +105,14 @@ public final class QuantumCpuPlots {
                 var patterns = cpu.getLogic().getAvailablePatterns();
                 helper.check(patterns.size() == 1, "パターンが 1 枚になっていない");
 
-                // 自前型カウンタが直接呼べること (AAE の addMaxItems はパッケージプライベート)
+                // 自前型カウンタが直接呼べること。AAEのaddMaxItemsはパッケージプライベート
                 var tracker = new ForeignTimeTracker();
                 TimeTrackerAdapter.addMaxItems(
                         tracker, 7, AEKeyType.items());
                 helper.check(tracker.max == 7,
                         "自前型カウンタへの加算が効いていない: " + tracker.max);
 
-                // AAE と同じフィールド構造のフェイク CPU がレイアウト検査を通ること
+                // AAEと同じフィールド構造のフェイクCPUがレイアウト検査を通ること
                 var logic = new FakeForeignCpuLogic();
                 logic.job.tasks.put(patterns.get(0), new ForeignTaskProgress(requested));
                 logic.inventory.insert(AEItemKey.of(Items.OAK_LOG), logsInStock,
@@ -140,7 +140,7 @@ public final class QuantumCpuPlots {
         });
     }
 
-    /** AAE の自前 ElapsedTimeTracker に相当。addMaxItems はパッケージプライベート (本物と同じ)。 */
+    /** AAEの自前ElapsedTimeTrackerに相当。addMaxItemsはパッケージプライベート。本物と同じ。 */
     private static final class ForeignTimeTracker {
         long max;
 
@@ -149,7 +149,7 @@ public final class QuantumCpuPlots {
         }
     }
 
-    /** AE2 の TaskProgress に相当 (long の value フィールドだけが要る)。 */
+    /** AE2のTaskProgressに相当。longのvalueフィールドだけが要る。 */
     private static final class ForeignTaskProgress {
         long value;
 
@@ -158,7 +158,7 @@ public final class QuantumCpuPlots {
         }
     }
 
-    /** AAE の ExecutingCraftingJob に相当するフィールド構造。 */
+    /** AAEのExecutingCraftingJobに相当するフィールド構造。 */
     private static final class ForeignExecutingJob {
         final Map<IPatternDetails, ForeignTaskProgress> tasks = new HashMap<>();
         final ListCraftingInventory waitingFor =
@@ -167,7 +167,7 @@ public final class QuantumCpuPlots {
         final ForeignTimeTracker timeTracker = new ForeignTimeTracker();
     }
 
-    /** AAE の AdvCraftingCPULogic に相当するフィールド構造。 */
+    /** AAEのAdvCraftingCPULogicに相当するフィールド構造。 */
     private static final class FakeForeignCpuLogic {
         final ForeignExecutingJob job = new ForeignExecutingJob();
         final ListCraftingInventory inventory =
@@ -181,15 +181,15 @@ public final class QuantumCpuPlots {
     }
 
     /**
-     * 完成品待ち台帳の BigInteger 会計 (PR #3) の回帰テスト。
+     * 完成品待ち台帳のBigInteger会計 (PR #3) の回帰テスト。
      *
      * <ol>
-     *   <li>long を超える量を積んでも欠けない (クランプ・折り返しが無い)</li>
-     *   <li>NBT の保存 → 読み込みで量が 1 個もずれない</li>
-     *   <li>壊れたエントリ (解決できないキー・負の量・空の量) は<b>例外を投げず</b>
-     *       そのエントリだけ捨てる — Mod を抜いたらチャンクが壊れる、が最悪の後退なので</li>
-     *   <li>旧 (long 形式) の NBT から移行できる</li>
-     *   <li>ネットワークに入り切らないぶんは serverTick 後も台帳に正確に残る</li>
+     *   <li>longを超える量を積んでも欠けない。クランプも折り返しも無い</li>
+     *   <li>NBTの保存 → 読み込みで量が1個もずれない</li>
+     *   <li>壊れたエントリ、つまり解決できないキー、負の量、空の量は例外を投げず
+     *       そのエントリだけ捨てる — Modを抜いたらチャンクが壊れる、が最悪の後退なので</li>
+     *   <li>long形式の旧NBTから移行できる</li>
+     *   <li>ネットワークに入り切らないぶんはserverTick後も台帳に正確に残る</li>
      * </ol>
      */
     @TestPlot("insaneae_bigint_pending_outputs")
@@ -198,7 +198,7 @@ public final class QuantumCpuPlots {
         plot.cable("0 0 0");
         plot.blockState("1 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
 
-        // Long.MAX_VALUE + 5。long のどこにも収まらない代表値。
+        // Long.MAX_VALUE + 5。longのどこにも収まらない代表値
         //? if >=1.21 {
         final java.math.BigInteger overLong =
                 java.math.BigInteger.valueOf(Long.MAX_VALUE).add(java.math.BigInteger.valueOf(5));
@@ -254,8 +254,8 @@ public final class QuantumCpuPlots {
                 *///?}
                 helper.check(overLong.equals(cpu.getPendingOutputs().get(log)),
                         "壊れたエントリ混在で正常なエントリまで壊れた: " + cpu.getPendingOutputs().get(log));
-                // 1.21 の AE2 は解決できないキーを ae2:missing_content として保全する
-                // (捨てない)。負の量のエントリだけが落ち、元の 1 + 保全された 1 = 2 になる。
+                // 1.21のAE2は解決できないキーをae2:missing_contentとして保全する
+                // 捨てない。負の量のエントリだけが落ち、元の1 + 保全された1 = 2になる
                 //? if >=1.21 {
                 helper.check(cpu.getPendingOutputs().size() == 2,
                         "壊れたエントリの扱いが想定と違う: " + cpu.getPendingOutputs());
@@ -289,7 +289,7 @@ public final class QuantumCpuPlots {
                                 .equals(cpu.getPendingOutputs().get(log)),
                         "旧形式の移行に失敗: " + cpu.getPendingOutputs().get(log));
 
-                // 後段の確認のため、long 超の量へ戻す
+                // 後段の確認のため、long超の量へ戻す
                 //? if >=1.21 {
                 cpu.loadTag(tag, registries);
                 //?} else {
@@ -297,7 +297,7 @@ public final class QuantumCpuPlots {
                 *///?}
             });
 
-            // serverTick が走る (このネットワークにはストレージが無いので 1 個も入らない)
+            // serverTickが走る。このネットワークにはストレージが無いので1個も入らない
             sequence.thenIdle(2);
 
             sequence.thenExecute(() -> {
@@ -305,7 +305,7 @@ public final class QuantumCpuPlots {
                 var grid = helper.getGrid(BlockPos.ZERO);
                 long stored = grid.getStorageService().getInventory()
                         .getAvailableStacks().get(log);
-                // 入ったぶん + 台帳の残り = 元の量 (1 個も消えていない)
+                // 入ったぶん + 台帳の残り = 元の量。1個も消えていない
                 //? if >=1.21 {
                 var pending = cpu.getPendingOutputs().getOrDefault(log, java.math.BigInteger.ZERO);
                 var total = pending.add(java.math.BigInteger.valueOf(stored));
@@ -322,16 +322,16 @@ public final class QuantumCpuPlots {
     }
 
     /**
-     * まとめクラフトが<b>材料以上に作らない</b>ことを確かめる (増殖の回帰テスト)。
+     * まとめクラフトが材料以上に作らないことを確かめる。増殖の回帰テスト。
      *
-     * <p>{@code QuantumBulkCrafting.extractInputs} は在庫が足りなければ<b>黙って回数を減らす</b>。
+     * <p>{@code QuantumBulkCrafting.extractInputs} は在庫が足りなければ黙って回数を減らす。
      * その縮小した回数を呼び出し側に返さないと、要求した回数のまま組ませてしまい、
-     * 「丸太 5 本ぶんの材料で 256 回ぶんの板材ができる」状態になる。
+     * 「丸太5本ぶんの材料で256回ぶんの板材ができる」状態になる。
      * 多段クラフトでは中間素材が順次でき上がる = 「残り回数 &gt;&gt; 手元の材料」が通常の進行状態なので、
      * 日常的に通る経路である。</p>
      *
      * <p>ジョブの窓口 ({@link CraftingJobView}) を差し替えられるようにしてあるので、
-     * <b>在庫をこちらで固定して直接呼べる</b>。クラフト CPU を組んで実際にジョブを流すより
+     * 在庫をこちらで固定して直接呼べる。クラフトCPUを組んで実際にジョブを流すより
      * 決定的で速い。</p>
      */
     @TestPlot("insaneae_quantum_cpu_bulk_conservation")
@@ -340,7 +340,7 @@ public final class QuantumCpuPlots {
         plot.cable("[0,2] 0 0");
         plot.blockState("2 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
 
-        // 丸太 1 本 → 板材 4 枚 (シェイプレス)。1 回ぶんの材料が 1 個なので数え違いが起きない。
+        // 丸太1本から板材4枚を作る、シェイプレスのパターン。1回ぶんの材料が1個なので数え違いが起きない
         final int logsInStock = 5;
         final int planksPerCraft = 4;
         final long requested = 1000;
@@ -359,7 +359,7 @@ public final class QuantumCpuPlots {
                                 new ItemStack(Items.OAK_LOG)));
             });
 
-            // パターンの読み直しは 1 tick 遅れ、グリッドのクラフト索引の更新にもう数 tick かかる。
+            // パターンの読み直しは1 tick遅れ、グリッドのクラフト索引の更新にもう数tickかかる
             sequence.thenIdle(5);
 
             sequence.thenExecute(() -> {
@@ -370,7 +370,7 @@ public final class QuantumCpuPlots {
 
                 var grid = helper.getGrid(BlockPos.ZERO);
                 state.view = new FakeJobView(patterns.get(0), requested);
-                // <b>5 回ぶんしか入れない。</b>要求は 1000 回。
+                // 5回ぶんしか入れない。要求は1000回
                 state.view.inventory.insert(AEItemKey.of(Items.OAK_LOG), logsInStock,
                         Actionable.MODULATE);
 
@@ -399,11 +399,11 @@ public final class QuantumCpuPlots {
     }
 
     /**
-     * タスク統合カード: まとめ 1 回がクラスタ予算を <b>1 操作</b>しか消費しないことを確かめる。
+     * タスク統合カード: まとめ1回がクラスタ予算を1操作しか消費しないことを確かめる。
      *
-     * <p>クラスタ予算 3 に対して 1000 回の要求を流す。カード無しなら 3 回で頭打ちになるところが、
-     * カード有りなら 1000 回まるごと 1 tick で通り、消費した操作数は 1 と報告される
-     * (回数の上限はクラスタではなく Quantum CPU 自身の予算 = 加速カード 1 枚で 65536/tick)。</p>
+     * <p>クラスタ予算3に対して1000回の要求を流す。カード無しなら3回で頭打ちになるところが、
+     * カード有りなら1000回まるごと1 tickで通り、消費した操作数は1と報告される
+     * 回数の上限はクラスタではなくQuantum CPU自身の予算で、加速カード1枚で65536/tick。</p>
      */
     @TestPlot("insaneae_task_fusion_card")
     public static void taskFusionCard(PlotBuilder plot) {
@@ -431,7 +431,7 @@ public final class QuantumCpuPlots {
                 cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
             });
 
-            // パターンの読み直しとクラフト索引の更新待ち (bulk_conservation と同じ)。
+            // パターンの読み直しとクラフト索引の更新待ち。bulk_conservationと同じ
             sequence.thenIdle(5);
 
             sequence.thenExecute(() -> {
@@ -468,12 +468,12 @@ public final class QuantumCpuPlots {
     }
 
     /**
-     * タスク統合カードが <b>BigInteger (Exact) 経路でも効く</b>ことを確かめる。
+     * タスク統合カードがBigInteger (Exact) 経路でも効くことを確かめる。
      *
-     * <p>{@code insaneae_task_fusion_card} が見ているのは通常の long タスク経路だけで、
-     * ACO の正確な計画を受け取ったときに走る {@code executeExact} は別のループになっている。
-     * ここが統合を見ていないと、<b>922京級の注文ほどカードが効かない</b>という逆の症状になる
-     * (通常経路では効いているので気付きにくい)。</p>
+     * <p>{@code insaneae_task_fusion_card} が見ているのは通常のlongタスク経路だけで、
+     * ACOの正確な計画を受け取ったときに走る {@code executeExact} は別のループになっている。
+     * ここが統合を見ていないと、922京級の注文ほどカードが効かないという逆の症状になる
+     * 通常経路では効いているので、気付きにくい。</p>
      */
     @TestPlot("insaneae_task_fusion_exact")
     public static void taskFusionCardExact(PlotBuilder plot) {
@@ -514,9 +514,9 @@ public final class QuantumCpuPlots {
                 state.view.inventory.insert(AEItemKey.of(Items.OAK_LOG), requested,
                         Actionable.MODULATE);
 
-                // Exact 台帳は ExecutingCraftingJob をキーにするが、ここでは本物のジョブを
-                // 立てずに経路だけ試したいので null をキーに使う (WeakHashMap は null を許す)。
-                // このプロットしか null を使わないが、並列で走る他プロットに残さないよう最後に消す。
+                // Exact台帳はExecutingCraftingJobをキーにするが、ここでは本物のジョブを
+                // 立てずに経路だけ試したいので、nullをキーに使う。WeakHashMapはnullを許す
+                // このプロットしかnullを使わないが、並列で走る他プロットに残さないよう最後に消す
                 AcoBigIntegerJobRegistry.install(null,
                         //? if >=1.21 {
                         Map.of(patterns.get(0), java.math.BigInteger.valueOf(requested)));
@@ -549,21 +549,21 @@ public final class QuantumCpuPlots {
     }
 
     /**
-     * <b>Quantum CPU の内部スロットに挿したクラフトユニットが、本物のクラフト CPU になるか。</b>
+     * Quantum CPUの内部スロットに挿したクラフトユニットが、本物のクラフトCPUになるか。
      *
-     * <p>ネットワークには<b>他にクラフト CPU を 1 つも置いていない</b>。
-     * そのため「CPU 一覧に出る」「発注が通る」「最後まで終わる」がどれも
-     * <b>内蔵 CPU のおかげであること</b>が確定する。</p>
+     * <p>ネットワークには他にクラフトCPUを1つも置いていない。
+     * そのため「CPU一覧に出る」「発注が通る」「最後まで終わる」がどれも
+     * 内蔵CPUのおかげであることが確定する。</p>
      *
-     * <p>見ているのは 4 点。</p>
+     * <p>見ているのは4点。</p>
      * <ol>
-     *   <li>ユニットを挿す<b>前</b>は CPU が 0 個。クラフトストレージが無ければ
-     *       CPU として名乗らない ({@code QuantumCraftingCpu#isFormed})。</li>
-     *   <li>挿すと CPU が 1 個現れ、容量とスレッド数が挿したユニットの合計になる。
-     *       ここが 0 だと {@code CraftingCPUClusterMixin} の数え直しが
-     *       内蔵 CPU 用の経路に入っていない。</li>
-     *   <li>2 段クラフト (ボタン &lt;- 板材 &lt;- 原木) が最後まで終わる。</li>
-     *   <li>ユニットを抜くと CPU 一覧から消える。</li>
+     *   <li>ユニットを挿す前はCPUが0個。クラフトストレージが無ければ
+     *       CPUとして名乗らない ({@code QuantumCraftingCpu#isFormed})。</li>
+     *   <li>挿すとCPUが1個現れ、容量とスレッド数が挿したユニットの合計になる。
+     *       ここが0だと {@code CraftingCPUClusterMixin} の数え直しが
+     *       内蔵CPU用の経路に入っていない。</li>
+     *   <li>2段クラフトが最後まで終わる。ボタン &lt;- 板材 &lt;- 原木 の順。</li>
+     *   <li>ユニットを抜くとCPU一覧から消える。</li>
      * </ol>
      */
     @TestPlot("insaneae_quantum_cpu_internal_units")
@@ -589,7 +589,7 @@ public final class QuantumCpuPlots {
 
             sequence.thenExecute(() -> {
                 var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
-                // 2 段のツリー: ボタン <- 板材 <- 原木 (在庫にあるのは原木だけ)。
+                // 2段のツリー: ボタン<- 板材<- 原木。在庫にあるのは原木だけ
                 cpu.getLogic().getPatternInv().addItems(
                         CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
                                 new ItemStack(Items.OAK_LOG)));
@@ -647,7 +647,7 @@ public final class QuantumCpuPlots {
                 var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
                 cpu.getCraftingUnits().clear();
                 cpu.getAcceleratorUnits().clear();
-                // clear() は 1 枠ずつの通知を出さないので、数え直しを促す。
+                // clear() は1枠ずつの通知を出さないので、数え直しを促す
                 cpu.getCraftingCpu().updateUnits();
             });
             sequence.thenIdle(10);
@@ -655,30 +655,30 @@ public final class QuantumCpuPlots {
                     "ユニットを抜いても CPU 一覧に残っている: " + countCpus(helper), cpuPos));
 
             sequence.thenSucceed();
-        // 既定の持ち時間ではネットワークの起動 + 2 段クラフトが終わらない
-        // (他のクラフト完走テストと同じ 400 tick)。
+        // 既定の持ち時間ではネットワークの起動 + 2段クラフトが終わらない
+        // 他のクラフト完走テストと同じ400 tick
         }).maxTicks(400);
     }
 
     /**
-     * <b>内蔵 CPU が容量を切り分けて、2 本のクラフトを同時に受けるか。</b>
+     * 内蔵CPUが容量を切り分けて、2本のクラフトを同時に受けるか。
      *
-     * <p>AE2 のクラフト CPU は 1 台 1 ジョブで、実行中は容量が丸ごと塞がる。
-     * Quantum CPU は容量を発注のたびに切り出すので、
-     * <b>1 本走らせたまま残量ぶんの発注ができる</b> ({@code QuantumCraftingCpu})。</p>
+     * <p>AE2のクラフトCPUは1台1ジョブで、実行中は容量が丸ごと塞がる。
+     * Quantum CPUは容量を発注のたびに切り出すので、
+     * 1本走らせたまま残量ぶんの発注ができる ({@code QuantumCraftingCpu})。</p>
      *
-     * <p>見ているのは 4 点。</p>
+     * <p>見ているのは4点。</p>
      * <ol>
-     *   <li>1 本目を始めると、CPU 一覧が<b>実行中のぶんと残量ぶんの 2 行</b>になる。</li>
-     *   <li>残量が「合計 - 1 本目が要求したバイト数」に減っている
-     *       (塞がるのは使うぶんだけ = 切り分けが効いている)。</li>
-     *   <li>1 本目を止めたまま<b>2 本目を発注できる</b>。
+     *   <li>1本目を始めると、CPU一覧が実行中のぶんと残量ぶんの2行になる。</li>
+     *   <li>残量が「合計 - 1本目が要求したバイト数」に減っている
+     *       塞がるのは使うぶんだけ。切り分けが効いている。</li>
+     *   <li>1本目を止めたまま2本目を発注できる。
      *       ここが通らないと「実行中は発注できない」元の挙動のまま。</li>
-     *   <li>両方終わると区画が畳まれ、CPU 一覧も容量も元に戻る。</li>
+     *   <li>両方終わると区画が畳まれ、CPU一覧も容量も元に戻る。</li>
      * </ol>
      *
-     * <p>1 本目は<b>わざと一時停止</b>して止めてある ({@code setJobSuspended})。
-     * そうしないと 2 本目を出す前に終わってしまい、同時に走っているかを見られない。</p>
+     * <p>1本目はわざと一時停止して止めてある ({@code setJobSuspended})。
+     * そうしないと2本目を出す前に終わってしまい、同時に走っているかを見られない。</p>
      */
     @TestPlot("insaneae_quantum_cpu_split")
     public static void quantumCpuSplit(PlotBuilder plot) {
@@ -707,14 +707,14 @@ public final class QuantumCpuPlots {
 
             sequence.thenExecute(() -> {
                 var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
-                // 2 段のツリー: ボタン <- 板材 <- 原木 (在庫にあるのは原木だけ)。
+                // 2段のツリー: ボタン<- 板材<- 原木。在庫にあるのは原木だけ
                 cpu.getLogic().getPatternInv().addItems(
                         CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
                                 new ItemStack(Items.OAK_LOG)));
                 cpu.getLogic().getPatternInv().addItems(
                         CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
                                 new ItemStack(Items.OAK_PLANKS)));
-                // 協調処理ユニットは挿さない。スレッドが 0 でも区画は切れること。
+                // 協調処理ユニットは挿さない。スレッドが0でも区画は切れること
                 cpu.getCraftingUnits().addItems(AEBlocks.CRAFTING_STORAGE_64K.stack(storageUnits));
             });
             sequence.thenIdle(10);
@@ -731,13 +731,13 @@ public final class QuantumCpuPlots {
 
             sequence.thenExecute(() -> state.first = new TestCraftingJob(
                     helper, BlockPos.ZERO, AEItemKey.of(Items.OAK_BUTTON), buttons));
-            // 止めるのは<b>始まったのと同じ tick のうち</b>に。1 tick でも空けると
-            // 先に終わってしまい、同時に走っているところを見られない。
+            // 止めるのは始まったのと同じtickのうちに。1 tickでも空けると
+            // 先に終わってしまい、同時に走っているところを見られない
             sequence.thenWaitUntil(() -> {
                 state.first.tickUntilStarted();
                 state.heldPattern = takeButtonPattern(helper, cpuPos);
             });
-            // CPU 名簿の作り直しは tick の終わりなので、数えるのは少し待ってから。
+            // CPU名簿の作り直しはtickの終わりなので、数えるのは少し待ってから
             sequence.thenIdle(5);
 
             sequence.thenExecute(() -> {
@@ -745,7 +745,7 @@ public final class QuantumCpuPlots {
                 helper.check(cpu.getCraftingCpu().runningJobs() == 1,
                         "実行中の区画が 1 つになっていない: "
                                 + cpu.getCraftingCpu().runningJobs(), cpuPos);
-                // 実行中のぶんと残量ぶんで 2 行。
+                // 実行中のぶんと残量ぶんで2行
                 helper.check(countCpus(helper) == 2,
                         "実行中でも残量ぶんの CPU が出ていない: " + countCpus(helper)
                                 + " 台 (区画の切り出しが効いていない)", cpuPos);
@@ -808,19 +808,19 @@ public final class QuantumCpuPlots {
             });
 
             sequence.thenSucceed();
-        // 2 本ぶんのクラフトと、その間の待ちを入れても収まる長さ。
+        // 2本ぶんのクラフトと、その間の待ちを入れても収まる長さ
         }).maxTicks(600);
     }
 
-    /** ボタンのパターンを入れてある枠 (板材のパターンの次に入れているので 1 番)。 */
+    /** ボタンのパターンを入れてある枠。板材のパターンの次に入れているので1番。 */
     private static final int BUTTON_PATTERN_SLOT = 1;
 
     /**
-     * ボタンのパターンを引き抜いて、1 本目のクラフトをそこで止める。
+     * ボタンのパターンを引き抜いて、1本目のクラフトをそこで止める。
      *
-     * <p>作り手が居なくなるだけなので<b>ジョブは実行中のまま待ちに入る</b>。
-     * パターンを戻せば続きから進む。AE2 のジョブ一時停止 API は
-     * 1.21.1 の AE2 にしか無いので、両ブランチで同じ手が使えるこちらにしてある。</p>
+     * <p>作り手が居なくなるだけなのでジョブは実行中のまま待ちに入る。
+     * パターンを戻せば続きから進む。AE2のジョブ一時停止APIは
+     * 1.21.1のAE2にしか無いので、両ブランチで同じ手が使えるこちらにしてある。</p>
      */
     private static ItemStack takeButtonPattern(PlotTestHelper helper, BlockPos cpuPos) {
         var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(cpuPos);
@@ -830,7 +830,7 @@ public final class QuantumCpuPlots {
         return pattern;
     }
 
-    /** ネットワークに見えているクラフト CPU の数。 */
+    /** ネットワークに見えているクラフトCPUの数。 */
     private static int countCpus(PlotTestHelper helper) {
         int cpus = 0;
         for (var ignored : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
@@ -840,16 +840,16 @@ public final class QuantumCpuPlots {
     }
 
     /**
-     * <b>実際のジョブ</b>でまとめ処理が発火することを確かめる (同居 Mod に対する回帰テスト)。
+     * 実際のジョブでまとめ処理が発火することを確かめる。同居Modに対する回帰テスト。
      *
      * <p>他のまとめ処理テストは {@code QuantumBulkCrafting.execute} を直接呼んでいるので、
-     * <b>クラフト CPU の tick から本当に呼ばれているか</b>は見ていない。
-     * {@code executeCrafting} の先頭には打ち切り付きで注入している Mod が他にもいる
-     * (AE2 Crafting Optimizer がそう) ため、先を越されるとまとめ処理は<b>黙って</b>
-     * 素の 1 回ずつに戻る。結果は同じで遅くなるだけなので、カウンタでしか気付けない。</p>
+     * クラフトCPUのtickから本当に呼ばれているかは見ていない。
+     * {@code executeCrafting} の先頭には打ち切り付きで注入しているModが他にもいる
+     * AE2 Crafting Optimizerがそうなので、先を越されるとまとめ処理は黙って
+     * 素の1回ずつに戻る。結果は同じで遅くなるだけなので、カウンタでしか気付けない。</p>
      *
      * <p>タスク統合カードを挿してあるので、まとめ処理が働いていれば
-     * {@code crafts} 回は数 tick で終わる。働いていなければクラスタ予算 (1 tick に数回) で
+     * {@code crafts} 回は数tickで終わる。働いていなければ、クラスタ予算の1 tickに数回で
      * 刻まれるため、待ち時間の側でも差が出る。</p>
      */
     @TestPlot("insaneae_bulk_execution_live")
@@ -857,7 +857,7 @@ public final class QuantumCpuPlots {
         plot.creativeEnergyCell("0 -1 0");
         plot.cable("[0,3] 0 0");
         plot.blockEntity("1 0 0", AEBlocks.DRIVE, drive -> {
-            // 材料は無限、完成品の置き場に普通のセルを 1 枚。
+            // 材料は無限、完成品の置き場に普通のセルを1枚
             drive.getInternalInventory().addItems(CreativeCellItem.ofItems(Items.OAK_LOG));
             drive.getInternalInventory().addItems(AEItems.ITEM_CELL_64K.stack());
         });
@@ -884,7 +884,7 @@ public final class QuantumCpuPlots {
                 cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
             });
 
-            // パターンの読み直しとクラフト索引の更新待ち (他のまとめ処理テストと同じ)。
+            // パターンの読み直しとクラフト索引の更新待ち。他のまとめ処理テストと同じ
             sequence.thenIdle(5);
 
             sequence.thenExecute(() -> {
@@ -911,15 +911,15 @@ public final class QuantumCpuPlots {
     }
 
     /**
-     * 超次元パターンプロバイダーが、加工パターンを 1 回の呼び出しで何百回ぶんも押し出すこと
-     * (CurseForge のコメント: 加工パターンが 1 tick 5,000 回で頭打ちになる件)。
+     * 超次元パターンプロバイダーが、加工パターンを1回の呼び出しで何百回ぶんも押し出すこと
+     * CurseForgeで報告された、加工パターンが1 tick 5,000回で頭打ちになる件の回帰テスト。
      *
-     * <p>材料 2 種類 (丸太 1 + 丸石 2) のパターンを、別々の面にある 2 つのチェストへ押し出す。
-     * チェストは 2 種類の材料が同じ空き枠を取り合うので、照会を材料ごとに足し合わせると
+     * <p>材料2種類、丸太1と丸石2のパターンを、別々の面にある2つのチェストへ押し出す。
+     * チェストは2種類の材料が同じ空き枠を取り合うので、照会を材料ごとに足し合わせると
      * 入る回数を多く見積もる。見積もりどおり入れると溢れて送信待ちに積まれ、プロバイダが止まる。
-     * 押し出しが 1 巡ごとに見積もりの半分ずつ入れていれば、溢れずに 2 つとも 9 割以上埋まる。</p>
+     * 押し出しが1巡ごとに見積もりの半分ずつ入れていれば、溢れずに2つとも9割以上埋まる。</p>
      *
-     * <p>入りきらなかった回数ぶんの材料は CPU の在庫へ戻ること、完成待ちの帳簿が
+     * <p>入りきらなかった回数ぶんの材料はCPUの在庫へ戻ること、完成待ちの帳簿が
      * 押し出した回数と一致することも見る。</p>
      */
     @TestPlot("insaneae_processing_bulk_push")
@@ -927,13 +927,13 @@ public final class QuantumCpuPlots {
         plot.creativeEnergyCell("0 -1 0");
         plot.cable("[0,1] 0 0");
         plot.blockState("2 0 0", ModBlocks.INSANE_PATTERN_PROVIDER.get().defaultBlockState());
-        // 2 つのチェストは隣り合わせない (ラージチェストにならないように)。
+        // 2つのチェストは隣り合わせない。ラージチェストにならないように
         plot.blockState("2 1 0", Blocks.CHEST.defaultBlockState());
         plot.blockState("2 0 1", Blocks.CHEST.defaultBlockState());
 
         final long requested = 10_000;
         final int planksPerCraft = 4;
-        // チェスト 2 つ = 54 枠。1 回 3 個 (丸太 1 + 丸石 2) なので、隙間なく詰めて 1152 回。
+        // チェスト2つで54枠。1回3個、丸太1と丸石2なので、隙間なく詰めて1152回
         final long perfectFit = 54L * 64 / 3;
 
         plot.test(helper -> {
@@ -1012,7 +1012,7 @@ public final class QuantumCpuPlots {
         });
     }
 
-    /** プロットの 2 つのチェストに入っている数の合計。 */
+    /** プロットの2つのチェストに入っている数の合計。 */
     private static long countInChests(PlotTestHelper helper, Item item) {
         long total = 0;
         for (BlockPos pos : List.of(new BlockPos(2, 1, 0), new BlockPos(2, 0, 1))) {
@@ -1028,7 +1028,7 @@ public final class QuantumCpuPlots {
     }
 
     /**
-     * {@link CraftingJobView} の最小の実装。タスクは 1 つだけ持つ。
+     * {@link CraftingJobView} の最小の実装。タスクは1つだけ持つ。
      * 在庫をこちらで固定できるので、まとめ処理の入出力を直接検算できる。
      */
     private static final class FakeJobView implements CraftingJobView {
@@ -1045,7 +1045,7 @@ public final class QuantumCpuPlots {
         final IPatternDetails details;
         long remaining;
         boolean removed;
-        /** null でなければ Exact (BigInteger) 経路を通す。 */
+        /** nullでなければExact (BigInteger) 経路を通す。 */
         AcoBigIntegerJobRegistry.CraftingCursor exactCursor;
 
         FakeJobView(IPatternDetails details, long remaining) {
@@ -1117,11 +1117,11 @@ public final class QuantumCpuPlots {
     }
 
     /**
-     * パターンを 1 枚変えても、<b>変わっていない枠はデコードし直さない</b>こと (issue #16)。
+     * パターンを1枚変えても、変わっていない枠はデコードし直さないこと (issue #16)。
      *
-     * <p>AE2 は 1 枚の出し入れのたびに全枠をデコードし直し、1620 枠では 1 回 30ms ほどかかっていた。
-     * 記憶したデコード結果が使われていれば、変えていない枠のパターンは<b>同じオブジェクト</b>のまま残る
-     * (デコードし直すと、equals は同じでも別のオブジェクトになる)。
+     * <p>AE2は1枚の出し入れのたびに全枠をデコードし直し、1620枠では1回30msほどかかっていた。
+     * 記憶したデコード結果が使われていれば、変えていない枠のパターンは同じオブジェクトのまま残る
+     * デコードし直すと、equalsは同じでも別のオブジェクトになる。
      * {@code PatternProviderDecodeCacheMixin} が黙って当たらなくなった場合もここで落ちる。</p>
      */
     @TestPlot("insaneae_pattern_decode_cache")
@@ -1150,7 +1150,7 @@ public final class QuantumCpuPlots {
                 var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(pos);
                 before.addAll(cpu.getLogic().getAvailablePatterns());
                 helper.check(before.size() == logs.length, "パターンが " + logs.length + " 枚になっていない");
-                // 1 枚目だけ別のレシピに差し替える
+                // 1枚目だけ別のレシピに差し替える
                 var inv = cpu.getLogic().getPatternInv();
                 inv.extractItem(0, 1, false);
                 inv.insertItem(0, CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),

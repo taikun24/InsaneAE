@@ -17,9 +17,9 @@ import net.neoforged.neoforge.registries.RegistryObject;
 *///?}
 
 /**
- * 独自 GUI の {@link MenuType}。
+ * 独自GUIの {@link MenuType}。
  *
- * <p>AE2 の {@code MenuTypeBuilder} は {@code ae2} 名前空間に登録してしまうので使わず、
+ * <p>AE2の {@code MenuTypeBuilder} は {@code ae2} 名前空間に登録してしまうので使わず、
  * {@link QuantumCpuMenu} 側で作った {@code MenuType} をここで {@code insaneae} 名前空間に登録する。</p>
  */
 public class ModMenus {

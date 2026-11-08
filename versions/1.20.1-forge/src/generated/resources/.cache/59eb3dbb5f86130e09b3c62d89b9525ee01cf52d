@@ -1,4 +1,4 @@
-// 1.20.1	2026-09-22T12:58:15.3434782	Loot Tables
+// 1.20.1	2026-11-08T12:22:32.2789644	Loot Tables
 bcf8b361567e2e2b0152c1d32f1f1dc1c5359893 data/insaneae/loot_tables/blocks/16g_crafting_storage.json
 e8b7d85e93a05285bfb588a5791407f25f6dcf9e data/insaneae/loot_tables/blocks/16k_crafting_accelerator.json
 7b19fc266cc2173f6c1272d2c6c7c864c19844b5 data/insaneae/loot_tables/blocks/16m_crafting_accelerator.json
@@ -39,6 +39,7 @@ d73c420fa49f45709c06e0ad41349ab1eae00baa data/insaneae/loot_tables/blocks/collap
 40bb4cff398c0fb559c15401d4bed63859831731 data/insaneae/loot_tables/blocks/degenerate_energy_cell.json
 c6ab7c8be110e658433587532829eed3902029a9 data/insaneae/loot_tables/blocks/elite_solar_panel.json
 83e1a1722e5d98d92c46cfbc7693e0b4dfde2300 data/insaneae/loot_tables/blocks/galactic_energy_cell.json
+0e1698e8db6a795b54c15b019064ebb5711b3bb0 data/insaneae/loot_tables/blocks/gamertaikun_doll.json
 165464d8a9a9337c07d7377fd170e4bcf596df59 data/insaneae/loot_tables/blocks/hyperdense_energy_cell.json
 54af8a5ec5caca2f682e9c6003c4462cf19ed51b data/insaneae/loot_tables/blocks/hypernova_energy_cell.json
 69371db52fda1df9071030a968f71bc57de590e9 data/insaneae/loot_tables/blocks/improved_charger.json

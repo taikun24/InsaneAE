@@ -12,11 +12,11 @@ import java.math.BigInteger;
 import java.util.UUID;
 
 /**
- * ME Infinity Cell を、ACO の exact 実行が材料を引ける BigInteger セルにする (書き込み側)。
+ * ME Infinity Cellを、ACOのexact実行が材料を引けるBigIntegerセルにする。書き込み側。
  *
- * <p>ACO が在庫を減らすときに見るのはこの内部インターフェイスだけ
- * ({@link UltraCreativeCellExactStorageMixin} と同じ事情)。中身は取り出し放題なので、
- * ACO が Map を書き換えて減らしても実害は無い。</p>
+ * <p>ACOが在庫を減らすときに見るのはこの内部インターフェイスだけ
+ * {@link UltraCreativeCellExactStorageMixin}と同じ事情。中身は取り出し放題なので、
+ * ACOがMapを書き換えて減らしても実害は無い。</p>
  */
 @Pseudo
 @Mixin(targets = {
@@ -52,7 +52,7 @@ public abstract class InfinityCellExactStorageMixin implements ExtendedAePlusBig
 
     @Override
     public void aco$saveExactChanges() {
-        // 保存するものは無い (中身はセルの種類で決まっている)。
+        // 保存するものは無い。中身はセルの種類で決まっている
     }
 
     @Override

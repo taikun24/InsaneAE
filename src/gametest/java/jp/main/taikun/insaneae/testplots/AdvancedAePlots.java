@@ -31,7 +31,7 @@ import appeng.server.testplots.TestPlotClass;
 //?}
 
 /**
- * Advanced AE のクラフト CPU へ入れた互換 Mixin が実際に走るか。
+ * Advanced AEのクラフトCPUへ入れた互換Mixinが実際に走るか。
  *
  * <p>走らせ方は {@link TestPlotSupport} を参照。</p>
  */
@@ -44,21 +44,21 @@ public final class AdvancedAePlots {
     }
 
     /**
-     * Advanced AE のクラフト CPU へ入れている compat Mixin が<b>実際に当たっている</b>ことを確かめる。
+     * Advanced AEのクラフトCPUへ入れているcompat Mixinが実際に当たっていることを確かめる。
      *
      * <p>{@code @Pseudo} + {@code targets} の名指しは、相手のクラス名が変わっても
-     * <b>エラーにならず黙って当たらなくなる</b> ({@code required=false} なので尚更)。
-     * 症状は「Advanced AE のクラフト CPU だけ遅い」「巨大な協調処理数だと途中で止まる」で、
+     * エラーにならず黙って当たらなくなる。{@code required=false}なので、なおさら気付きにくい。
+     * 症状は「Advanced AEのクラフトCPUだけ遅い」「巨大な協調処理数だと途中で止まる」で、
      * どちらもログに何も出ないため、当たっているかどうかはここで見張るしかない。</p>
      *
-     * <p>Advanced AE が入っていない環境では<b>何も検査せずに成功する</b>
-     * (通常のゲームテストは Advanced AE 無しで回るため)。
+     * <p>Advanced AEが入っていない環境では何も検査せずに成功する
+     * 通常のゲームテストはAdvanced AE無しで回るので、この条件分岐が要る。
      * 相手のクラスは普段ロードされないので、{@code Class.forName} で明示的に読み込んで
-     * Mixin の変換を走らせてから、注入したメソッドが生えているかを見る。</p>
+     * Mixinの変換を走らせてから、注入したメソッドが生えているかを見る。</p>
      */
     @TestPlot("insaneae_aae_cpu_mixins")
     public static void advancedAeCpuMixins(PlotBuilder plot) {
-        // 中身は反射で見るだけだが、空のプロットは AE2 の Plot#getBounds が通らないので 1 つ置く。
+        // 中身は反射で見るだけだが、空のプロットはAE2のPlot#getBoundsが通らないので1つ置く
         plot.cable("0 0 0");
         plot.test(helper -> helper.startSequence().thenExecute(() -> {
             if (!ModList.get().isLoaded("advanced_ae")) {
@@ -72,15 +72,15 @@ public final class AdvancedAePlots {
                         "Advanced AE は居るのに AdvCraftingCPULogic が無い。"
                                 + "クラス名が変わったので compat Mixin の targets を直すこと: " + missing);
             }
-            // Mixin は注入ハンドラを handler$<hash>$<元の名前> / redirect$... に改名して混ぜるので、
-            // 名前の一致ではなく<b>末尾</b>で見る。@Unique のメソッドだけは元の名前のまま入る。
+            // Mixinは注入ハンドラをhandler$<hash>$<元の名前> / redirect$... に改名して混ぜるので、
+            // 名前の一致ではなく末尾で見る。@Uniqueのメソッドだけは元の名前のまま入る
             Set<String> injected = new HashSet<>();
             for (var method : logic.getDeclaredMethods()) {
                 if (method.getName().contains("insaneae$")) {
                     injected.add(method.getName());
                 }
             }
-            // まとめ処理 (AdvCraftingCpuLogicMixin) と 1 tick 予算の long 化 (AdvCraftingCpuBudgetMixin)。
+            // まとめ処理 (AdvCraftingCpuLogicMixin) と1 tick予算のlong化 (AdvCraftingCpuBudgetMixin)
             for (String expected : List.of("insaneae$bulkCrafting", "insaneae$reduceBudget",
                     "insaneae$addBulkToResult", "insaneae$tickBudget", "insaneae$rollUsedOps")) {
                 helper.check(injected.stream().anyMatch(name -> name.endsWith(expected)),
@@ -89,7 +89,7 @@ public final class AdvancedAePlots {
             }
 
             // クラスタ側の容量の飽和 (AdvCraftingCpuStorageMixin)。当たっていないと
-            // InsaneAE のクラフトストレージを数個積んだだけで容量が負に折り返す。
+            // InsaneAEのクラフトストレージを数個積んだだけで容量が負に折り返す
             Class<?> cluster;
             try {
                 cluster = Class.forName("net.pedroksl.advanced_ae.common.cluster.AdvCraftingCPUCluster");
@@ -114,14 +114,14 @@ public final class AdvancedAePlots {
     }
 
     /**
-     * <b>Advanced AE のクラフト CPU に載せたジョブが、Quantum CPU 経由で最後まで終わるか。</b>
+     * Advanced AEのクラフトCPUに載せたジョブが、Quantum CPU経由で最後まで終わるか。
      *
-     * <p>{@link #craftFromCreativeCell} と同じ内容を、クラフト CPU だけ
-     * Advanced AE の量子コンピュータに差し替えたもの。報告されている
-     * 「進行中のままタスクが空で終わらない」は<b>この並び</b>で起きている。</p>
+     * <p>{@link #craftFromCreativeCell} と同じ内容を、クラフトCPUだけ
+     * Advanced AEの量子コンピュータに差し替えたもの。報告されている
+     * 「進行中のままタスクが空で終わらない」はこの並びで起きている。</p>
      *
-     * <p>Advanced AE が入っていない環境では<b>何も検査せずに成功する</b>
-     * ({@code ./gradlew runGameTestServer -PwithAdvancedAe=true -PwithAco} で有効になる)。</p>
+     * <p>Advanced AEが入っていない環境では何も検査せずに成功する
+     * 有効にするには{@code ./gradlew runGameTestServer -PwithAdvancedAe=true -PwithAco}で走らせる。</p>
      */
     @TestPlot("insaneae_craft_on_advanced_ae_cpu")
     public static void craftOnAdvancedAeCpu(PlotBuilder plot) {
@@ -129,7 +129,7 @@ public final class AdvancedAePlots {
         var unit = aaeBlock("quantum_storage_256");
         var shell = aaeBlock("quantum_structure");
         if (core == null || unit == null || shell == null) {
-            // 空のプロットは AE2 の Plot#getBounds が通らないので 1 つ置く。
+            // 空のプロットはAE2のPlot#getBoundsが通らないので1つ置く
             plot.cable("0 0 0");
             plot.test(helper -> helper.startSequence().thenSucceed());
             return;
@@ -143,9 +143,9 @@ public final class AdvancedAePlots {
         });
         plot.blockState("3 0 0", ModBlocks.QUANTUM_CPU.get().defaultBlockState());
 
-        // Advanced AE の量子コンピュータは<b>中空の箱</b>で、外殻が quantum_structure、
-        // 中身が機能ブロックという構造 (AdvCraftingCPUCalculator#verifyInternalStructure)。
-        // 5..7 x 0..3 x 0..2 の箱にすると、内側はちょうど (6,1,1) と (6,2,1) の 2 マス。
+        // Advanced AEの量子コンピュータは中空の箱で、外殻がquantum_structure、
+        // 中身が機能ブロックという構造 (AdvCraftingCPUCalculator#verifyInternalStructure)
+        // 5..7 x 0..3 x 0..2の箱にすると、内側はちょうど (6,1,1) と (6,2,1) の2マス
         plot.blockState("[5,7] [0,3] [0,2]", shell.defaultBlockState());
         plot.blockState("6 1 1", core.defaultBlockState());
         plot.blockState("6 2 1", unit.defaultBlockState());
@@ -160,26 +160,26 @@ public final class AdvancedAePlots {
 
             sequence.thenExecute(() -> {
                 var cpu = (QuantumCpuBlockEntity) helper.getBlockEntity(new BlockPos(3, 0, 0));
-                // 2 段のツリー: ボタン <- 板材 <- 原木。実環境の 8^N 連鎖に形を寄せてある
-                // (在庫にあるのは原木だけなので、途中段も必ずクラフトされる)。
+                // 2段のツリー: ボタン<- 板材<- 原木。実環境の8^N連鎖に形を寄せてある
+                // 在庫にあるのは原木だけなので、途中段も必ずクラフトされる
                 cpu.getLogic().getPatternInv().addItems(
                         CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
                                 new ItemStack(Items.OAK_LOG)));
                 cpu.getLogic().getPatternInv().addItems(
                         CraftingPatternHelper.encodeShapelessCraftingRecipe(helper.getLevel(),
                                 new ItemStack(Items.OAK_PLANKS)));
-                // 実環境と同じカード構成 (加速 7 + タスク統合 1)。
+                // 実環境と同じカード構成。加速7枚とタスク統合1枚
                 for (int i = 0; i < QuantumCpuBlockEntity.MAX_ACCELERATION_CARDS; i++) {
                     cpu.getUpgrades().addItems(
                             new ItemStack(ModUpgrades.QUANTUM_ACCELERATION_CARD.get()));
                 }
                 cpu.getUpgrades().addItems(new ItemStack(ModUpgrades.TASK_FUSION_CARD.get()));
             });
-            // 多ブロック構造が組み上がるまで少し待つ。
+            // 多ブロック構造が組み上がるまで少し待つ
             sequence.thenIdle(20);
 
-            // 先に CPU が組めているか見る。組めていないと「failed to submit job」としか出ず、
-            // 構造の問題なのか実行の問題なのか区別がつかない。
+            // 先にCPUが組めているか見る。組めていないと「failed to submit job」としか出ず、
+            // 構造の問題なのか実行の問題なのか区別がつかない
             sequence.thenExecute(() -> {
                 int cpus = 0;
                 for (var ignored : helper.getGrid(BlockPos.ZERO).getCraftingService().getCpus()) {
@@ -210,9 +210,9 @@ public final class AdvancedAePlots {
                 }
             });
 
-            // compat Mixin が<b>実際に走った</b>こと。名前が生えているかを見る検査では
-            // 足りない (Mixin はメソッドを混ぜてから injector を配線するので、
-            // 配線に失敗してもメソッドだけは生える)。
+            // compat Mixinが実際に走ったこと。名前が生えているかを見る検査では
+            // 足りない。Mixinはメソッドを混ぜてからinjectorを配線するので、
+            // 配線に失敗してもメソッドだけは生える
             sequence.thenExecute(() -> {
                 helper.check(AaeCompatCounters.STORAGE_SATURATIONS.get() > 0,
                         "AdvCraftingCpuStorageMixin が一度も走っていない "
@@ -225,7 +225,7 @@ public final class AdvancedAePlots {
         });
     }
 
-    /** Advanced AE のブロック。入っていなければ null。 */
+    /** Advanced AEのブロック。入っていなければnull。 */
     @Nullable
     private static Block aaeBlock(String id) {
         return optionalBlock("advanced_ae", id);

@@ -14,13 +14,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * 強化クリエイティブセルの中身。AE2 の {@code CreativeCellInventory} と同じ作りで、
- * <b>報告する在庫量だけ</b> {@code Integer.MAX_VALUE} (約 21 億) から
- * {@code Long.MAX_VALUE} (約 922 京) に上げてある。
+ * 強化クリエイティブセルの中身。AE2の {@code CreativeCellInventory} と同じ作りで、
+ * 報告する在庫量だけ、{@code Integer.MAX_VALUE}の約21億から
+ * {@code Long.MAX_VALUE}の約922京に上げてある。
  *
- * <p>出し入れは元から無制限 (設定済みの種類なら要求量をそのまま返す) なので、
+ * <p>出し入れは元から無制限。設定済みの種類なら要求量をそのまま返すので、
  * 変わるのは端末の表示とクラフト計算が見る「在庫量」。
- * 21 億を超える数量を 1 回のクラフトで要求する場合に、この差が出る。</p>
+ * 21億を超える数量を1回のクラフトで要求する場合に、この差が出る。</p>
  */
 public class InsaneCreativeCellInventory implements StorageCell {
 
@@ -30,13 +30,13 @@ public class InsaneCreativeCellInventory implements StorageCell {
 
     public InsaneCreativeCellInventory(ItemStack stack) {
         this.stack = stack;
-        // AE2 と同じく、設定の内容はここでコピーしておく (設定インベントリは作り直されるため)。
+        // AE2と同じく、設定の内容はここでコピーしておく。設定インベントリは作り直されるため
         this.configured = new HashSet<>(CellConfig.create(stack).keySet());
     }
 
     @Override
     public long insert(AEKey what, long amount, Actionable mode, IActionSource source) {
-        // 設定済みの種類は無限に飲み込む (= 実質ボイド)。それ以外は受け付けない。
+        // 設定済みの種類は無限に飲み込む。実質ボイドになる。それ以外は受け付けない
         return configured.contains(what) ? amount : 0;
     }
 
@@ -48,15 +48,15 @@ public class InsaneCreativeCellInventory implements StorageCell {
     @Override
     public void getAvailableStacks(KeyCounter out) {
         for (AEKey key : configured) {
-            // ここが AE2 との唯一の違い (向こうは Integer.MAX_VALUE)。
+            // ここがAE2との唯一の違い。AE2のほうはInteger.MAX_VALUEを返す
             //
-            // <b>ただし天井を越えて足さない。</b>KeyCounter はキーごとに long なので、
-            // 同じアイテムを大量に申告する別のセル (ExtendedAE Plus の Infinity セル、
-            // 他のクリエイティブセル) と同居すると素朴な加算が<b>負数へ折り返す</b>。
-            // 負の在庫は ACO が「正確値を復元できない」として計画ごと降りるため
+            // ただし天井を越えて足さない。KeyCounterはキーごとにlongなので、
+            // 同じアイテムを大量に申告する別のセル、ExtendedAE PlusのInfinityセルなどと
+            // 他のクリエイティブセルと同居すると、素朴な加算が負数へ折り返す
+            // 負の在庫はACOが「正確値を復元できない」として計画ごと降りるため
             // (WidePlanUnavailableException: BigInteger inventory sidecar is incomplete)、
-            // <b>セルを入れただけであらゆるクラフトが失敗する</b>。
-            // 自分の申告で天井を越えないぶんには、単独なら従来どおり Long.MAX_VALUE になる。
+            // セルを入れただけであらゆるクラフトが失敗する
+            // 自分の申告で天井を越えないぶんなら、単独ではLong.MAX_VALUEになる
             long headroom = Long.MAX_VALUE - Math.max(out.get(key), 0L);
             if (headroom > 0L) {
                 out.add(key, headroom);
@@ -81,7 +81,7 @@ public class InsaneCreativeCellInventory implements StorageCell {
 
     @Override
     public boolean canFitInsideCell() {
-        // 未設定なら他のセルに収納できる (AE2 のクリエイティブセルと同じ扱い)。
+        // 未設定なら他のセルに収納できる。AE2のクリエイティブセルと同じ扱い
         return configured.isEmpty();
     }
 
@@ -92,6 +92,6 @@ public class InsaneCreativeCellInventory implements StorageCell {
 
     @Override
     public void persist() {
-        // 保存するものは無い (中身は設定そのもの)。
+        // 保存するものは無い。中身は設定そのもの
     }
 }

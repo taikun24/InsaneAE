@@ -10,22 +10,22 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 進捗カウンタ ({@code ElapsedTimeTracker}) の <b>Mod を問わない</b>呼び口。
+ * 進捗カウンタ ({@code ElapsedTimeTracker}) のModを問わない呼び口。
  *
- * <p>AE2 のクラフト CPU を複製したアドオン (Advanced AE など) は、進捗カウンタまで
- * <b>同名・同シグネチャの自前コピー</b>で持っていることがある
- * (AAE 1.3.6 / 1.6.12 で確認。型が違うだけで {@code addMaxItems(long, AEKeyType)} は同一)。
- * AE2 の型に限定してしまうとそういう CPU でまとめ処理が丸ごと諦めになるので、
- * ここで型ごとに 1 回だけメソッドを探して使い回す。</p>
+ * <p>AE2のクラフトCPUを複製したアドオン、たとえばAdvanced AEは、進捗カウンタまで
+ * 同名・同シグネチャの自前コピーで持っていることがある
+ * AAE 1.3.6と1.6.12で確認した。型が違うだけで{@code addMaxItems(long, AEKeyType)}は同一。
+ * AE2の型に限定してしまうとそういうCPUでまとめ処理が丸ごと諦めになるので、
+ * ここで型ごとに1回だけメソッドを探して使い回す。</p>
  *
- * <p>見つからない型は<b>加算をスキップするだけ</b> (一度警告を出す)。カウンタは
+ * <p>見つからない型は加算をスキップするだけで、一度警告を出す。カウンタは
  * 進捗表示のためのものなので、表示が僅かにずれるのと引き換えにまとめ処理は生かす。</p>
  */
 public final class TimeTrackerAdapter {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** 型ごとに解決した addMaxItems。見つからなかった型は {@link #MISSING}。 */
+    /** 型ごとに解決したaddMaxItems。見つからなかった型は {@link #MISSING}。 */
     private static final Map<Class<?>, Method> METHODS = new ConcurrentHashMap<>();
     private static final Method MISSING;
 
@@ -46,7 +46,7 @@ public final class TimeTrackerAdapter {
 
     /** {@code tracker} に {@code addMaxItems(amount, type)} を伝える。できなければ何もしない。 */
     public static void addMaxItems(Object tracker, long amount, AEKeyType type) {
-        // AE2 本体のカウンタは Mixin の Invoker で直接呼べる (反射不要)。
+        // AE2本体のカウンタはMixinのInvokerで直接呼べる。反射不要
         if (tracker instanceof ElapsedTimeTrackerInvoker invoker) {
             invoker.insaneae$addMaxItems(amount, type);
             return;
@@ -76,7 +76,7 @@ public final class TimeTrackerAdapter {
             } catch (NoSuchMethodException notHere) {
                 // 親クラスを見る
             } catch (RuntimeException e) {
-                // setAccessible がモジュールに弾かれた場合など。スキップ扱いにする。
+                // setAccessibleがモジュールに弾かれた場合など。スキップ扱いにする
                 LOGGER.warn("InsaneAE: cannot access {}#addMaxItems; progress display may drift",
                         owner.getName(), e);
                 return MISSING;

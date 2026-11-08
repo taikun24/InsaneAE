@@ -7,11 +7,11 @@ import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Unique;
 
 /**
- * ME Infinity Cell のセル 1 つにつき、ACO へ見せる在庫の状態を 1 つ持たせる。
+ * ME Infinity Cellのセル1つにつき、ACOへ見せる在庫の状態を1つ持たせる。
  *
- * <p>ACO の各インターフェイス ({@link InfinityCellExactStorageMixin} ほか) は ACO の版によって
- * 有る無しが違うので別々の Mixin に分けてあり、状態だけをここで共有する。
- * ME Infinity Cell が居なければ {@code @Pseudo} なので何も起きない。</p>
+ * <p>ACOの各インターフェイス、たとえば{@link InfinityCellExactStorageMixin}などは、ACOの版によって
+ * 有る無しが違うので別々のMixinに分けてあり、状態だけをここで共有する。
+ * ME Infinity Cellが居なければ {@code @Pseudo} なので何も起きない。</p>
  */
 @Pseudo
 @Mixin(targets = {
@@ -30,7 +30,7 @@ public abstract class InfinityCellExactStateMixin implements InfiniteCellExactSt
     @Unique
     private boolean insaneae$building;
 
-    /** 状態を作っている最中に呼ばれたときだけ null を返す。 */
+    /** 状態を作っている最中に呼ばれたときだけnullを返す。 */
     @Override
     public synchronized InfiniteCellExactState insaneae$infiniteExactState() {
         if (insaneae$exactState == null) {

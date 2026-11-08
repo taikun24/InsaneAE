@@ -34,8 +34,8 @@ item_ids:
   <BlockImage id="cosmic_energy_cell" scale="3" />
 </Row>
 
-MEGA Cells の超高密度エナジーセルに続く 13 段で、<ItemLink id="hyperdense_energy_cell" /> (102.4M AE) から <ItemLink id="cosmic_energy_cell" /> (約 7.03E AE) まであります。
-1 段ごとに容量が 8 倍で、1 段下を 8 個使って作ります。
+MEGA Cells の超高密度エナジーセルに続く 13 段階のセルで、<ItemLink id="hyperdense_energy_cell" /> (102.4M AE) から <ItemLink id="cosmic_energy_cell" /> (約 7.03E AE) まで存在します[cite: 3]。
+1 段階ごとに容量が 8 倍になり、1 つ下の段階のセル 8 個を使用して作成します[cite: 3]。
 
 <RecipeFor id="hyperdense_energy_cell" />
 
@@ -48,7 +48,7 @@ MEGA Cells の超高密度エナジーセルに続く 13 段で、<ItemLink id="
   <BlockImage id="ultimate_solar_panel" scale="3" />
 </Row>
 
-日光の下で AE を作ります。発電量は 255、65,535、16,777,215、4,294,967,295 AE/t です。
+日光の下で AE を発電します[cite: 3]。発電量はそれぞれ 255、65,535、16,777,215、4,294,967,295 AE/t です[cite: 3]。
 
 <RecipeFor id="solar_panel" />
 
@@ -56,7 +56,7 @@ MEGA Cells の超高密度エナジーセルに続く 13 段で、<ItemLink id="
 
 <BlockImage id="improved_charger" scale="3" />
 
-入力と出力に 64 個ずつ置けるチャージャーです。AE2 のチャージャーのような確率は無く、ネットワークの電力が足りるだけ
-1 tick でまとめて変換します。充電できるアイテムも一度で満タンにします。
+入力と出力をそれぞれ 64 個ずつ保持できるチャージャーです[cite: 3]。AE2 のチャージャーのような確率要素はなく、ネットワークの電力が足りていれば
+1 tick でまとめて変換されます[cite: 3]。充電可能なアイテムも一括で満タンにチャージします[cite: 3]。
 
 <RecipeFor id="improved_charger" />

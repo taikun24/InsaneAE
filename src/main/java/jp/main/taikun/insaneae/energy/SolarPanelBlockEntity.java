@@ -18,17 +18,17 @@ import appeng.blockentity.grid.AENetworkedBlockEntity;
 *///?}
 
 /**
- * AE ソーラーパネル。日射量に応じて毎 tick グリッドに発電する。
+ * AEソーラーパネル。日射量に応じて毎tickグリッドに発電する。
  *
- * <p><b>AE2 の {@code IPassiveEnergyGenerator} は使っていない。</b>
+ * <p>AE2の {@code IPassiveEnergyGenerator} は使っていない。
  * あれは {@code EnergyService#onServerStartTick} が
- * 「グリッド内で最も発電量の多い 1 台以外を全部 {@code setSuppressed(true)} で止める」作りなので、
- * パネルを何枚並べても 1 枚ぶんしか発電しなくなる。</p>
+ * 「グリッド内で最も発電量の多い1台以外を全部 {@code setSuppressed(true)} で止める」作りなので、
+ * パネルを何枚並べても1枚ぶんしか発電しなくなる。</p>
  *
- * <p><b>{@code IGridTickable} も使えない。</b> AE2 のティックマネージャは
- * <b>アクティブなノードしか呼ばない</b>ので、電力ゼロのネットワークでは
+ * <p>{@code IGridTickable} も使えない。 AE2のティックマネージャは
+ * アクティブなノードしか呼ばないので、電力ゼロのネットワークでは
  * 「電力が無い → パネルが呼ばれない → 永遠に電力が来ない」とデッドロックする。
- * 発電機は自力で起動できないといけないので、ブロック側の ticker から動かしている。</p>
+ * 発電機は自力で起動できないといけないので、ブロック側のtickerから動かしている。</p>
  */
 //? if >=1.21 {
 public class SolarPanelBlockEntity extends AENetworkedBlockEntity implements ServerTickingBlockEntity {
@@ -36,9 +36,9 @@ public class SolarPanelBlockEntity extends AENetworkedBlockEntity implements Ser
 /*public class SolarPanelBlockEntity extends AENetworkBlockEntity implements ServerTickingBlockEntity {
 *///?}
 
-    /** 真上に太陽があるときの日射量 (バニラの日照センサーと同じ 0〜15 スケール)。 */
+    /** 真上に太陽があるときの日射量。バニラの日照センサーと同じ0〜15スケール。 */
     private static final int MAX_SUNLIGHT = 15;
-    /** 日射量を測り直す間隔。毎 tick 明るさを引くのは無駄なのでキャッシュする。 */
+    /** 日射量を測り直す間隔。毎tick明るさを引くのは無駄なのでキャッシュする。 */
     private static final int SUNLIGHT_RECHECK_INTERVAL = 20;
 
     private final SolarPanelTier tier;
@@ -61,7 +61,7 @@ public class SolarPanelBlockEntity extends AENetworkedBlockEntity implements Ser
         return AECableType.COVERED;
     }
 
-    /** 現在の発電量 (AE/tick)。0 なら夜・雨・空が見えていない。 */
+    /** 現在の発電量 (AE/tick)。0なら夜・雨・空が見えていない。 */
     public double getCurrentRate() {
         return (double) tier.ratePerTick() * cachedSunlight / MAX_SUNLIGHT;
     }
@@ -86,11 +86,11 @@ public class SolarPanelBlockEntity extends AENetworkedBlockEntity implements Ser
     }
 
     /**
-     * 0〜15 の日射量。<b>バニラの日照センサー ({@code DaylightDetectorBlock}) と同じ式</b>なので、
-     * 夜・雨・雷雨・屋根の下・スカイライトの無いディメンションが自動的に 0 (または減衰) になる。
+     * 0〜15の日射量。バニラの日照センサー ({@code DaylightDetectorBlock}) と同じ式なので、
+     * 夜、雨、雷雨、屋根の下、スカイライトの無いディメンションでは、自動的に0か減衰になる。
      *
-     * <p>{@code canSeeSky} は<b>使わない</b>こと。あれはハイトマップ由来で光量データと食い違うことがあり
-     * (ブロックを置き換えた直後など)、「明るさは 15 なのに canSeeSky は false」で発電が止まる。
+     * <p>{@code canSeeSky} は使わないこと。あれはハイトマップ由来で光量データと食い違うことがあり
+     * ブロックを置き換えた直後などは、「明るさは15なのにcanSeeSkyはfalse」で発電が止まる。
      * 日照センサーと同じく空の明るさだけを見れば、光量エンジンの結果とそのまま一致する。</p>
      */
     private int computeSunlight() {

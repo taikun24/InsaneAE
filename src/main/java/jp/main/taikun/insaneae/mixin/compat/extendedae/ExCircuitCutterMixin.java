@@ -8,13 +8,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 /**
- * ExtendedAE の回路切断機 (Circuit Cutter) にも加速カードの倍率を掛ける。
+ * ExtendedAEの回路切断機 (Circuit Cutter) にも加速カードの倍率を掛ける。
  *
- * <p>1 tick に進む量は {@code tickingRequest} が
+ * <p>1 tickに進む量は {@code tickingRequest} が
  * {@code exec.execute(FCUtil.speedCardMap(AE2の加速カード枚数), ...)} で渡している。
- * その第 1 引数 (進捗量) に掛ける。
- * {@code RecipeExecutor} のパッケージは 1.20.1 では {@code util.recipe}、1.21 では
- * {@code util} 直下と versions で違うので注意。</p>
+ * その第1引数、つまり進捗量に掛ける。
+ * {@code RecipeExecutor} のパッケージは1.20.1では {@code util.recipe}、1.21では
+ * {@code util} 直下とversionsで違うので注意。</p>
  */
 @Pseudo
 @Mixin(targets = "com.glodblock.github.extendedae.common.tileentities.TileCircuitCutter",

@@ -29,33 +29,33 @@ import org.jetbrains.annotations.Nullable;
 *///?}
 
 /**
- * ACO の craftingtable batch を Quantum CPU で実行する本体。
+ * ACOのcraftingtable batchをQuantum CPUで実行する本体。
  *
  * <h2>なぜこの形なのか</h2>
- * <p>AE2 は在庫も完成待ちも全部 long ({@code KeyCounter} / {@code MEStorage.insert} /
- * {@code ListCraftingInventory})。だから「BigInteger 個の完成品」は
- * <b>そもそも AE2 のネットワークに存在できない</b>。ACO の BigInteger は
- * 中間パターンの<b>実行回数</b>であって在庫量ではない。</p>
+ * <p>AE2は在庫も完成待ちも全部long ({@code KeyCounter} / {@code MEStorage.insert} /
+ * {@code ListCraftingInventory})。だから「BigInteger個の完成品」は
+ * そもそもAE2のネットワークに存在できない。ACOのBigIntegerは
+ * 中間パターンの実行回数であって在庫量ではない。</p>
  *
- * <p>そこで ACO の公開境界では、正確な会計は ACO が持ち、実行側は
- * <b>本物の組み立てを 1 回だけ回して係数を掛ける</b>という分担になっている。
- * ここは AE2 の long 会計を一切通らないので、完成待ちの桁あふれが起きようがない。
+ * <p>そこでACOの公開境界では、正確な会計はACOが持ち、実行側は
+ * 本物の組み立てを1回だけ回して係数を掛けるという分担になっている。
+ * ここはAE2のlong会計を一切通らないので、完成待ちの桁あふれが起きようがない。
  * 要求回数はスレッド数もループ回数も増やさない。</p>
  *
  * <h2>約束事</h2>
  * <ul>
- *   <li><b>fail closed</b> — 必要な API バージョンが無ければ受けない
- *       ({@code docs/EXACT_COUNT_API.md} の指示)。受けなければ ACO は別のターゲットを探す。</li>
- *   <li><b>BigInteger に {@code longValue()} を呼ばない。</b>係数はそのまま掛ける。</li>
- *   <li>材料の出納は ACO の escrow が持つ。ここでは<b>在庫にも完成品台帳にも触らない</b>。</li>
- *   <li>レシートは {@link QuantumBatchReceipts} に持ち、CPU の NBT へ永続化する。</li>
+ *   <li>fail closed — 必要なAPIバージョンが無ければ受けない
+ *       {@code docs/EXACT_COUNT_API.md}の指示に従う。受けなければACOは別のターゲットを探す。</li>
+ *   <li>BigIntegerに {@code longValue()} を呼ばない。係数はそのまま掛ける。</li>
+ *   <li>材料の出納はACOのescrowが持つ。ここでは在庫にも完成品台帳にも触らない。</li>
+ *   <li>レシートは {@link QuantumBatchReceipts} に持ち、CPUのNBTへ永続化する。</li>
  * </ul>
  */
 public final class QuantumCpuBatchExecutor {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** これ未満の craftingtable API では受けない。 */
+    /** これ未満のcraftingtable APIでは受けない。 */
     private static final int REQUIRED_CRAFTING_TABLE_API = 1;
     //? if <1.21 {
     /*@Nullable
@@ -76,7 +76,7 @@ public final class QuantumCpuBatchExecutor {
     }
     *///?}
 
-    /** ACO 側の API バージョンが足りているか。足りなければ<b>一切受けない</b>。 */
+    /** ACO側のAPIバージョンが足りているか。足りなければ一切受けない。 */
     public static boolean isSupported() {
         //? if >=1.21 {
         Optional<IntegrationCapabilities> capabilities = IntegrationCapabilitiesRegistry.peek();
@@ -96,16 +96,16 @@ public final class QuantumCpuBatchExecutor {
             int version = (int) caps.getClass().getMethod("craftingTableBatchApiVersion").invoke(caps);
             return version >= REQUIRED_CRAFTING_TABLE_API;
         } catch (ReflectiveOperationException | RuntimeException failure) {
-            // 交渉できないなら受けない (fail closed)。
+            // 交渉できないなら受けない (fail closed)
             return false;
         }
         *///?}
     }
 
     public static boolean accept(QuantumCpuBlockEntity host, CraftingTableBatchRequest request) {
-        // 断る理由は<b>必ず残す</b>。ここで黙って false を返すと、ACO は別のターゲットを探し、
-        // 見つからなければ long 窓の経路へ落ちる。使う側からは「速くならない」としか見えず、
-        // 拒否したのか呼ばれてすらいないのかが区別できなくなる。
+        // 断る理由は必ず残す。ここで黙ってfalseを返すと、ACOは別のターゲットを探し、
+        // 見つからなければlong窓の経路へ落ちる。使う側からは「速くならない」としか見えず、
+        // 拒否したのか呼ばれてすらいないのかが区別できなくなる
         if (!isSupported()) {
             return refuse(host, "ACO の craftingtable API バージョンが足りない");
         }
@@ -117,7 +117,7 @@ public final class QuantumCpuBatchExecutor {
             return refuse(host, "レシート台帳が満杯 (未清算の取引が溜まっている)");
         }
         if (receipts.get(request.transactionId(), request.payloadDigest()) != null) {
-            // 重複取引は上書きせず拒否する (ACO は拒否を期待している)。
+            // 重複取引は上書きせず拒否する。ACOは拒否を期待している
             return false;
         }
 
@@ -128,8 +128,8 @@ public final class QuantumCpuBatchExecutor {
                     + "(Molecular Assembler 用のパターンでない / 材料が揃っていない): "
                     + request.pattern().getPrimaryOutput());
         }
-        // 実際に出たものが Pattern の宣言と食い違っていたら受けない。
-        // ここを飛ばすと「1 回の結果に係数を掛ける」の前提が崩れる。
+        // 実際に出たものがPatternの宣言と食い違っていたら受けない
+        // ここを飛ばすと「1回の結果に係数を掛ける」の前提が崩れる
         if (!matchesDeclaration(craft, request.outputsPerExecution(), request.remainingPerExecution())) {
             return refuse(host, "実際の組み立て結果が Pattern の宣言と違う: 実際=" + perCraft(craft)
                     + " 宣言=" + declaredTotals(request));
@@ -141,15 +141,15 @@ public final class QuantumCpuBatchExecutor {
                     + " ACO=" + request.aggregateExpectedOutputs());
         }
 
-        // Quantum CPU は物理的な進行を持たない (加速カードで即時)。
-        // その場で OUTPUT_READY にして、ACO が credit しに来るのを待つ。
+        // Quantum CPUは物理的な進行を持たない。加速カードで即時になる
+        // その場でOUTPUT_READYにして、ACOがcreditしに来るのを待つ
         boolean stored = receipts.put(request.transactionId(), new QuantumBatchReceipts.Receipt(
                 request.payloadDigest(), QuantumBatchReceipts.State.OUTPUT_READY, scaled));
         if (stored) {
             host.saveChanges();
             if (LogOnce.first("aco-batch-first-accept")) {
-                // 「呼ばれてすらいない」と「断っている」を切り分けるための 1 行
-                // (最初の 1 件を受理したときだけ。連携が生きている証拠になる)。
+                // 「呼ばれてすらいない」と「断っている」を切り分けるための1行
+                // 最初の1件を受理したときだけ。連携が生きている証拠になる
                 LOGGER.info("InsaneAE: Quantum CPU at {} accepted its first ACO batch "
                         + "({} mode, {} executions in one assemble)",
                         host.getBlockPos(), request.mode(), request.executions());
@@ -168,7 +168,7 @@ public final class QuantumCpuBatchExecutor {
         if (receipt == null) {
             return Optional.empty();
         }
-        // 進行は持たないので 1/1 固定。ACO は state と exactOutputs だけを見る。
+        // 進行は持たないので1/1固定。ACOはstateとexactOutputsだけを見る
         return Optional.of(new CraftingTableBatchSnapshot(transactionId, digest,
                 toAcoState(receipt.state()), 1, 1, receipt.exactOutputs(), ""));
     }
@@ -202,7 +202,7 @@ public final class QuantumCpuBatchExecutor {
     /**
      * 断った理由をログに残して {@code false} を返す。
      *
-     * <p>同じ理由は<b>最初の 1 回だけ WARN</b>。ACO は {@code bigIntegerRetryBackoffTicks}
+     * <p>同じ理由は最初の1回だけWARN。ACOは {@code bigIntegerRetryBackoffTicks}
      * ごとに何度でも聞きに来るので、そのまま出すとログが埋まる。</p>
      */
     private static boolean refuse(QuantumCpuBlockEntity host, String reason) {
@@ -230,7 +230,7 @@ public final class QuantumCpuBatchExecutor {
         return declared;
     }
 
-    /** 実際の組み立て結果が Pattern の宣言どおりか。 */
+    /** 実際の組み立て結果がPatternの宣言どおりか。 */
     private static boolean matchesDeclaration(QuantumCpuLogic.OneCraft craft,
             List<GenericStack> declaredOutputs, List<GenericStack> declaredRemainders) {
         Map<AEKey, BigInteger> actual = new LinkedHashMap<>();
@@ -244,7 +244,7 @@ public final class QuantumCpuBatchExecutor {
         return actual.equals(declared);
     }
 
-    /** 1 回ぶんの結果に係数を掛ける。<b>ここが BigInteger のまま残る唯一の掛け算。</b> */
+    /** 1回ぶんの結果に係数を掛ける。ここがBigIntegerのまま残る唯一の掛け算。 */
     private static Map<AEKey, BigInteger> scale(QuantumCpuLogic.OneCraft craft, BigInteger executions) {
         Map<AEKey, BigInteger> perCraft = new LinkedHashMap<>();
         addStack(perCraft, craft.output());
@@ -283,7 +283,7 @@ public final class QuantumCpuBatchExecutor {
         };
     }
 
-    /** ACO が BigInteger 実行として渡してきたか (診断・テスト用)。 */
+    /** ACOがBigInteger実行として渡してきたか。診断・テスト用。 */
     public static boolean isBigIntegerJob(CraftingTableBatchRequest request) {
         return request.mode() == CraftingTableBatchMode.BIG_INTEGER_JOB;
     }

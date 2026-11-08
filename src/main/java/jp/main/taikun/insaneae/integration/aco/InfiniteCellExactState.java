@@ -11,23 +11,23 @@ import java.math.BigInteger;
 import java.util.UUID;
 
 /**
- * 他 Mod の「無限に出せるセル」(ME Infinity Cell) が ACO に名乗る BigInteger の在庫。
+ * 他Modの「無限に出せるセル」(ME Infinity Cell) がACOに名乗るBigIntegerの在庫。
  *
- * <p>そのセルは AE2 には {@code Integer.MAX_VALUE} 個 (約 21 億) しか申告しないので、
- * ACO の BigInteger 計画ではそれ以上の材料が無いことになり、大きな注文が材料不足で止まる。
- * 中身は取り出し放題なので、超強化クリエイティブセルと同じ量を ACO にだけ名乗らせる。</p>
+ * <p>そのセルはAE2には{@code Integer.MAX_VALUE}個、約21億しか申告しないので、
+ * ACOのBigInteger計画ではそれ以上の材料が無いことになり、大きな注文が材料不足で止まる。
+ * 中身は取り出し放題なので、超強化クリエイティブセルと同じ量をACOにだけ名乗らせる。</p>
  *
- * <p>守るべき約束は {@link InsaneUltraCreativeCellInventory} と同じ。ACO はシミュレーションと
- * コミットで<b>同じ Map インスタンス</b>かを {@code ==} で比べ、その Map を直接書き換え、
- * 合計と種類数も setter で書いた値と突き合わせる。だからセル 1 つにつき 1 つ作って持ち続ける。</p>
+ * <p>守るべき約束は {@link InsaneUltraCreativeCellInventory} と同じ。ACOはシミュレーションと
+ * コミットで同じMapインスタンスかを {@code ==} で比べ、そのMapを直接書き換え、
+ * 合計と種類数もsetterで書いた値と突き合わせる。だからセル1つにつき1つ作って持ち続ける。</p>
  *
- * <p>ACO の型には触らない (Mixin から呼ぶだけ) ので、ACO が無くてもロードできる。</p>
+ * <p>ACOの型には触らない。Mixinから呼ぶだけなので、ACOが無くてもロードできる。</p>
  */
 public final class InfiniteCellExactState {
 
-    /** Mixin でセルに生やす、状態の置き場。 */
+    /** Mixinでセルに生やす、状態の置き場。 */
     public interface Holder {
-        /** 状態を作っている最中 (セルの在庫を読んでいる間) に呼ばれたときだけ null。 */
+        /** 状態を作っている最中、つまりセルの在庫を読んでいる間に呼ばれたときだけnull。 */
         @org.jetbrains.annotations.Nullable
         InfiniteCellExactState insaneae$infiniteExactState();
     }
@@ -43,7 +43,7 @@ public final class InfiniteCellExactState {
         this.total = InsaneUltraCreativeCellInventory.exactAmount().multiply(BigInteger.valueOf(amounts.size()));
     }
 
-    /** セルが AE2 に申告している種類をそのまま使う (量だけ差し替える)。 */
+    /** セルがAE2に申告している種類をそのまま使う。量だけ差し替える。 */
     public static InfiniteCellExactState of(StorageCell cell) {
         KeyCounter stacks = new KeyCounter();
         cell.getAvailableStacks(stacks);
@@ -55,7 +55,7 @@ public final class InfiniteCellExactState {
         return new InfiniteCellExactState(amounts);
     }
 
-    /** <b>毎回同じインスタンスを返す。</b> */
+    /** 毎回同じインスタンスを返す。 */
     public synchronized Object2ObjectMap<AEKey, BigInteger> amounts() {
         return amounts;
     }

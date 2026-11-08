@@ -7,10 +7,10 @@ import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * 強化クリエイティブセルを ME ドライブ等に認識させるハンドラ。
+ * 強化クリエイティブセルをMEドライブ等に認識させるハンドラ。
  *
  * <p>{@code StorageCells.addCellHandler} で登録する。判定は自前のアイテムだけなので、
- * AE2 側のハンドラとの登録順は問わない。</p>
+ * AE2側のハンドラとの登録順は問わない。</p>
  */
 public final class InsaneCreativeCellHandler implements ICellHandler {
 
@@ -30,7 +30,7 @@ public final class InsaneCreativeCellHandler implements ICellHandler {
         if (!isCell(is)) {
             return null;
         }
-        // 超強化セルは BigInteger 在庫を名乗る別の中身を持つ。
+        // 超強化セルはBigInteger在庫を名乗る別の中身を持つ
         return is.getItem() instanceof InsaneUltraCreativeCellItem ?
                 new InsaneUltraCreativeCellInventory(is)
                 : new InsaneCreativeCellInventory(is);

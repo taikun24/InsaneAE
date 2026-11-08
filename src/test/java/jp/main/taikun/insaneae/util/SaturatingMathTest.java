@@ -27,7 +27,7 @@ class SaturatingMathTest {
         assertEquals(-6L, SaturatingMath.multiply(-2L, 3L));
         assertEquals(Long.MIN_VALUE, SaturatingMath.multiply(Long.MIN_VALUE, 1L));
         assertEquals(0L, SaturatingMath.multiply(Long.MAX_VALUE, 0L));
-        // 8^21 = 2^63 の一歩手前はちょうど収まる。
+        // 8^21 = 2^63の一歩手前はちょうど収まる
         assertEquals(1L << 62, SaturatingMath.multiply(1L << 31, 1L << 31));
     }
 

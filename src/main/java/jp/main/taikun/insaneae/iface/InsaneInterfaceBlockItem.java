@@ -9,8 +9,8 @@ import net.minecraft.world.level.block.Block;
  * 超特大インターフェイスのアイテム。
  *
  * <p>置いてあるブロックの名前は {@link InsaneInterfaceBlock#getName()} が返すが、
- * <b>持ち物やクリエイティブタブでの名前はアイテム側が決める</b>
- * ({@code ItemStack#getHoverName} → {@code Item#getName(ItemStack)} で、
+ * 持ち物やクリエイティブタブでの名前はアイテム側が決める
+ * {@code ItemStack#getHoverName}から{@code Item#getName(ItemStack)}へ、
  * 既定は {@code getDescriptionId} をそのまま引くだけ)。
  * ここを揃えないと、別名の起動でブロックとアイテムの名前が食い違う。</p>
  */

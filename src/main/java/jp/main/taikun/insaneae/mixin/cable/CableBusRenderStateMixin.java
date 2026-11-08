@@ -10,15 +10,15 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * レンダーステートに<b>ケーブルの種類</b>を 1 つ足す。
+ * レンダーステートにケーブルの種類を1つ足す。
  *
  * <p>これが無いと、ワールドの絵の差し替え ({@link InsaneCableSprites}) が
  * 「いま描いているのが誰のケーブルか」を知る手段が無い。</p>
  *
- * <h2>equals / hashCode にも混ぜること</h2>
- * <p>{@code CableBusBakedModel} は<b>レンダーステートを鍵にして板をキャッシュ</b>している
- * ({@code LoadingCache})。種類を等価判定に入れないと、色も接続も同じ AE2 のスマートケーブルと
- * <b>同じ板を共有してしまい、片方の絵がもう片方に出る</b>。</p>
+ * <h2>equals / hashCodeにも混ぜること</h2>
+ * <p>{@code CableBusBakedModel} はレンダーステートを鍵にして板をキャッシュしている
+ * ({@code LoadingCache})。種類を等価判定に入れないと、色も接続も同じAE2のスマートケーブルと
+ * 同じ板を共有してしまい、片方の絵がもう片方に出る。</p>
  */
 @Mixin(value = CableBusRenderState.class, remap = false)
 public abstract class CableBusRenderStateMixin implements InsaneCableRenderState {
@@ -44,7 +44,7 @@ public abstract class CableBusRenderStateMixin implements InsaneCableRenderState
 
     @Inject(method = "equals", at = @At("RETURN"), cancellable = true)
     private void insaneae$equalsKind(Object other, CallbackInfoReturnable<Boolean> cir) {
-        // AE2 が false と答えたものを true にすることはない。true のときだけ種類を見る。
+        // AE2がfalseと答えたものをtrueにすることはない。trueのときだけ種類を見る
         if (!cir.getReturnValueZ() || !(other instanceof InsaneCableRenderState state)) {
             return;
         }

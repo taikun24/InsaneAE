@@ -10,38 +10,38 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import jp.main.taikun.insaneae.integration.advancedae.AaeCompatCounters;
 
 /**
- * Advanced AE のクラフト CPU クラスタで、<b>クラフトストレージ容量が long から溢れない</b>ようにする。
+ * Advanced AEのクラフトCPUクラスタで、クラフトストレージ容量がlongから溢れないようにする。
  *
  * <p>{@link jp.main.taikun.insaneae.mixin.cpu.CraftingCPUClusterMixin} と同じ問題。
- * Advanced AE は AE2 のクラスタを使わず {@code AdvCraftingCPUCluster} という自前の複製を持ち、
- * 容量の集計を<b>素の long の足し算・掛け算</b>でやっている:</p>
+ * Advanced AEはAE2のクラスタを使わず {@code AdvCraftingCPUCluster} という自前の複製を持ち、
+ * 容量の集計を素のlongの足し算・掛け算でやっている:</p>
  *
  * <pre>
  * addBlockEntity:              storage += be.getStorageBytes();      // ladd
  * recalculateRemainingStorage: total = storage * storageMultiplier;  // lmul
  * </pre>
  *
- * <p>InsaneAE のクラフトストレージは 1G 階層から上を担当しているので、
- * <b>数個積んだだけで 922京 (long の上限) を越える</b>。越えると値が<b>負に折り返し</b>、
+ * <p>InsaneAEのクラフトストレージは1G階層から上を担当しているので、
+ * 数個積んだだけで922京を越える。longの上限を越えると値が負に折り返し、
  * 「割り当てストレージが負のクラスタ」ができあがる。
  * 掛け算のほうは倍率が乗るぶん、もっと手前で溢れる。</p>
  *
  * <h2>表に出かた</h2>
  * <p>例外もログも出ない。容量の表示がおかしくなるだけでなく、
- * 容量を見て判断する側 (ACO の BigInteger ホスト、ジョブの受け入れ判定) が
- * <b>「容量が足りない」あるいは「壊れた値」として静かに諦める</b>。
+ * 容量を見て判断する側、つまりACOのBigIntegerホストやジョブの受け入れ判定が
+ * 「容量が足りない」あるいは「壊れた値」として静かに諦める。
  * 使う側からは「大きいストレージを積んだときだけクラフトが通らない」に見える。</p>
  *
  * <h2>直し方</h2>
- * <p>足す側・掛ける側の値を<b>その場で頭打ちにする</b>。
+ * <p>足す側・掛ける側の値をその場で頭打ちにする。
  * 足す前に「あと何バイト足せるか」で刻み、掛ける前に「何倍までなら溢れないか」で刻む。
  * こうすると溢れる代わりに {@code Long.MAX_VALUE} で飽和し、
  * 元の計算式にも実行フローにも手を入れずに済む。</p>
  *
- * <p>922京バイトを超えるぶんは表現できないが、<b>負の容量よりはるかにましで</b>、
- * AE2 側のクラスタでこちらが既にやっていることと揃う。</p>
+ * <p>922京バイトを超えるぶんは表現できないが、負の容量よりはるかにましで、
+ * AE2側のクラスタでこちらが既にやっていることと揃う。</p>
  *
- * <p>{@link Pseudo} 付きなので Advanced AE が入っていなければ黙って読み飛ばされる。
+ * <p>{@link Pseudo} 付きなのでAdvanced AEが入っていなければ黙って読み飛ばされる。
  * 当たらなかった場合は元の桁あふれに戻るだけ。</p>
  */
 @Pseudo
@@ -57,9 +57,9 @@ public abstract class AdvCraftingCpuStorageMixin {
     /**
      * 足す量を「あと入る量」で刻む。
      *
-     * <p>{@code getStorageBytes()} は {@code > 0} の判定と足し算の 2 か所で呼ばれるが、
-     * どちらも同じ値になるので問題ない。飽和しきって 0 を返したときは
-     * <b>元の判定がそのまま足し算を飛ばす</b>ので、二重に効く心配もない。</p>
+     * <p>{@code getStorageBytes()} は {@code > 0} の判定と足し算の2か所で呼ばれるが、
+     * どちらも同じ値になるので問題ない。飽和しきって0を返したときは
+     * 元の判定がそのまま足し算を飛ばすので、二重に効く心配もない。</p>
      */
     @Redirect(method = "addBlockEntity",
             at = @At(value = "INVOKE",
@@ -80,7 +80,7 @@ public abstract class AdvCraftingCpuStorageMixin {
      * 掛ける倍率を「溢れない倍率」で刻む。
      *
      * <p>{@code recalculateRemainingStorage} は {@code storageMultiplier} を
-     * 「0 より大きいか」の判定と掛け算の 2 か所で読む。刻んだ値も 1 以上なので、
+     * 「0より大きいか」の判定と掛け算の2か所で読む。刻んだ値も1以上なので、
      * 判定の結果は変わらない。</p>
      */
     @Redirect(method = "recalculateRemainingStorage",
@@ -94,7 +94,7 @@ public abstract class AdvCraftingCpuStorageMixin {
         if (multiplier <= 1 || storage <= 0) {
             return multiplier;
         }
-        // storage * multiplier が Long.MAX_VALUE を越えない最大の倍率。
+        // storage * multiplierがLong.MAX_VALUEを越えない最大の倍率
         return Math.min(multiplier, Long.MAX_VALUE / storage);
     }
 
@@ -104,7 +104,7 @@ public abstract class AdvCraftingCpuStorageMixin {
         try {
             return (long) blockEntity.getClass().getMethod("getStorageBytes").invoke(blockEntity);
         } catch (ReflectiveOperationException | RuntimeException unavailable) {
-            // 読めないときは足させない (負の容量を作るよりまし)。
+            // 読めないときは足させない。負の容量を作るよりまし
             return 0L;
         }
     }

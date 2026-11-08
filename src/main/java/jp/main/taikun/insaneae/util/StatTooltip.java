@@ -8,9 +8,9 @@ import java.util.List;
 /**
  * 説明文をツールチップの行に足す。
  *
- * <p>lang の値は 1 行ごとに {@code ラベル|値} と書く。値の側だけ色を変えて、
- * 数値が目に入るようにする ({@code パターン格納数|1620個} → 「パターン格納数 1620個」)。
- * {@code |} の無い行は注記としてそのまま灰色で出す。改行は lang の {@code \n}。</p>
+ * <p>langの値は1行ごとに {@codeラベル|値} と書く。値の側だけ色を変えて、
+ * 数値が目に入るようにする。{@codeパターン格納数|1620個}は「パターン格納数1620個」になる。
+ * {@code |} の無い行は注記としてそのまま灰色で出す。改行はlangの {@code \n}。</p>
  */
 public final class StatTooltip {
     private static final ChatFormatting LABEL = ChatFormatting.GRAY;
@@ -20,7 +20,7 @@ public final class StatTooltip {
     }
 
     public static void add(List<Component> lines, Component text) {
-        // Tooltip は 1 要素 = 1 行なので、翻訳後の文字列を行ごとに分ける。
+        // Tooltipは1要素 = 1行なので、翻訳後の文字列を行ごとに分ける
         for (String line : text.getString().split("\\R")) {
             int bar = line.indexOf('|');
             if (bar < 0) {

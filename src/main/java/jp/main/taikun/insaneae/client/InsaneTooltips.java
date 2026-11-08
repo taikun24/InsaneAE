@@ -24,24 +24,24 @@ import jp.main.taikun.insaneae.registries.ModDataComponents;
 *///?}
 
 /**
- * アイテムの説明文 (ロア) をツールチップに足す。
+ * アイテムの説明文、つまりロアをツールチップに足す。
  *
- * <p>文章は<b>すべて lang ファイルに置く</b>。キーは次の順で探し、最初に見つかったものを出す。</p>
+ * <p>文章はすべてlangファイルに置く。キーは次の順で探し、最初に見つかったものを出す。</p>
  * <ol>
  *   <li>{@code <そのアイテムの翻訳キー>.desc} — 例: {@code block.insaneae.quantum_cpu.desc}</li>
  *   <li>{@link #families()} の共通キー — 階層違いで文面が同じもの用
- *       (今はソーラーパネル 4 種の {@code insaneae.desc.solar_panel} だけ)</li>
+ *       今はソーラーパネル4種の{@code insaneae.desc.solar_panel}だけ</li>
  * </ol>
  *
- * <p>共通キーの方は<b>書式引数を渡せる</b>ので、階層ごとに違う数値を文中に出せる
- * (ソーラーパネルの発電量など)。値の書き方 ({@code ラベル|値}、改行は {@code \n}) は {@link StatTooltip}。</p>
+ * <p>共通キーの方は書式引数を渡せるので、階層ごとに違う数値を文中に出せる
+ * ソーラーパネルの発電量などに使う。値の書き方は{@link StatTooltip}を参照し、ラベルと値は{@code |}で区切り、改行は{@code \n}で書く。</p>
  *
- * <p>説明には<b>仕様の値だけ</b>を書く。理由・使い分け・注意書きは載せない
- * (画面や名前で分かることを毎回読ませないため)。ゲーム中に他から読み取れない値
+ * <p>説明には仕様の値だけを書く。理由・使い分け・注意書きは載せない
+ * 画面や名前で分かることを毎回読ませないため。ゲーム中に他から読み取れない値
  * — 枠数・上限・速度・チャンネル数 — だけを書くこと。</p>
  *
- * <p>増やしたいときは lang にキーを足すだけでよく、階層共通にしたいときだけ
- * {@link #families()} に 1 行足す。</p>
+ * <p>増やしたいときはlangにキーを足すだけでよく、階層共通にしたいときだけ
+ * {@link #families()} に1行足す。</p>
  *
  * <p>加速カードのように {@code appendHoverText} で自前の行を出しているアイテムは
  * {@code .tooltip} キーを使っているので、ここの {@code .desc} とは衝突しない。</p>
@@ -53,9 +53,9 @@ public final class InsaneTooltips {
 
     private static final String SUFFIX = ".desc";
     private static final String SOLAR_PANEL = "insaneae.desc.solar_panel";
-    /** 超次元 ME ケーブルは 17 色あるが説明は共通なので、色ごとの .desc は置かない。 */
+    /** 超次元MEケーブルは17色あるが説明は共通なので、色ごとの .descは置かない。 */
     private static final String HYPER_CABLE = "insaneae.desc.hyper_cable";
-    /** 圧縮 ME 高密度スマートケーブルも同様。 */
+    /** 圧縮ME高密度スマートケーブルも同様。 */
     private static final String COMPRESSED_CABLE = "insaneae.desc.compressed_dense_cable";
     //? if >=1.21 {
     private static final String CELL_ID = "insaneae.tooltip.cell_id";
@@ -73,14 +73,14 @@ public final class InsaneTooltips {
     private InsaneTooltips() {
     }
 
-    /** クライアント初期化時に 1 度だけ呼ぶ。 */
+    /** クライアント初期化時に1度だけ呼ぶ。 */
     public static void register() {
         NeoForge.EVENT_BUS.addListener(InsaneTooltips::onTooltip);
     }
 
     private static void onTooltip(ItemTooltipEvent event) {
         Item item = event.getItemStack().getItem();
-        // 中身を失ったセルを /insaneae cells recover で作り直すときに要る。普段は邪魔なので詳細表示のときだけ。
+        // 中身を失ったセルを /insaneae cells recoverで作り直すときに要る。普段は邪魔なので詳細表示のときだけ
         //? if >=1.21 {
         UUID cellId = event.getItemStack().get(ModDataComponents.CELL_ID.get());
         //?} else {
@@ -95,7 +95,7 @@ public final class InsaneTooltips {
             StatTooltip.add(event.getToolTip(), Component.translatable(description.key(), description.args()));
         }
 
-        // BigIntegerクラフトストレージだけは、ACO側の計算・保存上限をカタログ容量として表示する。
+        // BigIntegerクラフトストレージだけは、ACO側の計算・保存上限をカタログ容量として表示する
         if (item != ModBlocks.BIG_INTEGER_CPU.get().asItem()) {
             return;
         }
@@ -103,7 +103,7 @@ public final class InsaneTooltips {
                 StatTooltip.add(event.getToolTip(), Component.translatable(BIG_INTEGER_CPU_CAPACITY, capacity)));
     }
 
-    /** そのアイテムに出す説明。個別、階層共通の順で探す。無ければ null。 */
+    /** そのアイテムに出す説明。個別、階層共通の順で探す。無ければnull。 */
     private static Description descriptionFor(Item item) {
         String own = item.getDescriptionId() + SUFFIX;
         if (Language.getInstance().has(own)) {
@@ -117,8 +117,8 @@ public final class InsaneTooltips {
         if (families == null) {
             Map<Item, Description> map = new IdentityHashMap<>();
             for (SolarPanelTier tier : SolarPanelTier.values()) {
-                // 階層ごとに違う発電量を文中に出す (%s = 快晴時の最大 AE/t)。
-                // 最上段は 42 億なので 3 桁区切りにしておく (区切り文字は環境非依存にしたいので ROOT)。
+                // 階層ごとに違う発電量を文中に出す。%sは快晴時の最大AE/t
+                // 最上段は42億なので3桁区切りにしておく。区切り文字は環境非依存にしたいのでROOT
                 map.put(ModBlocks.SOLAR_PANELS.get(tier).get().asItem(),
                         new Description(SOLAR_PANEL,
                                 String.format(Locale.ROOT, "%,d", tier.ratePerTick())));

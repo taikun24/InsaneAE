@@ -36,13 +36,13 @@ public final class BigIntegerCraftingUnitType implements ExactCraftingUnitType {
 
     @Override
     public long getStorageBytes() {
-        // AE2の既存APIはlong固定なので、正確値に関係なく正の最大互換値だけを返す。
+        // AE2の既存APIはlong固定なので、正確値に関係なく正の最大互換値だけを返す
         return Long.MAX_VALUE;
     }
 
     @Override
     public BigInteger exactStorageBytes() {
-        // ACOが使える場合だけ公開上限を採用し、未導入時に推測した巨大容量を作らない。
+        // ACOが使える場合だけ公開上限を採用し、未導入時に推測した巨大容量を作らない
         return exactCapacity.get().orElse(LONG_FACADE_CAPACITY);
     }
 

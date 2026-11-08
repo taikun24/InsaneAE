@@ -6,12 +6,12 @@ import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 /**
- * {@link ConfigInventory} の「1 スロットにアイテムの最大スタック数を超えて入れてよいか」
+ * {@link ConfigInventory} の「1スロットにアイテムの最大スタック数を超えて入れてよいか」
  * ({@code allowOverstacking}) を後から立てられるようにする。
  *
  * <p>これが立っていないと {@code getMaxAmount} が
- * {@code min(アイテムの最大スタック数, 容量)} を返すので、<b>容量をいくら上げても
- * アイテムは 1 スロット 64 個で頭打ち</b>になる (液体や化学物質はスタック数の概念が無いので
+ * {@code min(アイテムの最大スタック数, 容量)} を返すので、容量をいくら上げても
+ * アイテムは1スロット64個で頭打ちになる。液体や化学物質はスタック数の概念が無いので
  * 容量がそのまま反映される)。</p>
  *
  * <p>フラグは {@code ConfigInventory.Builder#allowOverstacking} でしか渡せず、

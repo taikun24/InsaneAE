@@ -4,17 +4,17 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 同じ内容のログを 1 回だけ出すための記録。
+ * 同じ内容のログを1回だけ出すための記録。
  *
- * <p>ブロックエンティティの生成やクラフト 1 回ごとに通る処理でログを出すと、
+ * <p>ブロックエンティティの生成やクラフト1回ごとに通る処理でログを出すと、
  * 大きなワールドではそれだけでコンソールが埋まり、保存や終了まで遅くなる (issue #18)。
  * そういう場所では {@code if (LogOnce.first("...")) LOGGER.info(...)} のように、
- * 初回だけ INFO / WARN にして 2 回目以降は出さない (または DEBUG に落とす)。</p>
+ * 初回だけINFO / WARNにして2回目以降は出さない。またはDEBUGに落とす。</p>
  *
  * <p>鍵には数値などの可変部分を含めてもよいが、記録は {@value #MAX_KEYS} 件で打ち切る。
  * それを超えた鍵は「出し済み」として扱うので、ログが止まることはあっても増え続けはしない。</p>
  *
- * <p>Mixin からも呼ぶので、Minecraft / AE2 のクラスには依存させないこと。</p>
+ * <p>Mixinからも呼ぶので、Minecraft / AE2のクラスには依存させないこと。</p>
  */
 public final class LogOnce {
 

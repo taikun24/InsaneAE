@@ -56,12 +56,12 @@ import net.neoforged.neoforge.registries.ForgeRegistries;
 *///?}
 
 /**
- * 全レシピの生成元。手書き JSON は置かず、ここから {@code src/generated/resources} に出力する。
+ * 全レシピの生成元。手書きJSONは置かず、ここから {@code src/generated/resources} に出力する。
  *
  * <p>生成: {@code ./gradlew runData}</p>
  *
- * <p>階層ごとに次の 8 種類 (化学物質系 2 種は Applied Mekanistics 導入時のみ有効な
- * 条件付きレシピ) を出す。レシピ ID は結果アイテムの登録名と同じになるため、
+ * <p>階層ごとに次の8種類がある。化学物質系の2種は、Applied Mekanistics導入時のみ有効な
+ * 条件付きレシピ) を出す。レシピIDは結果アイテムの登録名と同じになるため、
  * ポータブルセルの分解処理 ({@code getRecipeId()}) ともそのまま一致する。</p>
  */
 public class ModRecipeProvider extends RecipeProvider {
@@ -74,14 +74,14 @@ public class ModRecipeProvider extends RecipeProvider {
     private static final Item ACCUMULATION_PROCESSOR = MEGAItems.ACCUMULATION_PROCESSOR.asItem();
 
     /**
-     * AE2 の「色を落とせるもの」タグ (水入りバケツ・雪玉など)。
-     * AE2 自身がケーブルの色落としに使っているものをそのまま借りる。
+     * AE2の「色を落とせるもの」タグ。水入りバケツや雪玉など。
+     * AE2自身がケーブルの色落としに使っているものをそのまま借りる。
      */
     private static final TagKey<Item> CAN_REMOVE_COLOR = TagKey.create(Registries.ITEM,
             ResourceLocation.fromNamespaceAndPath("ae2", "can_remove_color"));
 
     /**
-     * その色の染料タグ。共通タグの名前空間は 1.21 では {@code c} (1.20.1 では {@code forge})。
+     * その色の染料タグ。共通タグの名前空間は、1.21では{@code c}、1.20.1では{@code forge}。
      */
     private static TagKey<Item> dyeTag(AEColor color) {
         return TagKey.create(Registries.ITEM,
@@ -117,7 +117,7 @@ public class ModRecipeProvider extends RecipeProvider {
         for (int index = 0; index < tiers.length; index++) {
             InsaneCraftingUnitType tier = tiers[index];
             ItemLike component = ModItems.CELL_COMPONENTS.get(tier).get();
-            // 最下段のコンポーネントだけ MEGA Cells の 256M コンポーネントから作る。
+            // 最下段のコンポーネントだけMEGA Cellsの256Mコンポーネントから作る
             ItemLike lower = index == 0 ?
                     MEGAItems.CELL_COMPONENT_256M
                     : ModItems.CELL_COMPONENTS.get(tiers[index - 1]).get();
@@ -137,7 +137,7 @@ public class ModRecipeProvider extends RecipeProvider {
             portableCell(consumer, ModCells.PORTABLE_FLUID_CELLS.get(tier).get(), component,
                     MEGAItems.MEGA_FLUID_CELL_HOUSING);
 
-            // 他アドオンのセル。相手が居ないワールドでは無効になるよう mod_loaded 条件を付ける。
+            // 他アドオンのセル。相手が居ないワールドでは無効になるようmod_loaded条件を付ける
             for (AddonIntegration addon : AddonIntegrations.active()) {
                 //? if >=1.21 {
                 addon.buildRecipes(consumer.withConditions(new ModLoadedCondition(addon.modId())),
@@ -148,8 +148,8 @@ public class ModRecipeProvider extends RecipeProvider {
             }
         }
 
-        // クラフト協調処理ユニット: 下位 ×4 (最下段は MEGA Cells の 4 スレッド版 ×4 = 16 スレッド)。
-        // 最上段 2G だけはスレッド数が 2 倍しか増えないので下位 ×2。
+        // クラフト協調処理ユニット: 下位 ×4。最下段はMEGA Cellsの4スレッド版 ×4で、16スレッド
+        // 最上段2Gだけはスレッド数が2倍しか増えないので下位 ×2
         InsaneAcceleratorType[] accelerators = InsaneAcceleratorType.values();
         for (int index = 0; index < accelerators.length; index++) {
             InsaneAcceleratorType tier = accelerators[index];
@@ -179,8 +179,8 @@ public class ModRecipeProvider extends RecipeProvider {
         //? if >=1.21 {
                 ));
 
-        // 超特大インターフェイス: ME インターフェイス + 集積プロセッサ 4 + 特異点 4。
-        // 1 枠 21 億 × 81 枠なので、他の限界突破ブロックと同じく特異点を要求する。
+        // 超特大インターフェイス: MEインターフェイス + 集積プロセッサ4 + 特異点4
+        // 1枠21億 × 81枠なので、他の限界突破ブロックと同じく特異点を要求する
         shaped(consumer, ModBlocks.INSANE_INTERFACE.get(), ACCUMULATION_PROCESSOR,
                 new String[]{"ABA", "BCB", "ABA"},
                 Map.of(
@@ -190,8 +190,8 @@ public class ModRecipeProvider extends RecipeProvider {
         //?}
                 ));
 
-        // 特大パターンプロバイダー: パターンプロバイダ + 集積プロセッサ 4 + 特異点 4。
-        // 枠数が 45 倍 (36 → 1620) なので、他の限界突破ブロックと同じく特異点を要求する。
+        // 特大パターンプロバイダー: パターンプロバイダ + 集積プロセッサ4 + 特異点4
+        // 枠数が45倍、36から1620になるので、他の限界突破ブロックと同じく特異点を要求する
         shaped(consumer, ModBlocks.INSANE_PATTERN_PROVIDER.get(), ACCUMULATION_PROCESSOR,
                 new String[]{"ABA", "BCB", "ABA"},
                 Map.of(
@@ -200,10 +200,10 @@ public class ModRecipeProvider extends RecipeProvider {
                         'C', AEBlocks.PATTERN_PROVIDER
                 ));
 
-        // 圧縮 ME 高密度スマートケーブル (fluix) ×4: 高密度スマートケーブル (fluix) 8 + 工学プロセッサ。
+        // 圧縮ME高密度スマートケーブル (fluix) ×4: 高密度スマートケーブル (fluix) 8 + 工学プロセッサ
         // 本数は高密度のままで、細くなって部品が貼れるようになるだけなので、
-        // 素材は AE2 の範囲 (工学プロセッサ) で収めてある。
-        // 色付きは fluix から染めて作る (下の cableColoring)。
+        // 素材はAE2の範囲、つまり工学プロセッサで収めてある
+        // 色付きはfluixから染めて作る。下のcableColoringを参照
         shapedCount(consumer, ModParts.compressedCable(AEColor.TRANSPARENT), 4,
                 AEItems.ENGINEERING_PROCESSOR,
                 new String[]{"AAA", "ABA", "AAA"},
@@ -212,8 +212,8 @@ public class ModRecipeProvider extends RecipeProvider {
                         'B', AEItems.ENGINEERING_PROCESSOR
                 ));
 
-        // 超次元 ME ケーブル (fluix) ×4: 圧縮 ME 高密度スマートケーブル (fluix) 8 + 集積プロセッサ。
-        // 「細くする」段 (上) と「32 本を超える」段 (ここ) の 2 段構え。
+        // 超次元MEケーブル (fluix) ×4: 圧縮ME高密度スマートケーブル (fluix) 8 + 集積プロセッサ
+        // 「細くする」段と「32本を超える」段の2段構え。上の段は細くする、ここは32本を超える
         shapedCount(consumer, ModParts.hyperCable(AEColor.TRANSPARENT), 4, ACCUMULATION_PROCESSOR,
                 new String[]{"AAA", "ABA", "AAA"},
                 Map.of(
@@ -226,14 +226,14 @@ public class ModRecipeProvider extends RecipeProvider {
         cableColoring(consumer, ModParts::hyperCable,
                 ModItemTagProvider.HYPER_CABLES, "hyper_cable_clean");
 
-        // ケーブル版 (プレート) ⇔ ブロック版。AE2 の ME インターフェイス / パターンプロバイダと同じく
-        // 1:1 で行き来できる。中身 (パターン・設定) は移らないので、空の状態で持ち替えること。
+        // ケーブル版のプレートとブロック版を、AE2のMEインターフェイス / パターンプロバイダと同じく
+        // 1:1で行き来できる。中身のパターンや設定は移らないので、空の状態で持ち替えること
         convert(consumer, ModBlocks.INSANE_INTERFACE.get(), ModParts.INSANE_INTERFACE.get());
         convert(consumer, ModBlocks.INSANE_PATTERN_PROVIDER.get(),
                 ModParts.INSANE_PATTERN_PROVIDER.get());
 
-        // エネルギーセル: 下位セル ×8 + 集積プロセッサ (AE2/MEGA の Dense / Superdense と同じ形)。
-        // 容量が 1 段 8 倍なので、材料 8 個ぶんの容量がそのまま 1 個に収まる。
+        // エネルギーセル: 下位セル ×8 + 集積プロセッサ。AE2/MEGAのDense / Superdenseと同じ形
+        // 容量が1段8倍なので、材料8個ぶんの容量がそのまま1個に収まる
         InsaneEnergyCellTier[] energyCells = InsaneEnergyCellTier.values();
         for (int index = 0; index < energyCells.length; index++) {
             InsaneEnergyCellTier tier = energyCells[index];
@@ -262,8 +262,8 @@ public class ModRecipeProvider extends RecipeProvider {
                         'C', AEBlocks.CHARGER
                 ));
 
-        // ソーラーパネル: 最下段だけ素材から、以降は下位 ×8 + 中央の「核」。
-        // 発電量が 1 段で約 4096 倍 (2^12 倍) 伸びるので、核も段ごとに重くしてある。
+        // ソーラーパネル: 最下段だけ素材から、以降は下位 ×8 + 中央の「核」
+        // 発電量は1段で約4096倍、2^12倍伸びるので、核も段ごとに重くしてある
         SolarPanelTier[] panels = SolarPanelTier.values();
         ItemLike[] cores = {ModBlocks.ENERGY_CELLS.get(InsaneEnergyCellTier.DEGENERATE).get(), ModBlocks.ENERGY_CELLS.get(InsaneEnergyCellTier.QUASAR).get(), ModBlocks.ENERGY_CELLS.get(InsaneEnergyCellTier.GALACTIC).get()};
         for (int index = 0; index < panels.length; index++) {
@@ -295,13 +295,13 @@ public class ModRecipeProvider extends RecipeProvider {
     }
 
     /**
-     * Insane プロセッサ一式 (刻印機)。MEGA の集積プロセッサと同じ組み立てで、1 段ずつ重い:
+     * Insaneプロセッサ一式。刻印機で作る。MEGAの集積プロセッサと同じ組み立てで、1段ずつ重い:
      *
      * <pre>
-     * 金型   : 上 集積回路の金型 / 中 量子もつれ特異点 / 下 論理回路の金型 (press: 金型 2 枚を潰す)
-     * 金型複製: 上 Insane 金型 / 中 鉄ブロック (inscribe: 金型は残る)
-     * 回路   : 上 Insane 金型 / 中 特異点 (inscribe)
-     * 本体   : 上 Insane 回路 / 中 集積プロセッサ / 下 シリコン回路 (press)
+     * 金型   : 上 集積回路の金型 / 中 量子もつれ特異点 / 下 論理回路の金型。pressは金型2枚を潰す
+     * 金型複製: 上Insane金型 / 中 鉄ブロック。inscribeは金型が残る
+     * 回路   : 上Insane金型 / 中 特異点 (inscribe)
+     * 本体   : 上Insane回路 / 中 集積プロセッサ / 下 シリコン回路 (press)
      * </pre>
      */
     //? if >=1.21 {
@@ -336,10 +336,10 @@ public class ModRecipeProvider extends RecipeProvider {
     }
 
     /**
-     * 階層つきコンポーネント 1 個のレシピ (下位 ×3 + プロセッサ + 振動水晶ガラス + 物質/特異点 ×4)。
-     * セルコンポーネントと、他アドオン連携のコンポーネント (FE 用のエネルギーコンポーネントなど) で共通。
+     * 階層つきコンポーネント1個のレシピ。下位 ×3、プロセッサ、振動水晶ガラス、物質と特異点 ×4を使う。
+     * セルコンポーネントと、他アドオン連携のコンポーネント、たとえばFE用のエネルギーコンポーネントで共通。
      *
-     * @param processor 真ん中上に置くプロセッサ (セル用は集積プロセッサ)
+     * @param processor真ん中上に置くプロセッサ。セル用は集積プロセッサ
      */
     //? if >=1.21 {
     public static void tieredComponent(RecipeOutput consumer, ItemLike component, ItemLike lower,
@@ -384,7 +384,7 @@ public class ModRecipeProvider extends RecipeProvider {
                 .requires(housing));
     }
 
-    /** 素材を組み立てて shapeless レシピを 1 件出す (解禁条件は素材のコンポーネント)。 */
+    /** 素材を組み立ててshapelessレシピを1件出す。解禁条件は素材のコンポーネント。 */
     //? if >=1.21 {
     public static void shapeless(RecipeOutput consumer, ItemLike result, ItemLike unlockedBy,
     //?} else {
@@ -396,10 +396,10 @@ public class ModRecipeProvider extends RecipeProvider {
         builder.unlockedBy("has_component", has(unlockedBy)).save(consumer);
     }
     /**
-     * ブロック版とケーブル版を 1:1 で行き来する shapeless レシピを<b>両方向</b>出す。
+     * ブロック版とケーブル版を1:1で行き来するshapelessレシピを両方向出す。
      *
-     * <p>レシピ ID は結果アイテム名そのままにすると<b>本来の作成レシピと衝突する</b>
-     * (ブロック版はここより上で 3x3 から作っている) ので、{@code convert/} を頭に付けて分ける。</p>
+     * <p>レシピIDは結果アイテム名そのままにすると本来の作成レシピと衝突する
+     * ブロック版はここより上で3x3から作っているので、{@code convert/}を頭に付けて分ける。</p>
      */
     //? if >=1.21 {
     static void convert(RecipeOutput consumer, ItemLike block, ItemLike part) {
@@ -424,25 +424,25 @@ public class ModRecipeProvider extends RecipeProvider {
     }
 
     /**
-     * ケーブルの<b>染色と色落とし</b>。AE2 のケーブルとまったく同じ形にしてある。
+     * ケーブルの染色と色落とし。AE2のケーブルとまったく同じ形にしてある。
      *
      * <ul>
-     *   <li>染色: <b>同じ種類のケーブル</b> 8 本で染料 1 個を囲んで、その色 8 本。
-     *       材料をタグにしてあるので<b>どの色からでも直接塗り替えられる</b>
-     *       (fluix に戻してから塗り直す必要がない)。結果の色ごとに 1 本ずつ要るので、
-     *       ここだけは 16 本になる。</li>
-     *   <li>色落とし: 色付き 1 本 + {@code ae2:can_remove_color} (水入りバケツなど) で fluix 1 本。
-     *       材料は<b>「タグ - fluix」の差分</b> ({@link DifferenceIngredient}) なので、
-     *       AE2 と同じく<b>全色ぶんで 1 本</b>で済む
-     *       (fluix を除かないと「fluix → fluix」が無限に作れてしまう)。</li>
+     *   <li>染色: 同じ種類のケーブル8本で染料1個を囲んで、その色8本。
+     *       材料をタグにしてあるのでどの色からでも直接塗り替えられる
+     *       fluixに戻してから塗り直す必要がない。結果の色ごとに1本ずつ要るので、
+     *       ここだけは16本になる。</li>
+     *   <li>色落とし: 色付き1本と{@code ae2:can_remove_color}、たとえば水入りバケツで、fluix 1本。
+     *       材料は「タグ - fluix」の差分 ({@link DifferenceIngredient}) なので、
+     *       AE2と同じく全色ぶんで1本で済む
+     *       fluixを除かないと「fluix → fluix」が無限に作れてしまう。</li>
      * </ul>
      *
-     * <p>色を変える経路はもう 1 つ、色塗り器 / ペイントボールがある
+     * <p>色を変える経路はもう1つ、色塗り器 / ペイントボールがある
      * ({@code ThinDenseCablePart#changeColor})。そちらはクラフトを通らない。</p>
      *
-     * @param cables   色 → そのケーブルのアイテム
-     * @param cableTag そのケーブル 17 色をまとめたタグ ({@link ModItemTagProvider})
-     * @param cleanId  色落としレシピの ID (ケーブルごとに分ける)
+     * @param cables色 → そのケーブルのアイテム
+     * @param cableTagそのケーブル17色をまとめたタグ ({@link ModItemTagProvider})
+     * @param cleanId色落としレシピのID。ケーブルごとに分ける
      */
     //? if >=1.21 {
     private static void cableColoring(RecipeOutput consumer,
@@ -509,14 +509,14 @@ public class ModRecipeProvider extends RecipeProvider {
     /**
      * セルの分解レシピ。空のセルを右クリックすると、ここで指定したアイテムに戻る。
      *
-     * <p>AE2 19.2 では分解結果が {@code StorageCellDisassemblyRecipe} というデータ駆動レシピで
-     * 決まるため、datagen 側で出す必要がある。これを出さないとセルを分解できなくなる。</p>
+     * <p>AE2 19.2では分解結果が {@code StorageCellDisassemblyRecipe} というデータ駆動レシピで
+     * 決まるため、datagen側で出す必要がある。これを出さないとセルを分解できなくなる。</p>
      */
     //? if >=1.21 {
     public static void cellDisassembly(RecipeOutput consumer, ItemLike cell, ItemLike... results) {
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(cell.asItem()).withPrefix("cell_disassembly/");
         List<ItemStack> stacks = Arrays.stream(results).map(ItemStack::new).toList();
-        // 分解レシピはクラフト台に出ないので進捗 (advancement) は付けない。
+        // 分解レシピはクラフト台に出ないので進捗 (advancement) は付けない
         consumer.accept(id, new StorageCellDisassemblyRecipe(cell.asItem(), stacks), null);
     //?} else {
     /*static Consumer<FinishedRecipe> whenModLoaded(Consumer<FinishedRecipe> consumer, String modId) {

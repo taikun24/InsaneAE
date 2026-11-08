@@ -3,18 +3,18 @@ package jp.main.taikun.insaneae.integration.advancedae;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Advanced AE 向けの compat Mixin が<b>実際に走ったか</b>を数える。
+ * Advanced AE向けのcompat Mixinが実際に走ったかを数える。
  *
- * <p>Mixin パッケージの中に置くと「mixin package のクラスは直接参照できない」
- * ({@code IllegalClassLoadError}) で落ちるので、<b>外に置くこと</b>。</p>
+ * <p>Mixinパッケージの中に置くと「mixin packageのクラスは直接参照できない」
+ * ({@code IllegalClassLoadError}) で落ちるので、外に置くこと。</p>
  *
  * <h2>なぜ要るのか</h2>
  * <p>{@code @Pseudo} + {@code targets} の名指しは、相手のクラス名やメソッドの形が変わっても
- * <b>エラーにならず黙って当たらなくなる</b> ({@code require = 0} なので尚更)。
+ * エラーにならず黙って当たらなくなる。{@code require = 0}なので、なおさら気付きにくい。
  *
- * <p>「注入したメソッドがクラスに生えているか」を名前で見る検査では<b>足りない</b>。
- * Mixin はメソッドを先に混ぜてから injector を配線するので、
- * <b>配線に失敗してもメソッドだけは生えている</b>。実際に、
+ * <p>「注入したメソッドがクラスに生えているか」を名前で見る検査では足りない。
+ * Mixinはメソッドを先に混ぜてからinjectorを配線するので、
+ * 配線に失敗してもメソッドだけは生えている。実際に、
  * {@code @Redirect} のハンドラ引数を {@code Object} で書いていたせいで</p>
  *
  * <pre>
@@ -22,13 +22,13 @@ import java.util.concurrent.atomic.AtomicLong;
  *   Found unexpected argument type java.lang.Object at index 0
  * </pre>
  *
- * <p>で配線に失敗していたのに、名前を見るゲームテストは<b>通っていた</b>
- * (直し方は引数に {@code @Coerce} を付けること)。</p>
+ * <p>で配線に失敗していたのに、名前を見るゲームテストは通っていた
+ * 直し方は、引数に{@code @Coerce}を付けること。</p>
  *
- * <p>そこでハンドラ自身に数えさせ、<b>実際のクラフトを流したあとで 0 でないこと</b>を
+ * <p>そこでハンドラ自身に数えさせ、実際のクラフトを流したあとで0でないことを
  * 検査する。走った証拠はこれしかない。</p>
  *
- * <p>{@code volatile long} の {@code ++} は読んで足して書く 3 手なので、クラフト計算スレッドと
+ * <p>{@code volatile long} の {@code ++} は読んで足して書く3手なので、クラフト計算スレッドと
  * サーバースレッドから同時に呼ばれると取りこぼす。{@link AtomicLong} にしてある。</p>
  */
 public final class AaeCompatCounters {
@@ -36,7 +36,7 @@ public final class AaeCompatCounters {
     /** {@code AdvCraftingCpuStorageMixin} の容量の飽和が走った回数。 */
     public static final AtomicLong STORAGE_SATURATIONS = new AtomicLong();
 
-    /** {@code AdvCraftingCpuBudgetMixin} の 1 tick 予算計算が走った回数。 */
+    /** {@code AdvCraftingCpuBudgetMixin} の1 tick予算計算が走った回数。 */
     public static final AtomicLong BUDGET_CALCULATIONS = new AtomicLong();
 
     private AaeCompatCounters() {

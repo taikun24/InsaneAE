@@ -18,25 +18,25 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Set;
 
 /**
- * Quantum CPU の内蔵クラフト CPU を、AE2 の CPU 名簿へ合流させる。
+ * Quantum CPUの内蔵クラフトCPUを、AE2のCPU名簿へ合流させる。
  *
- * <h2>なぜ Mixin が要るのか</h2>
- * <p>AE2 19.2 には<b>第三者がクラフト CPU を足す口が無い</b>。
- * {@code CraftingService} が CPU を集めるのは</p>
+ * <h2>なぜMixinが要るのか</h2>
+ * <p>AE2 19.2には第三者がクラフトCPUを足す口が無い。
+ * {@code CraftingService} がCPUを集めるのは</p>
  * <pre>grid.getMachines(CraftingBlockEntity.class) → getCluster()</pre>
- * <p>の 1 経路だけで、しかも {@code getMachines} は<b>オーナーの厳密なクラス</b>を鍵に引く
- * (サブクラスは拾われない)。{@code submitJob} も名簿 {@code Set<CraftingCPUCluster>} しか見ず、
- * 指定 CPU も {@code instanceof CraftingCPUCluster} で弾く。</p>
+ * <p>の1経路だけで、しかも {@code getMachines} はオーナーの厳密なクラスを鍵に引く
+ * サブクラスは拾われない。{@code submitJob}も名簿{@code Set<CraftingCPUCluster>}しか見ず、
+ * 指定CPUも {@code instanceof CraftingCPUCluster} で弾く。</p>
  *
- * <p>そこで<b>本物の {@code CraftingCPUCluster} を作って名簿に足す</b>形にした
+ * <p>そこで本物の {@code CraftingCPUCluster} を作って名簿に足す形にした
  * ({@link QuantumCraftingCpu})。型が本物なので、この先の
- * ジョブ投入・毎 tick のティック・{@code insertIntoCpus}・CPU 一覧の描画は
- * <b>AE2 の経路をそのまま通る</b> (キャストで落ちる余地が無い)。</p>
+ * ジョブ投入・毎tickのティック・{@code insertIntoCpus}・CPU一覧の描画は
+ * AE2の経路をそのまま通る。キャストで落ちる余地が無い。</p>
  *
  * <h2>名簿の作り直しを促す</h2>
- * <p>{@code updateCPUClusters} が走るのは {@code updateList} が立った tick だけで、
- * AE2 はこれを「{@code CraftingBlockEntity} が出入りしたとき」にしか立てない。
- * Quantum CPU の出入りでも立つように {@code addNode} / {@code removeNode} に足している。
+ * <p>{@code updateCPUClusters} が走るのは {@code updateList} が立ったtickだけで、
+ * AE2はこれを「{@code CraftingBlockEntity} が出入りしたとき」にしか立てない。
+ * Quantum CPUの出入りでも立つように {@code addNode} / {@code removeNode} に足している。
  * 内部スロットの中身が変わったときは {@code GridCraftingCpuChange} を投げて立てる
  * ({@code QuantumCraftingCpu#updateUnits})。</p>
  */
@@ -58,28 +58,28 @@ public abstract class CraftingServiceQuantumCpuMixin {
     public abstract void addLink(CraftingLink link);
 
     /**
-     * AE2 が名簿を組み直した直後に、Quantum CPU のぶんを足す。
+     * AE2が名簿を組み直した直後に、Quantum CPUのぶんを足す。
      *
      * <p>{@code updateCPUClusters} は毎回 {@code clear()} してから組み直すので、
      * ここで足すぶんも毎回入れ直しになる = 取り外しは自動的に反映される。</p>
      *
-     * <p>Quantum CPU 1 台につき載るのは<b>その時点の区画の数</b>で、
+     * <p>Quantum CPU 1台につき載るのはその時点の区画の数で、
      * 発注のたびに増え、終わると減る ({@code QuantumCraftingCpu})。</p>
      *
-     * <p>AE2 が構成ブロックのクラスタに対してやっているのと同じく、
-     * <b>復元したリンクを登録し直す</b> (これを飛ばすと、ワールド再読み込み後に
+     * <p>AE2が構成ブロックのクラスタに対してやっているのと同じく、
+     * 復元したリンクを登録し直す。これを飛ばすと、ワールド再読み込み後に
      * 「発注元へ完成を伝える紐」が切れて注文が宙に浮く)。</p>
      */
     @Inject(method = "updateCPUClusters", at = @At("RETURN"))
     private void insaneae$addQuantumCpus(CallbackInfo ci) {
         for (QuantumCpuBlockEntity quantumCpu : grid.getMachines(QuantumCpuBlockEntity.class)) {
             QuantumCraftingCpu cpu = quantumCpu.getCraftingCpu();
-            // クラフトストレージが 1 個も入っていない間は CPU として名乗らない。
+            // クラフトストレージが1個も入っていない間はCPUとして名乗らない
             if (!cpu.isFormed()) {
                 continue;
             }
-            // 内蔵 CPU は容量を切り分けて何本も同時に受けるので、名簿へ入れるのは
-            // 1 台ではなく「いま成立している区画ぜんぶ」。
+            // 内蔵CPUは容量を切り分けて何本も同時に受けるので、名簿へ入れるのは
+            // 1台ではなく「いま成立している区画ぜんぶ」
             for (var partition : cpu.partitions()) {
                 CraftingCPUCluster cluster = partition.cluster();
                 craftingCPUClusters.add(cluster);

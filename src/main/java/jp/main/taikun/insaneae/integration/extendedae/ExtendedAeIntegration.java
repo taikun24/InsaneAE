@@ -6,14 +6,14 @@ import jp.main.taikun.insaneae.registries.ModUpgrades;
 import java.util.List;
 
 /**
- * ExtendedAE の機械にこちらの加速カードを挿せるようにする。
+ * ExtendedAEの機械にこちらの加速カードを挿せるようにする。
  *
- * <p>加速を実際に反映する側は mixin/compat の {@code Ex〜Mixin} (@Pseudo)。ここは「挿せる」ようにするだけで、
- * ExtendedAE のクラスは参照しない (登録名からアイテムを引く)。</p>
+ * <p>加速を実際に反映する側はmixin/compatの {@code Ex〜Mixin} (@Pseudo)。ここは「挿せる」ようにするだけで、
+ * ExtendedAEのクラスは参照しない。登録名からアイテムを引く。</p>
  */
 public final class ExtendedAeIntegration implements AddonIntegration {
 
-    /** 1.21 の modid。1.20.1 は {@code expatternprovider} だった。 */
+    /** 1.21のmodid。1.20.1は {@code expatternprovider} だった。 */
     //? if >=1.21 {
     public static final String MODID = "extendedae";
     //?} else {
@@ -28,7 +28,7 @@ public final class ExtendedAeIntegration implements AddonIntegration {
     @Override
     public void registerUpgrades() {
         ModUpgrades.allowSpeedCards(MODID, List.of(
-                "ex_import_bus_part",       // 基底 IOBusPart の Mixin が適用される
+                "ex_import_bus_part",       // 基底IOBusPartのMixinが適用される
                 "ex_export_bus_part",
                 "tag_export_bus",
                 "mod_export_bus",
@@ -40,7 +40,7 @@ public final class ExtendedAeIntegration implements AddonIntegration {
                 "ex_io_port",               // ExIOPortMixin
                 //? if >=1.21 {
                 "circuit_cutter",           // ExCircuitCutterMixin
-                "crystal_assembler"));      // ExCrystalAssemblerMixin (1.21 で追加された機械)
+                "crystal_assembler"));      // ExCrystalAssemblerMixin (1.21で追加された機械)
                 //?} else {
                 /*"circuit_cutter"));         // ExCircuitCutterMixin
                 *///?}

@@ -21,25 +21,25 @@ import jp.main.taikun.insaneae.util.SaturatingMath;
 *///?}
 
 /**
- * {@link IHugeCellItem} なセルの容量を long で扱えるようにする。
+ * {@link IHugeCellItem} なセルの容量をlongで扱えるようにする。
  *
- * <p>AE2 のセル在庫は容量計算をほぼ long で行っているが、次の 3 か所だけが
- * 2 GiB 超・1 EiB 超で破綻するのでここで手当てする。</p>
+ * <p>AE2のセル在庫は容量計算をほぼlongで行っているが、次の3か所だけが
+ * 2 GiB超・1 EiB超で破綻するのでここで手当てする。</p>
  *
  * <ul>
- *   <li>{@code getTotalBytes()} — {@code cellType.getBytes(stack)} は int 返し (2 GiB 上限)。</li>
+ *   <li>{@code getTotalBytes()} — {@code cellType.getBytes(stack)}はint返しで、2 GiB上限。</li>
  *   <li>{@code getRemainingItemCount()} — {@code freeBytes * amountPerByte} が
- *       おおよそ 1 EiB 以上で long オーバーフローし、負値 → 0 になってセルが
- *       「満杯」扱いになる (挿入が一切できなくなる)。飽和演算に差し替える。</li>
+ *       おおよそ1 EiB以上でlongオーバーフローし、負値 → 0になってセルが
+ *       「満杯」扱いになり、挿入が一切できなくなる。飽和演算に差し替える。</li>
  *   <li>コンストラクタの {@code maxItemsPerType} — パーティション設定時のみ使われる値で、
- *       同じ乗算でオーバーフローして 0 になる。0 は巨大セルではあり得ないので上限値に直す。</li>
+ *       同じ乗算でオーバーフローして0になる。0は巨大セルではあり得ないので上限値に直す。</li>
  * </ul>
  *
- * <p>あわせて<b>型 (アイテムの種類) の数</b>の上限も外す。AE2 はコンストラクタで
- * {@code maxItemTypes} を 63 に丸め、保存済みの型数を {@code short} で持っているので、
- * 上位階層の「数万〜21 億種」を扱うにはその 2 か所も手当てが要る。</p>
+ * <p>あわせて型、つまりアイテムの種類の数の上限も外す。AE2はコンストラクタで
+ * {@code maxItemTypes} を63に丸め、保存済みの型数を {@code short} で持っているので、
+ * 上位階層の「数万〜21億種」を扱うにはその2か所も手当てが要る。</p>
  *
- * <p>AE2 は自前 Mod なので難読化されておらず {@code remap = false}。</p>
+ * <p>AE2は自前Modなので難読化されておらず {@code remap = false}。</p>
  */
 @Mixin(value = BasicCellInventory.class, remap = false)
 public abstract class BasicCellInventoryMixin {
@@ -61,7 +61,7 @@ public abstract class BasicCellInventoryMixin {
     private int maxItemTypes;
 
     /**
-     * 読み込み済みの在庫。まだ読んでいなければ null。
+     * 読み込み済みの在庫。まだ読んでいなければnull。
      */
     @Shadow
     private Object2LongMap<AEKey> storedAmounts;
@@ -86,8 +86,8 @@ public abstract class BasicCellInventoryMixin {
         }
         long amountPerByte = cellType.getKeyType().getAmountPerByte();
         long freeBytes = getFreeBytes();
-        // 掛け算だけでなく端数 (getUnusedItemCount) の足し算も溢れうる。
-        // 溢れて負になると下の max で 0 になり、空いているのに満杯と表示される。
+        // 掛け算だけでなく端数 (getUnusedItemCount) の足し算も溢れうる
+        // 溢れて負になると下のmaxで0になり、空いているのに満杯と表示される
         long remaining = SaturatingMath.add(
                 SaturatingMath.multiply(freeBytes, amountPerByte), getUnusedItemCount());
         cir.setReturnValue(Math.max(remaining, 0));
@@ -96,30 +96,34 @@ public abstract class BasicCellInventoryMixin {
     @Inject(method = "<init>", at = @At("RETURN"))
     private void insaneae$fixMaxItemsPerType(IBasicCellItem cellType, ItemStack o,
                                              ISaveProvider container, CallbackInfo ci) {
-        // パーティション設定済みの巨大セルでのみ 0 になり得る = オーバーフローした場合だけ。
+        // パーティション設定済みの巨大セルでのみ0になり得る = オーバーフローした場合だけ
         if (cellType instanceof IHugeCellItem && maxItemsPerType <= 0) {
             maxItemsPerType = Long.MAX_VALUE;
         }
-        // AE2 はコンストラクタで型数を 63 に丸めるので、巨大セルだけ元の値に戻す。
+        // AE2はコンストラクタで型数を63に丸めるので、巨大セルだけ元の値に戻す
         if (cellType instanceof IHugeCellItem) {
             maxItemTypes = Math.max(1, cellType.getTotalTypes(i));
         }
     }
-    //? if <1.21 {
-    /*@Inject(method = "getStoredItemTypes", at = @At("HEAD"), cancellable = true)
+
+    /**
+     * AE2は保存のたびに種類数を {@code (short) storedAmounts.size()} で持ち直すので
+     * 15.xはshortのフィールド、19.2もintのフィールドへshortを経由して入れるので、
+     * 32768種を超えると負になり、使用バイト数と空き種類数が狂う。
+     */
+    @Inject(method = "getStoredItemTypes", at = @At("HEAD"), cancellable = true)
     private void insaneae$storedItemTypesWithoutShortOverflow(CallbackInfoReturnable<Long> cir) {
         if (!(cellType instanceof IHugeCellItem)) {
             return;
         }
-        // 中身を保存データに置いているセルは amts が無いので、アイテムに残した要約の種類数を読む。
-        long types = storedAmounts != null ?
-                storedAmounts.size()
-                : CellNbt.storedTypes(i);
-        cir.setReturnValue(types);
+        if (storedAmounts != null) {
+            cir.setReturnValue((long) storedAmounts.size());
+            return;
+        }
+        //? if <1.21 {
+        /*// 中身を保存データに置いているセルはamtsが無いので、アイテムに残した要約の種類数を読む。
+        cir.setReturnValue(CellNbt.storedTypes(i));
+        *///?}
+        // 1.21.1で未読込のときは、コンストラクタがintのまま数えたAE2の値で正しい
     }
-    *///?}
-
-    // getStoredItemTypes には注入しない。AE2 19.2 の storedItems は int で、
-    // 値も getStoredStacks().size() から入るので、32767 種を超えても桁あふれしない
-    // (AE2 15.2.16 の storedItems は short なので、1.20.1 側では注入している)。
 }

@@ -21,21 +21,21 @@ import java.util.function.Function;
 /**
  * {@link IBulkCraftingProvider} を実装できないプロバイダを、まとめ処理の経路に乗せるための登録口。
  *
- * <p>AE2 のクラフトサービスに登録されているプロバイダ (多くはブロックエンティティそのもの) に
- * InsaneAE の型を実装させると、InsaneAE を任意依存にしている Mod は InsaneAE が無い環境で
- * 起動時に落ちる。代わりに、InsaneAE が入っているときだけ呼ばれるクラスからここへ登録すれば、
- * プロバイダのクラス自体は InsaneAE の型を参照しなくて済む。</p>
+ * <p>AE2のクラフトサービスに登録されているプロバイダ、多くはブロックエンティティそのものに
+ * InsaneAEの型を実装させると、InsaneAEを任意依存にしているModはInsaneAEが無い環境で
+ * 起動時に落ちる。代わりに、InsaneAEが入っているときだけ呼ばれるクラスからここへ登録すれば、
+ * プロバイダのクラス自体はInsaneAEの型を参照しなくて済む。</p>
  *
  * <pre>{@code
- * // InsaneAE が入っているときだけロードされるクラスで、commonSetup などから
+ * // InsaneAEが入っているときだけロードされるクラスで、commonSetupなどから
  * BulkCraftingProviderAdapters.register(MyAssemblerBlockEntity.class, be -> new MyBulkHandler(be));
  * }</pre>
  *
  * <p>探すのは {@code provider instanceof IBulkCraftingProvider} が外れたときだけ。登録したクラスの
- * 子クラスにも当たる (一番近い親の登録が使われる)。忙しいかどうかは元のプロバイダの
- * {@code isBusy()} で判定する。アダプタはプロバイダ 1 つにつき 1 回だけ作られ、
- * そのプロバイダが残っている間は同じものが使われる (同一性で覚え、弱参照なので解放は妨げない)。
- * そのプロバイダでは使わないときは、アダプタの関数から null を返せばよい。</p>
+ * 子クラスにも当たる。一番近い親の登録が使われる。忙しいかどうかは元のプロバイダの
+ * {@code isBusy()} で判定する。アダプタはプロバイダ1つにつき1回だけ作られ、
+ * そのプロバイダが残っている間は同じものが使われる。同一性で覚え、弱参照なので解放は妨げない。
+ * そのプロバイダでは使わないときは、アダプタの関数からnullを返せばよい。</p>
  */
 public final class BulkCraftingProviderAdapters {
 
@@ -54,9 +54,9 @@ public final class BulkCraftingProviderAdapters {
     }
 
     /**
-     * {@code type} (とその子クラス) のプロバイダに使うアダプタを登録する。同じクラスへの 2 回目の登録は上書き。
+     * {@code type}とその子クラスのプロバイダに使うアダプタを登録する。同じクラスへの2回目の登録は上書き。
      *
-     * @param adapter プロバイダを受け取り、そのプロバイダのまとめ処理を返す。使わないなら null
+     * @param adapterプロバイダを受け取り、そのプロバイダのまとめ処理を返す。使わないならnull
      */
     @SuppressWarnings("unchecked")
     public static <T extends ICraftingProvider> void register(
@@ -68,7 +68,7 @@ public final class BulkCraftingProviderAdapters {
         HANDLERS.clear();
     }
 
-    /** そのプロバイダのまとめ処理。自分で実装していればそれ、無ければ登録されたアダプタ、どちらも無ければ null。 */
+    /** そのプロバイダのまとめ処理。自分で実装していればそれ、無ければ登録されたアダプタ、どちらも無ければnull。 */
     @Nullable
     public static BulkCraftingHandler find(ICraftingProvider provider) {
         if (provider instanceof IBulkCraftingProvider bulk) {
@@ -90,7 +90,7 @@ public final class BulkCraftingProviderAdapters {
         try {
             return Optional.ofNullable(adapter.apply(provider));
         } catch (RuntimeException | LinkageError failure) {
-            // 他 Mod のアダプタの不具合でクラフト自体を止めない。このプロバイダは通常の経路で動かす。
+            // 他Modのアダプタの不具合でクラフト自体を止めない。このプロバイダは通常の経路で動かす
             if (LogOnce.first("bulk-adapter-failed:" + provider.getClass().getName())) {
                 LOGGER.error("InsaneAE: bulk crafting adapter for {} failed; using the normal path",
                         provider.getClass().getName(), failure);
@@ -99,7 +99,7 @@ public final class BulkCraftingProviderAdapters {
         }
     }
 
-    /** 具象クラスから親へたどり、一番近い登録を返す (クラスの親を先に、インターフェイスは後に見る)。 */
+    /** 具象クラスから親へたどり、一番近い登録を返す。クラスの親を先に、インターフェイスは後に見る。 */
     private static Optional<Function<ICraftingProvider, BulkCraftingHandler>> resolve(Class<?> concrete) {
         for (Class<?> type = concrete; type != null; type = type.getSuperclass()) {
             Function<ICraftingProvider, BulkCraftingHandler> adapter = ADAPTERS.get(type);

@@ -9,10 +9,10 @@ import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 
 /**
- * IO ポートが 1 回の tick で動かす量に加速カードの倍率を掛ける。
+ * IOポートが1回のtickで動かす量に加速カードの倍率を掛ける。
  *
- * <p>AE2 は基準値 256 に対して加速カード枚数で ×2/×4/×8 しているので、
- * その基準値そのものを倍にする (AE2 の加速カードとは掛け算で併用できる)。</p>
+ * <p>AE2は基準値256に対して加速カード枚数で ×2/×4/×8しているので、
+ * その基準値そのものを倍にする。AE2の加速カードとは掛け算で併用できる。</p>
  */
 @Mixin(value = IOPortBlockEntity.class, remap = false, priority = SpeedBoost.MIXIN_PRIORITY)
 public abstract class IOPortBlockEntityMixin {

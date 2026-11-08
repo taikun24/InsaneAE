@@ -8,7 +8,7 @@ import net.minecraft.network.chat.MutableComponent;
 /**
  * クラフトストレージ／協調処理ユニットのブロック。
  *
- * <p>中身は AE2 の {@link CraftingUnitBlock} そのままで、<b>表示名だけ</b>
+ * <p>中身はAE2の {@link CraftingUnitBlock} そのままで、表示名だけ
  * 「書式キー + 階層ラベル」から作る ({@link TieredNames})。
  * アイテム側は {@link jp.main.taikun.insaneae.util.TieredBlockItem} が
  * ここの {@link #getName()} を引く。</p>

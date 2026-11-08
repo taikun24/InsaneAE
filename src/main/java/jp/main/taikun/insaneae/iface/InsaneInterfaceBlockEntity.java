@@ -27,31 +27,31 @@ import org.jetbrains.annotations.Nullable;
 *///?}
 
 /**
- * 超特大インターフェイス。AE2 の ME インターフェイスの枠数と 1 枠あたりの上限を引き上げたもの。
+ * 超特大インターフェイス。AE2のMEインターフェイスの枠数と1枠あたりの上限を引き上げたもの。
  *
- * <p><b>9x9 = {@value #SLOTS} 枠</b>で、<b>1 枠あたり {@value #MAX_PER_SLOT} 個</b>
- * (= 21 億 4748 万) まで持てる。全部で約 1739 億個。</p>
+ * <p>9x9 = {@value #SLOTS} 枠で、1枠あたり {@value #MAX_PER_SLOT} 個
+ * 21億4748万まで持てる。全部で約1739億個。</p>
  *
- * <h2>なぜ 1 枠 21 億なのか</h2>
+ * <h2>なぜ1枠21億なのか</h2>
  *
- * <p>{@code Integer.MAX_VALUE} は<b>ここで足せる上限そのもの</b>であって、
- * 適当に切りのいい数字を選んだわけではない。AE2 の {@code InterfaceLogic} は
+ * <p>{@code Integer.MAX_VALUE} はここで足せる上限そのものであって、
+ * 適当に切りのいい数字を選んだわけではない。AE2の {@code InterfaceLogic} は
  * 「今いくつ足りないか」を {@code (int)} にキャストしてから処理する
- * ({@code updateStorage} → {@code tryUsePlan(int slot, AEKey what, int amount)})。
- * 設定値と在庫の差がここに入るので、<b>どちらも int に収まる範囲なら差も必ず int に収まり</b>、
- * 桁溢れが起きない。1 枠でもこれを超える値を入れられるようにすると、
+ * {@code updateStorage}から{@code tryUsePlan(int slot, AEKey what, int amount)}を呼ぶ。
+ * 設定値と在庫の差がここに入るので、どちらもintに収まる範囲なら差も必ずintに収まり、
+ * 桁溢れが起きない。1枠でもこれを超える値を入れられるようにすると、
  * 差がラップして「補充のつもりが搬出になる」ような壊れ方をする。
- * ストック数を入力する画面 ({@code SetStockAmountMenu}) も int なので、
- * ここが上限であることは AE2 側の作りとも一致している。</p>
+ * ストック数を入力する画面 ({@code SetStockAmountMenu}) もintなので、
+ * ここが上限であることはAE2側の作りとも一致している。</p>
  *
  * <p>枠を増やすぶんには制限が無いので、容量が足りなければ枠数 ({@link #ROWS}) を増やすこと。</p>
  *
- * <h2>long の値がそのまま来る場合</h2>
+ * <h2>longの値がそのまま来る場合</h2>
  *
- * <p>Mekanism 系の機械は化学物質を <b>long</b> で送ってくる (Applied Mekanistics の
- * {@code GenericStackChemicalStorage#insertChemical} がそのまま long を流す)。
- * 21 億で頭打ちにすると溢れたぶんが機械側に押し戻されてしまうので、
- * <b>未設定の枠に来たぶんは ME ネットワークへ直接入れる</b>
+ * <p>Mekanism系の機械は化学物質をlongで送ってくる。Applied Mekanisticsの
+ * {@code GenericStackChemicalStorage#insertChemical} がそのままlongを流す)。
+ * 21億で頭打ちにすると溢れたぶんが機械側に押し戻されてしまうので、
+ * 未設定の枠に来たぶんはMEネットワークへ直接入れる
  * → {@link InterfaceOverflowInventory}。</p>
  */
 public class InsaneInterfaceBlockEntity extends InterfaceBlockEntity {
@@ -62,21 +62,21 @@ public class InsaneInterfaceBlockEntity extends InterfaceBlockEntity {
     /** 設定枠・在庫枠それぞれの総数。 */
     public static final int SLOTS = COLUMNS * ROWS;
 
-    /** 1 ページに出す段数 (残りはページ送りで見る)。 */
+    /** 1ページに出す段数。残りはページ送りで見る。 */
     public static final int ROWS_PER_PAGE = 3;
     public static final int SLOTS_PER_PAGE = COLUMNS * ROWS_PER_PAGE;
     public static final int PAGES = SLOTS / SLOTS_PER_PAGE;
 
     /**
-     * 1 枠に入る上限。AE2 の int 処理に合わせた上限であって、任意に上げてよい値ではない
-     * (クラス説明の「なぜ 1 枠 21 億なのか」を参照)。
+     * 1枠に入る上限。AE2のint処理に合わせた上限であって、任意に上げてよい値ではない
+     * クラス説明の「なぜ1枠21億なのか」を参照。
      */
     public static final long MAX_PER_SLOT = Integer.MAX_VALUE;
 
     /**
-     * 外に見せるインベントリ。溢れたぶんを ME ネットワークへ直接流す。
+     * 外に見せるインベントリ。溢れたぶんをMEネットワークへ直接流す。
      *
-     * <p>super のコンストラクタ (= {@link #createLogic()}) より後に初期化されるので、
+     * <p>superのコンストラクタ (= {@link #createLogic()}) より後に初期化されるので、
      * ここでは {@code getInterfaceLogic()} を安全に触れる。</p>
      */
     private final InterfaceOverflowInventory exposedInventory = new InterfaceOverflowInventory(getMainNode(), this);
@@ -86,26 +86,26 @@ public class InsaneInterfaceBlockEntity extends InterfaceBlockEntity {
     }
 
     /**
-     * 枠数と 1 枠あたりの上限を引き上げた {@link InterfaceLogic} を作る → {@link InsaneInterfaces}。
+     * 枠数と1枠あたりの上限を引き上げた {@link InterfaceLogic} を作る → {@link InsaneInterfaces}。
      *
-     * <p><b>これは super のフィールド初期化子から呼ばれる。</b>
+     * <p>これはsuperのフィールド初期化子から呼ばれる。
      * この時点でこのクラスのフィールドはまだ初期化されていないので、
-     * 定数と super のメンバ以外に触ってはいけない。</p>
+     * 定数とsuperのメンバ以外に触ってはいけない。</p>
      */
     @Override
     protected InterfaceLogic createLogic() {
         return InsaneInterfaces.createLogic(getMainNode(), this, getItemFromBlockEntity());
     }
 
-    /** 他 Mod のアダプタに見せるインベントリ ({@code GENERIC_INTERNAL_INV})。 */
+    /** 他Modのアダプタに見せるインベントリ ({@code GENERIC_INTERNAL_INV})。 */
     public InterfaceOverflowInventory getExposedInventory() {
         return exposedInventory;
     }
 
     /**
-     * 壊されたときは<b>中身をまず ME ネットワークに戻す</b> → {@link InsaneInterfaces#returnStorageToNetwork}。
+     * 壊されたときは中身をまずMEネットワークに戻す → {@link InsaneInterfaces#returnStorageToNetwork}。
      *
-     * <p>{@code AEBaseEntityBlock#onRemove} はブロックを消す<b>前</b>に呼ぶので、
+     * <p>{@code AEBaseEntityBlock#onRemove} はブロックを消す前に呼ぶので、
      * この時点ではまだグリッドに繋がっている。戻せなかったぶんはこれまでどおりドロップに回る。</p>
      */
     @Override
@@ -118,9 +118,9 @@ public class InsaneInterfaceBlockEntity extends InterfaceBlockEntity {
     }
 
     /^*
-     * 壊されたときは<b>中身をまず ME ネットワークに戻す</b> → {@link InsaneInterfaces#returnStorageToNetwork}。
+     * 壊されたときは中身をまずMEネットワークに戻す → {@link InsaneInterfaces#returnStorageToNetwork}。
      *
-     * <p>{@code AEBaseEntityBlock#onRemove} はブロックを消す<b>前</b>に呼ぶので、
+     * <p>{@code AEBaseEntityBlock#onRemove} はブロックを消す前に呼ぶので、
      * この時点ではまだグリッドに繋がっている。戻せなかったぶんはこれまでどおりドロップに回る。</p>
      ^/
     @Override
@@ -130,9 +130,9 @@ public class InsaneInterfaceBlockEntity extends InterfaceBlockEntity {
         super.addAdditionalDrops(level, pos, drops);
     }
 
-    // AE2 の InterfaceLogicHost の既定実装は ae2:interface の画面を開いてしまうので、
-    // 自前の MenuType に差し替える (枠数もレイアウトも違うため)。
-    // 優先度画面やストック数入力画面から戻ってくる先も同じく差し替える。
+    // AE2のInterfaceLogicHostの既定実装はae2:interfaceの画面を開いてしまうので、
+    // 自前のMenuTypeに差し替える。枠数もレイアウトも違うため
+    // 優先度画面やストック数入力画面から戻ってくる先も同じく差し替える
 
     @Override
     //? if >=1.21 {

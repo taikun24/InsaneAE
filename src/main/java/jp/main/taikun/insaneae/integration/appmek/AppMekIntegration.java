@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 *///?}
 
 /**
- * Applied Mekanistics 連携: 化学物質セル (通常 / ポータブル) を足す。
+ * Applied Mekanistics連携: 化学物質セルを、通常とポータブルで足す。
  * アイテムの中身は {@link AppMekCells}。
  */
 public final class AppMekIntegration implements AddonIntegration {
@@ -59,7 +59,7 @@ public final class AppMekIntegration implements AddonIntegration {
         *///?}
     }
 
-    /** appmek が自分のセルにしている登録と同じ (液体セルと同じ顔ぶれ)。 */
+    /** appmekが自分のセルにしている登録と同じ。液体セルと同じ顔ぶれ。 */
     @Override
     public void registerUpgrades() {
         String cells = GuiText.StorageCells.getTranslationKey();
@@ -71,7 +71,7 @@ public final class AppMekIntegration implements AddonIntegration {
         }
     }
 
-    /** ポータブルセルの FE 受け取り口 (本体のポータブルセルと同じ)。 */
+    /** ポータブルセルのFE受け取り口。本体のポータブルセルと同じ。 */
     @Override
     //? if >=1.21 {
     public void registerCapabilities(RegisterCapabilitiesEvent event) {

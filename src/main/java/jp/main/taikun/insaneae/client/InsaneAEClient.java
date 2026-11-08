@@ -39,24 +39,24 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 /**
  * クライアント専用のセットアップ。
  *
- * formed 状態のブロックモデルは、AE2 と同じく {@link BuiltInModelHooks#addBuiltInModel} で
+ * formed状態のブロックモデルは、AE2と同じく {@link BuiltInModelHooks#addBuiltInModel} で
  * 組み込みモデルとして登録する。{@code formed=true} のブロックステートが参照する
- * formed モデル ID を、階層色の発光レイヤを持つ {@link CraftingCubeModel} に差し替える。
- * <b>モデル ID は ae2 名前空間でなければならない</b> ({@code BuiltInModelHooks} が他名前空間を
- * 無条件で弾くため) → {@link jp.main.taikun.insaneae.crafting.FormedModels}。
+ * formedモデルIDを、階層色の発光レイヤを持つ {@link CraftingCubeModel} に差し替える。
+ * モデルIDはae2名前空間でなければならない。{@code BuiltInModelHooks}が他名前空間を
+ * 無条件で弾くため。{@link jp.main.taikun.insaneae.crafting.FormedModels}を参照。
  *
- * <p><b>重要:</b> 登録は必ず Mod 構築時 (メインクラスのコンストラクタ) から呼ぶこと。
- * AE2 も {@code AppEngClient} のコンストラクタで {@code InitBuiltInModels.init()} を呼んでおり、
- * これは {@code ModelBakery} (組み込みモデルを読む {@code ModelBakeryMixin}) より前に実行される。
- * {@code FMLClientSetupEvent}+{@code enqueueWork} だと ModelBakery より後になり得るため、
- * formed モデルが差し替わらず空モデル {@code {}} が見えてブロックが透明になる。</p>
+ * <p>登録は必ずMod構築時、メインクラスのコンストラクタから呼ぶこと。
+ * AE2も {@code AppEngClient} のコンストラクタで {@code InitBuiltInModels.init()} を呼んでおり、
+ * これは{@code ModelBakery}より前に実行される。組み込みモデルを読むのは{@code ModelBakeryMixin}。
+ * {@code FMLClientSetupEvent}+{@code enqueueWork} だとModelBakeryより後になり得るため、
+ * formedモデルが差し替わらず空モデル {@code {}} が見えてブロックが透明になる。</p>
  */
 public final class InsaneAEClient {
 
     private InsaneAEClient() {
     }
 
-    /** Mod 構築時にクライアントでのみ呼ぶ。 */
+    /** Mod構築時にクライアントでのみ呼ぶ。 */
     public static void init(IEventBus bus) {
         for (InsaneCraftingUnitType type : InsaneCraftingUnitType.values()) {
             addFormedModel(type, type.formedModel(),
@@ -76,7 +76,7 @@ public final class InsaneAEClient {
     }
 
     /**
-     * Improved Crystal Charger の中身を宙に浮かせて描く (AE2 のチャージャーと同じ見せ方)。
+     * Improved Crystal Chargerの中身を宙に浮かせて描く。AE2のチャージャーと同じ見せ方。
      * 入力が空なら出力側を見せる。
      */
     private static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
@@ -93,8 +93,8 @@ public final class InsaneAEClient {
     }
 
     private static void clientSetup(FMLClientSetupEvent event) {
-        // AE2 は自分のクラフトユニットを cutout で描いている (InitRenderTypes)。
-        // 登録しないと solid になり、formed の枠テクスチャの透明部分が正しく抜けない。
+        // AE2は自分のクラフトユニットをcutoutで描いている (InitRenderTypes)
+        // 登録しないとsolidになり、formedの枠テクスチャの透明部分が正しく抜けない
         event.enqueueWork(() -> ModBlocks.allCraftingBlocks()
                 .forEach(block -> ItemBlockRenderTypes.setRenderLayer(block, RenderType.cutout())));
     //? if >=1.21 {
@@ -103,9 +103,9 @@ public final class InsaneAEClient {
     /**
      * 画面の登録。専用イベント {@link RegisterMenuScreensEvent} で行い、
      * {@code FMLClientSetupEvent} からは登録できない
-     * (AE2 の {@code InitScreens#register} もイベントを第 1 引数に取る)。
+     * AE2の{@code InitScreens#register}もイベントを第1引数に取る。
      *
-     * <p>レイアウト JSON は {@code StyleManager} が {@code ae2} 名前空間固定で読むため、
+     * <p>レイアウトJSONは {@code StyleManager} が {@code ae2} 名前空間固定で読むため、
      * こちらの分も {@code assets/ae2/screens/insaneae/} に置いている。</p>
      */
     private static void registerScreens(RegisterMenuScreensEvent event) {
@@ -119,13 +119,13 @@ public final class InsaneAEClient {
         InitScreens.register(event,
                 InsaneInterfaceMenu.TYPE, InsaneInterfaceScreen::new,
                 "/screens/insaneae/insane_interface.json");
-        // 特大パターンプロバイダーは画面クラスごと Quantum CPU と共用 (レイアウトも同じ)。
+        // 特大パターンプロバイダーは画面クラスごとQuantum CPUと共用する。レイアウトも同じ
         InitScreens.register(event,
         //?} else {
                 /*"/screens/insaneae/quantum_cpu.json"));
         event.enqueueWork(() -> InitScreens.register(
                 InsaneInterfaceMenu.TYPE, InsaneInterfaceScreen::new, "/screens/insaneae/insane_interface.json"));
-        // 特大パターンプロバイダーは画面クラスごと Quantum CPU と共用 (レイアウトも同じ)。
+        // 特大パターンプロバイダーは画面クラスごとQuantum CPUと共用する。レイアウトも同じ
         event.enqueueWork(() -> InitScreens.register(
         *///?}
                 InsanePatternProviderMenu.TYPE, QuantumCpuScreen<InsanePatternProviderMenu>::new,
@@ -136,22 +136,22 @@ public final class InsaneAEClient {
                 *///?}
     }
 
-    /** formed 状態のブロックモデルを、階層色の発光レイヤを持つマルチブロック用モデルに差し替える。 */
+    /** formed状態のブロックモデルを、階層色の発光レイヤを持つマルチブロック用モデルに差し替える。 */
     private static void addFormedModel(ICraftingUnitType type, ResourceLocation modelId, String lightTexture) {
         BuiltInModelHooks.addBuiltInModel(modelId,
                 new CraftingCubeModel(new InsaneCraftingUnitModelProvider(type, lightTexture)));
     }
 
     /**
-     * ストレージセルのモデル 2 レイヤ目 (LED) の色付け。AE2 の
+     * ストレージセルのモデル2レイヤ目 (LED) の色付け。AE2の
      * {@link BasicStorageCell#getColor} が中身の量に応じた色を返す。
      *
-     * <p><b>必ず {@link #opaque} を通して登録すること。</b>理由はそちらの説明を参照。</p>
+     * <p>必ず {@link #opaque} を通して登録すること。理由はそちらの説明を参照。</p>
      */
     private static void registerItemColors(RegisterColorHandlersEvent.Item event) {
         //? if >=1.21 {
         ItemColor basic = opaque(BasicStorageCell::getColor);
-        // ポータブルセルは染色できるので AE2 側の色解決を使う。
+        // ポータブルセルは染色できるのでAE2側の色解決を使う
         ItemColor portable = opaque(AbstractPortableCell::getColor);
         ModCells.ITEM_CELLS.values().forEach(cell -> event.register(basic, cell.get()));
         ModCells.FLUID_CELLS.values().forEach(cell -> event.register(basic, cell.get()));
@@ -160,7 +160,7 @@ public final class InsaneAEClient {
         //?} else {
         /*ModCells.ITEM_CELLS.values().forEach(cell -> event.register(BasicStorageCell::getColor, cell.get()));
         ModCells.FLUID_CELLS.values().forEach(cell -> event.register(BasicStorageCell::getColor, cell.get()));
-        // ポータブルセルは染色できるので AE2 側の色解決を使う。
+        // ポータブルセルは染色できるのでAE2側の色解決を使う
         ModCells.PORTABLE_ITEM_CELLS.values()
                 .forEach(cell -> event.register(AbstractPortableCell::getColor, cell.get()));
         ModCells.PORTABLE_FLUID_CELLS.values()
@@ -184,25 +184,25 @@ public final class InsaneAEClient {
     }
 
     /**
-     * 色ハンドラの戻り値を<b>不透明にして</b>から使う。これを通さないとセルが丸ごと消える。
+     * 色ハンドラの戻り値を不透明にしてから使う。これを通さないとセルが丸ごと消える。
      *
-     * <p>AE2 の {@link BasicStorageCell#getColor} / {@link AbstractPortableCell#getColor} は
-     * 色を付けないレイヤに {@code 0xFFFFFF} を返す。これは ARGB として見ると
-     * <b>アルファが 0</b> であり、NeoForge 1.21.1 の {@code ItemRenderer#renderQuadList} は</p>
+     * <p>AE2の {@link BasicStorageCell#getColor} / {@link AbstractPortableCell#getColor} は
+     * 色を付けないレイヤに {@code 0xFFFFFF} を返す。これはARGBとして見ると
+     * アルファが0であり、NeoForge 1.21.1の {@code ItemRenderer#renderQuadList} は</p>
      *
      * <pre>float f = FastColor.ARGB32.alpha(色) / 255.0F;
      *buffer.putBulkData(pose, quad, r, g, b, f, ...);</pre>
      *
-     * <p>と<b>戻り値のアルファを頂点に掛ける</b>ので、そのまま登録すると全レイヤの
-     * アルファが 0 になり、アイテムが完全に透明になって見えなくなる
-     * ({@code item/generated} は layerN に tintindex N を振るため、
+     * <p>と戻り値のアルファを頂点に掛けるので、そのまま登録すると全レイヤの
+     * アルファが0になり、アイテムが完全に透明になって見えなくなる
+     * {@code item/generated}はlayerNにtintindex Nを振るため、
      * 筐体も階層色も例外なく色ハンドラを通る)。</p>
      *
-     * <p>色ハンドラを登録していないアイテム (セルコンポーネントなど) は既定値 {@code -1}
+     * <p>色ハンドラを登録していないアイテム、たとえばセルコンポーネントは既定値{@code -1}
      * = {@code 0xFFFFFFFF} が使われるので影響を受けない。</p>
      *
-     * <p>AE2 自身も {@code InitItemColors#makeOpaque} で同じ処理をしてから登録しているが、
-     * private で借りられないのでこちらで用意する。</p>
+     * <p>AE2自身も {@code InitItemColors#makeOpaque} で同じ処理をしてから登録しているが、
+     * privateで借りられないのでこちらで用意する。</p>
      */
     //? if >=1.21 {
     private static ItemColor opaque(ItemColor color) {

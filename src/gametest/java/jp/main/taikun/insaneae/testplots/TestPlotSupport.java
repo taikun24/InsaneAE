@@ -24,19 +24,19 @@ import java.util.List;
 /**
  * 複数のテストプロットで使う部品。
  *
- * <p>テストプロットは AE2 のプロットに相乗りする検証で、{@code appeng.tests=true} のときだけ登録される。
- * 走らせ方: {@code ./gradlew runGameTestServer} (AE2 のテストも一緒に走る)。
- * テスト名は AE2 のアダプタ経由なので {@code ae2.insaneae_crafting_batch} のようになる。</p>
+ * <p>テストプロットはAE2のプロットに相乗りする検証で、{@code appeng.tests=true} のときだけ登録される。
+ * 走らせ方: {@code ./gradlew runGameTestServer}。AE2のテストも一緒に走る。
+ * テスト名はAE2のアダプタ経由なので {@code ae2.insaneae_crafting_batch} のようになる。</p>
  *
- * <p>プロットクラスには {@code @TestPlotClass} を付けるだけでよい。AE2 19.2 は
- * FML のスキャンデータから自動で拾う (1.20.1 / AE2 15.x の main ブランチは手動登録が必要)。</p>
+ * <p>プロットクラスには {@code @TestPlotClass} を付けるだけでよい。AE2 19.2は
+ * FMLのスキャンデータから自動で拾う。1.20.1とAE2 15.xのmainブランチは手動登録が必要。</p>
  */
 final class TestPlotSupport {
 
     private TestPlotSupport() {
     }
 
-    /** 居なければ null。ACO 連携のテストを ACO 無しの環境でも走らせるため。 */
+    /** 居なければnull。ACO連携のテストをACO無しの環境でも走らせるため。 */
     @Nullable
     static Class<?> optionalClass(String name) {
         try {
@@ -47,9 +47,9 @@ final class TestPlotSupport {
     }
 
     /**
-     * ACO が BigInteger 計画を断った理由。{@code /aco stats} に出るのと同じ内容。
+     * ACOがBigInteger計画を断った理由。{@code /aco stats} に出るのと同じ内容。
      *
-     * <p>反射なのは、この検査クラスが ACO 無しの環境でも読まれるため。</p>
+     * <p>反射なのは、この検査クラスがACO無しの環境でも読まれるため。</p>
      */
     static String acoPlanDiagnostics() {
         try {
@@ -63,7 +63,7 @@ final class TestPlotSupport {
         }
     }
 
-    /** 任意 Mod のブロック。その Mod が入っていなければ null。 */
+    /** 任意Modのブロック。そのModが入っていなければnull。 */
     @Nullable
     static Block optionalBlock(
             String namespace, String id) {

@@ -17,8 +17,8 @@ import java.util.concurrent.Future;
 /**
  * クラフト計算を始める前に、超次元パターンプロバイダーが溜めているパターン更新を流す。
  *
- * <p>計算の開始時にグリッドのクラフト索引を写し取る Mod (ACO 2.0) がいると、
- * 同じ tick に入れたパターンが索引に載る前に計算が走ってしまうため。</p>
+ * <p>計算の開始時にグリッドのクラフト索引を写し取るMod (ACO 2.0) がいると、
+ * 同じtickに入れたパターンが索引に載る前に計算が走ってしまうため。</p>
  */
 @Mixin(value = CraftingService.class, remap = false)
 public abstract class CraftingServicePatternFlushMixin {

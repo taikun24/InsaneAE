@@ -15,12 +15,12 @@ import net.minecraft.world.item.Item;
 *///?}
 
 /**
- * Quantum CPU 専用のタスク統合カード。
+ * Quantum CPU専用のタスク統合カード。
  *
- * <p>装着すると、まとめ処理 1 回 (1 パターン × N クラフト) がクラフト CPU の
- * 1 tick 予算を <b>1 操作しか消費しなくなる</b>。まとめ 1 回は実際に 1 回の機械往復なので、
- * これは帳簿を実体に合わせる変更で、クラフト回数の上限は Quantum CPU 自身の予算
- * (加速カード枚数) が受け持つ形になる。</p>
+ * <p>装着すると、まとめ処理1回、つまり1パターン × Nクラフトが、クラフトCPUの
+ * 1 tick予算を1操作しか消費しなくなる。まとめ1回は実際に1回の機械往復なので、
+ * これは帳簿を実体に合わせる変更で、クラフト回数の上限はQuantum CPU自身の予算
+ * 加速カード枚数が受け持つ形になる。</p>
  */
 public class TaskFusionCardItem extends UpgradeCardItem {
 

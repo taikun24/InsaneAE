@@ -29,45 +29,45 @@ import jp.main.taikun.insaneae.util.LogOnce;
 import jp.main.taikun.insaneae.util.SaturatingMath;
 
 /**
- * 同じパターンを 1 tick に何度も処理するときの高速経路。
+ * 同じパターンを1 tickに何度も処理するときの高速経路。
  *
- * <p>AE2 の {@code CraftingCpuLogic.executeCrafting} は 1 クラフトごとに
+ * <p>AE2の {@code CraftingCpuLogic.executeCrafting} は1クラフトごとに
  * 材料の取り出し・{@code KeyCounter} の生成・電力の消費・帳簿の更新を行うため、
  * クラフト数に比例したコストが必ずかかる。ここではそれを
- * <b>「N 回ぶんの材料をまとめて取り出し、1 回だけ組み立てて結果を N 倍する」</b>
- * に置き換える ({@link IBulkCraftingProvider} を実装したプロバイダと、
+ * 「N回ぶんの材料をまとめて取り出し、1回だけ組み立てて結果をN倍する」
+ * に置き換える。{@link IBulkCraftingProvider}を実装したプロバイダと、
  * {@link BulkCraftingProviderAdapters} にアダプタが登録されたプロバイダ限定)。</p>
  *
- * <p>置き換えるのは AE2 と同じ処理内容 (材料の消費・電力・{@code waitingFor}・残り回数) で、
- * <b>回数のぶんだけ掛け算しているだけ</b>。1 回も処理できなければ 0 を返し、
- * AE2 本来の 1 回ずつの処理にそのまま任せる。</p>
+ * <p>置き換えるのはAE2と同じ処理内容、つまり材料の消費、電力、{@code waitingFor}、残り回数で、
+ * 回数のぶんだけ掛け算しているだけ。1回も処理できなければ0を返し、
+ * AE2本来の1回ずつの処理にそのまま任せる。</p>
  */
 public final class QuantumBulkCrafting {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /**
-     * まとめ処理が実際に走った回数 (窓の数)。<b>観測用のカウンタで、動作には使わない。</b>
+     * まとめ処理が実際に走った回数、つまり窓の数。観測用のカウンタで、動作には使わない。
      *
      * <p>まとめ処理は「速いだけで結果は同じ」なので、結果を見ても働いたか分からない。
-     * 他 Mod が {@code executeCrafting} を先に打ち切ると<b>黙って素の 1 回ずつに戻る</b>ため、
+     * 他Modが {@code executeCrafting} を先に打ち切ると黙って素の1回ずつに戻るため、
      * 実際のジョブで発火しているかをゲームテストから見るための唯一の手掛かりになる
      * ({@code insaneae_bulk_execution_live})。</p>
      */
     public static volatile long bulkWindows;
 
-    /** 窓 1 枚の long 上限。BigInteger の残りをこの単位へ切り出す。 */
+    /** 窓1枚のlong上限。BigIntegerの残りをこの単位へ切り出す。 */
     private static final BigInteger LONG_MAX = BigInteger.valueOf(Long.MAX_VALUE);
 
     private QuantumBulkCrafting() {
     }
 
     /**
-     * @param view どの Mod のクラフト CPU かを問わないジョブの窓口 ({@link CraftingJobView})。
-     *             null なら何もしない。
-     * @return まとめ処理で消費した<b>操作数</b>。通常はクラフト回数と同じだが、
+     * @param viewどのModのクラフトCPUかを問わないジョブの窓口 ({@link CraftingJobView})。
+     *             nullなら何もしない。
+     * @returnまとめ処理で消費した操作数。通常はクラフト回数と同じだが、
      *         タスク統合 ({@link BulkCraftingHandler#fusesOperations}) 中のプロバイダは
-     *         何回まとめても 1 と数える。0 なら CPU 本来の処理を続行させること。
+     *         何回まとめても1と数える。0ならCPU本来の処理を続行させること。
      */
     public static int execute(CraftingJobView view, int maxPatterns,
             CraftingService craftingService, IEnergyService energyService, Level level) {
@@ -84,7 +84,7 @@ public final class QuantumBulkCrafting {
         int pushed = 0;
         CraftingJobView.TaskCursor cursor = view.tasks();
         // 予算を先に見るのが要点。next() はカーソルを進めてしまうので、
-        // 使い切ったあとに呼ぶとそのタスクを 1 つ読み飛ばしたことになる。
+        // 使い切ったあとに呼ぶとそのタスクを1つ読み飛ばしたことになる
         while (pushed < maxPatterns && cursor.next()) {
             long remaining = cursor.remaining();
             if (remaining <= 0) {
@@ -94,14 +94,14 @@ public final class QuantumBulkCrafting {
             IPatternDetails details = cursor.details();
 
             // 同じパターンを持つプロバイダが複数あれば順に回す。加工パターンは搬入先が
-            // 埋まった時点でそのプロバイダの受け入れ回数が 0 になり、次のプロバイダが選ばれる。
+            // 埋まった時点でそのプロバイダの受け入れ回数が0になり、次のプロバイダが選ばれる
             while (remaining > 0 && pushed < maxPatterns) {
                 BulkCraftingHandler provider = findBulkProvider(craftingService, details);
                 if (provider == null) {
                     break;
                 }
-                // タスク統合 (fusesOperations): まとめ 1 回を CPU 予算の 1 操作として数える。
-                // このとき回数は CPU 予算 (maxPatterns) で縛らず、プロバイダ自身の予算に任せる。
+                // タスク統合 (fusesOperations): まとめ1回をCPU予算の1操作として数える
+                // このとき回数はCPU予算 (maxPatterns) で縛らず、プロバイダ自身の予算に任せる
                 boolean fused = provider.fusesOperations();
                 long limit = Math.min(remaining, provider.getBulkCapacity(details));
                 if (!fused) {
@@ -130,11 +130,11 @@ public final class QuantumBulkCrafting {
     }
 
     /**
-     * 完成品の計上 ({@code 出力数 × done}) が long からあふれない回数まで絞る。
+     * 完成品の計上、{@code出力数 × done}がlongからあふれない回数まで絞る。
      *
-     * <p>統合会計では 1 回の {@code done} が Quantum CPU の予算 (最大 922京) まで育つので、
-     * 出力が 2 個以上のレシピは素朴に掛けると必ずあふれる。飽和させると
-     * {@code waitingFor} の帳簿と実際の完成品数がずれるため、<b>あふれない回数しか組まない</b>。</p>
+     * <p>統合会計では1回の{@code done}がQuantum CPUの予算、最大922京まで育つので、
+     * 出力が2個以上のレシピは素朴に掛けると必ずあふれる。飽和させると
+     * {@code waitingFor} の帳簿と実際の完成品数がずれるため、あふれない回数しか組まない。</p>
      */
     private static long clampForOutputs(IPatternDetails details, long limit) {
         for (GenericStack output : details.getOutputs()) {
@@ -156,18 +156,18 @@ public final class QuantumBulkCrafting {
             CraftingService craftingService,
             IEnergyService energyService,
             Level level) {
-        // 1 tick に使える窓の総数。パターンをまたいで共有する。
-        // 1 本のパターンが全部使い切ると、次の段が材料をもらえないまま tick が終わる。
+        // 1 tickに使える窓の総数。パターンをまたいで共有する
+        // 1本のパターンが全部使い切ると、次の段が材料をもらえないままtickが終わる
         WindowBudget windows = new WindowBudget(InsaneAEConfig.maxCraftingWindowsPerTick());
         int pushed = 0;
         boolean drainWholeTree = false;
         boolean progressed = true;
 
-        // 加速カード満載 + タスク統合のときは、木の下から上へ<b>何度も往復</b>する。
-        // 1 周では「下の段を作ってから上の段が使う」という 1 段ぶんしか進まないので、
-        // 往復しないと段数のぶんだけ tick がかかる。
-        // 往復の回数ではなく<b>窓の総数</b>で頭打ちにするので、1 tick の重さは変わらない。
-        // この呼び出しで触ったプロバイダ。周回の合間に完成品を清算するために覚えておく。
+        // 加速カード満載 + タスク統合のときは、木の下から上へ何度も往復する
+        // 1周では「下の段を作ってから上の段が使う」という1段ぶんしか進まないので、
+        // 往復しないと段数のぶんだけtickがかかる
+        // 往復の回数ではなく窓の総数で頭打ちにするので、1 tickの重さは変わらない
+        // この呼び出しで触ったプロバイダ。周回の合間に完成品を清算するために覚えておく
         Set<BulkCraftingHandler> touched =
                 Collections.newSetFromMap(new IdentityHashMap<>());
 
@@ -175,9 +175,9 @@ public final class QuantumBulkCrafting {
             progressed = false;
             /*
              * 周回の頭で完成品を流しておく。組み上がったものは一旦プロバイダの
-             * 保留分に溜まり、ME へ入るまで<b>次の段からは見えない</b>。清算しないと
-             * 「下の段は作ったのに上の段が材料切れ」で 1 周ごとに空振りし、
-             * 1 tick に 1 段しか進まない。
+             * 保留分に溜まり、MEへ入るまで次の段からは見えない。清算しないと
+             * 「下の段は作ったのに上の段が材料切れ」で1周ごとに空振りし、
+             * 1 tickに1段しか進まない。
              */
             for (BulkCraftingHandler settled : touched) {
                 settled.settleCompletedOutputs();
@@ -192,20 +192,20 @@ public final class QuantumBulkCrafting {
                 IPatternDetails details = cursor.details();
                 BulkCraftingHandler provider = findBulkProvider(craftingService, details);
                 if (provider == null) {
-                    // 親Patternの材料がまだMEへ戻っていなくても、同じ窓の別Patternは進められる。
+                    // 親Patternの材料がまだMEへ戻っていなくても、同じ窓の別Patternは進められる
                     continue;
                 }
-                // タスク統合 (fusesOperations): 通常経路と同じく、まとめ 1 回を CPU 予算の
-                // 1 操作として数え、回数はプロバイダ自身の予算に任せる。
-                // BigInteger 経路こそ 1 窓が大きいので、ここを飛ばすと統合カードが反映されない。
+                // タスク統合 (fusesOperations): 通常経路と同じく、まとめ1回をCPU予算の
+                // 1操作として数え、回数はプロバイダ自身の予算に任せる
+                // BigInteger経路こそ1窓が大きいので、ここを飛ばすと統合カードが反映されない
                 // 直前の窓で組んだぶんが保留のままだと、プロバイダは「取り込み中」を名乗って
-                // 予算 0 を返す。周回のたびに清算しておかないと 1 tick に 1 窓しか進まない。
+                // 予算0を返す。周回のたびに清算しておかないと1 tickに1窓しか進まない
                 if (touched.contains(provider)) {
                     provider.settleCompletedOutputs();
                 }
                 boolean fused = provider.fusesOperations();
-                // 「アップグレード満載」= 統合カード + 加速カード 7 枚。この組み合わせのときだけ、
-                // CPU の 1 tick 予算 (long/tick) ではなく窓の総数だけで区切る。
+                // 「アップグレード満載」= 統合カード + 加速カード7枚。この組み合わせのときだけ、
+                // CPUの1 tick予算 (long/tick) ではなく窓の総数だけで区切る
                 if (fused && provider.repeatsWindowsWithinTick()) {
                     drainWholeTree = true;
                 }
@@ -216,12 +216,12 @@ public final class QuantumBulkCrafting {
                 }
                 limit = clampForOutputs(details, limit);
                 if (limit <= 0L) {
-                    // このプロバイダのtick予算が尽きた場合は、次の窓で同じTaskを再試行する。
+                    // このプロバイダのtick予算が尽きた場合は、次の窓で同じTaskを再試行する
                     continue;
                 }
                 long done = pushBulk(view, details, provider, limit, energyService, level);
                 if (done <= 0L) {
-                    // 材料搬入待ちのTaskで全Exact Jobを止めず、依存元Patternを先に進める。
+                    // 材料搬入待ちのTaskで全Exact Jobを止めず、依存元Patternを先に進める
                     continue;
                 }
                 touched.add(provider);
@@ -231,7 +231,7 @@ public final class QuantumBulkCrafting {
                 left = repeatWindows(view, details, provider, fused, left, windows,
                         energyService, level);
                 cursor.setRemaining(left);
-                // 統合中は done が int を超えうるので、toIntExact に渡さないこと。
+                // 統合中はdoneがintを超えうるので、toIntExactに渡さないこと
                 pushed += fused ? 1 : Math.toIntExact(done);
                 if (cursor.remaining().signum() <= 0) {
                     cursor.remove();
@@ -239,7 +239,7 @@ public final class QuantumBulkCrafting {
                 view.markDirty();
             }
             // 往復するのは木を下から上へ流すためなので、統合していない
-            // (= 1 クラフト 1 操作で CPU 予算に従う) ときは 1 周で終える。
+            // 1クラフト1操作でCPU予算に従うときは1周で終える
             if (!drainWholeTree) {
                 break;
             }
@@ -248,10 +248,10 @@ public final class QuantumBulkCrafting {
     }
 
     /**
-     * 1 tick に使える窓の総数。パターンをまたいで共有する予算。
+     * 1 tickに使える窓の総数。パターンをまたいで共有する予算。
      *
      * <p>これが無いと、一番下の段が窓を全部使い切って上の段に回らない。
-     * 「1 tick の重さ」を決めるのはここだけにしておき、往復の回数は縛らない。</p>
+     * 「1 tickの重さ」を決めるのはここだけにしておき、往復の回数は縛らない。</p>
      */
     private static final class WindowBudget {
         private int remaining;
@@ -272,22 +272,22 @@ public final class QuantumBulkCrafting {
     }
 
     /**
-     * 加速カード満載のとき、同じパターンの窓を 1 tick のうちに重ねて残りを削る。
+     * 加速カード満載のとき、同じパターンの窓を1 tickのうちに重ねて残りを削る。
      *
-     * <p>1 窓に組める回数は long の会計で頭打ちになる (完成品は
-     * {@code Long.MAX_VALUE / 出力数}、材料の取り出しも同様) ので、BigInteger 級の残りは
-     * 1 窓では終わらない。窓と窓の間で {@link BulkCraftingHandler#settleCompletedOutputs()} を
-     * 呼び、組み上がった完成品をネットワークへ流して<b>クラフト CPU の完成待ちを清算する</b>。
-     * こうするとどの瞬間の帳簿も long に収まったまま、1 tick の合計だけが long を超えられる。</p>
+     * <p>1窓に組める回数はlongの会計で頭打ちになる。完成品は
+     * {@code Long.MAX_VALUE / 出力数}、材料の取り出しも同様) ので、BigInteger級の残りは
+     * 1窓では終わらない。窓と窓の間で {@link BulkCraftingHandler#settleCompletedOutputs()} を
+     * 呼び、組み上がった完成品をネットワークへ流してクラフトCPUの完成待ちを清算する。
+     * こうするとどの瞬間の帳簿もlongに収まったまま、1 tickの合計だけがlongを超えられる。</p>
      *
-     * <p><b>タスク統合カードが要る。</b>統合していないと 1 クラフト = 1 操作なので、
-     * 窓を重ねた時点でクラスタの 1 tick 予算 (int) を超えてしまう。</p>
+     * <p>タスク統合カードが要る。統合していないと1クラフト = 1操作なので、
+     * 窓を重ねた時点でクラスタの1 tick予算 (int) を超えてしまう。</p>
      *
      * <p>窓の数は {@code maxCraftingWindowsPerTick} で頭打ちにする。ここが無いと
-     * 終わるまで回し続けて、<b>サーバが 1 tick から戻ってこなくなる</b>おそれがある。
-     * 途中で完成品が入らなくなった (電力・在庫・ジョブ完了) ときも打ち切る。</p>
+     * 終わるまで回し続けて、サーバが1 tickから戻ってこなくなるおそれがある。
+     * 途中で完成品が入らなくなったとき、電力、在庫、ジョブ完了のいずれかでも打ち切る。</p>
      *
-     * @return 削り切れずに残った回数
+     * @return削り切れずに残った回数
      */
     private static BigInteger repeatWindows(CraftingJobView view, IPatternDetails details,
             BulkCraftingHandler provider, boolean fused, BigInteger remaining,
@@ -296,7 +296,7 @@ public final class QuantumBulkCrafting {
             return remaining;
         }
         while (windows.remaining() > 0 && remaining.signum() > 0) {
-            // 先に清算する。これをしないと完成待ちが積み上がって long を溢れさせる。
+            // 先に清算する。これをしないと完成待ちが積み上がってlongを溢れさせる
             provider.settleCompletedOutputs();
 
             long bounded = remaining.min(LONG_MAX).longValueExact();
@@ -307,7 +307,7 @@ public final class QuantumBulkCrafting {
             }
             long done = pushBulk(view, details, provider, limit, energyService, level);
             if (done <= 0L) {
-                // 材料切れ・電力切れ・ジョブ完了。同じ tick の別パターンへ回す。
+                // 材料切れ・電力切れ・ジョブ完了。同じtickの別パターンへ回す
                 break;
             }
             windows.spend();
@@ -322,13 +322,13 @@ public final class QuantumBulkCrafting {
         ListCraftingInventory inventory = view.getInventory();
         KeyCounter containerItems = new KeyCounter();
         boolean exactWindow = view.hasExactCraftingPlan();
-        // AE2のwaitingForはlong固定なので、1窓の出力だけはlongへ正確に戻せる範囲に制限する。
+        // AE2のwaitingForはlong固定なので、1窓の出力だけはlongへ正確に戻せる範囲に制限する
         limit = Math.min(limit, getSafeOutputWindow(view, details));
         if (limit <= 0L) {
             return 0;
         }
 
-        // 電力が足りなければ回数を減らして 1 度だけやり直す。
+        // 電力が足りなければ回数を減らして1度だけやり直す
         for (int attempt = 0; attempt < 2 && limit > 0; attempt++) {
             containerItems.reset();
             Extracted extracted = extractInputs(
@@ -336,8 +336,8 @@ public final class QuantumBulkCrafting {
             if (extracted == null) {
                 return 0;
             }
-            // <b>取り出せた回数を使うこと。</b>在庫が足りなければ extractInputs が回数を減らすので、
-            // ここで limit をそのまま使うと「10 回ぶんの材料で 1000 回ぶんの完成品」になる。
+            // 取り出せた回数を使うこと。在庫が足りなければextractInputsが回数を減らすので、
+            // ここでlimitをそのまま使うと「10回ぶんの材料で1000回ぶんの完成品」になる
             KeyCounter[] inputs = extracted.inputs();
             long times = extracted.times();
 
@@ -345,7 +345,7 @@ public final class QuantumBulkCrafting {
             if (power > 0.0) {
                 double available = energyService.extractAEPower(power, Actionable.SIMULATE, PowerMultiplier.CONFIG);
                 if (available < power - 0.01) {
-                    // 取りすぎたので全部戻してから、賄える回数で取り直す。
+                    // 取りすぎたので全部戻してから、賄える回数で取り直す
                     rollbackInputs(view, inputs, extracted.networkInputs());
                     limit = (long) (times * (available / power));
                     continue;
@@ -355,12 +355,12 @@ public final class QuantumBulkCrafting {
 
             long done = Math.min(provider.pushPatternBulk(details, inputs, times), times);
             if (done <= 0) {
-                // 受け取ってもらえなかった: 電力は戻せないが材料は戻す。
+                // 受け取ってもらえなかった: 電力は戻せないが材料は戻す
                 rollbackInputs(view, inputs, extracted.networkInputs());
                 return 0;
             }
             if (done < times) {
-                // 搬入先が途中で埋まった (加工パターン)。使われなかった材料は inputs に残っている。
+                // 搬入先が途中で埋まった。加工パターンの場合。使われなかった材料はinputsに残っている
                 rollbackInputs(view, inputs, extracted.networkInputs());
                 if (power > 0.0) {
                     energyService.injectPower(power * (times - done) / times, Actionable.MODULATE);
@@ -371,7 +371,7 @@ public final class QuantumBulkCrafting {
             bulkWindows++;
             ListCraftingInventory waitingFor = view.getWaitingFor();
             for (GenericStack output : details.getOutputs()) {
-                // getSafeOutputWindowで検査済みだが、境界をコード上でも再確認してwrapを防ぐ。
+                // getSafeOutputWindowで検査済みだが、境界をコード上でも再確認してwrapを防ぐ
                 waitingFor.insert(output.what(), Math.multiplyExact(output.amount(), done),
                         Actionable.MODULATE);
             }
@@ -389,15 +389,15 @@ public final class QuantumBulkCrafting {
     /**
      * {@code times} 回ぶんの材料をまとめて取り出す。足りなければ取れるぶんまで減らす。
      *
-     * <p>AE2 の {@code CraftingCpuHelper.extractPatternInputs} とほぼ同じだが、
-     * <b>1 つの材料につき代替候補を 1 種類しか使わない</b>点が違う。
-     * 混ざると「1 回組み立てて結果を N 倍する」が成り立たなくなるため
-     * (代替材料によって完成品が変わるレシピがある)。</p>
+     * <p>AE2の {@code CraftingCpuHelper.extractPatternInputs} とほぼ同じだが、
+     * 1つの材料につき代替候補を1種類しか使わない点が違う。
+     * 混ざると「1回組み立てて結果をN倍する」が成り立たなくなるため
+     * 代替材料によって完成品が変わるレシピがある。</p>
      *
-     * <p><b>取り出せた回数を必ず一緒に返すこと</b> ({@link Extracted})。ここは在庫が足りなければ
+     * <p>取り出せた回数を必ず一緒に返すこと ({@link Extracted})。ここは在庫が足りなければ
      * 回数を黙って減らすので、呼び出し側が要求した回数のまま組ませるとアイテムが増える。</p>
      *
-     * @return 取り出した材料と、実際に取り出せた回数。1 回ぶんも取れなければ null。
+     * @return取り出した材料と、実際に取り出せた回数。1回ぶんも取れなければnull。
      */
     private static Extracted extractInputs(CraftingJobView view, IPatternDetails details,
             ListCraftingInventory inventory,
@@ -407,7 +407,7 @@ public final class QuantumBulkCrafting {
         var actionSource = exactWindow ? view.getActionSource() : null;
         KeyCounter networkInputs = new KeyCounter();
 
-        // 1) 何回ぶん取れるか調べる (在庫を触らない)
+        // 1) 何回ぶん取れるか調べる。在庫を触らない
         for (IPatternDetails.IInput input : inputs) {
             long perCraft = input.getMultiplier();
             if (perCraft <= 0L) {
@@ -419,7 +419,7 @@ public final class QuantumBulkCrafting {
                     continue;
                 }
                 long available = inventory.extract(template.key(), Long.MAX_VALUE, Actionable.SIMULATE);
-                // Exact JobはCPU在庫が空でも、現在の窓だけMEから直接補充できる。
+                // Exact JobはCPU在庫が空でも、現在の窓だけMEから直接補充できる
                 if (networkStorage != null && actionSource != null) {
                     long networkAvailable = networkStorage.extract(
                             template.key(), Long.MAX_VALUE, Actionable.SIMULATE, actionSource);
@@ -432,7 +432,7 @@ public final class QuantumBulkCrafting {
                 }
             }
             times = Math.min(times, units / perCraft);
-            // template.amount * perCraft * times をlongへ戻す境界も先に制限する。
+            // template.amount * perCraft * timesをlongへ戻す境界も先に制限する
             if (times > 0L) {
                 for (InputTemplate template : getValidTemplates(inventory, input, level, exactWindow)) {
                     if (template.amount() > 0L) {
@@ -447,9 +447,9 @@ public final class QuantumBulkCrafting {
         }
 
         // 2) 実際に取り出す
-        // <b>代替候補は入力1つにつき1種類だけ。</b>まとめ処理は「1回分の組立結果 × N回」で
-        // 出力を計上するため、1つの窓に複数の代替素材を混ぜると組立結果と食い違いうる。
-        // 候補は 1) と同じ規則 (CPU在庫 + Exact窓ならME在庫の合算) で選び直す。
+        // 代替候補は入力1つにつき1種類だけ。まとめ処理は「1回分の組立結果 × N回」で
+        // 出力を計上するため、1つの窓に複数の代替素材を混ぜると組立結果と食い違いうる
+        // 候補は1)と同じ規則で選び直す。CPU在庫、Exact窓ならME在庫の合算
         KeyCounter[] holder = new KeyCounter[inputs.length];
         try {
             for (int x = 0; x < inputs.length; x++) {
@@ -471,11 +471,13 @@ public final class QuantumBulkCrafting {
                     }
                 }
                 if (chosen == null) {
-                    // 1) の見積もりと食い違った: 何も無かったことにして通常経路に任せる。
+                    // 1) の見積もりと食い違った: 何も無かったことにして通常経路に任せる
                     logFallback("could not gather ingredients", details);
                     rollbackInputs(view, holder, networkInputs);
                     return null;
                 }
+                // 取り出した後に記録で溢れると戻し先を失うので、掛け算は取り出す前に済ませる
+                Math.multiplyExact(needed, chosen.amount());
                 long extracted = CraftingCpuHelper.extractTemplates(inventory, chosen, needed);
                 if (extracted > 0) {
                     addExact(list, chosen.key(), Math.multiplyExact(extracted, chosen.amount()));
@@ -485,20 +487,24 @@ public final class QuantumBulkCrafting {
                     }
                     needed -= extracted;
                 }
-                // Exact JobはCPU在庫で足りないぶんを、この窓だけMEから直接補充できる。
+                // Exact JobはCPU在庫で足りないぶんを、この窓だけMEから直接補充できる
                 if (needed > 0L && networkStorage != null && actionSource != null) {
                     long networkAmount = Math.multiplyExact(needed, chosen.amount());
+                    // MEから取り出した後に記録で溢れると、記録できなかったぶんが消える。先に確かめる
+                    ensureCanAdd(networkInputs, chosen.key(), networkAmount);
+                    ensureCanAdd(list, chosen.key(), networkAmount);
                     long networkExtracted = networkStorage.extract(
                             chosen.key(), networkAmount, Actionable.MODULATE, actionSource);
                     if (networkExtracted > 0L) {
+                        // 巻き戻しはholderを返却量の上限にするので、端数で諦める場合も先にholderへ入れる
                         addExact(networkInputs, chosen.key(), networkExtracted);
+                        addExact(list, chosen.key(), networkExtracted);
                         if (networkExtracted % chosen.amount() != 0L) {
-                            // 部分単位の入力は同じパターンへ安全に載せられないため、消費を戻して失敗扱いにする。
+                            // 部分単位の入力は同じパターンへ安全に載せられないため、消費を戻して失敗扱いにする
                             rollbackInputs(view, holder, networkInputs);
                             return null;
                         }
                         long networkUnits = networkExtracted / chosen.amount();
-                        addExact(list, chosen.key(), networkExtracted);
                         AEKey containerItem = inputs[x].getRemainingKey(chosen.key());
                         if (containerItem != null) {
                             addExact(containerItems, containerItem, networkUnits);
@@ -507,14 +513,14 @@ public final class QuantumBulkCrafting {
                     }
                 }
                 if (needed > 0) {
-                    // 1) の見積もりと食い違った: 何も無かったことにして通常経路に任せる。
+                    // 1) の見積もりと食い違った: 何も無かったことにして通常経路に任せる
                     logFallback("could not gather ingredients", details);
                     rollbackInputs(view, holder, networkInputs);
                     return null;
                 }
             }
         } catch (ArithmeticException overflow) {
-            // 実際に選ばれた候補の掛け算がlongへ戻らない窓は、材料を戻して次tickへ回す。
+            // 実際に選ばれた候補の掛け算がlongへ戻らない窓は、材料を戻して次tickへ回す
             logFallback("window exceeded the AE2 long boundary", details);
             rollbackInputs(view, holder, networkInputs);
             return null;
@@ -538,7 +544,7 @@ public final class QuantumBulkCrafting {
         for (InputTemplate template : CraftingCpuHelper.getValidItemTemplates(inventory, input, level)) {
             templates.add(template);
         }
-        // Exact窓ではネットワーク側の候補をPatternから直接復元する。
+        // Exact窓ではネットワーク側の候補をPatternから直接復元する
         for (GenericStack possible : input.getPossibleInputs()) {
             if (possible != null && possible.amount() > 0L && input.isValid(possible.what(), level)) {
                 boolean duplicate = false;
@@ -557,55 +563,78 @@ public final class QuantumBulkCrafting {
         return templates;
     }
 
-    /** CPU在庫とExact窓でMEから取り出した材料を、失敗時に同じ所有者へ戻す。 */
+    /**
+     * 使われなかった材料を取り出し元へ戻す。
+     *
+     * <p>{@code unused} はCPU在庫分とMEから借りた分が混ざった未使用の残りで、
+     * 部分処理の後は借りた量より少ないことがある。借りた量をそのままMEへ戻すと
+     * 消費済みのぶんまで戻って増殖するので、MEへは未使用量を上限に先に戻し、残りをCPU在庫へ戻す。
+     * {@code unused} には途中で失敗したときのnullが混ざり得る。</p>
+     */
     private static void rollbackInputs(
             CraftingJobView view,
-            KeyCounter[] cpuInputs,
+            KeyCounter[] unused,
             KeyCounter networkInputs) {
-        // holderにはCPU在庫分とMEから借りた分が混在するため、ME分を先に分離する。
-        // そのまま両方へ戻すと、同じ材料を二重に復元してしまう。
-        for (var networkEntry : networkInputs) {
-            long remaining = networkEntry.getLongValue();
-            for (KeyCounter counter : cpuInputs) {
-                if (remaining <= 0L) {
-                    break;
-                }
-                long held = counter.get(networkEntry.getKey());
-                long remove = Math.min(held, remaining);
-                if (remove > 0L) {
-                    counter.remove(networkEntry.getKey(), remove);
-                    remaining -= remove;
-                }
-            }
-        }
-        CraftingCpuHelper.reinjectPatternInputs(view.getInventory(), cpuInputs);
+        ListCraftingInventory inventory = view.getInventory();
         MEStorage storage = view.getNetworkStorage();
         var source = view.getActionSource();
-        if (storage == null || source == null) {
-            return;
-        }
-        for (var entry : networkInputs) {
-            long inserted = storage.insert(
-                    entry.getKey(), entry.getLongValue(), Actionable.MODULATE, source);
-            if (inserted != entry.getLongValue()) {
-                LOGGER.error("InsaneAE: could not fully roll back {} of {} after bulk crafting failure.",
-                        entry.getLongValue() - inserted, entry.getKey());
+        if (storage != null && source != null) {
+            for (var networkEntry : networkInputs) {
+                AEKey key = networkEntry.getKey();
+                long toReturn = takeFromHolder(unused, key, networkEntry.getLongValue());
+                if (toReturn <= 0L) {
+                    continue;
+                }
+                long inserted = storage.insert(key, toReturn, Actionable.MODULATE, source);
+                if (inserted < toReturn) {
+                    // MEが満杯でも消さずにCPU在庫へ残す
+                    LOGGER.warn("InsaneAE: could not return {} of {} to the network after bulk crafting; kept in the CPU.",
+                            toReturn - inserted, key);
+                    inventory.insert(key, toReturn - inserted, Actionable.MODULATE);
+                }
             }
         }
+        for (KeyCounter counter : unused) {
+            if (counter == null) {
+                continue;
+            }
+            for (var entry : counter) {
+                if (entry.getLongValue() > 0L) {
+                    inventory.insert(entry.getKey(), entry.getLongValue(), Actionable.MODULATE);
+                }
+            }
+            counter.reset();
+        }
+    }
+
+    /** holderから最大 {@code amount} 取り除き、取り除けた量を返す。 */
+    private static long takeFromHolder(KeyCounter[] holder, AEKey key, long amount) {
+        long taken = 0L;
+        for (KeyCounter counter : holder) {
+            if (counter == null || taken >= amount) {
+                continue;
+            }
+            long take = Math.min(counter.get(key), amount - taken);
+            if (take > 0L) {
+                counter.remove(key, take);
+                taken += take;
+            }
+        }
+        return taken;
     }
 
     /**
      * 1窓の出力がAE2のlong会計を超えないように上限を求める。
      *
-     * <p><b>1 窓ぶんの掛け算だけを見てはいけない。</b>組み上がった出力は CPU の
+     * <p>1窓ぶんの掛け算だけを見てはいけない。組み上がった出力はCPUの
      * クラフト在庫 ({@code ListCraftingInventory} = {@code KeyCounter}) に積まれ、
-     * そこは<b>キーごとに long</b> である。窓を重ねると 1 窓が安全でも
-     * <b>積算が long を折り返し、作った中間素材がまるごと消える</b>。
+     * そこはキーごとにlongである。窓を重ねると1窓が安全でも
+     * 積算がlongを折り返し、作った中間素材がまるごと消える。
      * 消えたぶんは誰も作り直さないので、次の段が材料待ちのまま永久に止まる。</p>
      *
-     * <p>実際、8 倍の段を重ねた木 (中間素材が long を超えるもの) がこれで停止した。
-     * 中間素材を使う側が減らすまで待てば良いだけなので、<b>いま抱えている数を
-     * 差し引いた残り</b>を窓の上限にする。</p>
+     * <p>実際、8倍の段を重ねた木、つまり中間素材がlongを超えるものがこれで停止した。
+     * 中間素材を使う側が減らすまで待てば良いだけなので、いま抱えている数を
+     * 差し引いた残りを窓の上限にする。</p>
      */
     private static long getSafeOutputWindow(CraftingJobView view, IPatternDetails details) {
         long limit = Long.MAX_VALUE;
@@ -623,19 +652,18 @@ public final class QuantumBulkCrafting {
     }
 
     /**
-     * この出力キーについて CPU が今抱えている数。
+     * この出力キーについてCPUがいずれ抱える数。
      *
-     * <p>クラフト在庫と完成待ち帳簿の<b>大きいほう</b>を見る。搬入されるまでは
-     * 完成待ちだけが増え、搬入後はクラフト在庫だけが増えるので、
-     * どちらか一方では折り返しを見逃す。</p>
+     * <p>完成待ちのぶんは搬入されるとクラフト在庫へ足されるので、両方の合計を見る。
+     * 大きいほうだけでは、在庫と完成待ちが両方大きいときに搬入後の在庫がlongを折り返す。</p>
      */
     private static long heldForOutput(CraftingJobView view, AEKey key) {
         long inventory = view.getInventory().extract(key, Long.MAX_VALUE, Actionable.SIMULATE);
         long waitingFor = view.getWaitingFor().extract(key, Long.MAX_VALUE, Actionable.SIMULATE);
-        return Math.max(Math.max(inventory, 0L), Math.max(waitingFor, 0L));
+        return SaturatingMath.add(Math.max(inventory, 0L), Math.max(waitingFor, 0L));
     }
 
-    /** 端材 (バケツ等) の見込みを、実際に処理した回数ぶんに減らす。取り出しは回数の倍数なので割り切れる。 */
+    /** 端材、たとえばバケツの見込みを、実際に処理した回数ぶんに減らす。取り出しは回数の倍数なので割り切れる。 */
     private static void scaleContainerItems(KeyCounter containerItems, long times, long done) {
         KeyCounter scaled = new KeyCounter();
         for (var entry : containerItems) {
@@ -645,19 +673,23 @@ public final class QuantumBulkCrafting {
         containerItems.addAll(scaled);
     }
 
-    /** KeyCounterへ追加する前に個別キーのlong境界を検査する。 */
-    private static void addExact(KeyCounter counter, AEKey key, long amount) {
+    private static void ensureCanAdd(KeyCounter counter, AEKey key, long amount) {
         if (amount < 0L || counter.get(key) > Long.MAX_VALUE - amount) {
             throw new ArithmeticException("bulk crafting counter overflow for " + key);
         }
+    }
+
+    /** KeyCounterへ追加する前に個別キーのlong境界を検査する。 */
+    private static void addExact(KeyCounter counter, AEKey key, long amount) {
+        ensureCanAdd(counter, key, amount);
         counter.add(key, amount);
     }
 
     /**
      * {@link #extractInputs} の戻り値。
      *
-     * @param inputs 取り出した材料
-     * @param times  <b>実際に</b>取り出せた回数。要求した回数とは限らない
+     * @param inputs取り出した材料
+     * @param times実際に取り出せた回数。要求した回数とは限らない
      */
     private record Extracted(KeyCounter[] inputs, KeyCounter networkInputs, long times) {
     }
@@ -675,8 +707,8 @@ public final class QuantumBulkCrafting {
     /**
      * まとめ処理を諦めて通常経路に戻したことを残す。
      *
-     * <p>クラフト 1 回ごとに通り得るので、理由ごとに<b>最初の 1 回だけ WARN</b>、
-     * 以降は DEBUG に落とす (同じ理由で毎 tick 失敗するとログが埋まるため)。</p>
+     * <p>クラフト1回ごとに通り得るので、理由ごとに最初の1回だけWARN、
+     * 以降はDEBUGに落とす。同じ理由で毎tick失敗するとログが埋まるため。</p>
      */
     private static void logFallback(String reason, IPatternDetails details) {
         if (LogOnce.first("bulk-crafting-fallback:" + reason)) {

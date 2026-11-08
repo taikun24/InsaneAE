@@ -19,50 +19,50 @@ import java.util.function.Consumer;
 *///?}
 
 /**
- * 他の AE2 アドオンとの連携 1 つぶん。対象 Mod が入っているときだけ実体が作られる。
+ * 他のAE2アドオンとの連携1つぶん。対象Modが入っているときだけ実体が作られる。
  *
- * <p>本体側 (クリエイティブタブ・アップグレード登録・capability・色付け・レシピ生成) は
- * {@link AddonIntegrations#active()} を回してここを呼ぶだけで、<b>連携先ごとの分岐を持たない</b>。
+ * <p>本体側、つまりクリエイティブタブ、アップグレード登録、capability、色付け、レシピ生成は
+ * {@link AddonIntegrations#active()} を回してここを呼ぶだけで、連携先ごとの分岐を持たない。
  * 新しいアドオンに対応するときは、このインターフェイスを実装して
- * {@link AddonIntegrations} の名簿に 1 行足す。</p>
+ * {@link AddonIntegrations} の名簿に1行足す。</p>
  *
- * <p>実装クラスは相手 Mod のクラスを直接参照してよい (compileOnly で型を見る)。
+ * <p>実装クラスは相手Modのクラスを直接参照してよい。compileOnlyで型を見る。
  * 相手が居ないときはクラスごとロードされないよう、名簿側がラムダ越しに生成している。
  * どのメソッドも既定は「何もしない」なので、要るものだけ上書きすればよい。</p>
  */
 public interface AddonIntegration {
 
-    /** 相手の modid。レシピの {@code mod_loaded} 条件にも使う。 */
+    /** 相手のmodid。レシピの {@code mod_loaded} 条件にも使う。 */
     String modId();
 
-    /** Mod 構築時。アイテムを登録するならここで {@code DeferredRegister} に足す。 */
+    /** Mod構築時。アイテムを登録するならここで {@code DeferredRegister} に足す。 */
     default void registerContent() {
     }
 
-    /** 追加した素材 (コンポーネントなど)。クリエイティブタブでセルより前に並ぶ。 */
+    /** 追加した素材、たとえばコンポーネント。クリエイティブタブでセルより前に並ぶ。 */
     default List<? extends ItemLike> materials() {
         return List.of();
     }
 
     /**
-     * 追加した通常セル。AE2 の {@code BasicStorageCell} と同じ色付け
-     * (layer1 = 中身の量の LED) が掛かり、クリエイティブタブにも並ぶ。
+     * 追加した通常セル。AE2の {@code BasicStorageCell} と同じ色付け
+     * layer1は中身の量のLEDで、それが掛かる。クリエイティブタブにも並ぶ。
      */
     default List<? extends ItemLike> storageCells() {
         return List.of();
     }
 
     /**
-     * 追加したポータブルセル。AE2 の {@code AbstractPortableCell} と同じ色付け
-     * (layer2 = 画面) が掛かり、クリエイティブタブにも並ぶ。
+     * 追加したポータブルセル。AE2の {@code AbstractPortableCell} と同じ色付け
+     * layer2は画面で、それが掛かる。クリエイティブタブにも並ぶ。
      */
     default List<? extends ItemLike> portableCells() {
         return List.of();
     }
 
     /**
-     * 色ハンドラを相手の Mod のものにするセル (AE2 Things の DISK など)。値は
-     * {@code ItemColor} と同じ (スタック, tintindex) → ARGB。クリエイティブタブにも並ぶ。
+     * 色ハンドラを相手のModのものにするセル、たとえばAE2 ThingsのDISKなど。値は
+     * {@code ItemColor}と同じで、スタックとtintindexからARGBを返す。クリエイティブタブにも並ぶ。
      */
     default Map<Item, ToIntBiFunction<ItemStack, Integer>> cellsWithOwnColor() {
         return Map.of();
@@ -73,7 +73,7 @@ public interface AddonIntegration {
     }
 
     /**
-     * capability の登録。NeoForge では各 Mod が自分の型にしか登録しないので、
+     * capabilityの登録。NeoForgeでは各Modが自分の型にしか登録しないので、
      * 相手の仕組みに乗せた自前のアイテムはここで登録し直す。
      */
     //? if >=1.21 {
@@ -87,7 +87,7 @@ public interface AddonIntegration {
      * datagen。階層ごとに呼ばれる。{@code output} は既に {@code mod_loaded} 条件付きなので、
      * 相手が居ないワールドではここで出したレシピは無効になる。
      *
-     * @param component その階層のセルコンポーネント
+     * @param componentその階層のセルコンポーネント
      */
     //? if >=1.21 {
     default void buildRecipes(RecipeOutput output, InsaneCraftingUnitType tier, ItemLike component) {

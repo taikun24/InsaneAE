@@ -3,6 +3,7 @@ package jp.main.taikun.insaneae.integration.aco;
 import appeng.api.crafting.IPatternDetails;
 import appeng.crafting.execution.ExecutingCraftingJob;
 import java.math.BigInteger;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -20,9 +21,9 @@ import java.util.function.Consumer;
  */
 public final class AcoBigIntegerJobRegistry {
     /**
-     * finish/cancel を通らず消えた Job (ワールドアンロード等) を弱参照で回収する。
-     * ExecutingCraftingJob は equals を持たないため、WeakHashMap でも同一性比較になる。
-     * 実行中の Job は CraftingCpuLogic が強参照しているので、途中で回収されることはない。
+     * finish/cancelを通らず消えたJobは、ワールドアンロードなどでも弱参照で回収する。
+     * ExecutingCraftingJobはequalsを持たないため、WeakHashMapでも同一性比較になる。
+     * 実行中のJobはCraftingCpuLogicが強参照しているので、途中で回収されることはない。
      */
     private static final Map<ExecutingCraftingJob, Job> JOBS = new WeakHashMap<>();
 
@@ -35,15 +36,15 @@ public final class AcoBigIntegerJobRegistry {
         install(job, plan.patternTimes());
     }
 
-    /** NBT からの復元にも使う。残数 0 以下の Pattern は載せない。 */
+    /** NBTからの復元にも使う。残数0以下のPatternは載せない。 */
     public static synchronized void install(
             ExecutingCraftingJob job,
             Map<IPatternDetails, BigInteger> patternTimes) {
-        // 同一Jobへの再通知は状態を上書きせず、二重のExact台帳を作らない。
+        // 同一Jobへの再通知は状態を上書きせず、二重のExact台帳を作らない
         JOBS.putIfAbsent(job, new Job(job, patternTimes));
     }
 
-    /** クラスタ NBT へ保存するための現在残数。台帳が無い/空なら empty。 */
+    /** クラスタNBTへ保存するための現在残数。台帳が無い/空ならempty。 */
     public static synchronized Optional<Map<IPatternDetails, BigInteger>> snapshot(
             ExecutingCraftingJob job) {
         Job exact = JOBS.get(job);
@@ -67,11 +68,12 @@ public final class AcoBigIntegerJobRegistry {
     }
 
     public static final class Job {
-        private final ExecutingCraftingJob owner;
+        // WeakHashMapの値からキーを強参照すると、キーが永久に回収されなくなる
+        private final WeakReference<ExecutingCraftingJob> owner;
         private final Map<IPatternDetails, BigInteger> remaining;
 
         private Job(ExecutingCraftingJob owner, Map<IPatternDetails, BigInteger> patternTimes) {
-            this.owner = owner;
+            this.owner = new WeakReference<>(owner);
             this.remaining = new LinkedHashMap<>();
             patternTimes.forEach((pattern, amount) -> {
                 if (amount.signum() > 0) {
@@ -106,7 +108,7 @@ public final class AcoBigIntegerJobRegistry {
         }
 
         private ExecutingCraftingJob owner() {
-            return owner;
+            return owner.get();
         }
 
         private synchronized ArrayList<IPatternDetails> snapshotKeys() {
@@ -133,7 +135,7 @@ public final class AcoBigIntegerJobRegistry {
         /**
          * 先頭からたどり直す。
          *
-         * <p>1 tick のうちに木を下から上へ何度も往復するために使う。
+         * <p>1 tickのうちに木を下から上へ何度も往復するために使う。
          * 次の {@link #next()} で今の残りを取り直すので、直前の周回で
          * 作った中間素材が次の段の材料として見える。</p>
          */
@@ -173,9 +175,10 @@ public final class AcoBigIntegerJobRegistry {
             IPatternDetails removed = current;
             job.remove(removed);
             removeNativeTask.accept(removed);
-            // 最後のExact taskを消したら、以後はAE2の空Jobとして終了できるよう台帳を外す。
-            if (job.isEmpty()) {
-                AcoBigIntegerJobRegistry.remove(job.owner());
+            // 最後のExact taskを消したら、以後はAE2の空Jobとして終了できるよう台帳を外す
+            ExecutingCraftingJob owner = job.owner();
+            if (job.isEmpty() && owner != null) {
+                AcoBigIntegerJobRegistry.remove(owner);
             }
         }
     }

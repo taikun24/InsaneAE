@@ -9,23 +9,23 @@ import java.util.concurrent.ConcurrentHashMap;
 import jp.main.taikun.insaneae.util.SaturatingMath;
 
 /**
- * 取り付けられている加速カードから機械の速度倍率を求めるヘルパー。Mixin から呼ばれる。
+ * 取り付けられている加速カードから機械の速度倍率を求めるヘルパー。Mixinから呼ばれる。
  */
 public final class SpeedBoost {
 
     /**
-     * 速度倍率を注入する Mixin の優先度。<b>既定 (1000) より高くすること</b>。
+     * 速度倍率を注入するMixinの優先度。既定 (1000) より高くすること。
      *
-     * <p>IO ポートや刻印機の速度をいじる Mod は他にもあり (例: IO Port Super Speed)、
+     * <p>IOポートや刻印機の速度をいじるModは他にもあり、たとえばIO Port Super Speedなど、
      * 相手が対象メソッドを {@code @Overwrite} 等で差し替えると、そのメソッドには
-     * {@code @MixinMerged} が付く。Mixin は<b>マージ済みメソッドへの注入を
-     * 「自分の priority が相手より高い」ときしか許さない</b>
-     * ({@code InjectionInfo#checkTarget} が {@code mergedPriority >= ourPriority} で
+     * {@code @MixinMerged} が付く。Mixinはマージ済みメソッドへの注入を
+     * 「自分のpriorityが相手より高い」ときしか許さない
+     * {@code InjectionInfo#checkTarget}が{@code mergedPriority >= ourPriority}で
      * {@code InvalidInjectionException} を投げる)。しかもこれは注入点を数える前の
-     * 準備段階の例外なので、<b>{@code require = 0} では抑止できない</b>。</p>
+     * 準備段階の例外なので、{@code require = 0} では抑止できない。</p>
      *
-     * <p>よって相手 (既定の 1000) より高くしておき、そのうえで各注入を {@code require = 0} に
-     * してある。こうすると「相手が定数ごと消していた場合は黙って諦める (加速カードが効かない
+     * <p>よって相手より高くしておく。既定は1000で、そのうえで各注入を{@code require = 0}に
+     * してある。こうすると「相手が定数ごと消していた場合は黙って諦める。加速カードが効かない
      * だけ)」に収まり、起動時クラッシュにはならない。</p>
      */
     public static final int MIXIN_PRIORITY = 1500;
@@ -34,7 +34,7 @@ public final class SpeedBoost {
     }
 
     /**
-     * この機械に掛ける速度倍率。カードが無ければ 1 (＝素の AE2 の挙動)。
+     * この機械に掛ける速度倍率。カードが無ければ1で、素のAE2の挙動になる。
      * 複数種を挿した場合は掛け算になる。
      */
     public static int multiplier(IUpgradeInventory upgrades) {
@@ -54,12 +54,12 @@ public final class SpeedBoost {
     /**
      * 「{@code host} フィールドに機械本体を持つ作業スレッド」から速度倍率を求める。
      *
-     * <p>ExtendedAE の {@code InscriberThread} のように、速度計算が機械本体ではなく
-     * 内部スレッドのクラスにあり、しかも {@code host} フィールドの型が相手 Mod のクラス
-     * (コンパイル時に参照できない) の場合に使う。フィールドはクラスごとに 1 回だけ
-     * リフレクションで探して覚えておくので、毎 tick 呼んでも軽い。</p>
+     * <p>ExtendedAEの {@code InscriberThread} のように、速度計算が機械本体ではなく
+     * 内部スレッドのクラスにあり、しかも {@code host} フィールドの型が相手Modのクラス
+     * コンパイル時に参照できない場合に使う。フィールドはクラスごとに1回だけ
+     * リフレクションで探して覚えておくので、毎tick呼んでも軽い。</p>
      *
-     * <p>host が見つからない・{@link IUpgradeableObject} でない場合は 1 (= 効かないだけ)。</p>
+     * <p>hostが見つからない、または{@link IUpgradeableObject}でない場合は1。効かないだけ。</p>
      */
     public static int multiplierFromHost(Object owner) {
         Field field = HOST_FIELDS.computeIfAbsent(owner.getClass(), SpeedBoost::findHostField);
@@ -75,7 +75,7 @@ public final class SpeedBoost {
         }
     }
 
-    /** {@code host} フィールドが無いクラスの印 (ConcurrentHashMap は null を持てない)。 */
+    /** {@code host}フィールドが無いクラスの印。ConcurrentHashMapはnullを持てないため。 */
     private static final Field MISSING;
 
     static {
@@ -97,13 +97,13 @@ public final class SpeedBoost {
             } catch (NoSuchFieldException ignored) {
                 // 親クラスを見る
             } catch (RuntimeException e) {
-                break;  // InaccessibleObjectException など。効かないだけに留める。
+                break;  // InaccessibleObjectExceptionなど。効かないだけに留める
             }
         }
         return MISSING;
     }
 
-    /** int の範囲で頭打ちにする掛け算 (オーバーフローで速度が負になるのを防ぐ)。 */
+    /** intの範囲で頭打ちにする掛け算。オーバーフローで速度が負になるのを防ぐ。 */
     public static int saturatingMultiply(int value, int multiplier) {
         long result = (long) value * multiplier;
         return (int) Math.min(result, Integer.MAX_VALUE);

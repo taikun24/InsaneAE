@@ -40,9 +40,9 @@ import net.minecraft.core.HolderLookup;
 //?}
 
 /**
- * ACO の BigInteger 計画をクラフト CPU に載せる・保存する・片付ける処理。
+ * ACOのBigInteger計画をクラフトCPUに載せる・保存する・片付ける処理。
  *
- * <p>まとめ処理 ({@code executeCrafting}) は ACO の注入より先に走らせる必要があるので、
+ * <p>まとめ処理 ({@code executeCrafting}) はACOの注入より先に走らせる必要があるので、
  * 優先度を変えた {@link CraftingCpuLogicBulkMixin} に分けてある。</p>
  */
 @Mixin(value = CraftingCpuLogic.class, remap = false)
@@ -75,7 +75,7 @@ public abstract class CraftingCpuLogicMixin {
         }
         AcoBigIntegerPlanBridge.Plan candidate = exact.get();
         if (!AcoBigIntegerPlanBridge.supportsQuantumCpu(candidate, grid)) {
-            // Quantum CPUが実行できるのは作業台Patternだけなので、混在Jobを推測実行しない。
+            // Quantum CPUが実行できるのは作業台Patternだけなので、混在Jobを推測実行しない
             cir.setReturnValue(CraftingSubmitResult.INCOMPLETE_PLAN);
             return;
         }
@@ -130,7 +130,7 @@ public abstract class CraftingCpuLogicMixin {
     @Inject(method = "finishJob", at = @At("HEAD"))
     private void insaneae$removeAcoPlanOnFinish(boolean success, CallbackInfo ci) {
         if (job != null) {
-            // 成功・失敗のどちらでもAE2がJob所有権を閉じるため、Exact台帳も同時に閉じる。
+            // 成功・失敗のどちらでもAE2がJob所有権を閉じるため、Exact台帳も同時に閉じる
             AcoBigIntegerJobRegistry.remove(job);
         }
     }
@@ -146,7 +146,7 @@ public abstract class CraftingCpuLogicMixin {
      * Exact台帳の残数をクラスタNBTへ相乗り保存する。
      *
      * <p>台帳はメモリ上のWeakHashMapにしか無いので、保存しないと再起動でここだけが消え、
-     * AE2側に残った飽和longタスクが素で実行されてしまう (材料不足・二重計上・再注文)。
+     * AE2側に残った飽和longタスクが素で実行されてしまう。材料不足、二重計上、再注文が起きる。
      * PatternはAE2のタスク保存と同じく定義アイテム (AEItemKey) で表す。</p>
      */
     @Inject(method = "writeToNBT", at = @At("RETURN"))
@@ -167,7 +167,7 @@ public abstract class CraftingCpuLogicMixin {
                 //?} else {
                 /*entry.put("pattern", pattern.getDefinition().toTag());
                 *///?}
-                // longに収まらない値があるため、残数は10進文字列で保存する。
+                // longに収まらない値があるため、残数は10進文字列で保存する
                 entry.putString("remaining", remaining.toString());
                 list.add(entry);
             });
@@ -179,7 +179,7 @@ public abstract class CraftingCpuLogicMixin {
      * 復元したJobへExact台帳を結び直す。
      *
      * <p>保存済みのPatternは、AE2が同じNBTから復元したタスクの定義アイテムと突き合わせて
-     * 同一のIPatternDetailsインスタンスへ解決する。タスク側に無いPattern (パターンが
+     * 同一のIPatternDetailsインスタンスへ解決する。タスク側に無いPatternは、パターンが
      * 消された等) は、AE2側の該当タスクも消えているので黙って捨ててよい。</p>
      */
     @Inject(method = "readFromNBT", at = @At("RETURN"))
@@ -215,7 +215,7 @@ public abstract class CraftingCpuLogicMixin {
                 }
                 restored.put(details, new BigInteger(entry.getString("remaining")));
             } catch (RuntimeException corrupt) {
-                // 壊れた保存データ1件でJob全体の復元を巻き込まない (パターン欠落・数値破損とも)。
+                // 壊れた保存データ1件でJob全体の復元を巻き込まない。パターン欠落も数値破損も同じ扱い
                 INSANEAE$EXACT_LOGGER.warn(
                         "InsaneAE: dropping a corrupt saved exact crafting task", corrupt);
             }

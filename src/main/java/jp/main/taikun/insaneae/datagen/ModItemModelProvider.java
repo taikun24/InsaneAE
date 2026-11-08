@@ -21,25 +21,25 @@ import java.util.Locale;
 /**
  * アイテムモデル。
  *
- * <p>セル系は AE2 / MEGA Cells と同じ見た目の続きにする。<b>階層で色が変わる部分だけ</b>
- * {@code tools/gen_cell_textures.py} が階層色から生成し (セルコンポーネント / 通常セルの窓と帯 /
- * ポータブルセルの側面)、階層に依らないハウジング・LED・画面は MEGA / AE2 のものを
+ * <p>セル系はAE2 / MEGA Cellsと同じ見た目の続きにする。階層で色が変わる部分だけ
+ * {@code tools/gen_cell_textures.py}が階層色から生成し、セルコンポーネント、通常セルの窓と帯、
+ * ポータブルセルの側面)、階層に依らないハウジング・LED・画面はMEGA / AE2のものを
  * レイヤで重ねる。生成側のマスクは借りているハウジングのドット位置に合わせてあるので、
  * ハウジングを差し替えるならマスクも描き直すこと。</p>
  *
- * <p><b>レイヤ番号には意味がある。</b>{@code item/generated} は layerN に tintindex N を振り、
- * AE2 の色ハンドラ ({@code BasicStorageCell#getColor} / {@code AbstractPortableCell#getColor}) が
- * <b>tintindex 1 を中身の量の色</b>、ポータブルはさらに <b>tintindex 2 を画面の色</b>として塗る。
- * したがってレイヤの順番は AE2 / MEGA 本体のモデルと 1 ドットも違えてはならない。</p>
+ * <p>レイヤ番号には意味がある。{@code item/generated} はlayerNにtintindex Nを振り、
+ * AE2の色ハンドラ ({@code BasicStorageCell#getColor} / {@code AbstractPortableCell#getColor}) が
+ * tintindex 1を中身の量の色、ポータブルはさらにtintindex 2を画面の色として塗る。
+ * したがってレイヤの順番はAE2 / MEGA本体のモデルと1ドットも違えてはならない。</p>
  *
- * <p>ポータブルセルの順番は <b>ハウジング、LED、画面、側面</b>で、
- * AE2 19.2 の {@code ae2:item/portable_item_cell_1k} がこの順になっている。
- * <b>画面を先頭にしてハウジングを後ろに置くと、不透明なハウジングが
- * 一番上に来て他のレイヤを全部隠し、そのうえ染色色 (既定は白) で塗られるので、
- * ポータブルセルが真っ白な塊になる。</b></p>
+ * <p>ポータブルセルの順番はハウジング、LED、画面、側面で、
+ * AE2 19.2の {@code ae2:item/portable_item_cell_1k} がこの順になっている。
+ * 画面を先頭にしてハウジングを後ろに置くと、不透明なハウジングが
+ * 一番上に来て他のレイヤを全部隠し、そのうえ染色色で塗られる。既定の染色色は白なので、
+ * ポータブルセルが真っ白な塊になる。</p>
  *
- * <p>化学物質セル / FE セルは Applied Mekanistics / AppliedFlux 未導入だとアイテム自体が登録されないが、
- * モデルは名前だけで生成できるので常に出力しておく (使われないだけで害はない)。</p>
+ * <p>化学物質セル / FEセルはApplied Mekanistics / AppliedFlux未導入だとアイテム自体が登録されないが、
+ * モデルは名前だけで生成できるので常に出力しておく。使われないだけで害はない。</p>
  */
 public class ModItemModelProvider extends ItemModelProvider {
 
@@ -47,37 +47,37 @@ public class ModItemModelProvider extends ItemModelProvider {
 
     private static final ResourceLocation CELL_LED = mega("ae2", "item/storage_cell_led");
     private static final ResourceLocation PORTABLE_LED = mega("ae2", "item/portable_cell_led");
-    /** 通常セルのハウジング。MEGA の 1M〜256M と同じ見た目の続きにする。 */
+    /** 通常セルのハウジング。MEGAの1M〜256Mと同じ見た目の続きにする。 */
     private static final ResourceLocation ITEM_HOUSING = mega("megacells", "item/mega_item_cell_housing");
     private static final ResourceLocation FLUID_HOUSING = mega("megacells", "item/mega_fluid_cell_housing");
     private static final ResourceLocation CHEMICAL_HOUSING = mega("megacells", "item/mega_chemical_cell_housing");
     /**
      * ポータブルセルの画面部分。
      *
-     * <p>MEGA Cells 4.x のポータブルセルは AE2 の汎用テクスチャ 1 枚を使っているので、
+     * <p>MEGA Cells 4.xのポータブルセルはAE2の汎用テクスチャ1枚を使っているので、
      * アイテム用と液体用の両方をそれに合わせる。</p>
      */
     //? if >=1.21 {
     private static final ResourceLocation PORTABLE_ITEM_SCREEN = mega("ae2", "item/portable_cell_screen");
     private static final ResourceLocation PORTABLE_FLUID_SCREEN = PORTABLE_ITEM_SCREEN;
     /**
-     * ポータブルセルの筐体。<b>MEGA のものを使う</b> (AE2 のものではない)。
+     * ポータブルセルの筐体。MEGAのものを使う。AE2のものではない。
      *
-     * <p>AE2 19.2 の {@code ae2:item/portable_cell_*_housing} は<b>ほぼ真っ白なグレースケール</b>
+     * <p>AE2 19.2の {@code ae2:item/portable_cell_*_housing} はほぼ真っ白なグレースケール
      * になっているので、借りるとポータブルセルが真っ白な塊になる。
-     * MEGA は 4.x でも自前の濃い筐体を持っているので、通常セル (mega_*_cell_housing) と揃えて
-     * そちらを使う。化学物質用は AE2 19.2 に汎用の {@code ae2:item/portable_cell_housing} が
-     * 無いため、同じく MEGA のものを使う。</p>
+     * MEGAは4.xでも自前の濃い筐体を持っているので、通常セル (mega_*_cell_housing) と揃えて
+     * そちらを使う。化学物質用はAE2 19.2に汎用の {@code ae2:item/portable_cell_housing} が
+     * 無いため、同じくMEGAのものを使う。</p>
      */
     private static final ResourceLocation PORTABLE_ITEM_HOUSING = mega("megacells", "item/portable_cell_item_housing");
     private static final ResourceLocation PORTABLE_FLUID_HOUSING = mega("megacells", "item/portable_cell_fluid_housing");
     private static final ResourceLocation PORTABLE_HOUSING = mega("megacells", "item/portable_cell_chemical_housing");
     /**
-     * FE セル (AppliedFlux 連携) の筐体。AppliedFlux のものを借りる。
+     * AppliedFlux連携のFEセルの筐体。AppliedFluxのものを借りる。
      *
-     * <p>AppliedFlux 2.1.x の FE セルは MEGA 4.x と<b>同じ形の窓</b> (同じ 3 階調の色) を使っているので、
+     * <p>AppliedFlux 2.1.xのFEセルは、MEGA 4.xと同じ形の窓と同じ3階調の色を使っているので、
      * 階層色レイヤ ({@code standardCell} / {@code portableSide}) はそのまま重なる
-     * (jar のテクスチャと 1 ドットずつ突き合わせて確認済み)。</p>
+     * jarのテクスチャと1ドットずつ突き合わせて確認済み。</p>
      */
     private static final ResourceLocation FE_HOUSING = mega("appflux", "item/fe_cell_housing");
     private static final ResourceLocation PORTABLE_FE_HOUSING = mega("appflux", "item/portable_cell_fe_housing");
@@ -91,10 +91,10 @@ public class ModItemModelProvider extends ItemModelProvider {
     /^* 化学物質のポータブルセル用。AE2 に専用の筐体が無いので汎用のものを使う。 ^/
     private static final ResourceLocation PORTABLE_HOUSING = mega("ae2", "item/portable_cell_housing");
     /^*
-     * FE セル (AppliedFlux 連携) の筐体と画面。AppliedFlux の 1M〜256M (MEGA 版) のものを借りる。
+     * AppliedFlux連携のFEセルの筐体と画面。AppliedFluxの1M〜256Mは、MEGA版のものを借りる。
      *
-     * <p>筐体の形は MEGA の化学物質セル筐体と同じなので、階層色レイヤ ({@code standardCell}) が
-     * そのまま重なる (jar のテクスチャで確認済み)。ポータブルも AppliedFlux 自身が AE2 の側面帯を
+     * <p>筐体の形はMEGAの化学物質セル筐体と同じなので、階層色レイヤ ({@code standardCell}) が
+     * そのまま重なる。jarのテクスチャで確認済み。ポータブルもAppliedFlux自身がAE2の側面帯を
      * 重ねているので {@code portableSide} がそのまま合う。</p>
      ^/
     private static final ResourceLocation FE_HOUSING = mega("appflux", "item/mega_fe_cell_housing");
@@ -102,12 +102,12 @@ public class ModItemModelProvider extends ItemModelProvider {
     private static final ResourceLocation PORTABLE_FE_HOUSING = mega("appflux", "item/portable_mega_cell_fe_housing");
     *///?}
     /**
-     * AE2 Things 連携の DISK の下地。窓が MEGA のハウジングと同じ形・同じ 3 階調なので、
-     * 通常セルの階層色レイヤ ({@code standardCell}) がそのまま重なって 1k の色を覆う。
+     * AE2 Things連携のDISKの下地。窓がMEGAのハウジングと同じ形・同じ3階調なので、
+     * 通常セルの階層色レイヤ ({@code standardCell}) がそのまま重なって1kの色を覆う。
      */
     private static final ResourceLocation DISK_BASE = mega("ae2things", "item/disk_drive_1k");
     private static final ResourceLocation SPEED_CARD = mega("ae2", "item/card_speed");
-    /** AE2 の {@code InitItemModelsProperties} が登録するエネルギーセルの残量プロパティ。 */
+    /** AE2の {@code InitItemModelsProperties} が登録するエネルギーセルの残量プロパティ。 */
     private static final ResourceLocation ENERGY_FILL_LEVEL = mega("ae2", "fill_level");
 
     private static ResourceLocation mega(String namespace, String path) {
@@ -119,13 +119,13 @@ public class ModItemModelProvider extends ItemModelProvider {
     }
     *///?}
 
-    /** 超次元 ME ケーブルのテクスチャ (帯・目盛りとも insaneae 側にコピー済み)。 */
+    /** 超次元MEケーブルのテクスチャ。帯・目盛りともinsaneae側にコピー済み。 */
     private static ResourceLocation hyperCableTexture(String name) {
         return mega(InsaneAE.MODID, "part/cable/hyper/" + name);
     //? if >=1.21 {
     }
 
-    /** 圧縮 ME 高密度スマートケーブルのテクスチャ (枠を明るくした版)。 */
+    /** 圧縮ME高密度スマートケーブルのテクスチャ。枠を明るくした版。 */
     private static ResourceLocation compressedCableTexture(String name) {
         return mega(InsaneAE.MODID, "part/cable/compressed/" + name);
     //?}
@@ -140,13 +140,13 @@ public class ModItemModelProvider extends ItemModelProvider {
         for (InsaneCraftingUnitType tier : InsaneCraftingUnitType.values()) {
             String id = tier.id();
 
-            // クラフトストレージのアイテムは未 formed のブロックモデルをそのまま使う。
+            // クラフトストレージのアイテムは未formedのブロックモデルをそのまま使う
             getBuilder(tier.blockId()).parent(new ModelFile.UncheckedModelFile(
                     ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/crafting/" + id + "_storage")));
 
             layered(tier.cellComponentId(), component(id));
 
-            // ハウジング → LED (layer1 が中身の量で着色される) → 階層色、の順で重ねる。
+            // ハウジング、LED、階層色の順で重ねる。LEDのlayer1は中身の量で着色される
             layered("item_storage_cell_" + id, ITEM_HOUSING, CELL_LED, standardCell(id));
             layered("fluid_storage_cell_" + id, FLUID_HOUSING, CELL_LED, standardCell(id));
             layered("chemical_storage_cell_" + id, CHEMICAL_HOUSING, CELL_LED, standardCell(id));
@@ -172,7 +172,7 @@ public class ModItemModelProvider extends ItemModelProvider {
                     *///?}
         }
 
-        // FE セルは AppliedFlux の容量計算が long なので 16T までしか出さない (FluxTiers)。
+        // FEセルはAppliedFluxの容量計算がlongなので16Tまでしか出さない (FluxTiers)
         for (InsaneCraftingUnitType tier : FluxTiers.TIERS) {
             String id = tier.id();
             layered("energy_component_" + id, modLoc("item/energy_component_" + id));
@@ -186,7 +186,7 @@ public class ModItemModelProvider extends ItemModelProvider {
         }
 
         simple("creative_cell");
-        // 超強化セルは専用のテクスチャを持たず、強化セルの絵を借りる。
+        // 超強化セルは専用のテクスチャを持たず、強化セルの絵を借りる
         withExistingParent("ultra_creative_cell", mcLoc("item/generated"))
                 .texture("layer0", modLoc("item/creative_cell"));
 
@@ -201,7 +201,7 @@ public class ModItemModelProvider extends ItemModelProvider {
 
         getBuilder("quantum_cpu").parent(new ModelFile.UncheckedModelFile(
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/quantum_cpu")));
-        // 実験用CPUは、標準missing-textureモデルをアイテム側でも共有する。
+        // 実験用CPUは、標準missing-textureモデルをアイテム側でも共有する
         getBuilder("big_integer_cpu").parent(new ModelFile.UncheckedModelFile(
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/big_integer_cpu")));
         getBuilder("improved_charger").parent(new ModelFile.UncheckedModelFile(
@@ -210,10 +210,12 @@ public class ModItemModelProvider extends ItemModelProvider {
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/insane_interface")));
         getBuilder("insane_pattern_provider").parent(new ModelFile.UncheckedModelFile(
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/insane_pattern_provider")));
+        getBuilder("gamertaikun_doll").parent(new ModelFile.UncheckedModelFile(
+                ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/gamertaikun_doll")));
 
-        // ケーブル版 (プレート) の手持ちモデル。AE2 の部品アイテムの形をそのまま継承し、
-        // 正面のテクスチャだけこちらのものに差し替える。
-        // ワールドに置いたときの見た目は models/part/*_base.json (手書き) が担当する。
+        // ケーブル版のプレートの手持ちモデル。AE2の部品アイテムの形をそのまま継承し、
+        // 正面のテクスチャだけこちらのものに差し替える
+        // ワールドに置いたときの見た目はmodels/part/*_base.jsonが担当する。手書きである
         partItem("insane_interface_part", "insane_interface",
                 //? if >=1.21 {
                 "ae2:part/interface_sides", "ae2:part/interface_back");
@@ -227,28 +229,28 @@ public class ModItemModelProvider extends ItemModelProvider {
                 /*mega("ae2", "part/pattern_provider_sides"), mega("ae2", "part/pattern_provider_back"));
                 *///?}
 
-        // 超次元 ME ケーブルの手持ちモデル (17 色)。
+        // 超次元MEケーブルの手持ちモデル。17色ある
         //
-        // 形は AE2 の<b>スマートケーブル</b>のアイテムモデル (細い) をそのまま継承し、
-        // 帯だけ<b>高密度</b>スマートケーブルのものに差し替える。
+        // 形はAE2のスマートケーブルのアイテムモデルを、細いままそのまま継承し、
+        // 帯だけ高密度スマートケーブルのものに差し替える
         // 「高密度の帯を細いケーブルに巻いてある」= このケーブルそのものの説明になっていて、
-        // AE2 のスマートケーブル (帯が違う) とも高密度ケーブル (太い) とも見分けが付く。
+        // AE2のスマートケーブルとは帯が違い、高密度ケーブルとは太さが違うので見分けが付く
         //
-        // <b>テクスチャは 3 枚とも insaneae 側にコピーしてある</b>
-        // ({@code tools/gen_network_textures.py})。親モデルが差す既定は ae2 のままなので、
-        // 帯 (base) だけでなく<b>目盛り 2 枚も明示的に上書きしないと ae2 のものが残る</b>。
-        // 以降は AE2 の更新に引きずられずに描き換えられる。
+        // テクスチャは3枚ともinsaneae側にコピーしてある
+        // ({@code tools/gen_network_textures.py})。親モデルが差す既定はae2のままなので、
+        // 帯 (base) だけでなく目盛り2枚も明示的に上書きしないとae2のものが残る
+        // 以降はAE2の更新に引きずられずに描き換えられる
         //
-        // <b>3 枚は同じ一族 (高密度スマート) から取ること。</b>帯は目盛りが乗る溝を
-        // 透明のまま空けてあるので、細いスマート側の目盛り (溝の位置が違う) と混ぜると
-        // 埋まらずに<b>手持ちの絵に穴が空く</b>。
+        // 3枚は同じ一族、高密度スマートから取ること。帯は目盛りが乗る溝を
+        // 透明のまま空けてあるので、細いスマート側の目盛りと混ぜると、溝の位置がずれる
+        // 埋まらずに手持ちの絵に穴が空く
         //
-        // <b>色は AE2 のものと同じにしてある。</b>色名がアイテム名になっている以上、
+        // 色はAE2のものと同じにしてある。色名がアイテム名になっている以上、
         // 色相を動かすと「白色の…」が白でなくなるうえ、ワールド上の色
-        // (AE2 の CableBuilder が AECableType と AEColor だけで決める) とも食い違う。
+        // AE2のCableBuilderがAECableTypeとAEColorだけで決める形とも食い違う
         //
-        // テクスチャのファイル名は AEColor の enum 名そのままで、fluix だけ transparent。
-        // registryPrefix (fluix) ではないので注意。
+        // テクスチャのファイル名はAEColorのenum名そのままで、fluixだけtransparent
+        // registryPrefix (fluix) ではないので注意
         for (AEColor color : AEColor.values()) {
             withExistingParent(color.registryPrefix + "_hyper_cable",
                     mega("ae2", "item/smart_cable_base"))
@@ -257,11 +259,11 @@ public class ModItemModelProvider extends ItemModelProvider {
                     .texture("channelsEven", hyperCableTexture("channels_10"));
         }
 
-        // 圧縮 ME 高密度スマートケーブルの手持ちモデル (17 色)。組み方は上と同じで、
-        // テクスチャだけ<b>枠を明るくした版</b>を差す。同じ下敷きから作っているので、
-        // ここを hyper と同じにすると<b>2 本の見分けが付かなくなる</b>
-        // (ワールド上はどちらも AE2 のスマートケーブルの絵になるため、
-        // 見分けられるのは手持ちの絵だけ)。
+        // 圧縮ME高密度スマートケーブルの手持ちモデル。17色あり、組み方は上と同じで、
+        // テクスチャだけ枠を明るくした版を差す。同じ下敷きから作っているので、
+        // ここをhyperと同じにすると2本の見分けが付かなくなる
+        // ワールド上はどちらもAE2のスマートケーブルの絵になるため、
+        // 見分けられるのは手持ちの絵だけ)
         for (AEColor color : AEColor.values()) {
             withExistingParent(color.registryPrefix + "_compressed_dense_cable",
                     mega("ae2", "item/smart_cable_base"))
@@ -288,9 +290,9 @@ public class ModItemModelProvider extends ItemModelProvider {
     /**
      * エネルギーセルのアイテムモデル。
      *
-     * <p>AE2 は {@code EnergyCellBlockItem} を registry から拾って
-     * {@code ae2:fill_level} (現在値 / 最大値) を登録するので、
-     * ブロックと同じ 5 段階のモデルを override で切り替えれば残量が見た目に出る。</p>
+     * <p>AE2は {@code EnergyCellBlockItem} をregistryから拾って
+     * {@code ae2:fill_level}を登録し、現在値と最大値を渡すので、
+     * ブロックと同じ5段階のモデルをoverrideで切り替えれば残量が見た目に出る。</p>
      */
     private void energyCell(InsaneEnergyCellTier tier) {
         ItemModelBuilder builder = getBuilder(tier.id()).parent(energyCellModel(tier, 0));
@@ -307,15 +309,15 @@ public class ModItemModelProvider extends ItemModelProvider {
                 InsaneAE.MODID, ModBlockStateProvider.energyCellModelPath(tier, fullness)));
     }
     /**
-     * ケーブル版 (プレート) の手持ちモデル。
+     * ケーブル版のプレートの手持ちモデル。
      *
-     * <p>親は AE2 のインターフェイス部品 ({@code ae2:item/cable_interface})。パターンプロバイダ部品も
+     * <p>親はAE2のインターフェイス部品 ({@code ae2:item/cable_interface})。パターンプロバイダ部品も
      * これを親にしてテクスチャだけ差し替えているので、こちらも同じやり方に揃える。</p>
      *
-     * @param name        アイテムの登録名
-     * @param blockTexture 正面に貼るブロックテクスチャ ({@code insaneae:block/} 以下)
-     * @param sides       側面のテクスチャ (AE2 のものを借りる)
-     * @param back        背面のテクスチャ (同上)
+     * @param nameアイテムの登録名
+     * @param blockTexture正面に貼るブロックテクスチャ。{@code insaneae:block/}以下
+     * @param sides側面のテクスチャ。AE2のものを借りる
+     * @param back背面のテクスチャ。sidesと同じくAE2のものを借りる
      */
     //? if >=1.21 {
     private void partItem(String name, String blockTexture, String sides, String back) {
@@ -339,20 +341,20 @@ public class ModItemModelProvider extends ItemModelProvider {
     }
 
     /**
-     * ケーブル版アイテムの箱を 1 つ足す。
+     * ケーブル版アイテムの箱を1つ足す。
      *
-     * <p>形は {@code ae2:item/cable_interface} と同じだが、<b>正面の uv は差し替えてある</b>。
-     * AE2 の {@code part/interface} は部品用に描かれた絵で外周 2px が余白だが、
-     * こちらが借りるのは 16x16 のブロック面なので、AE2 と同じ uv で切ると絵が欠ける。
-     * ワールド側 ({@code models/part/*_base.json}) も同じ uv にしてあるので、
-     * <b>片方だけ変えないこと</b>。</p>
+     * <p>形は {@code ae2:item/cable_interface} と同じだが、正面のuvは差し替えてある。
+     * AE2の {@code part/interface} は部品用に描かれた絵で外周2pxが余白だが、
+     * こちらが借りるのは16x16のブロック面なので、AE2と同じuvで切ると絵が欠ける。
+     * ワールド側 ({@code models/part/*_base.json}) も同じuvにしてあるので、
+     * 片方だけ変えないこと。</p>
      */
     private static void partPlate(ItemModelBuilder builder,
             int fromX, int fromY, int fromZ, int toX, int toY, int toZ,
             float u0, float v0, float u1, float v1) {
-        // 正面以外は uv を書かない = バニラが箱の寸法からそのまま起こす。
-        // AE2 は側面用に細い帯を切り出しているが、こちらは借り物のテクスチャなので
-        // 自動で十分 (どのみち帯 1px ぶんしか見えない)。
+        // 正面以外はuvを書かない = バニラが箱の寸法からそのまま起こす
+        // AE2は側面用に細い帯を切り出しているが、こちらは借り物のテクスチャなので
+        // 自動で十分。どのみち帯1pxぶんしか見えない
         builder.element()
                 .from(fromX, fromY, fromZ).to(toX, toY, toZ)
                 .face(Direction.NORTH).uvs(u0, v0, u1, v1).texture("#front").end()
@@ -373,12 +375,12 @@ public class ModItemModelProvider extends ItemModelProvider {
         return mega(InsaneAE.MODID, "item/cell_component_" + tier);
     }
 
-    /** 同上、通常セルの階層色レイヤ (ハウジングの窓と左面の帯だけを描いたもの)。 */
+    /** 同上、通常セルの階層色レイヤ。ハウジングの窓と左面の帯だけを描いたもの。 */
     private static ResourceLocation standardCell(String tier) {
         return mega(InsaneAE.MODID, "item/cell/standard/storage_cell_" + tier);
     }
 
-    /** 同上、ポータブルセルの側面 (階層色の帯だけを描いたレイヤ)。 */
+    /** 同上、ポータブルセルの側面。階層色の帯だけを描いたレイヤ。 */
     private static ResourceLocation portableSide(String tier) {
         return mega(InsaneAE.MODID, "item/cell/portable/portable_cell_side_" + tier);
     }

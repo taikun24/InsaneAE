@@ -12,12 +12,12 @@ import com.glodblock.github.appflux.common.items.ItemFECell;
 *///?}
 
 /**
- * 1G 以上の FE ストレージセル。
+ * 1G以上のFEストレージセル。
  *
- * <p>AppliedFlux の {@link ItemFECell} をそのまま継承しているので、中身の出し入れ・ツールチップ・
- * 分解・FE の capability は AppliedFlux の実装 ({@code FECellHandler} / {@code FluxCellInventory})
+ * <p>AppliedFluxの {@link ItemFECell} をそのまま継承しているので、中身の出し入れ・ツールチップ・
+ * 分解・FEのcapabilityはAppliedFluxの実装 ({@code FECellHandler} / {@code FluxCellInventory})
  * が働く。こちらで変えているのは容量と表示名だけ。容量は {@code int} (KiB) では足りないので
- * コンストラクタには 0 を渡し、{@link #getBytes} を上書きして long で返す。</p>
+ * コンストラクタには0を渡し、{@link #getBytes} を上書きしてlongで返す。</p>
  */
 //? if >=1.21 {
 public class InsaneFECellItem extends ItemFECell {
@@ -42,7 +42,7 @@ public class InsaneFECellItem extends ItemFECell {
         return FluxCapacity.clampBytes(totalBytes);
     }
 
-    /** 表示名は階層ごとの lang キーではなく「書式キー + 階層ラベル」で作る。 */
+    /** 表示名は階層ごとのlangキーではなく「書式キー + 階層ラベル」で作る。 */
     @Override
     public Component getName(ItemStack stack) {
         return TieredNames.of(nameKey, tierLabel);

@@ -5,7 +5,7 @@ import appeng.crafting.execution.ElapsedTimeTracker;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-/** 進捗表示用のカウンタ。まとめ処理でも AE2 と同じだけ加算しておく。 */
+/** 進捗表示用のカウンタ。まとめ処理でもAE2と同じだけ加算しておく。 */
 @Mixin(value = ElapsedTimeTracker.class, remap = false)
 public interface ElapsedTimeTrackerInvoker {
 

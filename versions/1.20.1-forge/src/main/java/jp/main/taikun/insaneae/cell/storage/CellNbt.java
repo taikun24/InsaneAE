@@ -17,19 +17,19 @@ import java.util.PriorityQueue;
 import java.util.UUID;
 
 /**
- * UUID で管理しているセルの、アイテムの NBT に残す分。
+ * UUIDで管理しているセルの、アイテムのNBTに残す分。
  *
- * <p>総数は AE2 と同じ {@code ic} に書く (AE2 のコンストラクタがそこから読むので、
+ * <p>総数はAE2と同じ{@code ic}に書く。AE2のコンストラクタがそこから読むので、
  * クライアントでも使用バイトがそのまま合う)。種類数と中身の先頭 {@link #PREVIEW_SIZE} 件は
- * {@code insaneae_cell_summary} に持たせる。AE2 のツールチップは中身を
- * {@code tooltipMaxCellContentShown} (既定 5) 件まで描き、それより多いと「…」を付けるので、
+ * {@code insaneae_cell_summary} に持たせる。AE2のツールチップは中身を
+ * {@code tooltipMaxCellContentShown}、既定では5件まで描き、それより多いと「…」を付けるので、
  * その判定が付くよう既定値より少し多めにしている。</p>
  */
 public final class CellNbt {
 
     public static final String ID = "insaneae_cell_id";
     public static final String SUMMARY = "insaneae_cell_summary";
-    /** AE2 の {@code BasicCellInventory} と同じタグ名。 */
+    /** AE2の {@code BasicCellInventory} と同じタグ名。 */
     public static final String KEYS = "keys";
     public static final String AMOUNTS = "amts";
     public static final String ITEM_COUNT = "ic";
@@ -47,7 +47,7 @@ public final class CellNbt {
         return tag != null && tag.hasUUID(ID) ? tag.getUUID(ID) : null;
     }
 
-    /** 保存されている種類数。UUID の無いセルは AE2 と同じく {@code amts} の長さ。 */
+    /** 保存されている種類数。UUIDの無いセルはAE2と同じく {@code amts} の長さ。 */
     public static long storedTypes(ItemStack stack) {
         CompoundTag tag = stack.getTag();
         if (tag == null) {
@@ -59,7 +59,7 @@ public final class CellNbt {
         return tag.getLongArray(AMOUNTS).length;
     }
 
-    /** 要約の中身 (量の多い順の先頭だけ)。読み取り専用のときの在庫として使う。 */
+    /** 要約の中身。量の多い順の先頭だけで、読み取り専用のときの在庫として使う。 */
     public static List<GenericStack> preview(ItemStack stack) {
         CompoundTag tag = stack.getTag();
         if (tag == null) {
@@ -77,7 +77,7 @@ public final class CellNbt {
     }
 
     public static CompoundTag summary(Object2LongMap<AEKey> amounts) {
-        // 先頭 PREVIEW_SIZE 件だけを残す。全体を並べ替えると数億種のセルで重い。
+        // 先頭PREVIEW_SIZE件だけを残す。全体を並べ替えると数億種のセルで重い
         PriorityQueue<GenericStack> top = new PriorityQueue<>(PREVIEW_SIZE + 1,
                 Comparator.comparingLong(GenericStack::amount));
         int types = 0;

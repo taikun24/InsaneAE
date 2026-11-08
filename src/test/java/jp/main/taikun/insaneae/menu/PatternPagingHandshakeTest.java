@@ -12,13 +12,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * メニュー組み立て中だけパターン枠を窓にすり替える受け渡しの検証。
  *
- * <p>ここが壊れると Quantum CPU の GUI を開いた人 1 人につき毎 tick 1620 枠ぶんの
- * スロット同期がサーバに乗る (Mixin で窓に差し替えると ExtendedAE Plus 1.6 の
+ * <p>ここが壊れるとQuantum CPUのGUIを開いた人1人につき毎tick 1620枠ぶんの
+ * スロット同期がサーバに乗る。Mixinで窓に差し替えるとExtendedAE Plus 1.6の
  * {@code @Redirect} に取られて外れるため、受け渡しで行っている)。
  * 窓の有効範囲が広がりすぎていないかも見る。</p>
  *
- * <p><b>本物のインベントリは用意しない。</b>単体テストのクラスパスに Minecraft 本体は無く、
- * {@code InternalInventory} を実装 (や {@code Proxy} 化) しようとすると
+ * <p>本物のインベントリは用意しない。単体テストのクラスパスにMinecraft本体は無く、
+ * {@code InternalInventory}を実装したり、{@code Proxy}化したりしようとすると
  * {@code ItemStack} の初期化とレジストリのブートストラップが必要になる。
  * この受け渡しは中身を一切触らないので {@code null} を通しても意味は変わらない。
  * 見るのは「窓 ({@link PagedPatternInventory}) を返したか、渡されたものをそのまま返したか」だけ。</p>
@@ -39,7 +39,7 @@ class PatternPagingHandshakeTest {
 
         InternalInventory first = PatternPagingHandshake.windowFor(host, null);
         assertTrue(first instanceof PagedPatternInventory);
-        // 同じ組み立ての 2 回目は同じ窓 (AE2 が何度呼んでもスロットは 1 セット)。
+        // 同じ組み立ての2回目は同じ窓。AE2が何度呼んでもスロットは1セット
         assertSame(first, PatternPagingHandshake.windowFor(host, null));
 
         assertSame(first, PatternPagingHandshake.finish());
@@ -49,11 +49,11 @@ class PatternPagingHandshakeTest {
     void nothingIsPagedOutsideMenuConstruction() {
         Object host = host();
 
-        // begin していない = 通常のパターン出し入れ。渡したものがそのまま返る。
+        // beginしていない = 通常のパターン出し入れ。渡したものがそのまま返る
         assertNull(PatternPagingHandshake.windowFor(host, null));
         assertNull(PatternPagingHandshake.finish());
 
-        // 組み立てが終わった後も全枠に戻る。
+        // 組み立てが終わった後も全枠に戻る
         PatternPagingHandshake.begin(host, true);
         PatternPagingHandshake.windowFor(host, null);
         PatternPagingHandshake.finish();
@@ -86,7 +86,7 @@ class PatternPagingHandshakeTest {
         PatternPagingHandshake.begin(first, true);
         InternalInventory abandoned = PatternPagingHandshake.windowFor(first, null);
 
-        // 前のコンストラクタが例外で抜けて finish() を呼べなかった場合。
+        // 前のコンストラクタが例外で抜けてfinish() を呼べなかった場合
         PatternPagingHandshake.begin(second, true);
         InternalInventory fresh = PatternPagingHandshake.windowFor(second, null);
         assertNotSame(abandoned, fresh);
@@ -94,7 +94,7 @@ class PatternPagingHandshakeTest {
     }
 
     /**
-     * ホストの代わり。{@link PatternPagingHandshake} は<b>同一性しか見ない</b>ので、
+     * ホストの代わり。{@link PatternPagingHandshake} は同一性しか見ないので、
      * {@code PatternProviderLogicHost} を用意する必要は無い。
      */
     private static Object host() {

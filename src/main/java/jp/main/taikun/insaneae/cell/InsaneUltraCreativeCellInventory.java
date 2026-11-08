@@ -10,30 +10,30 @@ import net.minecraft.world.item.ItemStack;
 /**
  * 超強化クリエイティブセルの中身。
  *
- * <p>AE2 に見せる在庫は親と同じ {@code Long.MAX_VALUE} ({@code KeyCounter} が long なので
- * これ以上は表現できない)。<b>BigInteger の在庫を名乗る窓口</b>は ACO が居るときだけ
- * Mixin で生える ({@code mixin/aco/UltraCreativeCellExactStorageMixin})。</p>
+ * <p>AE2に見せる在庫は親と同じ{@code Long.MAX_VALUE}で、{@code KeyCounter}がlongなので
+ * これ以上は表現できない)。BigIntegerの在庫を名乗る窓口はACOが居るときだけ
+ * Mixinで生える ({@code mixin/aco/UltraCreativeCellExactStorageMixin})。</p>
  *
  * <p>量は {@link AcoExactLimits#advertisableBits()} から決める。
- * <b>固定値にしてはいけない</b> — ACO の計画エンジンが扱える桁は
- * {@code ACOConfig.bigIntegerMaximumBits} (上限 54,427 bit) で、
- * {@code api.contract.ExactCountLimits} の 1,048,576 bit とは<b>別物</b>。
+ * 固定値にしてはいけない — ACOの計画エンジンが扱える桁は
+ * {@code ACOConfig.bigIntegerMaximumBits}が上限の54,427 bitで、
+ * {@code api.contract.ExactCountLimits} の1,048,576 bitとは別物。
  * 大きすぎる在庫を名乗ると計算が例外で終わり、このセルを入れただけで
  * あらゆるクラフトが {@code WidePlanUnavailableException} になる。</p>
  *
- * <h2>在庫のマップは「生きた 1 つ」でなければならない</h2>
- * <p>ACO の {@code ExactNetworkStorageBridge} は、シミュレーション時に受け取ったマップと
- * コミット時に受け取ったマップを<b>参照の同一性 ({@code ==}) で比べる</b>。そして
- * <b>そのマップを直接書き換えて</b>在庫を減らす (相手は ExtendedAE Plus の実セルなので、
+ * <h2>在庫のマップは「生きた1つ」でなければならない</h2>
+ * <p>ACOの {@code ExactNetworkStorageBridge} は、シミュレーション時に受け取ったマップと
+ * コミット時に受け取ったマップを参照の同一性 ({@code ==}) で比べる。そして
+ * そのマップを直接書き換えて在庫を減らす。相手はExtendedAE Plusの実セルなので、
  * マップがセルの中身そのものになっている)。
  *
  * <p>だから毎回コピーを返してはいけない。返すと必ず
  * {@code exact cell storage map changed between simulation and commit} で
- * <b>取引ごと巻き戻される</b> — クラフトは進まず、警告だけが延々と出る。
- * 合計と種類数も、向こうの setter で書かれた値をそのまま覚えておく必要がある
- * (こちらも {@code beforeTotal} / {@code beforeTypes} と突き合わされる)。</p>
+ * 取引ごと巻き戻される — クラフトは進まず、警告だけが延々と出る。
+ * 合計と種類数も、向こうのsetterで書かれた値をそのまま覚えておく必要がある
+ * こちらも{@code beforeTotal}と{@code beforeTypes}と突き合わされる。</p>
  *
- * <p>クリエイティブなので減っても構わない。初期値が 2^27212 なので、
+ * <p>クリエイティブなので減っても構わない。初期値が2^27212なので、
  * 減らし切ることは現実的に起こらないし、セルを入れ直せば元に戻る。</p>
  */
 public class InsaneUltraCreativeCellInventory extends InsaneCreativeCellInventory {
@@ -42,7 +42,7 @@ public class InsaneUltraCreativeCellInventory extends InsaneCreativeCellInventor
     private static volatile int cachedBits = -1;
     private static volatile BigInteger cachedAmount = BigInteger.ZERO;
 
-    /** ACO へ渡す<b>生きたマップ</b>。同じインスタンスを返し続けること。 */
+    /** ACOへ渡す生きたマップ。同じインスタンスを返し続けること。 */
     private Object2ObjectMap<AEKey, BigInteger> exactAmounts;
     private BigInteger exactTotal;
     private int exactTypeCount;
@@ -52,10 +52,10 @@ public class InsaneUltraCreativeCellInventory extends InsaneCreativeCellInventor
     }
 
     /**
-     * 1 種あたりの在庫量。ACO が扱える桁の<b>半分</b>を使う。
+     * 1種あたりの在庫量。ACOが扱える桁の半分を使う。
      *
-     * <p>既定 (54,427 bit) なら 2^27212 — 10 進で 8,192 桁ほど。
-     * 922 京 (19 桁) とは比べものにならない大きさで、なお上限まで同じだけ余地がある。</p>
+     * <p>既定の54,427 bitなら2^27212で、10進で8,192桁ほど。
+     * 922京、19桁とは比べものにならない大きさで、なお上限まで同じだけ余地がある。</p>
      */
     public static BigInteger exactAmount() {
         int bits = AcoExactLimits.advertisableBits();
@@ -67,9 +67,9 @@ public class InsaneUltraCreativeCellInventory extends InsaneCreativeCellInventor
     }
 
     /**
-     * ACO 連携の Mixin から呼ぶ。<b>毎回まったく同じインスタンス</b>を返す。
+     * ACO連携のMixinから呼ぶ。毎回まったく同じインスタンスを返す。
      *
-     * <p>ここでコピーを返すと ACO の同一性検査に落ちる (クラス javadoc 参照)。</p>
+     * <p>ここでコピーを返すとACOの同一性検査に落ちる。クラスのJavadocを参照。</p>
      */
     public synchronized Object2ObjectMap<AEKey, BigInteger> insaneae$exactAmounts() {
         if (exactAmounts == null) {
@@ -85,7 +85,7 @@ public class InsaneUltraCreativeCellInventory extends InsaneCreativeCellInventor
         return exactAmounts;
     }
 
-    /** 種類数。ACO が書いた値をそのまま覚えておく。 */
+    /** 種類数。ACOが書いた値をそのまま覚えておく。 */
     public synchronized int insaneae$exactTypeCount() {
         insaneae$exactAmounts();
         return exactTypeCount;

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 
 class BulkCraftingProviderAdaptersTest {
 
-    /** 他 Mod のブロックエンティティ役。InsaneAE の型は実装していない。 */
+    /** 他Modのブロックエンティティ役。InsaneAEの型は実装していない。 */
     private static class ForeignProvider implements ICraftingProvider {
         @Override
         public List<IPatternDetails> getAvailablePatterns() {
@@ -80,7 +80,7 @@ class BulkCraftingProviderAdaptersTest {
         BulkCraftingHandler first = BulkCraftingProviderAdapters.find(provider);
         assertNotNull(first);
         assertSame(provider, ((Handler) first).owner());
-        // 窓の間の清算は同じ相手を見分けるので、同じプロバイダには同じアダプタを返す。
+        // 窓の間の清算は同じ相手を見分けるので、同じプロバイダには同じアダプタを返す
         assertSame(first, BulkCraftingProviderAdapters.find(provider));
         assertEquals(1, created.get());
 
@@ -92,7 +92,7 @@ class BulkCraftingProviderAdaptersTest {
         BulkCraftingProviderAdapters.register(ForeignProvider.class, Handler::new);
         BulkCraftingProviderAdapters.register(Unrelated.class, provider -> null);
 
-        // 子クラスの登録が null を返す = そのプロバイダは通常の経路のまま。
+        // 子クラスの登録がnullを返す = そのプロバイダは通常の経路のまま
         assertNull(BulkCraftingProviderAdapters.find(new Unrelated()));
         assertNotNull(BulkCraftingProviderAdapters.find(new ForeignChild()));
     }

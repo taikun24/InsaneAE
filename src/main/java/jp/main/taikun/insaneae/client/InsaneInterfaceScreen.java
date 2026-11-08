@@ -25,23 +25,23 @@ import net.minecraft.world.inventory.Slot;
 import java.util.List;
 
 /**
- * 超特大インターフェイスの画面。設定枠 81 + 在庫枠 81 を 9x3 ずつ 3 ページに分けて出す。
+ * 超特大インターフェイスの画面。設定枠81 + 在庫枠81を9x3ずつ3ページに分けて出す。
  *
- * <p>メニューには<b>全枠ぶんのスロットが並んでいる</b>ので、ページ送りは
- * 「表示するスロットの位置を決めて、残りを非表示にする」だけの<b>クライアント処理</b>
- * (サーバとのやり取りは無い)。Quantum CPU のパターン枠と違って 162 枠なら
+ * <p>メニューには全枠ぶんのスロットが並んでいるので、ページ送りは
+ * 「表示するスロットの位置を決めて、残りを非表示にする」だけのクライアント処理
+ * サーバとのやり取りは無い。Quantum CPUのパターン枠と違って162枠なら
  * バニラの差分同期で十分間に合うため、サーバ側でページ分割する必要が無い。</p>
  *
  * <h2>ストック数の設定</h2>
  *
- * <p>AE2 の ME インターフェイスは<b>設定枠 1 つにつき歯車ボタン 1 つ</b>を枠の真上に並べるが、
- * 9x9 では並べる場所が無い (ボタンの行を挟むと画面が 1.5 倍の高さになる)。
- * 代わりに<b>歯車ボタン 1 つをモード切り替え</b>にしてあり、押してから設定枠をクリックすると
- * AE2 と同じストック数入力画面が開く。</p>
+ * <p>AE2のMEインターフェイスは設定枠1つにつき歯車ボタン1つを枠の真上に並べるが、
+ * 9x9では並べる場所が無い。ボタンの行を挟むと画面が1.5倍の高さになるため。
+ * 代わりに歯車ボタン1つをモード切り替えにしてあり、押してから設定枠をクリックすると
+ * AE2と同じストック数入力画面が開く。</p>
  *
  * <p>レイアウトは {@code assets/ae2/screens/insaneae/insane_interface.json}
- * ({@code StyleManager} が ae2 名前空間固定で読むのでそちらに置いてある)。
- * 下の座標定数は JSON の CONFIG / STORAGE と揃えること。</p>
+ * {@code StyleManager}がae2名前空間固定で読むので、そちらに置いてある。
+ * 下の座標定数はJSONのCONFIG / STORAGEと揃えること。</p>
  */
 public class InsaneInterfaceScreen extends UpgradeableScreen<InsaneInterfaceMenu> {
 
@@ -50,7 +50,7 @@ public class InsaneInterfaceScreen extends UpgradeableScreen<InsaneInterfaceMenu
     private static final int PAGES = InsaneInterfaceBlockEntity.PAGES;
     private static final int ROWS_PER_PAGE = InsaneInterfaceBlockEntity.ROWS_PER_PAGE;
 
-    /** スロットの左上と間隔 (insane_interface.json の CONFIG / STORAGE と同じ値)。 */
+    /** スロットの左上と間隔。insane_interface.jsonのCONFIG / STORAGEと同じ値。 */
     private static final int GRID_LEFT = 8;
     private static final int CONFIG_TOP = 32;
     private static final int STORAGE_TOP = 102;
@@ -67,8 +67,8 @@ public class InsaneInterfaceScreen extends UpgradeableScreen<InsaneInterfaceMenu
             ScreenStyle style) {
         super(menu, playerInventory, title, style);
 
-        // ウィジェットの追加は init() ではなくコンストラクタで行うこと
-        // (WidgetContainer#add は同じ ID の二重登録で落ちる。init は画面サイズ変更のたびに走る)。
+        // ウィジェットの追加はinit() ではなくコンストラクタで行うこと
+        // WidgetContainer#addは同じIDの二重登録で落ちる。initは画面サイズ変更のたびに走る
         fuzzyMode = addToLeftToolbar(new ServerSettingToggleButton<>(Settings.FUZZY_MODE, FuzzyMode.IGNORE_ALL));
         widgets.addOpenPriorityButton();
 
@@ -85,7 +85,7 @@ public class InsaneInterfaceScreen extends UpgradeableScreen<InsaneInterfaceMenu
     @Override
     protected void init() {
         super.init();
-        // super.init() がスタイルどおりに全スロットを並べてしまうので、ここで並べ直す。
+        // super.init() がスタイルどおりに全スロットを並べてしまうので、ここで並べ直す
         layoutSlots();
     }
 
@@ -113,12 +113,12 @@ public class InsaneInterfaceScreen extends UpgradeableScreen<InsaneInterfaceMenu
             boolean visible = inPage >= 0 && inPage < PER_PAGE;
 
             if (slot instanceof AppEngSlot appEngSlot) {
-                // setSlotEnabled ではなく setActive。
-                // 無効化すると mayPlace/mayPickup まで殺してしまう。
+                // setSlotEnabledではなくsetActive
+                // 無効化するとmayPlace/mayPickupまで殺してしまう
                 appEngSlot.setActive(visible);
             }
             if (visible) {
-                // Slot#x/y は final なので Mixin のアクセサ経由で書く (AE2 は AT で外している)。
+                // Slot#x/yはfinalなのでMixinのアクセサ経由で書く。AE2はATで外している
                 ((SlotAccessor) slot).insaneae$setX(GRID_LEFT + inPage % COLUMNS * SLOT_SIZE);
                 ((SlotAccessor) slot).insaneae$setY(top + inPage / COLUMNS * SLOT_SIZE);
             }
@@ -126,7 +126,7 @@ public class InsaneInterfaceScreen extends UpgradeableScreen<InsaneInterfaceMenu
     }
 
     @Override
-    // ページ送りは縦スクロール (wheelDelta) だけを見る。横スクロール (scrollX) は使わない。
+    // ページ送りは縦スクロール (wheelDelta) だけを見る。横スクロール (scrollX) は使わない
     //? if >=1.21 {
     public boolean mouseScrolled(double x, double y, double scrollX, double wheelDelta) {
         if (super.mouseScrolled(x, y, scrollX, wheelDelta)) {
@@ -157,7 +157,7 @@ public class InsaneInterfaceScreen extends UpgradeableScreen<InsaneInterfaceMenu
     // -------------------------------------------------------------- ストック数の設定
 
     /**
-     * ストック数モードのときは、設定枠のクリックを<b>フィルタの編集ではなく</b>
+     * ストック数モードのときは、設定枠のクリックをフィルタの編集ではなく
      * ストック数入力画面 ({@code SetStockAmountMenu}) に回す。
      */
     @Override
@@ -186,7 +186,7 @@ public class InsaneInterfaceScreen extends UpgradeableScreen<InsaneInterfaceMenu
 
     /**
      * 背景。{@code generatedBackground} は枠しか描かないので、スロットのくぼみは自分で敷く
-     * (専用の背景テクスチャを持たないぶん、ページ送りで枠数が変わっても崩れない)。
+     * 専用の背景テクスチャを持たないぶん、ページ送りで枠数が変わっても崩れない。
      */
     @Override
     public void drawBG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY,
@@ -194,7 +194,7 @@ public class InsaneInterfaceScreen extends UpgradeableScreen<InsaneInterfaceMenu
         super.drawBG(guiGraphics, offsetX, offsetY, mouseX, mouseY, partialTicks);
 
         for (Slot slot : menu.slots) {
-            // アップグレードとツールボックスは専用パネルが自前の枠を描くので敷かない。
+            // アップグレードとツールボックスは専用パネルが自前の枠を描くので敷かない
             SlotSemantic semantic = menu.getSlotSemantic(slot);
             if (slot.isActive() && semantic != SlotSemantics.UPGRADE && semantic != SlotSemantics.TOOLBOX) {
                 Icon.SLOT_BACKGROUND.getBlitter()
@@ -227,7 +227,7 @@ public class InsaneInterfaceScreen extends UpgradeableScreen<InsaneInterfaceMenu
         private boolean selected;
 
         private AmountModeButton() {
-            // 押した本人が引数で来るので、自分のフィールドを触るのに外の参照が要らない。
+            // 押した本人が引数で来るので、自分のフィールドを触るのに外の参照が要らない
             super(btn -> ((AmountModeButton) btn).selected = !((AmountModeButton) btn).selected);
             setMessage(Component.translatable("gui.insaneae.insane_interface.set_amount_mode"));
         }

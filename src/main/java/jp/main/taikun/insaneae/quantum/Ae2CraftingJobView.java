@@ -12,10 +12,10 @@ import appeng.api.networking.security.IActionSource;
 import jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership;
 
 /**
- * AE2 本体のクラフト CPU 用の {@link CraftingJobView}。
+ * AE2本体のクラフトCPU用の {@link CraftingJobView}。
  *
- * <p>こちらはコンパイル時に型が分かるので、フィールドへは Mixin のアクセサで直接届く
- * (反射は使わない)。</p>
+ * <p>こちらはコンパイル時に型が分かるので、フィールドへはMixinのアクセサで直接届く
+ * 反射は使わない。</p>
  */
 public final class Ae2CraftingJobView implements CraftingJobView {
 
@@ -32,7 +32,7 @@ public final class Ae2CraftingJobView implements CraftingJobView {
         this.cluster = cluster;
     }
 
-    /** ジョブが無ければ null (まとめ処理は何もしない)。 */
+    /** ジョブが無ければnull。まとめ処理は何もしない。 */
     public static CraftingJobView of(ExecutingCraftingJob job, ListCraftingInventory inventory,
             CraftingCPUCluster cluster) {
         return job == null ? null : new Ae2CraftingJobView(job, inventory, cluster);

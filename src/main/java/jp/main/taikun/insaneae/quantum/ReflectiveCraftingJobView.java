@@ -12,30 +12,30 @@ import java.util.concurrent.ConcurrentHashMap;
 import jp.main.taikun.insaneae.integration.aco.AcoExactJobOwnership;
 
 /**
- * <b>AE2 のクラフト CPU を複製したクラス</b>向けの {@link CraftingJobView}。
+ * AE2のクラフトCPUを複製したクラス向けの {@link CraftingJobView}。
  *
- * <p>Advanced AE の {@code AdvCraftingCPULogic} のようなアドオンの CPU は、AE2 の
+ * <p>Advanced AEの {@code AdvCraftingCPULogic} のようなアドオンのCPUは、AE2の
  * {@code CraftingCpuLogic} をほぼそのまま写したもので、抱えているジョブも
- * <b>同名・同構造だが別のクラス</b>になっている。こちらからはその型を名指しできない
- * (アドオンをコンパイル依存に足したくないし、足したところで Mod ごとに増える) ので、
- * <b>フィールド名で辿る</b>。</p>
+ * 同名・同構造だが別のクラスになっている。こちらからはその型を名指しできない
+ * アドオンをコンパイル依存に足したくないし、足したところでModごとに増えるので、
+ * フィールド名で辿る。</p>
  *
  * <h2>反射で困らない理由</h2>
- * <p>解決は<b>クラスごとに 1 回だけ</b>で、以降は {@link Field} を使い回す。
- * 実際に読むのは {@code executeCrafting} 1 回につき数フィールドなので、
- * <b>CPU 1 台につき 1 tick に数回</b>にしかならない。置き換えようとしているのが
- * 「1 クラフトごとの材料取り出しと組み立て」であることを思えば誤差でしかない。</p>
+ * <p>解決はクラスごとに1回だけで、以降は {@link Field} を使い回す。
+ * 実際に読むのは {@code executeCrafting} 1回につき数フィールドなので、
+ * CPU 1台につき1 tickに数回にしかならない。置き換えようとしているのが
+ * 「1クラフトごとの材料取り出しと組み立て」であることを思えば誤差でしかない。</p>
  *
  * <h2>見つからなかったら何もしない</h2>
- * <p>フィールド構成が想定と違えば {@link #of} が null を返し、まとめ処理は<b>丸ごと諦めて</b>
- * その CPU 本来の 1 回ずつの処理に任せる。壊れるより遅いほうがましなので、
+ * <p>フィールド構成が想定と違えば {@link #of} がnullを返し、まとめ処理は丸ごと諦めて
+ * そのCPU本来の1回ずつの処理に任せる。壊れるより遅いほうがましなので、
  * 推測で動かすことはしない。</p>
  */
 public final class ReflectiveCraftingJobView implements CraftingJobView {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** 解決に失敗したクラスもここに覚えて、毎 tick 反射で探し直さないようにする。 */
+    /** 解決に失敗したクラスもここに覚えて、毎tick反射で探し直さないようにする。 */
     private static final Map<Class<?>, Layout> LAYOUTS = new ConcurrentHashMap<>();
     private static final Layout UNSUPPORTED = new Layout();
 
@@ -50,10 +50,10 @@ public final class ReflectiveCraftingJobView implements CraftingJobView {
     }
 
     /**
-     * CPU のロジックから窓口を作る。
+     * CPUのロジックから窓口を作る。
      *
-     * @param logic 複製された {@code CraftingCpuLogic} 相当のインスタンス
-     * @return 使えなければ null (ジョブが無い / 構造が想定と違う)
+     * @param logic複製された {@code CraftingCpuLogic} 相当のインスタンス
+     * @return使えなければnull。ジョブが無いか、構造が想定と違う
      */
     public static CraftingJobView of(Object logic) {
         if (logic == null) {
@@ -139,7 +139,7 @@ public final class ReflectiveCraftingJobView implements CraftingJobView {
 
     // ------------------------------------------------------------------ 解決
 
-    /** 1 つの CPU クラスについて解決済みのフィールド一式。 */
+    /** 1つのCPUクラスについて解決済みのフィールド一式。 */
     private static final class Layout {
 
         private Field job;
@@ -147,7 +147,7 @@ public final class ReflectiveCraftingJobView implements CraftingJobView {
         private Field tasks;
         private Field waitingFor;
         private Field timeTracker;
-        /** {@code markDirty()} を持っている相手。ロジック自身なら null。 */
+        /** {@code markDirty()} を持っている相手。ロジック自身ならnull。 */
         private Field markDirtyOwner;
         private Method markDirty;
         /** タスクの残り回数。値の実体を見るまで型が分からないので後から入れる。 */
@@ -162,10 +162,10 @@ public final class ReflectiveCraftingJobView implements CraftingJobView {
                 Class<?> jobClass = layout.job.getType();
                 layout.tasks = field(jobClass, "tasks", Map.class);
                 layout.waitingFor = field(jobClass, "waitingFor", ListCraftingInventory.class);
-                // 型は確かめない: Advanced AE は進捗カウンタまで自前のコピーで持っている
-                // (AE2 の ElapsedTimeTracker に限定すると AAE で丸ごと弾かれる)。
-                // 呼び方の差は TimeTrackerAdapter が吸収し、想定外の型でも加算を
-                // スキップするだけなので、ここで弾く必要が無い。
+                // 型は確かめない: Advanced AEは進捗カウンタまで自前のコピーで持っている
+                // AE2のElapsedTimeTrackerに限定するとAAEで丸ごと弾かれる
+                // 呼び方の差はTimeTrackerAdapterが吸収し、想定外の型でも加算を
+                // スキップするだけなので、ここで弾く必要が無い
                 layout.timeTracker = field(jobClass, "timeTracker", Object.class);
 
                 layout.resolveMarkDirty(logicClass);
@@ -179,8 +179,8 @@ public final class ReflectiveCraftingJobView implements CraftingJobView {
         }
 
         /**
-         * {@code markDirty()} の在処を探す。AE2 は {@code cluster}、Advanced AE は {@code cpu} と
-         * 名前が違うので、<b>名前ではなく「そのメソッドを持っているか」で探す</b>。
+         * {@code markDirty()} の在処を探す。AE2は {@code cluster}、Advanced AEは {@code cpu} と
+         * 名前が違うので、名前ではなく「そのメソッドを持っているか」で探す。
          */
         private void resolveMarkDirty(Class<?> logicClass) throws ReflectiveOperationException {
             for (Class<?> c = logicClass; c != null && c != Object.class; c = c.getSuperclass()) {
@@ -222,8 +222,8 @@ public final class ReflectiveCraftingJobView implements CraftingJobView {
         }
 
         /**
-         * 名前でフィールドを引く (継承をたどる)。{@code expected} が {@code Object} 以外なら
-         * 型も確かめる。<b>型が違うなら使わない</b>。
+         * 名前でフィールドを引く。継承をたどる。{@code expected}が{@code Object}以外なら
+         * 型も確かめる。型が違うなら使わない。
          * 名前だけ合っている無関係なフィールドを使うと、後で原因の分かりにくい不具合になる。
          */
         private static Field field(Class<?> owner, String name, Class<?> expected)

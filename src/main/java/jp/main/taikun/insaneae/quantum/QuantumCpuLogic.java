@@ -32,32 +32,32 @@ import java.util.Map;
 *///?}
 
 /**
- * Quantum CPU の頭脳。パターンプロバイダのロジックをそのまま使いつつ、
- * <b>クラフトテーブル用パターンだけは隣の機械に渡さず自分で組み立てる</b>。
+ * Quantum CPUの頭脳。パターンプロバイダのロジックをそのまま使いつつ、
+ * クラフトテーブル用パターンだけは隣の機械に渡さず自分で組み立てる。
  *
- * <h2>1 tick に何回組めるか</h2>
- * <p>AE2 のクラフト CPU は {@code pushPattern} を 1 クラフトにつき 1 回呼ぶ。
- * ここでは 1 tick あたりの受け入れ回数を {@link QuantumCpuBlockEntity#getCraftsPerTick()} で頭打ちにし、
- * 使い切ったら {@link #isBusy()} が true を返して CPU が他のプロバイダへ回るようにする。</p>
+ * <h2>1 tickに何回組めるか</h2>
+ * <p>AE2のクラフトCPUは {@code pushPattern} を1クラフトにつき1回呼ぶ。
+ * ここでは1 tickあたりの受け入れ回数を {@link QuantumCpuBlockEntity#getCraftsPerTick()} で頭打ちにし、
+ * 使い切ったら {@link #isBusy()} がtrueを返してCPUが他のプロバイダへ回るようにする。</p>
  *
  * <h2>重さ対策</h2>
- * <p>1 回ごとに真面目にレシピを回すと重いので、
- * <b>同じパターンに同じ材料が並んだ場合は最初の 1 回だけ実際に組み立て、
- * 以降は記憶した結果を使い回して個数を足すだけ</b>にしている
- * (記憶は<b>パターンごと</b>。1 枠しか持たないと、同時に走る小レシピが交互に来たときに
+ * <p>1回ごとに真面目にレシピを回すと重いので、
+ * 同じパターンに同じ材料が並んだ場合は最初の1回だけ実際に組み立て、
+ * 以降は記憶した結果を使い回して個数を足すだけにしている
+ * 記憶はパターンごと。1枠しか持たないと、同時に走る小レシピが交互に来たときに
  * 毎回無効化されて意味を成さない。{@link #assemblyCache} を参照)。
  * さらに完成品はその場でネットワークに入れず {@link QuantumCpuBlockEntity} 側に貯め、
- * <b>1 tick に 1 回だけまとめて挿入</b>する (ME への挿入が一番重いため)。</p>
+ * 1 tickに1回だけまとめて挿入する。MEへの挿入が一番重いため。</p>
  *
- * <p>1620 枠に耐えるためのパターン管理 (更新の 1 tick へのまとめ・ハッシュ集合での照合) は
+ * <p>1620枠に耐えるためのパターン管理、つまり更新の1 tickへのまとめとハッシュ集合での照合は
  * 特大パターンプロバイダーと共通で、{@link InsanePatternProviderLogic} にある。</p>
  *
  * <h2>加工パターンは受け付けない</h2>
  * <p>自分で組めるのはクラフトテーブル系のパターンだけなので、
- * <b>加工 (処理) パターンはパターン枠に入れられない</b> (コンストラクタのフィルタ)。
+ * 加工パターン、つまり処理パターンはパターン枠に入れられない。コンストラクタのフィルタによる。
  * 加工パターンは特大パターンプロバイダーに入れること。
  * 既にパターン枠に入っている加工パターンは、取り出せるし、
- * 隣接インベントリへの押し出しも動く ({@link #pushPattern} のフォールバック)。
+ * 隣接インベントリへの押し出しも動く。{@link #pushPattern}のフォールバック。
  * 中身を消したり動作を止めたりはしない。</p>
  */
 public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulkCraftingProvider {
@@ -71,21 +71,21 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
     private final QuantumCpuBlockEntity host;
     private final IManagedGridNode mainNode;
 
-    /** 組み立て用の 3x3。使い回して毎回の割り当てを避ける。 */
+    /** 組み立て用の3x3。使い回して毎回の割り当てを避ける。 */
     private final CraftingContainer craftingInv =
             new TransientCraftingContainer(new AutoCraftingMenu(), 3, 3);
 
     /**
-     * 実際に組み立てた結果を<b>パターンごとに</b>覚えておく表。
+     * 実際に組み立てた結果をパターンごとに覚えておく表。
      *
-     * <p>パターンごとに覚えるのは、1 つのクラフトジョブでは普通いくつもの小レシピが同時に走り、
-     * CPU 側がタスクの表を走査しながら順に押し出してくるため。<b>別のパターンが交互に来ると
-     * 1 枠のキャッシュは毎回無効化される</b>ので、命中率が 0 になって
-     * {@link #assembleAndCache} が毎クラフト走る (レシピの実行と
+     * <p>パターンごとに覚えるのは、1つのクラフトジョブでは普通いくつもの小レシピが同時に走り、
+     * CPU側がタスクの表を走査しながら順に押し出してくるため。別のパターンが交互に来ると
+     * 1枠のキャッシュは毎回無効化されるので、命中率が0になって
+     * {@link #assembleAndCache}が毎クラフト走る。レシピの実行と
      * {@code fireAutoCraftingEvent} の発火が丸ごと乗る)。</p>
      *
-     * <p>上限付きの LRU にしてある。パターンは 1620 枠あるが、<b>同時に走る小レシピは
-     * せいぜい数十</b>なので {@link #ASSEMBLY_CACHE_SIZE} で足りる。</p>
+     * <p>上限付きのLRUにしてある。パターンは1620枠あるが、同時に走る小レシピは
+     * せいぜい数十なので {@link #ASSEMBLY_CACHE_SIZE} で足りる。</p>
      */
     private final Map<IPatternDetails, Assembly> assemblyCache =
             new LinkedHashMap<>(16, 0.75f, true) {
@@ -96,13 +96,13 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
             };
 
     /**
-     * 1 回の組み立ての結果。<b>材料の並びも一緒に覚える</b>のは、同じパターンでも
-     * 代替材料が違えば完成品が変わりうるため ({@link #matchesCache} で照合する)。
+     * 1回の組み立ての結果。材料の並びも一緒に覚えるのは、同じパターンでも
+     * 代替材料が違えば完成品が変わりうるため、{@link #matchesCache}で照合する。
      */
     private record Assembly(ItemStack[] grid, ItemStack output, List<ItemStack> remainders) {
     }
 
-    /** この tick の残り組み立て回数。 */
+    /** このtickの残り組み立て回数。 */
     private long remainingCrafts;
     private long budgetTick = Long.MIN_VALUE;
 
@@ -113,10 +113,10 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
         this.mainNode = mainNode;
         this.host = host;
 
-        // 加工パターンお断り。自分で組めるパターンだけを受け付ける。
-        // AppEngSlot#mayPlace もインベントリの isItemValid を見るので、
-        // 画面・Shift クリック・パターン端末・インポートバスのどこから入れても効く。
-        // 既に入っているぶんには触らない (NBT の読み込みと取り出しはフィルタを通らない)。
+        // 加工パターンお断り。自分で組めるパターンだけを受け付ける
+        // AppEngSlot#mayPlaceもインベントリのisItemValidを見るので、
+        // 画面・Shiftクリック・パターン端末・インポートバスのどこから入れても効く
+        // 既に入っているぶんには触らない。NBTの読み込みと取り出しはフィルタを通らない
         ((AppEngInternalInventory) getPatternInv()).setFilter(new IAEItemFilter() {
             @Override
             public boolean allowInsert(InternalInventory inv, int slot, ItemStack stack) {
@@ -130,7 +130,7 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
     // -------------------------------------------------------------- パターン管理
 
     /** パターン一覧が変わった: レシピ自体が差し替わっている可能性がある
-     * (データパックの再読み込みなど) ので、覚えている組み立て結果は捨てる。 */
+     * データパックの再読み込みなどで、覚えている組み立て結果は捨てる。 */
     @Override
     protected void onPatternsFlushed() {
         assemblyCache.clear();
@@ -138,8 +138,8 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
 
     @Override
     public boolean pushPattern(IPatternDetails patternDetails, KeyCounter[] inputHolder) {
-        // 加工パターン (処理パターン) は自前では組めないので、
-        // 普通のパターンプロバイダとして隣接インベントリへ押し出す。
+        // 加工パターン、つまり処理パターンは自前では組めないので、
+        // 普通のパターンプロバイダとして隣接インベントリへ押し出す
         if (!(patternDetails instanceof IMolecularAssemblerSupportedPattern pattern)) {
             return super.pushPattern(patternDetails, inputHolder);
         }
@@ -162,8 +162,8 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
 
         Assembly assembly = resolveAssembly(patternDetails, pattern, level);
         if (assembly == null) {
-            // 組めなかった: 材料を握りつぶさずネットワークへ返す。
-            // (CPU 側の待ち行列は満たされないのでジョブは止まるが、アイテムは消えない)
+            // 組めなかった: 材料を握りつぶさずネットワークへ返す
+            // CPU側の待ち行列は満たされないのでジョブは止まるが、アイテムは消えない
             returnGridToNetwork();
             return true;
         }
@@ -177,8 +177,8 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
     // ------------------------------------------------------------ まとめ処理
 
     /**
-     * この tick にあとどれだけまとめて組めるか。
-     * クラフトテーブル用パターン以外は 0 を返し、AE2 本来の 1 回ずつの経路に任せる。
+     * このtickにあとどれだけまとめて組めるか。
+     * クラフトテーブル用パターン以外は0を返し、AE2本来の1回ずつの経路に任せる。
      */
     @Override
     public long getBulkCapacity(IPatternDetails details) {
@@ -199,13 +199,13 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
     }
 
     /**
-     * {@code times} 回ぶんの材料を受け取り、<b>組み立ては 1 回だけ</b>行って結果を {@code times} 倍する。
+     * {@code times} 回ぶんの材料を受け取り、組み立ては1回だけ行って結果を {@code times} 倍する。
      *
-     * <p>{@code inputHolder} の扱いに注意。{@link #fillGrid} がグリッドに載せるのは 1 回ぶんだけで、
+     * <p>{@code inputHolder} の扱いに注意。{@link #fillGrid} がグリッドに載せるのは1回ぶんだけで、
      * 残りの {@code times - 1} 回ぶんは {@code inputHolder} に残ったままになる。
-     * これを<b>消費済みとして捨てられるのは組み立てが成功したときだけ</b>で、
-     * 失敗したときは呼び出し側 ({@code QuantumBulkCrafting}) が CPU の在庫へ戻せるよう
-     * <b>そのまま残して返す</b>。</p>
+     * これを消費済みとして捨てられるのは組み立てが成功したときだけで、
+     * 失敗したときは呼び出し側 ({@code QuantumBulkCrafting}) がCPUの在庫へ戻せるよう
+     * そのまま残して返す。</p>
      */
     @Override
     public long pushPatternBulk(IPatternDetails details, KeyCounter[] inputHolder, long times) {
@@ -222,15 +222,15 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
 
         Assembly assembly = resolveAssembly(details, pattern, level);
         if (assembly == null) {
-            // 組み立てに失敗したときは pushPatternBulk の外側が材料を戻すため、ここでは
-            // inputHolder を呼び出し前の状態に戻し、グリッドを空にする。
-            // 一部だけをネットワークへ返すと、外側のロールバックと二重計上になる。
+            // 組み立てに失敗したときはpushPatternBulkの外側が材料を戻すため、ここでは
+            // inputHolderを呼び出し前の状態に戻し、グリッドを空にする
+            // 一部だけをネットワークへ返すと、外側のロールバックと二重計上になる
             restoreInputHolder(inputHolder, originalInputs);
             clearCraftingGrid();
             return 0;
         }
 
-        // ここまで来たら times 回ぶんすべてを消費したことになるので、残りは捨ててよい。
+        // ここまで来たらtimes回ぶんすべてを消費したことになるので、残りは捨ててよい
         for (KeyCounter counter : inputHolder) {
             counter.reset();
         }
@@ -244,7 +244,7 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
     /** 完成品と端材を {@code times} 回ぶん貯める。 */
     private void storeOutputs(Assembly assembly, long times) {
         ItemStack output = assembly.output();
-        // 掛け算結果を long へ戻さない。ここが BigInteger 会計へ入る唯一の出力境界。
+        // 掛け算結果をlongへ戻さない。ここがBigInteger会計へ入る唯一の出力境界
         //? if >=1.21 {
         java.math.BigInteger factor = java.math.BigInteger.valueOf(times);
         host.addPendingOutput(AEItemKey.of(output),
@@ -281,15 +281,15 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
     }
 
     /**
-     * 加工パターンの押し出し待ちが残っているか、この tick の組み立て回数を使い切っていれば忙しい。
-     * CPU 側はここで true を見ると他のプロバイダに回るので、無駄な {@code pushPattern} が減る。
+     * 加工パターンの押し出し待ちが残っているか、このtickの組み立て回数を使い切っていれば忙しい。
+     * CPU側はここでtrueを見ると他のプロバイダに回るので、無駄な {@code pushPattern} が減る。
      */
     @Override
     public boolean isBusy() {
         return super.isBusy() || budget() <= 0;
     }
 
-    /** この tick に残っている組み立て回数。tick が変わっていれば補充する。 */
+    /** このtickに残っている組み立て回数。tickが変わっていれば補充する。 */
     private long budget() {
         Level level = host.getLevel();
         if (level == null) {
@@ -306,13 +306,13 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
     /** {@link #fillGrid} が使い残した材料をどうするか。 */
     private enum Leftovers {
         /**
-         * ネットワークに返して空にする。1 回ずつの経路 ({@link #pushPattern}) 用。
+         * ネットワークに返して空にする。1回ずつの経路 ({@link #pushPattern}) 用。
          * ここでは残りが出ること自体が基本無いが、出たら消さずに返す。
          */
         RETURN,
         /**
-         * <b>そのまま残す。</b>まとめ処理では残り = まだ組んでいない {@code times - 1} 回ぶんなので、
-         * 組み立てが成功して初めて「消費済み」になる。<b>先に捨ててはいけない。</b>
+         * そのまま残す。まとめ処理では残り = まだ組んでいない {@code times - 1} 回ぶんなので、
+         * 組み立てが成功して初めて「消費済み」になる。先に捨ててはいけない。
          * 捨ててから組み立てに失敗すると、呼び出し側が戻そうとしても中身が無く、
          * {@code times - 1} 回ぶんが消滅する。
          */
@@ -320,7 +320,7 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
     }
 
     /**
-     * 材料をグリッドに並べる。{@code fillCraftingGrid} は<b>常に 1 回ぶんだけ</b>取り出す。
+     * 材料をグリッドに並べる。{@code fillCraftingGrid} は常に1回ぶんだけ取り出す。
      */
     private void fillGrid(IMolecularAssemblerSupportedPattern pattern, KeyCounter[] inputHolder,
             Leftovers leftovers) {
@@ -341,20 +341,20 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
         }
     }
 
-    /** {@link #assembleOnce} の結果。1 回ぶんの完成品と端材。 */
+    /** {@link #assembleOnce} の結果。1回ぶんの完成品と端材。 */
     public record OneCraft(ItemStack output, List<ItemStack> remainders) {
     }
 
     /**
-     * <b>本物の組み立てを 1 回だけ</b>回して結果を返す (ACO の craftingtable batch 用)。
+     * 本物の組み立てを1回だけ回して結果を返す。ACOのcraftingtable batch用。
      *
-     * <p>ACO の正確な BigInteger 実行では、要求回数ぶんループを回さない。
-     * 1 回ぶんの結果に係数を掛けるのが正しい形なので、その「1 回」をここで提供する。
-     * <b>在庫・予算・完成品台帳には一切触らない。</b>材料の出納と完成品の計上は
-     * ACO 側が escrow で持つため、ここは純粋にレシピを回すだけ。</p>
+     * <p>ACOの正確なBigInteger実行では、要求回数ぶんループを回さない。
+     * 1回ぶんの結果に係数を掛けるのが正しい形なので、その「1回」をここで提供する。
+     * 在庫・予算・完成品台帳には一切触らない。材料の出納と完成品の計上は
+     * ACO側がescrowで持つため、ここは純粋にレシピを回すだけ。</p>
      *
-     * @param inputsPerExecution 1 回ぶんの材料 (スロットごと)。呼び出し側が所有する。
-     * @return 組めなければ null
+     * @param inputsPerExecution 1回ぶんの材料。スロットごとで、呼び出し側が所有する。
+     * @return組めなければnull
      */
     @org.jetbrains.annotations.Nullable
     public OneCraft assembleOnce(IPatternDetails details, KeyCounter[] inputsPerExecution) {
@@ -365,7 +365,7 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
         if (level == null) {
             return null;
         }
-        // 材料は ACO が持っているので、使い残しをネットワークへ返してはいけない (KEEP)。
+        // 材料はACOが持っているので、使い残しをネットワークへ返してはいけない (KEEP)
         KeyCounter[] scratch = copyInputHolder(inputsPerExecution);
         fillGrid(pattern, scratch, Leftovers.KEEP);
         Assembly assembly = resolveAssembly(details, pattern, level);
@@ -376,14 +376,14 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
         return new OneCraft(assembly.output().copy(), List.copyOf(assembly.remainders()));
     }
 
-    /** ACO がターゲットとして使う BlockEntity ({@code ProviderOwnedPatternBatchTarget})。 */
+    /** ACOがターゲットとして使うBlockEntity ({@code ProviderOwnedPatternBatchTarget})。 */
     public QuantumCpuBlockEntity getHostBlockEntity() {
         return host;
     }
 
     /**
      * 今グリッドに並んでいる材料に対する組み立て結果を返す。
-     * 覚えていればそれを使い、無ければ実際にレシピを回す。組めなければ null。
+     * 覚えていればそれを使い、無ければ実際にレシピを回す。組めなければnull。
      */
     private Assembly resolveAssembly(IPatternDetails patternDetails,
             IMolecularAssemblerSupportedPattern pattern, Level level) {
@@ -411,17 +411,17 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
         return true;
     }
 
-    /** 実際にレシピを回して結果を記憶する。組めなければ null。 */
+    /** 実際にレシピを回して結果を記憶する。組めなければnull。 */
     private Assembly assembleAndCache(IPatternDetails patternDetails,
             IMolecularAssemblerSupportedPattern pattern, Level level) {
-        // getRemainingItems() は中身を書き換えることがあるので、先に材料の並びを控える。
+        // getRemainingItems() は中身を書き換えることがあるので、先に材料の並びを控える
         ItemStack[] grid = new ItemStack[GRID_SLOTS];
         for (int slot = 0; slot < GRID_SLOTS; slot++) {
             grid[slot] = craftingInv.getItem(slot).copy();
         }
 
-        // レシピの入力は CraftingContainer ではなく CraftingInput で渡す。
-        // asCraftInput() は中身の入っている範囲に切り詰めた不変のビューを返す。
+        // レシピの入力はCraftingContainerではなくCraftingInputで渡す
+        // asCraftInput() は中身の入っている範囲に切り詰めた不変のビューを返す
         //? if >=1.21 {
         var craftInput = craftingInv.asCraftInput();
         ItemStack output = pattern.assemble(craftInput, level);
@@ -439,12 +439,12 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
             return null;
         }
 
-        // 1 回ぶんの組み立てとして 1 度だけ発火する。
-        // 以降の同一クラフトはまとめて処理するため、クラフト回数ぶんは発火しない。
+        // 1回ぶんの組み立てとして1度だけ発火する
+        // 以降の同一クラフトはまとめて処理するため、クラフト回数ぶんは発火しない
         CraftingEvent.fireAutoCraftingEvent(level, pattern, output, craftingInv);
 
         // ここでは端材を「スロット位置に戻す」のではなく非空のものを集めるだけなので、
-        // CraftingInput が切り詰められていても取りこぼしは起きない。
+        // CraftingInputが切り詰められていても取りこぼしは起きない
         //? if >=1.21 {
         NonNullList<ItemStack> remainders = pattern.getRemainingItems(craftInput);
         //?} else {
@@ -462,7 +462,7 @@ public class QuantumCpuLogic extends InsanePatternProviderLogic implements IBulk
         return assembly;
     }
 
-    /** グリッド上の材料をネットワークに戻す (組み立て失敗時の後始末)。 */
+    /** グリッド上の材料をネットワークに戻す。組み立て失敗時の後始末。 */
     private void returnGridToNetwork() {
         for (int slot = 0; slot < GRID_SLOTS; slot++) {
             ItemStack stack = craftingInv.getItem(slot);

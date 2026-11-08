@@ -37,22 +37,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.function.Predicate;
 
 /**
- * Astral Mekanism &amp; Energistics の自動搬出を、<b>ME インターフェイス相手のときだけ</b>
+ * Astral Mekanism &amp; Energisticsの自動搬出を、MEインターフェイス相手のときだけ
  * 刻まずにネットワークへ流す。
  *
- * <p>Mekanism の自動搬出には 3 つの上限がある — アイテムは 1 スタック単位、液体は
- * {@code fluidAutoEjectRate}、化学物質は {@code chemicalAutoEjectRate} (どちらも既定 1024/tick)。
- * Astral の機械は 1 回の処理で long 級を作るので、この刻みでは搬出が永遠に追いつかない。
- * 搬出先が ME インターフェイスなら AE2 側が long でまとめて受け取れるため、
- * <b>その面ぶんだけ先に全量を渡し</b>、残りの面は Mekanism 本来の処理へそのまま任せる。</p>
+ * <p>Mekanismの自動搬出には3つの上限がある — アイテムは1スタック単位、液体は
+ * {@code fluidAutoEjectRate}、化学物質は{@code chemicalAutoEjectRate}。どちらも既定は1024/tick。
+ * Astralの機械は1回の処理でlong級を作るので、この刻みでは搬出が永遠に追いつかない。
+ * 搬出先がMEインターフェイスならAE2側がlongでまとめて受け取れるため、
+ * その面ぶんだけ先に全量を渡し、残りの面はMekanism本来の処理へそのまま任せる。</p>
  *
  * <p>受け皿と「どこまで入れてよいか」の判断は {@link AstralNetworkEject} 側にある
- * (設定枠が空のインターフェイスだけネットワークへ直接入れる)。</p>
+ * 設定枠が空のインターフェイスだけ、ネットワークへ直接入れる。</p>
  *
- * <p>対象は Astral のクラスなのでコンパイル時依存を持たず、{@code @Pseudo} + {@code targets} +
- * {@code remap = false} で名前指定している。Astral が居なければ丸ごと適用されない。
- * 注入はすべて {@code require = 0} なので、Astral 側の作りが変わっても
- * <b>Mekanism 本来の遅い搬出に戻るだけ</b>で壊れない。</p>
+ * <p>対象はAstralのクラスなのでコンパイル時依存を持たず、{@code @Pseudo} + {@code targets} +
+ * {@code remap = false} で名前指定している。Astralが居なければ丸ごと適用されない。
+ * 注入はすべて {@code require = 0} なので、Astral側の作りが変わっても
+ * Mekanism本来の遅い搬出に戻るだけで壊れない。</p>
  */
 @Pseudo
 @Mixin(targets = "astral_mekanism.block.blockentity.elements.ExtendedComponentEjector", remap = false)
@@ -65,10 +65,10 @@ public abstract class AstralEjectorMixin {
     private BiPredicate<IInventorySlot, DataType> canInventorySlotEject;
 
     /**
-     * アイテム: ME インターフェイスへ向いている面のぶんを先に全量渡す。
+     * アイテム: MEインターフェイスへ向いている面のぶんを先に全量渡す。
      *
      * <p>打ち切らない。渡し切れなかったぶんと、インターフェイス以外へ向いている面は
-     * Astral 本来のループがそのまま面倒を見る (中身が空になっていれば何もしない)。</p>
+     * Astral本来のループがそのまま面倒を見る。中身が空になっていれば何もしない。</p>
      */
     @Inject(method = "outputItems(Lmekanism/common/tile/component/config/ConfigInfo;)V",
             at = @At("HEAD"), require = 0)
@@ -94,7 +94,7 @@ public abstract class AstralEjectorMixin {
                     continue;
                 }
                 for (IInventorySlot slot : inventorySlotInfo.getSlots()) {
-                    // 搬出してよいスロットの判定は Astral 本来の経路と同じものを使う。
+                    // 搬出してよいスロットの判定はAstral本来の経路と同じものを使う
                     if (canInventorySlotEject != null && !canInventorySlotEject.test(slot, dataType)) {
                         continue;
                     }
@@ -111,7 +111,7 @@ public abstract class AstralEjectorMixin {
         }
     }
 
-    /** 液体: ME インターフェイス側は全量、残りの面は Mekanism 本来の {@code fluidAutoEjectRate} 刻み。 */
+    /** 液体: MEインターフェイス側は全量、残りの面はMekanism本来の {@code fluidAutoEjectRate} 刻み。 */
     @Redirect(method = "eject(Lmekanism/common/lib/transmitter/TransmissionType;"
             + "Lmekanism/common/tile/component/config/ConfigInfo;)V",
             at = @At(value = "INVOKE",
@@ -133,7 +133,7 @@ public abstract class AstralEjectorMixin {
         }
     }
 
-    /** 化学物質: 同上。ネットワークが持てるのは Applied Mekanistics があるときだけ。 */
+    /** 化学物質: 同上。ネットワークが持てるのはApplied Mekanisticsがあるときだけ。 */
     @Redirect(method = "eject(Lmekanism/common/lib/transmitter/TransmissionType;"
             + "Lmekanism/common/tile/component/config/ConfigInfo;)V",
             at = @At(value = "INVOKE",
@@ -167,7 +167,7 @@ public abstract class AstralEjectorMixin {
     /**
      * ネットワークへ流せた面を取り除いた「残りの面」を返す。
      *
-     * @param handler その面を自分で処理できたら true (Mekanism 本来の搬出から外す)
+     * @param handlerその面を自分で処理できたらtrue。Mekanism本来の搬出から外す
      */
     @Unique
     private Set<Direction> insaneae$pushSides(Set<Direction> sides, BlockEntity from,
@@ -188,7 +188,7 @@ public abstract class AstralEjectorMixin {
         return remaining == null ? sides : remaining;
     }
 
-    /** 液体 1 面ぶん。インターフェイスが無ければ false を返して Mekanism に任せる。 */
+    /** 液体1面ぶん。インターフェイスが無ければfalseを返してMekanismに任せる。 */
     @Unique
     private boolean insaneae$drainFluid(IExtendedFluidTank tank, FluidStack fluid, Direction side,
             BlockEntity from) {

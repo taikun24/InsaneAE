@@ -33,7 +33,7 @@ public final class AcoBigIntegerLimitBridge {
     /** ACOが有効な場合だけ、公開APIが返す計画・NBT・同期の正確な上限を返す。 */
     public static Optional<BigInteger> maximumSupportedAmount() {
         Optional<BigInteger> cached = CACHED_LIMIT.get();
-        // Forge Configは再起動反映なので、一度解決した値はプロセス中に再利用できる。
+        // Forge Configは再起動反映なので、一度解決した値はプロセス中に再利用できる
         if (cached != null) {
             return cached;
         }
@@ -46,7 +46,7 @@ public final class AcoBigIntegerLimitBridge {
     /** ツールチップへ全桁を展開せず、ACOの厳密な理論上限を式で表す。 */
     public static Optional<String> theoreticalMaximumDisplay() {
         Optional<BigInteger> maximum = maximumSupportedAmount();
-        // ACO未導入・無効・互換APIなしの場合は、推測値を表示しない。
+        // ACO未導入・無効・互換APIなしの場合は、推測値を表示しない
         if (maximum.isEmpty()) {
             return Optional.empty();
         }
@@ -54,14 +54,14 @@ public final class AcoBigIntegerLimitBridge {
     }
 
     static String formatTheoreticalMaximum(BigInteger maximum) {
-        // 0以下は有効なクラフト容量ではないため、翻訳文字列へ渡さない。
+        // 0以下は有効なクラフト容量ではないため、翻訳文字列へ渡さない
         if (maximum == null || maximum.signum() <= 0) {
             throw new IllegalArgumentException("maximum must be positive");
         }
 
         String decimal = maximum.toString();
         boolean allNines = true;
-        // 10^n-1のACO標準上限だけを、全桁展開せず厳密な式へ戻す。
+        // 10^n-1のACO標準上限だけを、全桁展開せず厳密な式へ戻す
         for (int index = 0; index < decimal.length(); index++) {
             if (decimal.charAt(index) != '9') {
                 allNines = false;
@@ -74,7 +74,7 @@ public final class AcoBigIntegerLimitBridge {
 
         int significantDigits = Math.min(SCIENTIFIC_SIGNIFICANT_DIGITS, decimal.length());
         String fraction = decimal.substring(1, significantDigits);
-        // 科学表記の末尾0は表示幅だけを増やすため除く。
+        // 科学表記の末尾0は表示幅だけを増やすため除く
         while (fraction.endsWith("0")) {
             fraction = fraction.substring(0, fraction.length() - 1);
         }
@@ -90,18 +90,18 @@ public final class AcoBigIntegerLimitBridge {
         try {
             api = Class.forName(AcoClassNames.BIG_CRAFTING_ENGINE_API, false, loader);
         } catch (ClassNotFoundException | LinkageError absent) {
-            // ACO未導入は通常構成なので、long互換容量へ静かに戻す。
+            // ACO未導入は通常構成なので、long互換容量へ静かに戻す
             return Optional.empty();
         }
 
         try {
             int capacityApiVersion = api.getField(CAPACITY_API_VERSION_FIELD).getInt(null);
-            // 容量上限APIを持たない旧ACOから、内部値を推測して読まない。
+            // 容量上限APIを持たない旧ACOから、内部値を推測して読まない
             if (capacityApiVersion < 1) {
                 return unsupported("capacity limit API v" + capacityApiVersion + " is too old");
             }
             Method isEnabled = api.getMethod(ENABLED_METHOD);
-            // ACOのBigIntegerバックエンドが無効なら、CPU容量として表示しない。
+            // ACOのBigIntegerバックエンドが無効なら、CPU容量として表示しない
             if (!Boolean.TRUE.equals(isEnabled.invoke(null))) {
                 logger().info(
                         "InsaneAE: ACO BigInteger backend is disabled;"
@@ -111,13 +111,13 @@ public final class AcoBigIntegerLimitBridge {
 
             Method maximumAmount = api.getMethod(MAXIMUM_AMOUNT_METHOD);
             Object value = maximumAmount.invoke(null);
-            // 公開APIの戻り値が想定と異なる場合は、推測で変換しない。
+            // 公開APIの戻り値が想定と異なる場合は、推測で変換しない
             if (!(value instanceof BigInteger maximum) || maximum.signum() <= 0) {
                 return unsupported(MAXIMUM_AMOUNT_METHOD + " returned " + value);
             }
             return Optional.of(maximum);
         } catch (ReflectiveOperationException | LinkageError | RuntimeException unavailable) {
-            // ACOはあるのにAPIが引けない = 想定外の版。容量が黙って縮むので必ず知らせる。
+            // ACOはあるのにAPIが引けない = 想定外の版。容量が黙って縮むので必ず知らせる
             return unsupported(unavailable.toString());
         }
     }

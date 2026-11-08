@@ -10,21 +10,21 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
 /**
- * 超強化クリエイティブセルに「BigInteger の在庫を名乗る窓口」を生やす。
+ * 超強化クリエイティブセルに「BigIntegerの在庫を名乗る窓口」を生やす。
  *
- * <h2>これは<b>書き込み側</b>の担当</h2>
- * <p>在庫を<b>読む</b>側は公開契約
- * ({@link UltraCreativeCellExactAmountProviderMixin}) が担当する。ACO 1.5.20 で
+ * <h2>これは書き込み側の担当</h2>
+ * <p>在庫を読む側は公開契約
+ * ({@link UltraCreativeCellExactAmountProviderMixin}) が担当する。ACO 1.5.20で
  * {@code ExactStorageAmountProvider} が入り、スナップショット側は
  * そちらを先に見るため。</p>
  *
- * <p>残っているのは<b>在庫を減らす側</b>。{@code ExactNetworkStorageBridge} は
- * 1.5.22 でもこの {@code ExtendedAePlusBigIntegerCellInventoryAccess} しか知らず、
- * 公開の代替が無い。これは ExtendedAE Plus のセル向けに ACO が Mixin で生やしている
- * <b>内部の access インターフェイス</b>だが、判定は {@code instanceof} だけなので
- * 相手の Mod は問わない。<b>書き込み側にも公開境界が入ったら、このクラスは畳むこと。</b></p>
+ * <p>残っているのは在庫を減らす側。{@code ExactNetworkStorageBridge} は
+ * 1.5.22でもこの {@code ExtendedAePlusBigIntegerCellInventoryAccess} しか知らず、
+ * 公開の代替が無い。これはExtendedAE Plusのセル向けにACOがMixinで生やしている
+ * 内部のaccessインターフェイスだが、判定は {@code instanceof} だけなので
+ * 相手のModは問わない。書き込み側にも公開境界が入ったら、このクラスは畳むこと。</p>
  *
- * <p>ACO が無い環境では {@link AcoMixinPlugin} がこの Mixin ごと適用を止める。</p>
+ * <p>ACOが無い環境では {@link AcoMixinPlugin} がこのMixinごと適用を止める。</p>
  */
 @Mixin(InsaneUltraCreativeCellInventory.class)
 public abstract class UltraCreativeCellExactStorageMixin
@@ -32,14 +32,14 @@ public abstract class UltraCreativeCellExactStorageMixin
 
     /**
      * この中身インスタンスの識別子。クリエイティブセルは保存する状態を持たないので、
-     * <b>要求されたときに 1 つ作って使い回すだけ</b>でよい。
+     * 要求されたときに1つ作って使い回すだけでよい。
      */
     @Unique
     private UUID insaneae$exactStorageUuid;
 
     /**
-     * <b>毎回同じインスタンスを返すこと。</b>ACO はシミュレーションとコミットで
-     * このマップを {@code ==} で突き合わせ、<b>直接書き換えて</b>在庫を減らす。
+     * 毎回同じインスタンスを返すこと。ACOはシミュレーションとコミットで
+     * このマップを {@code ==} で突き合わせ、直接書き換えて在庫を減らす。
      * コピーを返すと {@code exact cell storage map changed between simulation and commit} で
      * 取引ごと巻き戻される。
      */
@@ -55,7 +55,7 @@ public abstract class UltraCreativeCellExactStorageMixin
 
     @Override
     public void aco$setExactStoredTypeCount(int typeCount) {
-        // 書かれた値は覚えておく (次の取引で beforeTypes と突き合わされる)。
+        // 書かれた値は覚えておく。次の取引でbeforeTypesと突き合わされる
         insaneae$self().insaneae$setExactTypeCount(typeCount);
     }
 
@@ -71,7 +71,7 @@ public abstract class UltraCreativeCellExactStorageMixin
 
     @Override
     public void aco$saveExactChanges() {
-        // 保存するものは無い (中身はセルワークベンチの設定そのもの)。
+        // 保存するものは無い。中身はセルワークベンチの設定そのもの
     }
 
     @Override

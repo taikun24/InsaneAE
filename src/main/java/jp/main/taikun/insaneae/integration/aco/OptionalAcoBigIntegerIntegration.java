@@ -13,15 +13,15 @@ public final class OptionalAcoBigIntegerIntegration {
     }
 
     /**
-     * <b>BigInteger 計画の外部コンシューマとして名乗る。</b>
+     * BigInteger計画の外部コンシューマとして名乗る。
      *
-     * <p>ACO の設定 {@code enableExternalBigCraftingProfile} の説明どおり
-     * 「アドオン側が公開 API で明示的に登録する」必要がある。名乗っていないと
-     * {@code CraftingCpuClusterBigCapacityGuardMixin} が wide plan の投入を拒否するため、
-     * 標準の AE2 クラフト CPU 経由で 922京超の注文を出したときに<b>理由の分からない失敗</b>になる。</p>
+     * <p>ACOの設定 {@code enableExternalBigCraftingProfile} の説明どおり
+     * 「アドオン側が公開APIで明示的に登録する」必要がある。名乗っていないと
+     * {@code CraftingCpuClusterBigCapacityGuardMixin} がwide planの投入を拒否するため、
+     * 標準のAE2クラフトCPU経由で922京超の注文を出したときに理由の分からない失敗になる。</p>
      *
-     * <p>反射で呼ぶのは、ACO が無い環境でこのクラスが読めなくならないようにするため
-     * (このクラスは Quantum CPU の生成時に必ず通る)。呼べなければ黙って何もしない。</p>
+     * <p>反射で呼ぶのは、ACOが無い環境でこのクラスが読めなくならないようにするため
+     * このクラスはQuantum CPUの生成時に必ず通る。呼べなければ黙って何もしない。</p>
      */
     public static void registerBigIntegerPlanConsumer() {
         if (!ModList.get().isLoaded(ACO_MOD_ID)) {
@@ -38,18 +38,18 @@ public final class OptionalAcoBigIntegerIntegration {
     }
 
     /**
-     * Quantum CPU 1 台ぶんの完成品待ちの台帳を作る。
+     * Quantum CPU 1台ぶんの完成品待ちの台帳を作る。
      *
-     * <p>実体 (ACO の台帳か内蔵の台帳か) は、<b>最初に何かを積むときに</b>選ぶ
-     * ({@link LazyFailsafeLedger})。ブロックエンティティを作るだけでは ACO に触らず、
-     * ログも出さない (issue #18: 作られるたびに INFO が出るとコンソールが埋まる)。</p>
+     * <p>実体、つまりACOの台帳か内蔵の台帳かは、最初に何かを積むときに選ぶ
+     * ({@link LazyFailsafeLedger})。ブロックエンティティを作るだけではACOに触らず、
+     * ログも出さない。issue #18の、作られるたびにINFOが出るとコンソールが埋まる問題を避けるため。</p>
      */
     public static PendingOutputLedger createOutputLedger() {
         return new LazyFailsafeLedger(OptionalAcoBigIntegerIntegration::openBackingLedger);
     }
 
     private static PendingOutputLedger openBackingLedger() {
-        // ACOが無い場合は同じ正確会計の内蔵実装へ戻し、通常のInsaneAE導入を壊さない。
+        // ACOが無い場合は同じ正確会計の内蔵実装へ戻し、通常のInsaneAE導入を壊さない
         if (ModList.get().isLoaded(ACO_MOD_ID)) {
             PendingOutputLedger aco = AcoBigIntegerOutputLedger.tryCreate().orElse(null);
             if (aco != null) {

@@ -25,14 +25,14 @@ public abstract class BigIntegerCPUSelectionListMixin {
             CraftingCpuListEntry entry,
             CallbackInfoReturnable<Component> cir) {
         Component name = entry.name();
-        // 通常CPUと、プレイヤーが明示的に名付けたCPUの表示はAE2へ任せる。
+        // 通常CPUと、プレイヤーが明示的に名付けたCPUの表示はAE2へ任せる
         if (name == null
                 || BigIntegerCapacityDisplayMarker.read(name).isEmpty()
                 || !name.getString().isEmpty()) {
             return;
         }
 
-        // 不可視マーカーだけを持つ未命名CPUは、AE2本来の「クラフトCPU #番号」に戻す。
+        // 不可視マーカーだけを持つ未命名CPUは、AE2本来の「クラフトCPU #番号」に戻す
         cir.setReturnValue(GuiText.CPUs.text().append(String.format(" #%d", entry.serial())));
     }
 
@@ -40,7 +40,7 @@ public abstract class BigIntegerCPUSelectionListMixin {
     private void insaneae$formatExactCapacity(
             CraftingCpuListEntry entry,
             CallbackInfoReturnable<String> cir) {
-        // CPU名に正確な容量が同期されている行だけを指数表記へ切り替える。
+        // CPU名に正確な容量が同期されている行だけを指数表記へ切り替える
         BigIntegerCapacityDisplayMarker.read(entry.name())
                 .map(BigIntegerCapacityDisplayMarker::format)
                 .ifPresent(cir::setReturnValue);
@@ -64,12 +64,12 @@ public abstract class BigIntegerCPUSelectionListMixin {
         }
 
         var content = new ArrayList<>(tooltip.getContent());
-        // 形式が想定外なら、容量行を推測して別の行を壊さない。
+        // 形式が想定外なら、容量行を推測して別の行を壊さない
         if (content.size() <= 1) {
             return;
         }
         Component exact = Component.literal(capacity);
-        // AE2の0行目はCPU名、1行目が容量なので、無限記号を容量行だけ置き換える。
+        // AE2の0行目はCPU名、1行目が容量なので、無限記号を容量行だけ置き換える
         if (content.size() > 1) {
             content.set(1, exact);
         }

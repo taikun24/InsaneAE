@@ -6,10 +6,10 @@ import jp.main.taikun.insaneae.registries.ModUpgrades;
 import java.util.List;
 
 /**
- * Advanced AE の機械にこちらの加速カードを挿せるようにする。
+ * Advanced AEの機械にこちらの加速カードを挿せるようにする。
  *
- * <p>機械の処理速度に反映させる側は mixin/compat の {@code AAE〜Mixin} (@Pseudo)。バス 3 種は
- * AE2 の ExportBusPart/IOBusPart 経由で反映されるので登録だけでよい。</p>
+ * <p>機械の処理速度に反映させる側はmixin/compatの {@code AAE〜Mixin} (@Pseudo)。バス3種は
+ * AE2のExportBusPart/IOBusPart経由で反映されるので登録だけでよい。</p>
  */
 public final class AdvancedAeIntegration implements AddonIntegration {
 

@@ -5,21 +5,21 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * パターン枠 1 ページぶんの「窓」。中身は本体のインベントリそのままで、
- * <b>どのページを覗いているかだけを差し替える</b>。
+ * パターン枠1ページぶんの「窓」。中身は本体のインベントリそのままで、
+ * どのページを覗いているかだけを差し替える。
  *
  * <h2>なぜ要るか</h2>
- * <p>Quantum CPU のパターン枠は {@value jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity#PATTERN_SLOTS} 個ある。
+ * <p>Quantum CPUのパターン枠は {@value jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity#PATTERN_SLOTS} 個ある。
  * これを全部メニューのスロットとして並べると、バニラの
- * {@code AbstractContainerMenu#broadcastChanges} が<b>毎 tick 全スロットを
- * {@code ItemStack.matches} で比較</b>する。パターンは NBT が大きいので、
- * GUI を開いている 1 人につき「1620 枠ぶんの NBT 深い比較 × 2 (lastSlots / remoteSlots)」が
- * 毎 tick サーバスレッドに乗ることになる。</p>
+ * {@code AbstractContainerMenu#broadcastChanges} が毎tick全スロットを
+ * {@code ItemStack.matches} で比較する。パターンはNBTが大きいので、
+ * GUIを開いている1人につき「1620枠ぶんのNBT深い比較 × 2 (lastSlots / remoteSlots)」が
+ * 毎tickサーバスレッドに乗ることになる。</p>
  *
- * <p>そこでメニューには 1 ページぶん (54 枠) だけ置き、ページ送りは
- * この窓の {@link #setPage} を動かして中身を差し替えるようにする。同期コストは 1/30 になる。</p>
+ * <p>そこでメニューには1ページぶん、54枠だけ置き、ページ送りは
+ * この窓の {@link #setPage} を動かして中身を差し替えるようにする。同期コストは1/30になる。</p>
  *
- * <p>窓はメニュー 1 つにつき 1 個なので、同じ Quantum CPU を複数人が開いても
+ * <p>窓はメニュー1つにつき1個なので、同じQuantum CPUを複数人が開いても
  * ページは各自独立している。</p>
  */
 public final class PagedPatternInventory implements InternalInventory {
@@ -34,7 +34,7 @@ public final class PagedPatternInventory implements InternalInventory {
         this.pageSize = pageSize;
     }
 
-    /** 本体 (全ページぶん) のインベントリ。ページを跨ぐ操作はこちらを直接使う。 */
+    /** 本体、つまり全ページぶんのインベントリ。ページを跨ぐ操作はこちらを直接使う。 */
     public InternalInventory getBacking() {
         return backing;
     }

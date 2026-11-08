@@ -10,10 +10,10 @@ import java.math.BigInteger;
 import java.util.Map;
 
 /**
- * ME Infinity Cell の在庫を、ACO の公開契約で BigInteger として名乗る (読み取り側)。
+ * ME Infinity Cellの在庫を、ACOの公開契約でBigIntegerとして名乗る。読み取り側。
  *
- * <p>ACO 1.5.20 より前には無いインターフェイスなので、{@link AcoMixinPlugin} が実在を
- * 確かめてから当てる ({@link UltraCreativeCellExactAmountProviderMixin} と同じ扱い)。</p>
+ * <p>ACO 1.5.20より前には無いインターフェイスなので、{@link AcoMixinPlugin} が実在を
+ * 確かめてから当てる。{@link UltraCreativeCellExactAmountProviderMixin}と同じ扱い。</p>
  */
 @Pseudo
 @Mixin(targets = {

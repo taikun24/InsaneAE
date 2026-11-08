@@ -33,14 +33,14 @@ import jp.main.taikun.insaneae.util.SaturatingMath;
 *///?}
 
 /**
- * UUID で管理しているストレージセルの中身。オーバーワールドの {@code data/insaneae_cells.dat} に入る。
+ * UUIDで管理しているストレージセルの中身。オーバーワールドの {@code data/insaneae_cells.dat} に入る。
  *
- * <p>中身をアイテムに持たせると、型数の多いセルではアイテム 1 個のデータが巨大になり、
- * ドライブのあるチャンクや持ち物の同期で通信量が膨れる (上位階層は 21 億種まで入る)。
- * ExtendedAE Plus の Infinity セルや AE2 Things の DISK と同じく、アイテムには UUID と
+ * <p>中身をアイテムに持たせると、型数の多いセルではアイテム1個のデータが巨大になり、
+ * ドライブのあるチャンクや持ち物の同期で通信量が膨れる。上位階層は21億種まで入るため。
+ * ExtendedAE PlusのInfinityセルやAE2 ThingsのDISKと同じく、アイテムにはUUIDと
  * 要約だけを残し、本体はワールド側に置く。</p>
  *
- * <p>セルの出し入れは AE2 のワーカースレッドからも来るので、表は並行アクセスに耐える形にしている。</p>
+ * <p>セルの出し入れはAE2のワーカースレッドからも来るので、表は並行アクセスに耐える形にしている。</p>
  */
 public final class CellContentStore extends SavedData {
 
@@ -102,10 +102,10 @@ public final class CellContentStore extends SavedData {
     }
 
     /**
-     * 今のスレッドから使える保存データ。クライアントの描画スレッドと、サーバーが動いていないときは null。
+     * 今のスレッドから使える保存データ。クライアントの描画スレッドと、サーバーが動いていないときはnull。
      *
      * <p>シングルプレイではクライアントからも内蔵サーバーが見えるが、描画スレッドから
-     * サーバーの保存データを書き換えさせないために除外している。null のときセルは
+     * サーバーの保存データを書き換えさせないために除外している。nullのときセルは
      * アイテム側の要約だけを見る読み取り専用になる。</p>
      */
     @Nullable
@@ -144,8 +144,8 @@ public final class CellContentStore extends SavedData {
     /**
      * 各ディメンションのチャンク保存の後に呼ぶ ({@code LevelEvent.Save})。
      *
-     * <p>ME ドライブはセルの中身をチャンク保存の途中 (ブロックエンティティの書き出し時) に
-     * {@code persist()} する。一方バニラはディメンションごとに<b>保存データを先、チャンクを後</b>に
+     * <p>MEドライブはセルの中身を、チャンク保存の途中のブロックエンティティの書き出し時に
+     * {@code persist()} する。一方バニラはディメンションごとに保存データを先、チャンクを後に
      * 書くので、そのままではその回の変更が保存データに入らず、停止時には失われる。
      * 全ディメンションのチャンク保存が終わった後にもう一度書けば取りこぼさない。</p>
      */
@@ -232,7 +232,7 @@ public final class CellContentStore extends SavedData {
             UUID id = cell.getUUID(ID);
             //?}
             ResourceLocation item = ResourceLocation.tryParse(cell.getString(ITEM));
-            // 消えた Mod のアイテムが混じっていても、AE2 のセルと同じく「欠けた中身」として残す。
+            // 消えたModのアイテムが混じっていても、AE2のセルと同じく「欠けた中身」として残す
             //? if >=1.21 {
             List<GenericStack> stacks = !cell.contains(STACKS) ? List.of()
                     : GenericStack.FAULT_TOLERANT_LIST_CODEC.parse(ops, cell.get(STACKS))
@@ -249,7 +249,7 @@ public final class CellContentStore extends SavedData {
         return store;
     }
 
-    /** 描画スレッドの判定。クライアント専用クラスに触るので、dist の確認の後でだけ呼ぶ。 */
+    /** 描画スレッドの判定。クライアント専用クラスに触るので、distの確認の後でだけ呼ぶ。 */
     private static final class ClientThread {
         static boolean isRenderThread() {
             var minecraft = net.minecraft.client.Minecraft.getInstance();

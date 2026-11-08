@@ -11,12 +11,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 /**
- * ExtendedAE の拡張分子組立装置 (Ex Molecular Assembler) にも加速カードの倍率を掛ける。
+ * ExtendedAEの拡張分子組立装置 (Ex Molecular Assembler) にも加速カードの倍率を掛ける。
  *
  * <p>組み立ての進捗は各 {@code CraftingThread} の {@code userPower(ticks, bonus, tax)} が
- * 決めている (AE2 の分子組立装置と同じ形)。AE2 用の
+ * 決めている。AE2の分子組立装置と同じ形。AE2用の
  * {@code MolecularAssemblerBlockEntityMixin} と同じく、{@code bonusValue} 引数に掛ける。
- * どの機械のスレッドかは {@code host} フィールド (AE2 の {@code AEBaseBlockEntity} 型) で分かる。</p>
+ * どの機械のスレッドかは{@code host}フィールドで分かる。AE2の{@code AEBaseBlockEntity}型。</p>
  */
 @Pseudo
 @Mixin(targets = "com.glodblock.github.extendedae.common.me.CraftingThread",

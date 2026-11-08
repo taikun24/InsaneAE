@@ -26,15 +26,15 @@ public interface CraftingTreeProcessInvoker {
     void insaneae$request(CraftingSimulationState inv, long times)
             throws CraftBranchFailure, InterruptedException;
 
-    /** 1 回のクラフトで {@code what} がいくつ出るか。 */
+    /** 1回のクラフトで {@code what} がいくつ出るか。 */
     @Invoker("getOutputCount")
     long insaneae$getOutputCount(AEKey what);
 
-    /** 材料の子ノードと 1 クラフトあたりの必要数。long あふれの門番が最大値を調べるのに使う。 */
+    /** 材料の子ノードと1クラフトあたりの必要数。longあふれの門番が最大値を調べるのに使う。 */
     @Accessor("nodes")
     Map<CraftingTreeNode, Long> insaneae$getNodes();
 
-    /** このプロセスのパターン (出力側の 1 クラフトあたりの個数を調べるのに使う)。 */
+    /** このプロセスのパターン。出力側の1クラフトあたりの個数を調べるのに使う。 */
     @Accessor("details")
     IPatternDetails insaneae$getDetails();
 }

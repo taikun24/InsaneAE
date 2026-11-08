@@ -11,11 +11,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * 加速カードを挿した機械に「同じ tick のうちの追い tick」を入れる。
+ * 加速カードを挿した機械に「同じtickのうちの追いtick」を入れる。
  *
- * <p>AE2 の tick 配送はすべて {@code unsafeTickingRequest} を通るので、ここ 1 箇所に
- * 割り込めば機械ごとに Mixin を書かなくてよい。どの機械を何回回すかは
- * {@link TickBoost} 側の判断 (待ち時間で頭打ちになる機械だけ)。</p>
+ * <p>AE2のtick配送はすべて {@code unsafeTickingRequest} を通るので、ここ1箇所に
+ * 割り込めば機械ごとにMixinを書かなくてよい。どの機械を何回回すかは
+ * {@link TickBoost}側の判断。待ち時間で頭打ちになる機械だけ。</p>
  */
 @Mixin(value = TickManagerService.class, remap = false, priority = SpeedBoost.MIXIN_PRIORITY)
 public abstract class TickManagerServiceMixin {

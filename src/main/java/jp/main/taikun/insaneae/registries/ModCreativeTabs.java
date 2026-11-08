@@ -41,7 +41,8 @@ public class ModCreativeTabs {
                 ModParts.allHyperCables().forEach(output::accept);
                 output.accept(ModBlocks.INSANE_INTERFACE.get());
                 output.accept(ModParts.INSANE_INTERFACE.get());
-                // AE2 の EnergyCellBlock#addToMainCreativeTab は「空」と「満充電」の 2 個を出す。
+                output.accept(ModBlocks.GAMERTAIKUN_DOLL.get());
+                // AE2のEnergyCellBlock#addToMainCreativeTabは「空」と「満充電」の2個を出す
                 //? if >=1.21 {
                 ModBlocks.allEnergyCells().forEach(cell -> cell.addToMainCreativeTab(params, output));
                 //?} else {
@@ -59,7 +60,7 @@ public class ModCreativeTabs {
                 ModCells.PORTABLE_FLUID_CELLS.values().forEach(cell -> output.accept(cell.get()));
                 output.accept(ModCells.CREATIVE_CELL.get());
                 output.accept(ModCells.ULTRA_CREATIVE_CELL.get());
-                // 他アドオンのセル (化学物質セル・FE セルなど)。
+                // 他アドオンのセル。化学物質セルやFEセルなど
                 for (AddonIntegration addon : AddonIntegrations.active()) {
                     addon.materials().forEach(output::accept);
                     addon.storageCells().forEach(output::accept);

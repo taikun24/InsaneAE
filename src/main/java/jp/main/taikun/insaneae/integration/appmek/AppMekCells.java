@@ -30,12 +30,12 @@ import net.neoforged.neoforge.registries.RegistryObject;
 /**
  * Applied Mekanistics ({@code appmek}) が導入されている場合だけ追加される化学物質セル。
  *
- * <p>このクラスは appmek / Mekanism のクラスを直接参照するので、
- * <b>appmek が無い環境では絶対にロードしてはいけない</b>。
- * 呼び出し側 ({@link AppMekIntegration}) は appmek が入っているときしか作られない。</p>
+ * <p>このクラスはappmek / Mekanismのクラスを直接参照するので、
+ * appmekが無い環境では絶対にロードしてはいけない。
+ * 呼び出し側 ({@link AppMekIntegration}) はappmekが入っているときしか作られない。</p>
  *
- * <p>ハウジングは MEGA Cells の化学物質セルハウジング (これも appmek 導入時のみ登録される) を使う。
- * 放射性物質は appmek / MEGA Cells の通常セルと同じく弾く (専用セルの領分)。</p>
+ * <p>ハウジングはMEGA Cellsの化学物質セルハウジングを使う。これもappmek導入時のみ登録される。
+ * 放射性物質はappmek / MEGA Cellsの通常セルと同じく弾く。専用セルの領分だから。</p>
  */
 public final class AppMekCells {
 
@@ -55,7 +55,7 @@ public final class AppMekCells {
     private AppMekCells() {
     }
 
-    /** Mod 構築時に、appmek がロードされている場合のみ呼ぶ ({@link AppMekIntegration#registerContent})。 */
+    /** Mod構築時に、appmekがロードされている場合のみ呼ぶ ({@link AppMekIntegration#registerContent})。 */
     public static void register() {
         for (InsaneCraftingUnitType tier : InsaneCraftingUnitType.values()) {
             double idleDrain = ModCells.idleDrain(tier);
@@ -96,7 +96,7 @@ public final class AppMekCells {
         }
     }
 
-    /** 放射性の化学物質かどうか (appmek の通常セルと同じ判定)。 */
+    /** 放射性の化学物質かどうか。appmekの通常セルと同じ判定。 */
     private static boolean isRadioactive(AEKey key) {
         return key instanceof MekanismKey mekanismKey
                 && !ChemicalAttributeValidator.DEFAULT.process(mekanismKey.getStack());

@@ -6,13 +6,13 @@ import net.minecraft.network.chat.MutableComponent;
 /**
  * 階層違いのブロック／アイテムの表示名。
  *
- * <p>階層ごとに lang のキーを並べる代わりに、<b>書式キー 1 つ + 階層ラベル</b>で組み立てる。
+ * <p>階層ごとにlangのキーを並べる代わりに、書式キー1つ + 階層ラベルで組み立てる。
  * 例: {@code block.insaneae.crafting_storage = %s Crafting Storage} に {@code "1G"} を渡す。
- * 階層を増やしても lang を触らなくてよい。</p>
+ * 階層を増やしてもlangを触らなくてよい。</p>
  *
  * <p>実装は各アイテム／ブロックの {@code getName} の上書き。
- * {@code getDescriptionId()} は階層ごとに固有のまま (lang には載せない) なので、
- * ツールチップの説明キー ({@code <翻訳キー>.desc}) は階層ごとに書ける。</p>
+ * {@code getDescriptionId()}は階層ごとに固有のまま。langには載せないので、
+ * ツールチップの説明キー、{@code <翻訳キー>.desc}は階層ごとに書ける。</p>
  */
 public final class TieredNames {
 

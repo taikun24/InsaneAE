@@ -9,13 +9,13 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 *///?}
 
 /**
- * InsaneAE の設定 ({@code config/insaneae-common.toml})。
+ * InsaneAEの設定 ({@code config/insaneae-common.toml})。
  *
- * <p>ここに並ぶのは<b>軽量化の切り替え</b>だけ。どれも既定は有効で、
- * 動作が変わったり他 Mod と噛み合わなかったりしたときに個別で切れるようにしてある。</p>
+ * <p>ここに並ぶのは軽量化の切り替えだけ。どれも既定は有効で、
+ * 動作が変わったり他Modと噛み合わなかったりしたときに個別で切れるようにしてある。</p>
  *
- * <p>設定の読み出しは<b>実行時</b>に行うこと (Mixin の適用可否には使わない)。
- * 設定ファイルの読み込みは Mod 構築より後なので、
+ * <p>設定の読み出しは実行時に行うこと。Mixinの適用可否には使わない。
+ * 設定ファイルの読み込みはMod構築より後なので、
  * クラスロード時に値を確定させると既定値で固まってしまう。</p>
  */
 public final class InsaneAEConfig {
@@ -46,7 +46,7 @@ public final class InsaneAEConfig {
 
     /**
      * まとめ処理の有効・無効を実行中に切り替える。
-     * <b>ゲームテスト用</b> (同じ発注を「まとめ有り／無し」で計算して結果を突き合わせるため)。
+     * ゲームテスト用。同じ発注を「まとめ有り／無し」で計算し、結果を突き合わせるため。
      */
     public static void setBatchCraftingCalculation(boolean value) {
         COMMON.batchCraftingCalculation.set(value);
@@ -56,7 +56,7 @@ public final class InsaneAEConfig {
         return get(COMMON.maxCraftingWindowsPerTick, 1024);
     }
 
-    /** この回数以上まとめられるクラフトだけまとめて処理する。これ未満は AE2 本来の 1 回ずつに任せる。 */
+    /** この回数以上まとめられるクラフトだけまとめて処理する。これ未満はAE2本来の1回ずつに任せる。 */
     public static int craftingBatchThreshold() {
         return get(COMMON.craftingBatchThreshold, 16);
     }
@@ -71,17 +71,17 @@ public final class InsaneAEConfig {
     *///?}
 
     /**
-     * Quantum CPU が同時に受けられるクラフトの本数。
+     * Quantum CPUが同時に受けられるクラフトの本数。
      *
-     * <p>内蔵 CPU は容量を切り分けて何本も同時に走らせる。1 にすると
-     * AE2 のクラフト CPU と同じ「1 台 1 ジョブ」に戻る。</p>
+     * <p>内蔵CPUは容量を切り分けて何本も同時に走らせる。1にすると
+     * AE2のクラフトCPUと同じ「1台1ジョブ」に戻る。</p>
      */
     public static int quantumCpuMaxJobs() {
         return get(COMMON.quantumCpuMaxJobs, 16);
     }
 
     /**
-     * 超次元ケーブル 1 本が運べるチャンネル数 (ChannelMode の倍率を掛ける前)。
+     * 超次元ケーブル1本が運べるチャンネル数。ChannelModeの倍率を掛ける前の値。
      *
      * <p>置いた時点で常にこの本数。条件は無い。</p>
      */
@@ -90,16 +90,16 @@ public final class InsaneAEConfig {
     }
 
     /**
-     * 待ち時間で頭打ちになる機械 (刻印機など) を、1 tick のうちに何回まで回すか。
+     * 待ち時間で頭打ちになる機械、たとえば刻印機を、1 tickのうちに何回まで回すか。
      *
-     * <p>加速カードの倍率とこの値の小さい方が実際の回数になる。1 にすると追い tick を止めて
-     * AE2 本来の「1 tick に 1 回」に戻る。</p>
+     * <p>加速カードの倍率とこの値の小さい方が実際の回数になる。1にすると追いtickを止めて
+     * AE2本来の「1 tickに1回」に戻る。</p>
      */
     public static int machineTickBurst() {
         return get(COMMON.machineTickBurst, 256);
     }
 
-    /** 超次元パターンプロバイダーが、加工パターンを 1 tick にまとめて押し出すか。 */
+    /** 超次元パターンプロバイダーが、加工パターンを1 tickにまとめて押し出すか。 */
     public static boolean processingBulkPush() {
         return get(COMMON.processingBulkPush, true);
     }

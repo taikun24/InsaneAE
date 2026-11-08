@@ -14,16 +14,16 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * 組み上がったレンダーステートに<b>ケーブルの種類</b>を書き込む。
+ * 組み上がったレンダーステートにケーブルの種類を書き込む。
  *
- * <p>ここが「ワールドの描画がこの Mod のケーブルだと気付く」唯一の場所。
- * AE2 はこの後 {@code AECableType} と色しか見ないので、
- * <b>種類はここで記録しておかないと二度と分からない</b>。</p>
+ * <p>ここが「ワールドの描画がこのModのケーブルだと気付く」唯一の場所。
+ * AE2はこの後 {@code AECableType} と色しか見ないので、
+ * 種類はここで記録しておかないと二度と分からない。</p>
  */
 @Mixin(value = CableBusContainer.class, remap = false)
 public abstract class CableBusContainerRenderStateMixin {
 
-    /** 中央の部品 (= ケーブル) は {@code null} を渡すと返る。 */
+    /** 中央の部品、つまりケーブルは、{@code null}を渡すと返る。 */
     @Shadow
     public abstract IPart getPart(@Nullable Direction partLocation);
 

@@ -36,17 +36,17 @@ import org.jetbrains.annotations.Nullable;
 *///?}
 
 /**
- * 特大パターンプロバイダー — AE2 のパターンプロバイダのパターン枠を
- * Quantum CPU と同じ {@value QuantumCpuBlockEntity#PATTERN_SLOTS} 枠に増やしたもの。
+ * 特大パターンプロバイダー — AE2のパターンプロバイダのパターン枠を
+ * Quantum CPUと同じ {@value QuantumCpuBlockEntity#PATTERN_SLOTS} 枠に増やしたもの。
  *
- * <p>ページ数・1 ページの枠数も Quantum CPU と同じ
- * ({@value QuantumCpuBlockEntity#PATTERN_PAGES} ページ ×
+ * <p>ページ数・1ページの枠数もQuantum CPUと同じ
+ * {@value QuantumCpuBlockEntity#PATTERN_PAGES}ページ ×
  * {@value QuantumCpuBlockEntity#PATTERN_SLOTS_PER_PAGE} 枠)。
- * Quantum CPU と違って自分では組まず、<b>全部のパターンを普通のパターンプロバイダとして</b>
- * 隣接インベントリ (や分子組立装置) へ押し出す。加工パターンの置き場はこちら —
- * Quantum CPU は加工パターンを受け付けない ({@code QuantumCpuLogic} のフィルタ)。</p>
+ * Quantum CPUと違って自分では組まず、全部のパターンを普通のパターンプロバイダとして
+ * 隣接インベントリや分子組立装置へ押し出す。加工パターンの置き場はこちら ―
+ * Quantum CPUは加工パターンを受け付けない。{@code QuantumCpuLogic}のフィルタによる。</p>
  *
- * <p>毎 tick の {@link #serverTick()} は、1620 枠に耐えるためにまとめてある
+ * <p>毎tickの {@link #serverTick()} は、1620枠に耐えるためにまとめてある
  * パターン更新を流すためだけにある → {@link InsanePatternProviderLogic}。</p>
  */
 //? if >=1.21 {
@@ -78,7 +78,7 @@ public class InsanePatternProviderBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public EnumSet<Direction> getTargets() {
-        // 向きの概念を持たない。全方向に押し出せる。
+        // 向きの概念を持たない。全方向に押し出せる
         return EnumSet.allOf(Direction.class);
     }
 

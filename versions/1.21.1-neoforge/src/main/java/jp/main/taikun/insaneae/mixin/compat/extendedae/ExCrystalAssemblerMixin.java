@@ -8,11 +8,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 /**
- * ExtendedAE の水晶組立機 (Crystal Assembler、1.21 で追加) にも加速カードの倍率を掛ける。
+ * ExtendedAEの水晶組立機、Crystal Assemblerは1.21で追加された。加速カードの倍率を掛ける。
  *
  * <p>仕組みは回路切断機と同じで、{@code tickingRequest} が
  * {@code exec.execute(FCUtil.speedCardMap(AE2の加速カード枚数), ...)} に渡す
- * 第 1 引数 (進捗量) に掛ける。</p>
+ * 第1引数、つまり進捗量に掛ける。</p>
  */
 @Pseudo
 @Mixin(targets = "com.glodblock.github.extendedae.common.tileentities.TileCrystalAssembler",

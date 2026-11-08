@@ -11,18 +11,18 @@ import appeng.api.ids.AEComponents;
 //?}
 
 /**
- * 強化クリエイティブセル。セルワークベンチで設定した中身を<b>無限に</b>供給する。
+ * 強化クリエイティブセル。セルワークベンチで設定した中身を無限に供給する。
  *
- * <p>AE2 のクリエイティブセルとの違いは<b>報告する在庫量だけ</b>で、
- * AE2 が 1 種あたり {@code Integer.MAX_VALUE} (約 21 億) を返すのに対し、
- * こちらは {@code Long.MAX_VALUE} (約 922 京) を返す
+ * <p>AE2のクリエイティブセルとの違いは報告する在庫量だけで、
+ * AE2が1種あたり{@code Integer.MAX_VALUE}の約21億を返すのに対し、
+ * こちらは{@code Long.MAX_VALUE}の約922京を返す
  * ({@link InsaneCreativeCellInventory})。どちらも取り出しは実際には無制限だが、
  * 端末の表示やクラフト計算が見るのはこの「在庫量」なので、
- * 21 億を超える自動クラフトの材料元にするならこちらが要る。</p>
+ * 21億を超える自動クラフトの材料元にするならこちらが要る。</p>
  *
- * <p>AE2 の {@code CreativeCellItem} を継承<b>しない</b>のは、AE2 の
+ * <p>AE2の {@code CreativeCellItem} を継承しないのは、AE2の
  * {@code CreativeCellHandler} が {@code instanceof CreativeCellItem} で拾ってしまい、
- * 先に登録されている向こうのハンドラに 21 億版の在庫を返されてしまうため。
+ * 先に登録されている向こうのハンドラに21億版の在庫を返されてしまうため。
  * 中身は薄いので自前で持ち、{@link InsaneCreativeCellHandler} で拾う。</p>
  */
 public class InsaneCreativeCellItem extends Item implements ICellWorkbenchItem {
@@ -36,13 +36,13 @@ public class InsaneCreativeCellItem extends Item implements ICellWorkbenchItem {
 
     @Override
     public ConfigInventory getConfigInventory(ItemStack is) {
-        // 種類の制限なし。AE2 のクリエイティブセル (アイテム用/液体用) も中身は同じで、
-        // 分かれているのは見た目だけなので、こちらは 1 種類で全部まかなう。
+        // 種類の制限なし。AE2のクリエイティブセルはアイテム用と液体用も中身は同じで、
+        // 分かれているのは見た目だけなので、こちらは1種類で全部まかなう
         return CellConfig.create(is);
     }
 
-    // ファジー設定は AE2 のセルと同じコンポーネント (AEComponents.STORAGE_CELL_FUZZY_MODE) に保存する。
-    // 値の検証とコーデックは AE2 側にあるので、壊れた値を握り潰す処理は要らない。
+    // ファジー設定はAE2のセルと同じコンポーネント (AEComponents.STORAGE_CELL_FUZZY_MODE) に保存する
+    // 値の検証とコーデックはAE2側にあるので、壊れた値を握り潰す処理は要らない
     @Override
     public FuzzyMode getFuzzyMode(ItemStack is) {
         //? if >=1.21 {
@@ -53,7 +53,7 @@ public class InsaneCreativeCellItem extends Item implements ICellWorkbenchItem {
             try {
                 return FuzzyMode.valueOf(tag.getString(FUZZY_MODE_TAG));
             } catch (IllegalArgumentException ignored) {
-                // 壊れた NBT は既定値として扱う
+                // 壊れたNBTは既定値として扱う
             }
         }
         return FuzzyMode.IGNORE_ALL;

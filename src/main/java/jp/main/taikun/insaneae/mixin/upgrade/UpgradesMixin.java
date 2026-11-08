@@ -10,10 +10,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * AE2 の機械へのカード登録を、超次元版にも複製させる → {@link UpgradeMirrors}。
+ * AE2の機械へのカード登録を、超次元版にも複製させる → {@link UpgradeMirrors}。
  *
- * <p>引数 3 つの {@code add} は 4 つの方を呼ぶだけなので、こちらだけ見張れば全部の登録が通る。
- * 失敗しても「超次元版にカードが挿せない」だけなので、required=false の
+ * <p>引数3つの {@code add} は4つの方を呼ぶだけなので、こちらだけ見張れば全部の登録が通る。
+ * 失敗しても「超次元版にカードが挿せない」だけなので、required=falseの
  * {@code insaneae.optional.mixins.json} に置いている。</p>
  */
 @Mixin(value = Upgrades.class, remap = false)

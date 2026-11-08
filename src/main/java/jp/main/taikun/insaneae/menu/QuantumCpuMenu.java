@@ -36,18 +36,18 @@ import net.minecraftforge.network.NetworkHooks;
 *///?}
 
 /**
- * Quantum CPU の画面。パターンプロバイダの画面に加速カードのスロットを足しただけ。
+ * Quantum CPUの画面。パターンプロバイダの画面に加速カードのスロットを足しただけ。
  *
- * <p>AE2 の {@code MenuTypeBuilder} は {@code MenuType} を必ず {@code ae2} 名前空間で登録してしまうので、
+ * <p>AE2の {@code MenuTypeBuilder} は {@code MenuType} を必ず {@code ae2} 名前空間で登録してしまうので、
  * ここでは同じ処理を自前で書いて {@code insaneae:quantum_cpu} として登録している。
- * 画面レイアウトの JSON は {@code StyleManager} が {@code ae2} 名前空間固定で読むため、
+ * 画面レイアウトのJSONは {@code StyleManager} が {@code ae2} 名前空間固定で読むため、
  * こちらの分も {@code assets/ae2/screens/insaneae/quantum_cpu.json} に置いてある。</p>
  *
- * <p>パターン枠は 1620 個あるが、メニューに並べるのは<b>1 ページぶん (9x6 = 54 枠) だけ</b>。
+ * <p>パターン枠は1620個あるが、メニューに並べるのは1ページぶんだけ。9x6、つまり54枠。
  * {@link PatternPagingHandshake} がコンストラクタの見るインベントリを
  * {@link PagedPatternInventory} にすり替え、ページ送りは窓をずらして中身を差し替える。
- * 全枠をスロットにするとバニラの毎 tick の同期が 1620 枠ぶん走るため
- * ({@link PagedPatternInventory} の説明を参照)。</p>
+ * 全枠をスロットにするとバニラの毎tickの同期が1620枠ぶん走るため
+ * {@link PagedPatternInventory}の説明を参照。</p>
  */
 public class QuantumCpuMenu extends PatternProviderMenu {
 
@@ -61,10 +61,10 @@ public class QuantumCpuMenu extends PatternProviderMenu {
     private static final String ACTION_SET_PAGE = "insaneaeSetPage";
 
     /**
-     * 内蔵クラフト CPU のユニットスロットの区分。
+     * 内蔵クラフトCPUのユニットスロットの区分。
      *
-     * <p>AE2 の {@code SlotSemantics} は決め打ちの一覧なので、自分のぶんは
-     * {@code register} で足す。画面 JSON 側はこの名前で座標を引く
+     * <p>AE2の {@code SlotSemantics} は決め打ちの一覧なので、自分のぶんは
+     * {@code register} で足す。画面JSON側はこの名前で座標を引く
      * ({@code assets/ae2/screens/insaneae/quantum_cpu.json})。</p>
      */
     public static final SlotSemantic CRAFTING_UNIT =
@@ -79,10 +79,10 @@ public class QuantumCpuMenu extends PatternProviderMenu {
     }
 
     /**
-     * パターン枠の窓。super のコンストラクタの中で作られたものを
+     * パターン枠の窓。superのコンストラクタの中で作られたものを
      * {@link PatternPagingHandshake#finish()} で受け取る。
      *
-     * <p>ページングを切っている場合はここが null のままで、パターン枠は従来どおり全枠並ぶ。</p>
+     * <p>ページングを切っている場合はここがnullのままで、パターン枠は全枠並ぶ。</p>
      */
     private PagedPatternInventory patternWindow;
 
@@ -90,32 +90,32 @@ public class QuantumCpuMenu extends PatternProviderMenu {
         this(TYPE, id, playerInventory, host);
     }
 
-    /** 特大パターンプロバイダー ({@code InsanePatternProviderMenu}) が MenuType を差し替えて使う。 */
+    /** 特大パターンプロバイダー ({@code InsanePatternProviderMenu}) がMenuTypeを差し替えて使う。 */
     protected QuantumCpuMenu(MenuType<? extends QuantumCpuMenu> type, int id, Inventory playerInventory,
             PatternProviderLogicHost host) {
         super(type, id, playerInventory,
                 PatternPagingHandshake.begin(host, InsaneAEConfig.serverSidePatternPaging()));
 
-        // super がパターン枠のスロットを並べ終えた直後に窓を受け取る。
-        // ここより後で getPatternInv() を呼ぶ処理は、今までどおり全枠を見る。
+        // superがパターン枠のスロットを並べ終えた直後に窓を受け取る
+        // ここより後でgetPatternInv()を呼ぶ処理は、全枠を見る
         patternWindow = PatternPagingHandshake.finish();
 
         registerClientAction(ACTION_SET_PAGE, Integer.class, this::applyPage);
-        // アップグレードスロット。
-        // 他 Mod が PatternProviderMenu のコンストラクタに Mixin で
+        // アップグレードスロット
+        // 他ModがPatternProviderMenuのコンストラクタにMixinで
         // setupUpgrades(host.getUpgrades()) を注入していることがある
-        // (AppliedFlux の MixinPatternProviderMenu が実際にやっている)。
-        // 相手が使うのは<b>こちらと同じインベントリ</b>なので、素直に足すと
-        // 同じ中身のスロットが 2 セット並び、上下が連動する見た目になる。
-        // 既に UPGRADE スロットがあるならそちらに任せる。
+        // AppliedFluxのMixinPatternProviderMenuが実際にやっている
+        // 相手が使うのはこちらと同じインベントリなので、素直に足すと
+        // 同じ中身のスロットが2セット並び、上下が連動する見た目になる
+        // 既にUPGRADEスロットがあるならそちらに任せる
         if (host instanceof IUpgradeableObject upgradeable
                 && getSlots(SlotSemantics.UPGRADE).isEmpty()) {
             setupUpgrades(upgradeable.getUpgrades());
         }
 
-        // 内蔵クラフト CPU のユニットスロット。
-        // 特大パターンプロバイダー (このクラスを継承している) は CPU を持たないので、
-        // Quantum CPU のときだけ並べる。
+        // 内蔵クラフトCPUのユニットスロット
+        // 特大パターンプロバイダーはこのクラスを継承しているが、CPUを持たないので、
+        // Quantum CPUのときだけ並べる
         if (host instanceof QuantumCpuBlockEntity quantumCpu) {
             //? if >=1.21 {
             List<Component> storageTooltip =
@@ -142,7 +142,7 @@ public class QuantumCpuMenu extends PatternProviderMenu {
         }
 
         // 返却インベントリには見出しを出していないので、
-        // 空スロットのツールチップで何の枠か分かるようにする。
+        // 空スロットのツールチップで何の枠か分かるようにする
         List<Component> returnInvTooltip =
                 List.of(Component.translatable("gui.insaneae.quantum_cpu.return_inventory"));
         for (Slot slot : getSlots(SlotSemantics.STORAGE)) {
@@ -172,7 +172,7 @@ public class QuantumCpuMenu extends PatternProviderMenu {
     /**
      * 表示ページを変える。クライアントから呼ぶとサーバにも伝わり、
      * サーバは次の {@code broadcastChanges} で新しいページの中身を送ってくる
-     * (＝ページ送りの直後だけ 1 往復ぶん古い中身が見えることがある)。
+     * ページ送りの直後だけ、1往復ぶん古い中身が見えることがある。
      */
     public void setPage(int page) {
         if (patternWindow == null) {
@@ -191,11 +191,11 @@ public class QuantumCpuMenu extends PatternProviderMenu {
     }
 
     /**
-     * シフトクリックでパターンを入れるときは<b>表示中のページに限らず全枠</b>を使う。
+     * シフトクリックでパターンを入れるときは表示中のページに限らず全枠を使う。
      *
-     * <p>メニューには 1 ページぶんのスロットしか無いので、
-     * バニラ／AE2 の処理に任せると表示中のページが埋まった時点で止まってしまう。
-     * パターン以外・パターン枠から取り出す側は AE2 の処理のまま。</p>
+     * <p>メニューには1ページぶんのスロットしか無いので、
+     * バニラ／AE2の処理に任せると表示中のページが埋まった時点で止まってしまう。
+     * パターン以外・パターン枠から取り出す側はAE2の処理のまま。</p>
      */
     @Override
     public ItemStack quickMoveStack(Player player, int slotIndex) {
@@ -215,7 +215,7 @@ public class QuantumCpuMenu extends PatternProviderMenu {
             clicked.setChanged();
             broadcastChanges();
         }
-        // 何枚入ったかに関わらず、ここで打ち止め (空を返すとバニラのループが終わる)。
+        // 何枚入ったかに関わらず、ここで打ち止めにする。空を返すとバニラのループが終わるため
         return ItemStack.EMPTY;
     }
 

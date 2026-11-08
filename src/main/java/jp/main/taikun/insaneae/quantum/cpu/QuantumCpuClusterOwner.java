@@ -4,20 +4,20 @@ import appeng.api.networking.IGridNode;
 import net.minecraft.world.level.Level;
 
 /**
- * AE2 の {@code CraftingCPUCluster} に「持ち主」として渡せるもの。
+ * AE2の {@code CraftingCPUCluster} に「持ち主」として渡せるもの。
  *
- * <p>AE2 のクラスタは自分の情報 (ノード・ワールド・保存要求) を
- * <b>構成ブロック ({@code CraftingBlockEntity}) から引く</b>作りになっている。
- * Quantum CPU の内蔵 CPU には構成ブロックが 1 つも無いので、
+ * <p>AE2のクラスタは自分の情報、つまりノード、ワールド、保存要求を
+ * 構成ブロック ({@code CraftingBlockEntity}) から引く作りになっている。
+ * Quantum CPUの内蔵CPUには構成ブロックが1つも無いので、
  * 代わりにこれを差しておき、{@code CraftingCpuClusterOwnerMixin} が
- * その 3 つの経路だけを横取りする。</p>
+ * その3つの経路だけを横取りする。</p>
  *
- * <p>実装は {@link QuantumCraftingCpu} だけ。AE2 が自分で組んだクラスタでは
- * 持ち主が null なので、<b>AE2 本来の挙動は 1 バイトも変わらない</b>。</p>
+ * <p>実装は {@link QuantumCraftingCpu} だけ。AE2が自分で組んだクラスタでは
+ * 持ち主がnullなので、AE2本来の挙動は1バイトも変わらない。</p>
  */
 public interface QuantumCpuClusterOwner {
 
-    /** クラスタのノード。AE2 では「代表ブロックのノード」にあたるもの。 */
+    /** クラスタのノード。AE2では「代表ブロックのノード」にあたるもの。 */
     IGridNode cpuNode();
 
     /** クラスタのあるワールド。 */
@@ -29,31 +29,31 @@ public interface QuantumCpuClusterOwner {
     /**
      * 合計バイト数の正確な値。
      *
-     * <p>InsaneAE の上位階層は 1 個で 2^63 バイトあり long に収まらないので、
-     * AE2 の {@code storage} フィールド (long) ではなくこちらを基準にする。</p>
+     * <p>InsaneAEの上位階層は1個で2^63バイトありlongに収まらないので、
+     * AE2の {@code storage} フィールド (long) ではなくこちらを基準にする。</p>
      */
     java.math.BigInteger cpuExactStorage();
 
-    /** 合計スレッド数。AE2 の {@code accelerator} は int なので、基準にするのはこちら。 */
+    /** 合計スレッド数。AE2の {@code accelerator} はintなので、基準にするのはこちら。 */
     long cpuCoProcessors();
 
     /**
-     * この CPU がジョブを受け取った。
+     * このCPUがジョブを受け取った。
      *
-     * <p>Quantum CPU は容量を切り分けて何本も同時に受けるので、
-     * <b>受け取った時点で自分の容量をそのジョブのぶんへ縮める</b>必要がある
-     * ({@link QuantumCpuPartition} → {@link QuantumCraftingCpu})。
-     * 呼び元は {@code CraftingCpuClusterOwnerMixin} ({@code submitJob} の成功時)。</p>
+     * <p>Quantum CPUは容量を切り分けて何本も同時に受けるので、
+     * 受け取った時点で自分の容量をそのジョブのぶんへ縮める必要がある
+     * {@link QuantumCpuPartition}から{@link QuantumCraftingCpu}へ。
+     * 呼び元は{@code CraftingCpuClusterOwnerMixin}で、{@code submitJob}の成功時。</p>
      *
-     * @param bytes そのジョブが要求したバイト数 (ACO の BigInteger 計画なら正確値)
+     * @param bytesそのジョブが要求したバイト数。ACOのBigInteger計画なら正確値
      */
     void cpuJobSubmitted(java.math.BigInteger bytes);
 
     /**
      * 中身の版番号。変わるたびに増える。
      *
-     * <p>AE2 のクラスタは「構成ブロック数」を世代の目印にして数え直しを省いているが、
-     * 内蔵 CPU には構成ブロックが無いのでこれを代わりに使う。</p>
+     * <p>AE2のクラスタは「構成ブロック数」を世代の目印にして数え直しを省いているが、
+     * 内蔵CPUには構成ブロックが無いのでこれを代わりに使う。</p>
      */
     int cpuRevision();
 }

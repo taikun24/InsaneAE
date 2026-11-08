@@ -64,7 +64,7 @@ public final class AcoBigIntegerPlanBridge {
         }
         for (Map.Entry<IPatternDetails, BigInteger> entry : plan.patternTimes().entrySet()) {
             BigInteger amount = entry.getValue();
-            // 0以下の回数は破損したPlanとして扱い、空のJobを作らない。
+            // 0以下の回数は破損したPlanとして扱い、空のJobを作らない
             if (entry.getKey() == null || amount == null || amount.signum() <= 0
                     || !(entry.getKey() instanceof IMolecularAssemblerSupportedPattern)) {
                 return false;
@@ -86,7 +86,7 @@ public final class AcoBigIntegerPlanBridge {
         for (IPatternDetails details : plan.patternTimes().keySet()) {
             boolean hasBulkProvider = false;
             for (ICraftingProvider provider : service.getProviders(details)) {
-                // 超次元パターンプロバイダーもまとめ処理を持つが、まとめられるのは加工パターンだけ。
+                // 超次元パターンプロバイダーもまとめ処理を持つが、まとめられるのは加工パターンだけ
                 if (provider instanceof QuantumCpuLogic) {
                     hasBulkProvider = true;
                     break;

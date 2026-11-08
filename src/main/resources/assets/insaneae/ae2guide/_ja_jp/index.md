@@ -7,17 +7,17 @@ navigation:
 
 # InsaneAE
 
-AE2 の上限を外すアドオンです。8E までのストレージとクラフトストレージ、16 スレッドの壁を越える並列クラフトユニット、
-32 本を超えるチャンネルを運ぶケーブル、クラフトをまとめて組み立てる CPU を追加します。
+AE2 の制限を大きく拡張するアドオンです[cite: 4]。最大 8E までのストレージおよびクラフトストレージ、16 スレッドの壁を超える並列クラフトユニット、
+32 本を超えるチャンネルを伝送するケーブル、クラフトをまとめて処理する CPU を追加します[cite: 4]。
 
-MEGA Cells が必要です。化学物質セルには Applied Mekanistics、FE セルには AppliedFlux、DISK には AE2 Things が要ります。
+前提として MEGA Cells が必要です[cite: 4]。また、化学物質セルを使用する場合は Applied Mekanistics、FE セルを使用する場合は AppliedFlux、DISK を使用する場合は AE2 Things が必要になります[cite: 4]。
 
 ## ページ
 
-- [超次元プロセッサ](insane_processor.md)
-- [クラフトCPUの部品](crafting_cpu.md)
-- [クァンタムCPU](quantum_cpu.md)
-- [ストレージセル](storage_cells.md)
-- [ケーブル・インターフェース・パターンプロバイダー](network.md)
-- [エネルギー](energy.md)
-- [加速カード](acceleration_cards.md)
+- [超次元プロセッサ](insane_processor.md)[cite: 4]
+- [クラフトCPUの部品](crafting_cpu.md)[cite: 4]
+- [クァンタムCPU](quantum_cpu.md)[cite: 4]
+- [ストレージセル](storage_cells.md)[cite: 4]
+- [ケーブル・インターフェース・パターンプロバイダー](network.md)[cite: 4]
+- [エネルギー](energy.md)[cite: 4]
+- [加速カード](acceleration_cards.md)[cite: 4]
