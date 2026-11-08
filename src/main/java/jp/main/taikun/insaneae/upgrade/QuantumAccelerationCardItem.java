@@ -2,7 +2,7 @@ package jp.main.taikun.insaneae.upgrade;
 
 import appeng.items.materials.UpgradeCardItem;
 import jp.main.taikun.insaneae.quantum.QuantumCpuBlockEntity;
-import net.minecraft.ChatFormatting;
+import jp.main.taikun.insaneae.util.StatTooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -32,8 +32,8 @@ public class QuantumAccelerationCardItem extends UpgradeCardItem {
     //?} else {
     /*public void appendHoverText(ItemStack stack, Level level, List<Component> lines, TooltipFlag flag) {
     *///?}
-        lines.add(Component.translatable("item.insaneae.quantum_acceleration_card.tooltip",
-                QuantumCpuBlockEntity.MULTIPLIER_PER_CARD).withStyle(ChatFormatting.GRAY));
+        StatTooltip.add(lines, Component.translatable("item.insaneae.quantum_acceleration_card.tooltip",
+                QuantumCpuBlockEntity.MULTIPLIER_PER_CARD));
         //? if >=1.21 {
         super.appendHoverText(stack, context, lines, flag);
         //?} else {

@@ -1,7 +1,7 @@
 package jp.main.taikun.insaneae.upgrade;
 
 import appeng.items.materials.UpgradeCardItem;
-import net.minecraft.ChatFormatting;
+import jp.main.taikun.insaneae.util.StatTooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -35,8 +35,7 @@ public class TaskFusionCardItem extends UpgradeCardItem {
     //?} else {
     /*public void appendHoverText(ItemStack stack, Level level, List<Component> lines, TooltipFlag flag) {
     *///?}
-        lines.add(Component.translatable("item.insaneae.task_fusion_card.tooltip")
-                .withStyle(ChatFormatting.GRAY));
+        StatTooltip.add(lines, Component.translatable("item.insaneae.task_fusion_card.tooltip"));
         //? if >=1.21 {
         super.appendHoverText(stack, context, lines, flag);
         //?} else {

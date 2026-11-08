@@ -4,6 +4,7 @@ import jp.main.taikun.insaneae.energy.SolarPanelTier;
 import jp.main.taikun.insaneae.integration.aco.AcoBigIntegerLimitBridge;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModParts;
+import jp.main.taikun.insaneae.util.StatTooltip;
 import net.minecraft.ChatFormatting;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
@@ -33,9 +34,9 @@ import jp.main.taikun.insaneae.registries.ModDataComponents;
  * </ol>
  *
  * <p>共通キーの方は<b>書式引数を渡せる</b>ので、階層ごとに違う数値を文中に出せる
- * (ソーラーパネルの発電量など)。改行は lang の値に {@code \n} を入れる。</p>
+ * (ソーラーパネルの発電量など)。値の書き方 ({@code ラベル|値}、改行は {@code \n}) は {@link StatTooltip}。</p>
  *
- * <p>説明は<b>仕様を 1 行書くだけ</b>にしてある。理由・使い分け・注意書きは載せない
+ * <p>説明には<b>仕様の値だけ</b>を書く。理由・使い分け・注意書きは載せない
  * (画面や名前で分かることを毎回読ませないため)。ゲーム中に他から読み取れない値
  * — 枠数・上限・速度・チャンネル数 — だけを書くこと。</p>
  *
@@ -91,11 +92,7 @@ public final class InsaneTooltips {
         }
         Description description = descriptionFor(item);
         if (description != null) {
-            String text = Component.translatable(description.key(), description.args()).getString();
-            // lang内の改行を、Minecraftの独立したTooltip行へ変換する。
-            for (String line : text.split("\\R")) {
-                event.getToolTip().add(Component.literal(line).withStyle(ChatFormatting.GRAY));
-            }
+            StatTooltip.add(event.getToolTip(), Component.translatable(description.key(), description.args()));
         }
 
         // BigIntegerクラフトストレージだけは、ACO側の計算・保存上限をカタログ容量として表示する。
@@ -103,8 +100,7 @@ public final class InsaneTooltips {
             return;
         }
         AcoBigIntegerLimitBridge.theoreticalMaximumDisplay().ifPresent(capacity ->
-                event.getToolTip().add(Component.translatable(
-                        BIG_INTEGER_CPU_CAPACITY, capacity).withStyle(ChatFormatting.AQUA)));
+                StatTooltip.add(event.getToolTip(), Component.translatable(BIG_INTEGER_CPU_CAPACITY, capacity)));
     }
 
     /** そのアイテムに出す説明。個別、階層共通の順で探す。無ければ null。 */
