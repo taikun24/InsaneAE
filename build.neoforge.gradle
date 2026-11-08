@@ -324,10 +324,6 @@ dependencies {
                 rootProject.file('libs/rhino-2101.2.8-build.91.jar'))
     }
 
-    // JEI — 【任意】。AE2 19.x は JEI 連携を持たないので、刻印機・チャージャーのレシピを
-    // こちらから出している (integration/jei)。@JeiPlugin なので JEI が無ければ読まれない。
-    compileOnly "curse.maven:jei-238222:${jei_file}"
-    localRuntime "curse.maven:jei-238222:${jei_file}"
     testImplementation platform("org.junit:junit-bom:5.10.2")
     testImplementation "org.junit.jupiter:junit-jupiter"
     // Gradle 9 からは JUnit Platform の起動部分を自分で足す必要がある。

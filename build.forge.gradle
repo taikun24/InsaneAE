@@ -257,10 +257,6 @@ dependencies {
         modRuntimeOnly "curse.maven:geckolib-388172:8285794"
     }
 
-    // JEI — 【任意】。AE2 15.x の JEI 連携のチャージャーに改良チャージャーを触媒として足す
-    // (integration/jei)。@JeiPlugin なので JEI が無ければ読まれない。
-    modCompileOnly "curse.maven:jei-238222:8500005"
-    modRuntimeOnly "curse.maven:jei-238222:8500005"
     testImplementation platform("org.junit:junit-bom:5.10.2")
     testImplementation "org.junit.jupiter:junit-jupiter"
     // Gradle 9 からは JUnit Platform の起動部分を自分で足す必要がある。
