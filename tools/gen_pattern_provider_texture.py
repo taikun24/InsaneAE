@@ -32,7 +32,7 @@ OUT_DIR = os.path.join(resource_root(REPO), "assets/insaneae/textures/block")
 
 TEMPLATE = "pattern_provider_base.png"
 
-# 超特大インターフェイスと同じ「限界突破ブロックの紫」。
+# 超特大インターフェイスと同じ「限界突破ブロックの紫」
 PROVIDER_COLOR = (0xC0, 0x5C, 0xFF)
 
 

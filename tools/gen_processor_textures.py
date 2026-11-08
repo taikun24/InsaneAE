@@ -5,8 +5,8 @@
 
 下敷きは AE2 の演算プロセッサの 3 枚 (tools/textures/ の processor.png /
 printed_processor.png / processor_press.png)。AE2 のプロセッサは基板が共通で、
-<b>足 (と回路) の色だけ</b>で種類を見分けている (演算 = 水色、工学 = シアン、論理 = 金)。
-Insane プロセッサは、その色の付いた部分を<b>虹色</b>にする
+足 (と回路) の色だけで種類を見分けている (演算 = 水色、工学 = シアン、論理 = 金)。
+Insane プロセッサは、その色の付いた部分を虹色にする
 (InsaneAE で「最上段 = 虹」としている 8E セルなどと揃える)。
 
 色を回すのは下敷きの主要色相 (水色) の近くの画素だけ。プロセッサの赤い点など、
@@ -35,16 +35,16 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_DIR = os.path.join(resource_root(REPO), "assets/insaneae/textures/item")
 TEMPLATE_DIRS = resolve_template_dirs(REPO)
 
-# 下敷きの主要色相からこれ以内の画素だけ虹にする (色相は 0〜1)。
+# 下敷きの主要色相からこれ以内の画素だけ虹にする。色相は0〜1
 HUE_WINDOW = 0.12
-# これより暗い画素は虹にしない。プロセッサの基板 (暗い青灰色) も彩度がわずかにあるので、
-# 色相だけで選ぶと基板ごと虹色になってしまう。
+# これより暗い画素は虹にしない。プロセッサの基板は暗い青灰色で、彩度がわずかにあるので、
+# 色相だけで選ぶと基板ごと虹色になってしまう
 MIN_VALUE = 0.5
-# 虹の向きと刻み。x+y が 1 増えるごとに回す色相。
+# 虹の向きと刻み。x+yが1増えるごとに回す色相
 RAINBOW_STEP = 1.0 / 14.0
-# 虹の起点の色相 (マゼンタ寄り。8E と同じ系統)。
+# 虹の起点の色相。マゼンタ寄りで、8Eと同じ系統
 RAINBOW_START = 0.83
-# 金型の彫りに乗せる虹の濃さ。
+# 金型の彫りに乗せる虹の濃さ
 PRESS_TINT = 0.45
 
 
@@ -67,7 +67,7 @@ def rainbowize(template: Image.Image) -> Image.Image:
             distance = min(abs(h - ref_h), 1 - abs(h - ref_h))
             if s < MIN_SAT or v < MIN_VALUE or distance > HUE_WINDOW:
                 continue
-            # 水色は彩度が低めなので、虹がくすまないよう少し持ち上げる。
+            # 水色は彩度が低めなので、虹がくすまないよう少し持ち上げる
             nr, ng, nb = colorsys.hsv_to_rgb(rainbow_hue(x, y), min(1.0, s * 1.6), v)
             px[x, y] = (round(nr * 255), round(ng * 255), round(nb * 255), a)
     return out

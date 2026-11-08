@@ -6,7 +6,7 @@
     python tools/gen_cell_textures.py                  # 生成
     python tools/gen_cell_textures.py --dump-templates # 下敷きを書き出す
 
-階層の色は tools/gen_crafting_textures.py と<b>同じ定義を共有する</b> (STORAGE_BAND_COLORS)。
+階層の色は tools/gen_crafting_textures.py と同じ定義を共有する (STORAGE_BAND_COLORS)。
 クラフトストレージのブロックと ME セルで色がずれないよう、色をいじるときは
 gen_crafting_textures.py 側だけを書き換えて両方流し直すこと。
 
@@ -25,7 +25,7 @@ gen_crafting_textures.py 側だけを書き換えて両方流し直すこと。
 つまり通常セル = MEGA のハウジング + ここで出す色レイヤ + AE2 の LED、
 ポータブル = AE2 の筐体 + MEGA の画面 + ここで出す側面 + AE2 の LED。
 
-<b>色レイヤのドット位置は借りているハウジングの窓に合わせてある</b> (CELL_OVERLAY_MASK /
+色レイヤのドット位置は借りているハウジングの窓に合わせてある (CELL_OVERLAY_MASK /
 PORTABLE_SIDE_PIXELS)。ハウジングを別のものに差し替えるならマスクも描き直すこと。
 
 --------------------------------------------------------------------------------------
@@ -35,17 +35,17 @@ tools/textures/ に次の名前で置くと、そちらが優先して使われ�
 
     cell_overlay.png     通常セルの色レイヤ。グレースケールで陰影だけ描く (階層色に染まる)
     portable_side.png    ポータブルセルの側面の帯。グレースケールで陰影だけ描く
-    component_p<N>_base.png    セルコンポーネントの地。<b>染まらない</b>
+    component_p<N>_base.png    セルコンポーネントの地。染まらない
     component_p<N>_color.png   その上に重ねる、階層色に染まる部分 (色付きで描く)
 
 コンポーネントは AE2 の 1k/4k/16k/64k/256k 相当の 5 パターン (N = 0〜4) を帯の中で
 循環させる (1g,4g,16g,64g,256g → 1t,4t,... と同じ並び)。
 
-<b>地と色は別ファイルに分けること。</b>base はそのまま下に敷かれるので、
+地と色は別ファイルに分けること。base はそのまま下に敷かれるので、
 地に若干色が付いていても染まらない。color 側だけが「テンプレの主要な色相 →
 階層色の色相」に回されるので、1 枚の中の色の差 (濃い緑の陰など) はそのまま保たれる。
 
-    旧形式 (1 枚版 component_p<N>.png) も読める。その場合は<b>彩度で地と色を見分ける</b>
+    旧形式 (1 枚版 component_p<N>.png) も読める。その場合は彩度で地と色を見分ける
     ので、地に色が付いていると一緒に染まってしまう。`--dump-templates` を実行すると
     1 枚版を彩度で分けた base/color の叩き台を書き出すので、そこから手で直すのが早い。
 """
@@ -90,24 +90,24 @@ TEMPLATE_DIRS = resolve_template_dirs(REPO)
 # 階層と色
 # --------------------------------------------------------------------------------------
 
-# InsaneCraftingUnitType と同じ並び (セルの階層もこれに一致する)。
+# InsaneCraftingUnitTypeと同じ並び。セルの階層もこれに一致する
 CELL_TIERS = ["1g", "4g", "16g", "64g", "256g",
               "1t", "4t", "16t", "64t", "256t",
               "1p", "4p", "16p", "64p", "256p",
               "1e", "4e", "8e"]
 
-# エネルギーストレージコンポーネント (AppliedFlux 連携の FE セル用) を出す階層。
-# FE セルは 16T までなので (FluxTiers.TOP) 、それに合わせる。
+# エネルギーストレージコンポーネントを出す階層。AppliedFlux連携のFEセル用
+# FEセルは16Tまでなので (FluxTiers.TOP) 、それに合わせる
 ENERGY_TIERS = CELL_TIERS[:CELL_TIERS.index("16t") + 1]
 
-# エネルギーコンポーネントの線と点の色。AppliedFlux のエネルギーコンポーネントの赤に寄せた固定色で、
-# 階層では変えない (「FE 用」だと一目で分かるのが優先)。階層は枠の色で見分ける。
+# エネルギーコンポーネントの線と点の色。AppliedFluxのエネルギーコンポーネントの赤に寄せた固定色で、
+# 階層では変えない。「FE用」だと一目で分かるのが優先。階層は枠の色で見分ける
 ENERGY_RED = (0xd8, 0x2a, 0x2a)
 
-# 枠をどれだけ階層色に寄せるか (明るい画素ほど強く寄せる)。
+# 枠をどれだけ階層色に寄せるか。明るい画素ほど強く寄せる
 ENERGY_FRAME_TINT = 0.75
 
-# 虹色にする階層はブロック側と共通 (gen_crafting_textures.STORAGE_RAINBOW_TIERS)。
+# 虹色にする階層はブロック側と共通 (gen_crafting_textures.STORAGE_RAINBOW_TIERS)
 RAINBOW_TIERS = STORAGE_RAINBOW_TIERS
 
 SIZE = 16
@@ -116,17 +116,17 @@ SIZE = 16
 # 手続き描画のパラメータ
 # --------------------------------------------------------------------------------------
 
-# 通常セルの色レイヤ。MEGA のハウジング (mega_item/fluid/chemical_cell_housing) に
-# 開いた窓をなぞったマスクで、MEGA 4.11 の storage_cell_side_<tier>.png を
-# 1 ドットずつ写したもの (MEGA は全階層でこの形を共通に使い、色だけ変えている)。
+# 通常セルの色レイヤ。MEGAのハウジング (mega_item/fluid/chemical_cell_housing) に
+# 開いた窓をなぞったマスクで、MEGA 4.11のstorage_cell_side_<tier>.pngを
+# 1ドットずつ写したもの。MEGAは全階層でこの形を共通に使い、色だけ変えている
 #
-# MEGA 3.x (1.20.1) はハウジングと色が 1 枚に焼かれていて
-# (megacells:item/cell/standard/item_storage_cell_1m)、窓の位置も 4.x とは違う。
-# 1.20.1 側のマスクをそのまま持ってくると、色がハウジングの窓から外れて
-# 「地の金属の上に模様が乗っているだけ」になるので、マスクはバージョンごとに合わせること。
+# MEGA 3.x (1.20.1) はハウジングと色が1枚に焼かれていて
+# (megacells:item/cell/standard/item_storage_cell_1m)、窓の位置も4.xとは違う
+# 1.20.1側のマスクをそのまま持ってくると、色がハウジングの窓から外れて
+# 「地の金属の上に模様が乗っているだけ」になるので、マスクはバージョンごとに合わせること
 #
-# 'L' = 一番明るい / 'M' = 中間 / 'D' = 一番暗い / '.' = 透明。
-# LED は AE2 の LED レイヤが乗るので必ず空けておくこと。
+# 'L' = 一番明るい / 'M' = 中間 / 'D' = 一番暗い / '.' = 透明
+# LEDはAE2のLEDレイヤが乗るので必ず空けておくこと
 CELL_OVERLAY_MASK = [
     "................",
     "................",
@@ -146,9 +146,9 @@ CELL_OVERLAY_MASK = [
     "................",
 ]
 
-# ポータブルセルの側面の帯。megacells:item/portable_cell_*_housing の左下の斜面に沿う。
-# こちらも <b>MEGA 4.11 の portable_cell_side_<tier>.png を写したもの</b>で、
-# 2 本の破線が平行に走る形になっている (1.20.1 の 2 ドット幅の実線とは別物)。
+# ポータブルセルの側面の帯。megacells:item/portable_cell_*_housingの左下の斜面に沿う
+# こちらもMEGA 4.11のportable_cell_side_<tier>.pngを写したもので、
+# 2本の破線が平行に走る形になっている。1.20.1の2ドット幅の実線とは別物
 PORTABLE_SIDE_MASK = [
     "................",
     "................",
@@ -168,15 +168,15 @@ PORTABLE_SIDE_MASK = [
     "................",
 ]
 
-# マスクの記号 → 明るさ。'L' が階層色そのものになる。
+# マスクの記号 → 明るさ。'L' が階層色そのものになる
 #
-# MEGA の絵は明度ではなく<b>彩度</b>で 3 階調を作っている (#faffbf / #fff373 / #ffcf40)
+# MEGAの絵は明度ではなく彩度で3階調を作っている (#faffbf / #fff373 / #ffcf40)
 # ので、そのままの数値は使えない。知覚輝度の比 (1.00 : 0.91 : 0.69) が出るよう
-# 明度に直した値を入れてある (輝度はおおよそ明度の 2.2 乗)。
+# 明度に直した値を入れてある。輝度はおおよそ明度の2.2乗
 MASK_LEVELS = {"L": 1.00, "M": 0.96, "D": 0.85}
 
-# セルコンポーネントの手続き描画 (テンプレートが 1 枚も無いときのフォールバック)。
-# '#' = 階層色 / '+' = 明るい地 / '-' = 暗い地 / '.' = 透明。
+# セルコンポーネントの手続き描画。テンプレートが1枚も無いときのフォールバック
+# '#' = 階層色 / '+' = 明るい地 / '-' = 暗い地 / '.' = 透明
 COMPONENT_FALLBACK = [
     "......####......",
     "...++-####-++...",
@@ -198,7 +198,7 @@ COMPONENT_FALLBACK = [
 
 
 def tier_color(tier: str) -> tuple[int, int, int]:
-    """階層色。<b>アイテム用なので明度ランプのほう</b>を使う。
+    """階層色。アイテム用なので明度ランプのほうを使う。
 
     ブロック側 (gen_crafting_textures.storage_color) は明るい地に載る都合で
     知覚輝度を揃えているが、同じことをアイテムでやると
@@ -229,7 +229,7 @@ def paint(template: Image.Image, tier: str, color) -> Image.Image:
 
 
 # --------------------------------------------------------------------------------------
-# 手続き描画 (テンプレートが無いときのフォールバック / --dump-templates の中身)
+# 手続き描画。テンプレートが無いときのフォールバックや、--dump-templatesの中身
 # --------------------------------------------------------------------------------------
 
 
@@ -288,12 +288,12 @@ def draw_component_fallback(part: str = "all") -> Image.Image:
 class Component:
     """セルコンポーネントの下敷き 1 パターンぶん。
 
-    <b>base + color の 2 枚に分けるのが推奨</b>。base はそのまま下に敷かれ、
+    base + color の 2 枚に分けるのが推奨。base はそのまま下に敷かれ、
     color だけが階層色に染まる。地に若干色が付いていても base に置いてあれば
     染まらないので、「無彩色で描かないと地まで染まってしまう」問題が起きない。
 
     1 枚版 (component_p<N>.png) しか無ければ、
-    <b>彩度で地と色を見分ける</b>方式で動く (彩度 MIN_SAT 未満は地とみなす)。
+    彩度で地と色を見分ける方式で動く (彩度 MIN_SAT 未満は地とみなす)。
     """
 
     def __init__(self, base: Image.Image | None, color: Image.Image):
@@ -322,7 +322,7 @@ class Templates:
         return image if image is not None else fallback()
 
     def _component(self, directory, index: int) -> Component:
-        """1 パターンぶんの下敷きを選ぶ。<b>ディレクトリ優先</b>で、その中で
+        """1 パターンぶんの下敷きを選ぶ。ディレクトリ優先で、その中で
 
             1. component_p<N>_base.png + component_p<N>_color.png   (2 枚方式)
             2. component_p<N>.png                                    (旧 1 枚方式)
@@ -331,7 +331,7 @@ class Templates:
         バージョン別ディレクトリに 2 枚方式で置いても、
         共通ディレクトリの 1 枚版が勝ってしまう。
 
-        2 枚のうち片方しか無い場合も<b>そのディレクトリを採用する</b>
+        2 枚のうち片方しか無い場合もそのディレクトリを採用する
         (1 枚版に落ちて、置いたはずの絵が黙って無視されるのを防ぐ)。
         描きかけだと分かるように警告を出す。
         """
@@ -369,7 +369,7 @@ class Templates:
     def energy_component(self, tier: str, color) -> Image.Image:
         """エネルギーストレージコンポーネント。
 
-        通常のコンポーネントと同じ 5 パターンの形だが、<b>色の付け方を逆にする</b>:
+        通常のコンポーネントと同じ 5 パターンの形だが、色の付け方を逆にする:
         通常は「銀の枠 + 階層色の線」なのに対し、こちらは「階層色の枠 + 赤の線」。
         線まで階層色にすると通常のコンポーネントと区別が付かず、
         AppliedFlux の「エネルギー = 赤」も失われるため。
@@ -403,7 +403,7 @@ def split_by_saturation(image: Image.Image, min_sat: float = MIN_SAT):
     """1 枚版の下敷きを base (染めない) と color (染まる) の 2 枚に分ける。
 
     彩度 min_sat 以上の画素を color 側、それ以外を base 側に振り分ける。
-    2 枚方式に移行するときの<b>叩き台</b>で、地に色が乗ってしまっている絵だと
+    2 枚方式に移行するときの叩き台で、地に色が乗ってしまっている絵だと
     境目がずれるので、書き出したあと手で直すこと。
     """
     src = image.convert("RGBA")
@@ -423,7 +423,7 @@ def split_by_saturation(image: Image.Image, min_sat: float = MIN_SAT):
 
 
 def dump_templates(directory: str | list[str]) -> None:
-    # 読むのは探索パス全体、書き出すのはその先頭 (一番具体的なところ)。
+    # 読むのは探索パス全体、書き出すのはその先頭。一番具体的なところ
     out = write_dir(directory)
     os.makedirs(out, exist_ok=True)
     draw_cell_overlay().save(os.path.join(out, "cell_overlay.png"))
@@ -457,7 +457,7 @@ def main() -> None:
                         help="いまの見た目を編集用の下敷きとして書き出して終了")
     args = parser.parse_args()
 
-    # どの下敷きを使ったのか毎回出す (バージョンごとに分けていると取り違えやすいので)。
+    # どの下敷きを使ったのか毎回出す。バージョンごとに分けていると取り違えやすいので
     print(f"下敷きディレクトリ: {args.templates}"
           f"  (gradle.properties の minecraft_version = {read_minecraft_version() or '不明'})")
 

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# 両バージョンのビルドとテストを回し、結果の要約だけを表示する。
-# Gradle の全出力は build/check-*.log に残す (失敗時はそこから該当箇所だけ抜き出す)。
+# 両バージョンのビルドとテストを回し、結果の要約だけを表示する
+# Gradleの全出力はbuild/check-*.logに残す。失敗時はそこから該当箇所だけ抜き出す
 #
-#   tools/check.sh                 compile + 単体テスト (両版)
-#   tools/check.sh compile         compileJava + compileTestJava だけ
-#   tools/check.sh gametest        GameTest (既知の失敗と突き合わせ)
-#   tools/check.sh test 1.20.1-forge   版を絞る (複数可)
+#   tools/check.sh                 compile + 単体テスト、両版
+#   tools/check.sh compile         compileJava + compileTestJavaだけ
+#   tools/check.sh gametest        GameTest。既知の失敗と突き合わせ
+#   tools/check.sh test 1.20.1-forge版を絞る。複数可
 #
-# 既定は --offline。依存を取り直すときは ONLINE=1 を付ける。
+# 既定は --offline。依存を取り直すときはONLINE=1を付ける
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
@@ -16,7 +16,7 @@ nodes=("$@")
 [ ${#nodes[@]} -eq 0 ] && nodes=(1.20.1-forge 1.21.1-neoforge)
 offline=(--offline); [ "${ONLINE:-}" = 1 ] && offline=()
 
-# javac とログの文字化け (Shift-JIS) を避けるため英語・UTF-8 で動かす。
+# javacとログの文字化け (Shift-JIS) を避けるため英語・UTF-8で動かす
 export JAVA_TOOL_OPTIONS="-Duser.language=en -Duser.country=US -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8"
 
 mkdir -p build
@@ -29,7 +29,7 @@ summarize_failure() {
     | grep -v 'Picked up JAVA_TOOL_OPTIONS' \
     | sed -E 's#[A-Za-z]:[\\/].*[\\/]versions[\\/][^\\/]+[\\/]build[\\/]generated[\\/]stonecutter[\\/]([a-z]+)[\\/]#src/\1/#; s#\\#/#g' \
     | head -60
-  # 版ごとのクラスは versions/<版>/src にあるので、src/ に無ければそちらを探す。
+  # 版ごとのクラスはversions/<版>/srcにあるので、src/ に無ければそちらを探す
   echo "(src/ に無いファイルは versions/<版>/src/ 側)"
 }
 
@@ -68,7 +68,7 @@ case "$mode" in
       log="build/check-gametest-$n.log"
       if .github/scripts/gametest.sh "$n" >"$log" 2>&1; then r=OK; else r=NG; rc=1; fi
       echo "$r: gametest $n"
-      # gametest.sh の要約部分 (落ちたテスト以降) だけ出す。Gradle 本体の出力は除く。
+      # gametest.shの要約部分、落ちたテスト以降だけ出す。Gradle本体の出力は除く
       sed -n '/^--- .*落ちたテスト ---/,$p' "$log" | grep -v '^\[' | head -40
       [ $r = NG ] && ! grep -q '落ちたテスト' "$log" && summarize_failure "$log"
     done
