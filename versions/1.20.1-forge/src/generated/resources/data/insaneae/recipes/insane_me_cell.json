@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "megacells:accumulation_processor"
+    },
+    "B": {
+      "item": "insaneae:cell_component_8e"
+    },
+    "C": {
+      "item": "insaneae:item_storage_cell_8e"
+    }
+  },
+  "pattern": [
+    "ABA",
+    "BCB",
+    "ABA"
+  ],
+  "result": {
+    "item": "insaneae:insane_me_cell"
+  },
+  "show_notification": true
+}

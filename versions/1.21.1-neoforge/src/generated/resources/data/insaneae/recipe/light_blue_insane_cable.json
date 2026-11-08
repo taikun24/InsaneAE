@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "a": {
+      "tag": "insaneae:insane_cables"
+    },
+    "b": {
+      "tag": "c:dyes/light_blue"
+    }
+  },
+  "pattern": [
+    "aaa",
+    "aba",
+    "aaa"
+  ],
+  "result": {
+    "count": 8,
+    "id": "insaneae:light_blue_insane_cable"
+  }
+}

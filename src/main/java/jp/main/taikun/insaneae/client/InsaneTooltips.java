@@ -55,6 +55,8 @@ public final class InsaneTooltips {
     private static final String SOLAR_PANEL = "insaneae.desc.solar_panel";
     /** 超次元MEケーブルは17色あるが説明は共通なので、色ごとの .descは置かない。 */
     private static final String HYPER_CABLE = "insaneae.desc.hyper_cable";
+    /** 超次元MEケーブル (無制限) も同様。チャンネル数だけ違う。 */
+    private static final String INSANE_CABLE = "insaneae.desc.insane_cable";
     /** 圧縮ME高密度スマートケーブルも同様。 */
     private static final String COMPRESSED_CABLE = "insaneae.desc.compressed_dense_cable";
     //? if >=1.21 {
@@ -125,6 +127,9 @@ public final class InsaneTooltips {
             }
             for (var cable : ModParts.allHyperCables()) {
                 map.put(cable, new Description(HYPER_CABLE));
+            }
+            for (var cable : ModParts.allInsaneCables()) {
+                map.put(cable, new Description(INSANE_CABLE));
             }
             for (var cable : ModParts.allCompressedCables()) {
                 map.put(cable, new Description(COMPRESSED_CABLE));

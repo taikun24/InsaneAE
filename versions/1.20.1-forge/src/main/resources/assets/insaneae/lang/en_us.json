@@ -113,6 +113,7 @@
   "item.insaneae.fluix_hyper_cable": "Fluix Large-Capacity ME Cable",
   "item.insaneae.fluix_insane_cable": "Fluix Insane ME Cable",
   "insaneae.desc.hyper_cable": "Channels|128",
+  "insaneae.desc.insane_cable": "Channels|Unlimited",
   "item.insaneae.white_compressed_dense_cable": "White Compressed ME Dense Smart Cable",
   "item.insaneae.light_gray_compressed_dense_cable": "Light Gray Compressed ME Dense Smart Cable",
   "item.insaneae.gray_compressed_dense_cable": "Gray Compressed ME Dense Smart Cable",

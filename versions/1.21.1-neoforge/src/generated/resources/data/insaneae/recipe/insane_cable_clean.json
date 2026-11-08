@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "type": "neoforge:difference",
+      "base": {
+        "tag": "insaneae:insane_cables"
+      },
+      "subtracted": {
+        "item": "insaneae:fluix_insane_cable"
+      }
+    },
+    {
+      "tag": "ae2:can_remove_color"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "insaneae:fluix_insane_cable"
+  }
+}

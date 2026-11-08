@@ -113,6 +113,7 @@
   "item.insaneae.fluix_hyper_cable": "フルーシュの大容量MEケーブル",
   "item.insaneae.fluix_insane_cable": "フルーシュの超次元MEケーブル",
   "insaneae.desc.hyper_cable": "チャンネル数|128",
+  "insaneae.desc.insane_cable": "チャンネル数|無制限",
   "item.insaneae.white_compressed_dense_cable": "白色の圧縮ME高密度スマートケーブル",
   "item.insaneae.light_gray_compressed_dense_cable": "薄灰色の圧縮ME高密度スマートケーブル",
   "item.insaneae.gray_compressed_dense_cable": "灰色の圧縮ME高密度スマートケーブル",

@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "a": {
+      "tag": "insaneae:insane_cables"
+    },
+    "b": {
+      "tag": "forge:dyes/orange"
+    }
+  },
+  "pattern": [
+    "aaa",
+    "aba",
+    "aaa"
+  ],
+  "result": {
+    "count": 8,
+    "item": "insaneae:orange_insane_cable"
+  },
+  "show_notification": true
+}
