@@ -97,8 +97,7 @@ public class ModBlockStateProvider extends BlockStateProvider {
         // 人形は水平4方向。手書きモデルは正面が北
         horizontalBlock(ModBlocks.GAMERTAIKUN_DOLL.get(), handwritten("gamertaikun_doll"));
 
-        // 超特大インターフェイスはただのキューブ。テクスチャはAE2のMEインターフェイスの
-        // 色相を回したもので、tools/gen_interface_texture.pyが生成している
+        // 超特大インターフェイスはただのキューブ
         simpleBlock(ModBlocks.INSANE_INTERFACE.get(), models().cubeAll("insane_interface",
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/insane_interface")));
 
