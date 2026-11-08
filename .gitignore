@@ -43,3 +43,6 @@ __pycache__/
 .DS_Store
 Thumbs.db
 libs/
+
+# datagen の差分キャッシュ (生成物。追跡しない)
+**/src/generated/resources/.cache/
