@@ -22,7 +22,7 @@ Both builds are made from a single source tree with [Stonecutter](https://stonec
 | | 1.20.1 (Forge) | 1.21.1 (NeoForge) |
 |---|---|---|
 | Loader | Forge 47.4.20 or later | NeoForge 21.1.0 or later |
-| [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) (required) | 15.2.15 or later | 19.2.15 or later |
+| [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) (required) | 15.4.10 or later | 19.2.15 or later |
 | [MEGA Cells](https://github.com/62832/MEGACells) (required) | 2.4.6 or later | 4.11 or later |
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) (optional, chemical cells) | 1.4 or later | 1.6 or later |
 | [AppliedFlux](https://www.curseforge.com/minecraft/mc-mods/applied-flux) (optional, FE cells) | 1.20-1.3.7 or later | 1.21-2.1.6 or later |
@@ -30,7 +30,7 @@ Both builds are made from a single source tree with [Stonecutter](https://stonec
 | [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) (optional, BigInteger accounting and exact planning) | 1.5.12 or later | 1.5.12 or later (**1.5.18+ recommended**) |
 | [Astral Mekanism & Energistics](https://www.curseforge.com/minecraft/mc-mods/astral-mekanism) (optional, batches auto-ejection into ME interfaces) | 1.8 or later | — |
 
-On 1.21.1, AE2 requires [GuideME](https://github.com/AppliedEnergistics/GuideME) as a hard dependency (on 1.20.1 it was bundled with AE2).
+AE2 requires [GuideME](https://github.com/AppliedEnergistics/GuideME) on both versions. InsaneAE's pages appear in AE2's in-game guide.
 
 AE2 Crafting Optimizer is not required. When it is installed and its BigInteger backend is
 enabled, the Quantum CPU's pending-output ledger is wired to ACO's public API. Without it — or
@@ -39,7 +39,7 @@ format is the same either way.
 
 Because InsaneAE reaches into AE2 internals with Mixins (`BasicCellInventory`,
 `CraftingCPUCluster`, tooltip rendering and more), the AE2 version range is pinned to
-the range that has actually been tested (`[15.2.15,16)` on 1.20.1, `[19.2.15,20)` on 1.21.1).
+the range that has actually been tested (`[15.4.10,16)` on 1.20.1, `[19.2.15,20)` on 1.21.1).
 
 ### ACO integration (optional)
 

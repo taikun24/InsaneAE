@@ -22,7 +22,7 @@ MEGA Cells が 256M で止めているところから、1G 以上の容量・ク
 | | 1.20.1 (Forge) | 1.21.1 (NeoForge) |
 |---|---|---|
 | ローダー | Forge 47.4.20 以上 | NeoForge 21.1.0 以上 |
-| [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) (必須) | 15.2.15 以上 | 19.2.15 以上 |
+| [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) (必須) | 15.4.10 以上 | 19.2.15 以上 |
 | [MEGA Cells](https://github.com/62832/MEGACells) (必須) | 2.4.6 以上 | 4.11 以上 |
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) (任意 / 化学物質セル用) | 1.4 以上 | 1.6 以上 |
 | [AppliedFlux](https://www.curseforge.com/minecraft/mc-mods/applied-flux) (任意 / FE セル用) | 1.20-1.3.7 以上 | 1.21-2.1.6 以上 |
@@ -30,7 +30,7 @@ MEGA Cells が 256M で止めているところから、1G 以上の容量・ク
 | [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) (任意 / BigInteger量会計・厳密計算連携用) | 1.5.12 以上 | 1.5.12 以上 (**1.5.18 以上を推奨**) |
 | [Astral Mekanism & Energistics](https://www.curseforge.com/minecraft/mc-mods/astral-mekanism) (任意 / ME インターフェイスへの自動搬出をまとめる連携用) | 1.8 以上 | — |
 
-1.21.1 では、AE2 が [GuideME](https://github.com/AppliedEnergistics/GuideME) を必須依存として要求します (1.20.1 では AE2 に同梱されていました)。
+AE2 はどちらの版でも [GuideME](https://github.com/AppliedEnergistics/GuideME) を必須依存として要求します。InsaneAE の説明は AE2 のゲーム内ガイドに載っています。
 
 AE2 Crafting Optimizer は必須ではありません。導入されていて BigInteger バックエンドが有効な場合、
 Quantum CPU の完成品待ち台帳を ACO の公開 API へ接続します。無い場合や無効な場合は
@@ -45,7 +45,7 @@ ACOが無い場合、または連携プロファイルが無効な場合は、�
 この連携はACOを必須依存にしません。両Modのバージョンと対応するNeoForge版を揃えてください。
 
 AE2 の内部 (`BasicCellInventory`、`CraftingCPUCluster`、ツールチップ描画など) に Mixin で踏み込んでいるため、
-AE2 のバージョン範囲は実際に検証した範囲 (1.20.1 は `[15.2.15,16)`、1.21.1 は `[19.2.15,20)`) に固定しています。
+AE2 のバージョン範囲は実際に検証した範囲 (1.20.1 は `[15.4.10,16)`、1.21.1 は `[19.2.15,20)`) に固定しています。
 
 ## 追加されるもの
 
