@@ -9,7 +9,7 @@ import java.util.List;
  * 説明文をツールチップの行に足す。
  *
  * <p>langの値は1行ごとに {@codeラベル|値} と書く。値の側だけ色を変えて、
- * 数値が目に入るようにする。{@codeパターン格納数|1620個}は「パターン格納数1620個」になる。
+ * 数値が目に入るようにする。{@codeパターン格納数|1620個}は「パターン格納数: 1620個」になる。
  * {@code |} の無い行は注記としてそのまま灰色で出す。改行はlangの {@code \n}。</p>
  */
 public final class StatTooltip {
@@ -27,7 +27,7 @@ public final class StatTooltip {
                 lines.add(Component.literal(line).withStyle(LABEL));
                 continue;
             }
-            lines.add(Component.literal(line.substring(0, bar).strip() + " ").withStyle(LABEL)
+            lines.add(Component.literal(line.substring(0, bar).strip() + ": ").withStyle(LABEL)
                     .append(Component.literal(line.substring(bar + 1).strip()).withStyle(VALUE)));
         }
     }

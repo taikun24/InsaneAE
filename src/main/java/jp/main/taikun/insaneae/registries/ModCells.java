@@ -7,6 +7,7 @@ import gripe._90.megacells.definition.MEGAItems;
 import jp.main.taikun.insaneae.InsaneAE;
 import jp.main.taikun.insaneae.cell.InsanePortableCellItem;
 import jp.main.taikun.insaneae.cell.InsaneCreativeCellItem;
+import jp.main.taikun.insaneae.cell.InsaneMeCellItem;
 import jp.main.taikun.insaneae.cell.InsaneUltraCreativeCellItem;
 import jp.main.taikun.insaneae.cell.InsaneStorageCellItem;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
@@ -124,6 +125,17 @@ public class ModCells {
     /*public static final RegistryObject<Item> ULTRA_CREATIVE_CELL =
     *///?}
             register("ultra_creative_cell", () -> new InsaneUltraCreativeCellItem(new Item.Properties()));
+
+    /**
+     * 超次元MEセル。アイテム・液体・化学物質を種類も量も制限なしに格納する。
+     * 中身は BigInteger で持ち、AE2 へは 1 種あたり Long.MAX_VALUE まで報告する。
+     */
+    //? if >=1.21 {
+    public static final DeferredHolder<Item, Item> INSANE_ME_CELL =
+    //?} else {
+    /*public static final RegistryObject<Item> INSANE_ME_CELL =
+    *///?}
+            register("insane_me_cell", () -> new InsaneMeCellItem(new Item.Properties()));
 
     static {
         InsaneCraftingUnitType[] tiers = InsaneCraftingUnitType.values();

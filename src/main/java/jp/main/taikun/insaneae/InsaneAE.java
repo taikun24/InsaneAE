@@ -3,6 +3,7 @@ package jp.main.taikun.insaneae;
 import appeng.api.storage.StorageCells;
 import com.mojang.logging.LogUtils;
 import jp.main.taikun.insaneae.cell.InsaneCreativeCellHandler;
+import jp.main.taikun.insaneae.cell.InsaneMeCellHandler;
 import jp.main.taikun.insaneae.cell.storage.CellCommands;
 import jp.main.taikun.insaneae.cell.storage.CellContentStore;
 import jp.main.taikun.insaneae.client.InsaneAEClient;
@@ -159,6 +160,9 @@ public class InsaneAE {
         // 判定は自前のアイテムだけなのでAE2側のハンドラとの登録順は問わない
         event.enqueueWork(() -> StorageCells.addCellHandler(
                 InsaneCreativeCellHandler.INSTANCE));
+        // 超次元MEセルも同様に、自前のアイテムだけで判定する
+        event.enqueueWork(() -> StorageCells.addCellHandler(
+                InsaneMeCellHandler.INSTANCE));
         event.enqueueWork(ModUpgrades::registerUpgrades);
         // ACOへ「BigInteger計画を受け取る外部CPUアドオン」として名乗る
         event.enqueueWork(

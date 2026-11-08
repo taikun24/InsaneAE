@@ -9,6 +9,7 @@ import jp.main.taikun.insaneae.iface.InsaneInterfacePart;
 import jp.main.taikun.insaneae.iface.InsaneInterfacePartItem;
 import jp.main.taikun.insaneae.network.CompressedCablePart;
 import jp.main.taikun.insaneae.network.HyperCablePart;
+import jp.main.taikun.insaneae.network.InsaneCablePart;
 import jp.main.taikun.insaneae.provider.InsanePatternProviderPart;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -120,6 +121,17 @@ public final class ModParts {
             new EnumMap<>(AEColor.class);
 
     /**
+     * 超次元MEケーブル (無制限)。17色そろえ、登録名は {@code <色>_insane_cable}。
+     * チャンネル数に上限が無い。上限の決め方は {@link InsaneCablePart} と GridNodeChannelMixin。
+     */
+    //? if >=1.21 {
+    public static final Map<AEColor, DeferredItem<ColoredPartItem<InsaneCablePart>>> INSANE_CABLES =
+    //?} else {
+    /*public static final Map<AEColor, RegistryObject<ColoredPartItem<InsaneCablePart>>> INSANE_CABLES =
+    *///?}
+            new EnumMap<>(AEColor.class);
+
+    /**
      * 圧縮ME高密度スマートケーブル。超次元MEケーブルと同じく17色を出す。
      *
      * <p>登録名は {@code <色>_compressed_dense_cable}。本数は高密度ケーブルと同じ32本で、
@@ -134,6 +146,15 @@ public final class ModParts {
 
     static {
         for (AEColor color : AEColor.values()) {
+            //? if >=1.21 {
+            INSANE_CABLES.put(color, ITEMS.registerItem(color.registryPrefix + "_insane_cable",
+                    props -> new ColoredPartItem<>(props, InsaneCablePart.class, InsaneCablePart::new,
+                            color)));
+            //?} else {
+            /*INSANE_CABLES.put(color, ITEMS.register(color.registryPrefix + "_insane_cable",
+                    () -> new ColoredPartItem<>(new Item.Properties(),
+                            InsaneCablePart.class, InsaneCablePart::new, color)));
+            *///?}
             //? if >=1.21 {
             HYPER_CABLES.put(color, ITEMS.registerItem(color.registryPrefix + "_hyper_cable",
                     props -> new ColoredPartItem<>(props, HyperCablePart.class, HyperCablePart::new,
@@ -164,6 +185,16 @@ public final class ModParts {
     /** 全色の超次元MEケーブル。クリエイティブタブとレシピ生成用で、AE2と同じ並び順。 */
     public static List<ColoredPartItem<HyperCablePart>> allHyperCables() {
         return Arrays.stream(AEColor.values()).map(ModParts::hyperCable).toList();
+    }
+
+    /** その色の超次元MEケーブル (無制限) のアイテム。全色そろえてあるのでnullにはならない。 */
+    public static ColoredPartItem<InsaneCablePart> insaneCable(AEColor color) {
+        return INSANE_CABLES.get(color).get();
+    }
+
+    /** 全色の超次元MEケーブル (無制限)。クリエイティブタブとレシピ生成用。 */
+    public static List<ColoredPartItem<InsaneCablePart>> allInsaneCables() {
+        return Arrays.stream(AEColor.values()).map(ModParts::insaneCable).toList();
     }
 
     /** その色の圧縮ME高密度スマートケーブルのアイテム。全色そろえてあるのでnullにはならない。 */

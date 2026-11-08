@@ -5,6 +5,7 @@ import appeng.me.Grid;
 import appeng.me.GridNode;
 import jp.main.taikun.insaneae.network.HyperCablePart;
 import jp.main.taikun.insaneae.network.HyperNetwork;
+import jp.main.taikun.insaneae.network.InsaneCablePart;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -45,6 +46,11 @@ public abstract class GridNodeChannelMixin {
 
     @Inject(method = "getMaxChannels", at = @At("HEAD"), cancellable = true)
     private void insaneae$hyperCapacity(CallbackInfoReturnable<Integer> cir) {
+        if (getOwner() instanceof InsaneCablePart) {
+            // 無制限のケーブル。経路計算は上限をminで削っていくだけなので、ここをMAXにすれば全部追従する
+            cir.setReturnValue(Integer.MAX_VALUE);
+            return;
+        }
         if (!(getOwner() instanceof HyperCablePart)) {
             return;
         }

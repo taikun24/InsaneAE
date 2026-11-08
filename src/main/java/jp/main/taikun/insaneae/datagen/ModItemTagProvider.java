@@ -28,6 +28,9 @@ public class ModItemTagProvider extends ItemTagsProvider {
     /** 超次元MEケーブル17色。 */
     public static final TagKey<Item> HYPER_CABLES = tag("hyper_cables");
 
+    /** 超次元MEケーブル (無制限) 17色。 */
+    public static final TagKey<Item> INSANE_CABLES = tag("insane_cables");
+
     private static TagKey<Item> tag(String name) {
         return TagKey.create(Registries.ITEM,
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, name));
@@ -46,5 +49,8 @@ public class ModItemTagProvider extends ItemTagsProvider {
 
         var hyper = tag(HYPER_CABLES);
         ModParts.allHyperCables().forEach(hyper::add);
+
+        var insane = tag(INSANE_CABLES);
+        ModParts.allInsaneCables().forEach(insane::add);
     }
 }

@@ -4,6 +4,7 @@ import appeng.api.util.AEColor;
 import jp.main.taikun.insaneae.InsaneAE;
 import jp.main.taikun.insaneae.network.CompressedCablePart;
 import jp.main.taikun.insaneae.network.HyperCablePart;
+import jp.main.taikun.insaneae.network.InsaneCablePart;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -157,7 +158,8 @@ public final class InsaneCableSprites {
      * ここと {@link Kind} に1行ずつ足せば全部追従する。</p>
      */
     public static Kind kindOf(Object part) {
-        if (part instanceof HyperCablePart) {
+        // 無制限は絵が超次元と同じ (暫定)
+        if (part instanceof HyperCablePart || part instanceof InsaneCablePart) {
             return Kind.HYPER;
         }
         if (part instanceof CompressedCablePart) {

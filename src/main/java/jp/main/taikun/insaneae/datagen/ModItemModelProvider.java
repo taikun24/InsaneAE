@@ -189,6 +189,9 @@ public class ModItemModelProvider extends ItemModelProvider {
         // 超強化セルは専用のテクスチャを持たず、強化セルの絵を借りる
         withExistingParent("ultra_creative_cell", mcLoc("item/generated"))
                 .texture("layer0", modLoc("item/creative_cell"));
+        // 超次元MEストレージセルは仮のテクスチャ (強化セルの絵を紫に寄せたもの)
+        withExistingParent("insane_me_cell", mcLoc("item/generated"))
+                .texture("layer0", modLoc("item/insane_me_cell"));
 
         for (InsaneSpeedCardType card : InsaneSpeedCardType.values()) {
             simple(card.id());
@@ -253,6 +256,15 @@ public class ModItemModelProvider extends ItemModelProvider {
         // registryPrefix (fluix) ではないので注意
         for (AEColor color : AEColor.values()) {
             withExistingParent(color.registryPrefix + "_hyper_cable",
+                    mega("ae2", "item/smart_cable_base"))
+                    .texture("base", hyperCableTexture(color.name().toLowerCase(Locale.ROOT)))
+                    .texture("channelsOdd", hyperCableTexture("channels_00"))
+                    .texture("channelsEven", hyperCableTexture("channels_10"));
+        }
+
+        // 超次元MEケーブル (無制限) の手持ちモデル。絵は超次元MEケーブルと同じものを借りる (暫定)
+        for (AEColor color : AEColor.values()) {
+            withExistingParent(color.registryPrefix + "_insane_cable",
                     mega("ae2", "item/smart_cable_base"))
                     .texture("base", hyperCableTexture(color.name().toLowerCase(Locale.ROOT)))
                     .texture("channelsOdd", hyperCableTexture("channels_00"))

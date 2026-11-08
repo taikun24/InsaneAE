@@ -20,6 +20,7 @@ import java.util.function.Predicate;
  * <ul>
  *   <li>{@link CompressedCablePart} … 高密度と同じ32本。このクラスのまま</li>
  *   <li>{@link HyperCablePart} … {@code GridNodeChannelMixin}が上限を引き上げる。既定は128本</li>
+ *   <li>{@link InsaneCablePart} … 同じMixinで上限を無制限にする</li>
  * </ul>
  *
  * <h2>AE2では「太さ」「部品の可否」「本数」が別々の値になっている</h2>

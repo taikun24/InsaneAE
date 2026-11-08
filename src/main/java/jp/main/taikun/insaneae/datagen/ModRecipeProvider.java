@@ -148,6 +148,14 @@ public class ModRecipeProvider extends RecipeProvider {
             }
         }
 
+        // 超次元MEセル: 最上段のアイテムセルに、最上段のコンポーネントと集積プロセッサを組む
+        InsaneCraftingUnitType top = tiers[tiers.length - 1];
+        shaped(consumer, ModCells.INSANE_ME_CELL.get(), ModCells.ITEM_CELLS.get(top).get(),
+                new String[]{"ABA", "BCB", "ABA"},
+                Map.of('A', ACCUMULATION_PROCESSOR,
+                        'B', ModItems.CELL_COMPONENTS.get(top).get(),
+                        'C', ModCells.ITEM_CELLS.get(top).get()));
+
         // クラフト協調処理ユニット: 下位 ×4。最下段はMEGA Cellsの4スレッド版 ×4で、16スレッド
         // 最上段2Gだけはスレッド数が2倍しか増えないので下位 ×2
         InsaneAcceleratorType[] accelerators = InsaneAcceleratorType.values();
@@ -225,6 +233,16 @@ public class ModRecipeProvider extends RecipeProvider {
                 ModItemTagProvider.COMPRESSED_DENSE_CABLES, "compressed_dense_cable_clean");
         cableColoring(consumer, ModParts::hyperCable,
                 ModItemTagProvider.HYPER_CABLES, "hyper_cable_clean");
+
+        // 超次元MEケーブル (無制限) ×4: 超次元MEケーブル (fluix) 8 + 集積プロセッサ
+        shapedCount(consumer, ModParts.insaneCable(AEColor.TRANSPARENT), 4, ACCUMULATION_PROCESSOR,
+                new String[]{"AAA", "ABA", "AAA"},
+                Map.of(
+                        'A', ModParts.hyperCable(AEColor.TRANSPARENT),
+                        'B', ACCUMULATION_PROCESSOR
+                ));
+        cableColoring(consumer, ModParts::insaneCable,
+                ModItemTagProvider.INSANE_CABLES, "insane_cable_clean");
 
         // ケーブル版のプレートとブロック版を、AE2のMEインターフェイス / パターンプロバイダと同じく
         // 1:1で行き来できる。中身のパターンや設定は移らないので、空の状態で持ち替えること

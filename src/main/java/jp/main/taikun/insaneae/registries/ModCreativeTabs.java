@@ -39,6 +39,7 @@ public class ModCreativeTabs {
                 output.accept(ModBlocks.IMPROVED_CHARGER.get());
                 ModParts.allCompressedCables().forEach(output::accept);
                 ModParts.allHyperCables().forEach(output::accept);
+                ModParts.allInsaneCables().forEach(output::accept);
                 output.accept(ModBlocks.INSANE_INTERFACE.get());
                 output.accept(ModParts.INSANE_INTERFACE.get());
                 output.accept(ModBlocks.GAMERTAIKUN_DOLL.get());
@@ -60,6 +61,7 @@ public class ModCreativeTabs {
                 ModCells.PORTABLE_FLUID_CELLS.values().forEach(cell -> output.accept(cell.get()));
                 output.accept(ModCells.CREATIVE_CELL.get());
                 output.accept(ModCells.ULTRA_CREATIVE_CELL.get());
+                output.accept(ModCells.INSANE_ME_CELL.get());
                 // 他アドオンのセル。化学物質セルやFEセルなど
                 for (AddonIntegration addon : AddonIntegrations.active()) {
                     addon.materials().forEach(output::accept);
