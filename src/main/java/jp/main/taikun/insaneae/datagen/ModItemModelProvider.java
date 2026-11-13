@@ -262,13 +262,13 @@ public class ModItemModelProvider extends ItemModelProvider {
                     .texture("channelsEven", hyperCableTexture("channels_10"));
         }
 
-        // 超次元MEケーブル (無制限) の手持ちモデル。絵は超次元MEケーブルと同じものを借りる (暫定)
+        // 超次元MEケーブル (無制限) の手持ちモデル。絵は種類ごとの絵を使う
         for (AEColor color : AEColor.values()) {
             withExistingParent(color.registryPrefix + "_insane_cable",
                     mega("ae2", "item/smart_cable_base"))
-                    .texture("base", hyperCableTexture(color.name().toLowerCase(Locale.ROOT)))
-                    .texture("channelsOdd", hyperCableTexture("channels_00"))
-                    .texture("channelsEven", hyperCableTexture("channels_10"));
+                    .texture("base", mega(InsaneAE.MODID, "part/cable/insane/" + color.name().toLowerCase(Locale.ROOT)))
+                    .texture("channelsOdd", mega(InsaneAE.MODID, "part/cable/insane/channels_00"))
+                    .texture("channelsEven", mega(InsaneAE.MODID, "part/cable/insane/channels_10"));
         }
 
         // 圧縮ME高密度スマートケーブルの手持ちモデル。17色あり、組み方は上と同じで、

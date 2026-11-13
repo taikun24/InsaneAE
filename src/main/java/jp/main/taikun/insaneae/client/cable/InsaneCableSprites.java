@@ -57,7 +57,8 @@ public final class InsaneCableSprites {
     /** ケーブルの種類。テクスチャの置き場所 ({@code part/cable/<dir>/}) がそのまま値。 */
     public enum Kind {
         COMPRESSED("compressed"),
-        HYPER("hyper");
+        HYPER("hyper"),
+        INSANE("insane");
 
         private final String directory;
 
@@ -158,9 +159,11 @@ public final class InsaneCableSprites {
      * ここと {@link Kind} に1行ずつ足せば全部追従する。</p>
      */
     public static Kind kindOf(Object part) {
-        // 無制限は絵が超次元と同じ (暫定)
-        if (part instanceof HyperCablePart || part instanceof InsaneCablePart) {
+        if (part instanceof HyperCablePart) {
             return Kind.HYPER;
+        }
+        if (part instanceof InsaneCablePart) {
+            return Kind.INSANE;
         }
         if (part instanceof CompressedCablePart) {
             return Kind.COMPRESSED;
