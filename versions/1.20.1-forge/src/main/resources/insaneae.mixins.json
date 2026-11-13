@@ -8,6 +8,7 @@
   "mixins": [
     "cell.BasicCellInventoryMixin",
     "cell.BasicCellInventoryUuidMixin",
+    "cell.VariantCounterSaturationMixin",
     "iface.ConfigInventoryAccessor",
     "cpu.CraftingCPUClusterMixin",
     "cpu.CraftingCPUNameMixin",

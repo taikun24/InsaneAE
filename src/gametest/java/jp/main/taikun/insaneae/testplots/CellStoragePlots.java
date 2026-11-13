@@ -4,6 +4,7 @@ import appeng.api.config.Actionable;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
+import appeng.api.stacks.KeyCounter;
 import appeng.api.storage.StorageCells;
 import appeng.api.storage.cells.StorageCell;
 import appeng.server.testplots.TestPlot;
@@ -157,6 +158,32 @@ public final class CellStoragePlots {
             long empty = inventory(helper, outer)
                     .insert(AEItemKey.of(newCell()), 1, Actionable.SIMULATE, IActionSource.empty());
             helper.check(empty == 1, "空のセルが別のセルに入らない");
+        }));
+    }
+
+    /** 天井近くまで入ったセルが並んでも、ネットワークの在庫の合計が負へ折り返さない (issue #22)。 */
+    @TestPlot("insaneae_key_counter_saturation")
+    public static void keyCounterSaturation(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.test(helper -> helper.succeedIf(() -> {
+            KeyCounter full = new KeyCounter();
+            full.add(COBBLE, Long.MAX_VALUE);
+            full.add(COBBLE, Long.MAX_VALUE);
+            helper.check(full.get(COBBLE) == Long.MAX_VALUE, "満杯を2つ足すと折り返す: " + full.get(COBBLE));
+            full.add(COBBLE, Integer.MAX_VALUE);
+            helper.check(full.get(COBBLE) == Long.MAX_VALUE, "後から小さい量を足すと折り返す: " + full.get(COBBLE));
+
+            KeyCounter small = new KeyCounter();
+            small.add(COBBLE, 5);
+            small.add(COBBLE, Long.MAX_VALUE);
+            helper.check(small.get(COBBLE) == Long.MAX_VALUE, "小さい量の後に満杯を足すと折り返す: " + small.get(COBBLE));
+            small.remove(COBBLE, 10);
+            helper.check(small.get(COBBLE) == Long.MAX_VALUE - 10, "引き算が効かない: " + small.get(COBBLE));
+
+            KeyCounter merged = new KeyCounter();
+            merged.add(COBBLE, Long.MAX_VALUE);
+            merged.addAll(full);
+            helper.check(merged.get(COBBLE) == Long.MAX_VALUE, "addAll で折り返す: " + merged.get(COBBLE));
         }));
     }
 
