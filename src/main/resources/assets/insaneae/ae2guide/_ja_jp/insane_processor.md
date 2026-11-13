@@ -18,8 +18,8 @@ item_ids:
   <ItemImage id="insane_processor" scale="3" />
 </Row>
 
-クァンタムCPU や特大パターンプロバイダーなどの素材となるアイテムです[cite: 5]。他のプロセッサと同様に <ItemLink id="ae2:inscriber" /> で作成します[cite: 5]。
-金型を用いて回路をプレスし、その回路と集積プロセッサを組み合わせます[cite: 5]。
+クァンタムCPU や特大パターンプロバイダーなどの素材となるアイテムです。他のプロセッサと同様に <ItemLink id="ae2:inscriber" /> で作成します。
+金型を用いて回路をプレスし、その回路と集積プロセッサを組み合わせます。
 
 <RecipeFor id="insane_processor_press" />
 <RecipeFor id="printed_insane_processor" />

@@ -108,20 +108,20 @@ item_ids:
   <ItemImage id="item_storage_cell_8e" scale="2" />
 </Row>
 
-1G から 8E までのアイテム・液体セルおよび同等のポータブルセルが用意されています[cite: 8]。Applied Mekanistics が導入されている場合は化学物質セル、
-AppliedFlux が導入されている場合は FE セル（1G〜16T）も追加されます[cite: 8]。コンポーネントは MEGA Cells と同様に、1 つ下の段階のパーツ 4 個で作成します[cite: 8]。
+1G から 8E までのアイテム・液体セルおよび同等のポータブルセルが用意されています。Applied Mekanistics が導入されている場合は化学物質セル、
+AppliedFlux が導入されている場合は FE セル（1G〜16T）も追加されます。コンポーネントは MEGA Cells と同様に、1 つ下の段階のパーツ 4 個で作成します。
 
-セルのデータはワールド側の UUID ごとに保存され、アイテム自体には UUID と概要のみが保持されます[cite: 8]。セルを紛失した場合は、
-`/insaneae cells list` で UUID を検索し、`/insaneae cells recover <uuid>` で復元することが可能です（UUID は F3 + H の詳細表示で確認できます）[cite: 8]。
+セルのデータはワールド側の UUID ごとに保存され、アイテム自体には UUID と概要のみが保持されます。セルを紛失した場合は、
+`/insaneae cells list` で UUID を検索し、`/insaneae cells recover <uuid>` で復元することが可能です（UUID は F3 + H の詳細表示で確認できます）。
 
 <RecipeFor id="cell_component_1g" />
 <RecipeFor id="item_storage_cell_1g" />
 
 ## DISK
 
-AE2 Things が導入されている場合は、アイテム用の ME DISK（1G〜8E）が追加されます[cite: 8]。格納できる種類数の制限はありませんが、アイテム 1 個につき 1 バイトを消費します[cite: 8]。
+AE2 Things が導入されている場合は、アイテム用の ME DISK（1G〜8E）が追加されます。格納できる種類数の制限はありませんが、アイテム 1 個につき 1 バイトを消費します。
 
 ## クリエイティブセル
 
-<ItemLink id="creative_cell" /> は、設定した中身を 1 種類につき 922 京個という無限の数量で供給します[cite: 8]。
-<ItemLink id="ultra_creative_cell" /> はさらに、AE2 Crafting Optimizer に対して正確な BigInteger の数量を伝達します[cite: 8]。
+<ItemLink id="creative_cell" /> は、設定した中身を 1 種類につき 922 京個という無限の数量で供給します。
+<ItemLink id="ultra_creative_cell" /> はさらに、AE2 Crafting Optimizer に対して正確な BigInteger の数量を伝達します。

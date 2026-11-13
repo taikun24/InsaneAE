@@ -51,8 +51,8 @@ item_ids:
   <BlockImage id="8e_crafting_storage" scale="3" />
 </Row>
 
-MEGA Cells の 256M に続く、1G から 8E までのクラフトストレージです[cite: 2]。1 段階ごとに容量が 4 倍になります[cite: 2]。
-8E は 1 個で long 型の上限に達するため、1 つの CPU に組み込めるのは 8E なら 1 個、4E なら 2 個までとなります[cite: 2]。
+MEGA Cells の 256M に続く、1G から 8E までのクラフトストレージです。1 段階ごとに容量が 4 倍になります。
+8E は 1 個で long 型の上限に達するため、1 つの CPU に組み込めるのは 8E なら 1 個、4E なら 2 個までとなります。
 
 <RecipeFor id="1g_crafting_storage" />
 
@@ -63,11 +63,11 @@ MEGA Cells の 256M に続く、1G から 8E までのクラフトストレー�
   <BlockImage id="2g_crafting_accelerator" scale="3" />
 </Row>
 
-16 倍から 2G 倍までの並列クラフトユニットです[cite: 2]。AE2 の 16 スレッドの上限が撤廃されているため、1 個でその倍率に応じた並列クラフトを実行できます[cite: 2]。
-2G 倍は int 型の上限値となるため、ここで上限を迎えます[cite: 2]。
+16 倍から 2G 倍までの並列クラフトユニットです。AE2 の 16 スレッドの上限が撤廃されているため、1 個でその倍率に応じた並列クラフトを実行できます。
+2G 倍は int 型の上限値となるため、ここで上限を迎えます。
 
 ## BigInteger クラフトCPU
 
-<ItemLink id="big_integer_cpu" /> は理論上の最大容量を持つクラフトストレージで、通常の AE2 クラフトCPU に組み込むことができます[cite: 2]。
-AE2 Crafting Optimizer (ACO) が導入されている場合は ACO が扱える上限、導入されていない場合は long 型の上限が容量になります[cite: 2]。
-サバイバルモードでのレシピはありません[cite: 2]。
+<ItemLink id="big_integer_cpu" /> は理論上の最大容量を持つクラフトストレージで、通常の AE2 クラフトCPU に組み込むことができます。
+AE2 Crafting Optimizer (ACO) が導入されている場合は ACO が扱える上限、導入されていない場合は long 型の上限が容量になります。
+サバイバルモードでのレシピはありません。
