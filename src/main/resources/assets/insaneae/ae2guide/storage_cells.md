@@ -124,6 +124,10 @@ summary. A lost cell can be rebuilt with `/insaneae cells list` and `/insaneae c
 With AE2 Things installed there are ME DISK drives from 1G to 8E, for items. They have no type limit,
 but each item takes one byte.
 
+With AE2 MEGA Things installed there are also fluid DISK drives from 1G to 16P, and chemical DISK drives
+when Applied Mekanistics is installed too. 1,000 mB takes one byte, as in AE2 MEGA Things. The 16P drive
+holds about 8.19P bytes, because the total is counted in mB and has to fit in a long.
+
 ## Creative Cells
 
 <ItemLink id="creative_cell" /> supplies the configured items endlessly, 9,223,372,036,854,775,807 of each.

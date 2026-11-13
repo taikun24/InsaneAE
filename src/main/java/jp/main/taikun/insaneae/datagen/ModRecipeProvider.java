@@ -140,10 +140,11 @@ public class ModRecipeProvider extends RecipeProvider {
             // 他アドオンのセル。相手が居ないワールドでは無効になるようmod_loaded条件を付ける
             for (AddonIntegration addon : AddonIntegrations.active()) {
                 //? if >=1.21 {
-                addon.buildRecipes(consumer.withConditions(new ModLoadedCondition(addon.modId())),
+                addon.buildRecipes(consumer.withConditions(addon.requiredMods().stream()
+                                .map(ModLoadedCondition::new).toArray(ModLoadedCondition[]::new)),
                         tier, component);
                 //?} else {
-                /*addon.buildRecipes(whenModLoaded(consumer, addon.modId()), tier, component);
+                /*addon.buildRecipes(whenModLoaded(consumer, addon.requiredMods()), tier, component);
                 *///?}
             }
         }
@@ -538,11 +539,17 @@ public class ModRecipeProvider extends RecipeProvider {
         consumer.accept(id, new StorageCellDisassemblyRecipe(cell.asItem(), stacks), null);
     //?} else {
     /*static Consumer<FinishedRecipe> whenModLoaded(Consumer<FinishedRecipe> consumer, String modId) {
-        return recipe -> ConditionalRecipe.builder()
-                .addCondition(new ModLoadedCondition(modId))
-                .addRecipe(recipe)
-                .generateAdvancement()
-                .build(consumer, recipe.getId());
+        return whenModLoaded(consumer, List.of(modId));
+    }
+
+    static Consumer<FinishedRecipe> whenModLoaded(Consumer<FinishedRecipe> consumer, List<String> modIds) {
+        return recipe -> {
+            ConditionalRecipe.Builder builder = ConditionalRecipe.builder();
+            modIds.forEach(modId -> builder.addCondition(new ModLoadedCondition(modId)));
+            builder.addRecipe(recipe)
+                    .generateAdvancement()
+                    .build(consumer, recipe.getId());
+        };
     *///?}
     }
 }

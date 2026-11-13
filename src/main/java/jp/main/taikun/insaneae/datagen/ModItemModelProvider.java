@@ -106,6 +106,9 @@ public class ModItemModelProvider extends ItemModelProvider {
      * 通常セルの階層色レイヤ ({@code standardCell}) がそのまま重なって1kの色を覆う。
      */
     private static final ResourceLocation DISK_BASE = mega("ae2things", "item/disk_drive_1k");
+    /** AE2 MEGA Thingsの液体・化学物質DISKの下地。窓はアイテムDISKと同じ位置で、階層色レイヤがそのまま重なる。 */
+    private static final ResourceLocation FLUID_DISK_BASE = mega("ae2_mega_things", "item/fluid_disk_drive_1k");
+    private static final ResourceLocation CHEMICAL_DISK_BASE = mega("ae2_mega_things", "item/chemical_disk_drive_1k");
     private static final ResourceLocation SPEED_CARD = mega("ae2", "item/card_speed");
     /** AE2の {@code InitItemModelsProperties} が登録するエネルギーセルの残量プロパティ。 */
     private static final ResourceLocation ENERGY_FILL_LEVEL = mega("ae2", "fill_level");
@@ -151,6 +154,10 @@ public class ModItemModelProvider extends ItemModelProvider {
             layered("fluid_storage_cell_" + id, FLUID_HOUSING, CELL_LED, standardCell(id));
             layered("chemical_storage_cell_" + id, CHEMICAL_HOUSING, CELL_LED, standardCell(id));
             layered("disk_drive_" + id, DISK_BASE, CELL_LED, standardCell(id));
+            if (tier.compareTo(InsaneCraftingUnitType.STORAGE_16P) <= 0) {
+                layered("fluid_disk_drive_" + id, FLUID_DISK_BASE, CELL_LED, standardCell(id));
+                layered("chemical_disk_drive_" + id, CHEMICAL_DISK_BASE, CELL_LED, standardCell(id));
+            }
 
             layered("portable_item_cell_" + id,
                     //? if >=1.21 {

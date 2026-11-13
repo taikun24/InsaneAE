@@ -25,6 +25,13 @@ repositories {
         url = 'https://cursemaven.com'
         content { includeGroup 'curse.maven' }
     }
+    maven {
+        // Kotlin for Forge (AE2 MEGA Things の前提)。CurseForge の一覧では Forge/NeoForge の
+        // ファイルを引き分けられないので、作者の maven から取る。
+        name = 'KotlinForForge'
+        url = 'https://thedarkcolour.github.io/KotlinForForge/'
+        content { includeGroup 'thedarkcolour' }
+    }
 }
 
 // ゲームテスト (AE2 のテストプロットに相乗りした検証) は配布 jar に入れない。
@@ -85,7 +92,8 @@ neoForge {
                     '--existing', rootProject.file('src/main/resources/').getAbsolutePath(),
                     '--existing-mod', 'ae2', '--existing-mod', 'megacells',
                     // FE セルの筐体は AppliedFlux のテクスチャを借りている。
-                    '--existing-mod', 'appflux', '--existing-mod', 'ae2things'
+                    '--existing-mod', 'appflux', '--existing-mod', 'ae2things',
+                    '--existing-mod', 'ae2_mega_things'
         }
 
         configureEach {
@@ -200,6 +208,15 @@ dependencies {
     compileOnly "curse.maven:ae2-things-forge-609977:${ae2things_file}"
     if (project.findProperty('withAE2Things') != 'false') {
         localRuntime "curse.maven:ae2-things-forge-609977:${ae2things_file}"
+    }
+
+    // AE2 MEGA Things — InsaneAE 階層の液体・化学物質 DISK を足す【任意】依存。
+    // DISK は MEGA Things の AbstractDISKDrive を継承するので型を見るために要る。
+    // 前提に AE2 Things と Kotlin for Forge がある。-PwithMegaThings=false で dev 実行から外れる。
+    compileOnly "curse.maven:ae2-mega-things-1150075:${megathings_file}"
+    if (project.findProperty('withAE2Things') != 'false' && project.findProperty('withMegaThings') != 'false') {
+        localRuntime "curse.maven:ae2-mega-things-1150075:${megathings_file}"
+        localRuntime "thedarkcolour:kotlinforforge-neoforge:${kotlinforforge_version}"
     }
 
     // AE2 Crafting Optimizer。

@@ -27,6 +27,7 @@ Both builds are made from a single source tree with [Stonecutter](https://stonec
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) (optional, chemical cells) | 1.4 or later | 1.6 or later |
 | [AppliedFlux](https://www.curseforge.com/minecraft/mc-mods/applied-flux) (optional, FE cells) | 1.20-1.3.7 or later | 1.21-2.1.6 or later |
 | [AE2 Things](https://www.curseforge.com/minecraft/mc-mods/ae2-things-forge) (optional, DISK drives) | 1.2.1 or later | 1.4.2-beta or later |
+| [AE2 MEGA Things](https://www.curseforge.com/minecraft/mc-mods/ae2-mega-things) (optional, fluid and chemical DISK drives) | 1.0.8 or later | 2.0.4 or later |
 | [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) (optional, BigInteger accounting and exact planning) | 1.5.12 or later | 1.5.12 or later (**1.5.18+ recommended**) |
 | [Astral Mekanism & Energistics](https://www.curseforge.com/minecraft/mc-mods/astral-mekanism) (optional, batches auto-ejection into ME interfaces) | 1.8 or later | — |
 
@@ -63,6 +64,9 @@ NeoForge version.
   `/insaneae cells list` and `/insaneae cells recover <uuid>`.
 - **ME DISK drives** (needs AE2 Things) — 1G to 8E, for items. No type limit, but one item takes
   one byte. The contents are stored in AE2 Things' own saved data.
+- **ME fluid / chemical DISK drives** (needs AE2 MEGA Things; chemical also needs Applied Mekanistics) —
+  1G to 16P. As in AE2 MEGA Things, 1,000 mB takes one byte. The total is counted in mB as a long,
+  so the 16P drive stops at about 8.19P bytes.
 - **Crafting storage** — 1G to 8E. A Mixin works around AE2 displaying byte counts as 32-bit.
   When several 4E-or-larger units share a CPU, the total is recomputed in BigInteger before being
   rounded to a long. The AE2-compatible long getter saturates at `Long.MAX_VALUE`, but other mods

@@ -35,6 +35,14 @@ public interface AddonIntegration {
     /** 相手のmodid。レシピの {@code mod_loaded} 条件にも使う。 */
     String modId();
 
+    /**
+     * 連携が働くのに要るMod全部。名簿はこれが全部入っているときだけ実体を作り、
+     * レシピにも全部の {@code mod_loaded} 条件を付ける。
+     */
+    default List<String> requiredMods() {
+        return List.of(modId());
+    }
+
     /** Mod構築時。アイテムを登録するならここで {@code DeferredRegister} に足す。 */
     default void registerContent() {
     }

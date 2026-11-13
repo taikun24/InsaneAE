@@ -14,7 +14,7 @@ import net.minecraft.world.level.ItemLike;
  * <p>容量だけはAE2 Thingsがintで持つので、{@code DiskCellInventoryMixin} が
  * {@link #capacity()} を返すようにしている。</p>
  */
-public final class InsaneDiskItem extends DISKDrive {
+public final class InsaneDiskItem extends DISKDrive implements InsaneDisk {
 
     private final long capacity;
     private final String tierLabel;
@@ -27,6 +27,7 @@ public final class InsaneDiskItem extends DISKDrive {
         this.tierLabel = tierLabel;
     }
 
+    @Override
     public long capacity() {
         return capacity;
     }

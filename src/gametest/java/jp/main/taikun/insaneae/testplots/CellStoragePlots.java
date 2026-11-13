@@ -13,6 +13,8 @@ import appeng.server.testworld.PlotTestHelper;
 import jp.main.taikun.insaneae.cell.storage.CellContentStore;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.integration.ae2things.AE2ThingsIntegration;
+import jp.main.taikun.insaneae.integration.appmek.AppMekIntegration;
+import jp.main.taikun.insaneae.integration.megathings.MegaThingsIntegration;
 import jp.main.taikun.insaneae.registries.ModCells;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -194,6 +196,18 @@ public final class CellStoragePlots {
         plot.test(helper -> helper.succeedIf(() -> {
             if (ModList.get().isLoaded(AE2ThingsIntegration.MODID)) {
                 AE2ThingsChecks.hugeDisk(helper);
+            }
+        }));
+    }
+
+    /** AE2 MEGA Things連携の液体・化学物質DISK。相手が居なければ素通り。 */
+    @TestPlot("insaneae_megathings_disks")
+    public static void megaThingsDisks(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.test(helper -> helper.succeedIf(() -> {
+            if (ModList.get().isLoaded(MegaThingsIntegration.MODID)) {
+                MegaThingsChecks.fluidDisk(helper);
+                MegaThingsChecks.chemicalDisk(helper, ModList.get().isLoaded(AppMekIntegration.MODID));
             }
         }));
     }

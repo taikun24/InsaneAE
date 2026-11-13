@@ -19,6 +19,7 @@
     "compat.advancedae.AdvCraftingCpuBudgetMixin",
     "compat.advancedae.AdvCraftingCpuStorageMixin",
     "compat.advancedae.AdvCraftingCpuLogicMixin",
+    "compat.ae2things.DiskCellExtractMixin",
     "compat.ae2things.DiskCellInventoryMixin",
     "compat.extendedae.ExCircuitCutterMixin",
     "compat.extendedae.ExCraftingThreadMixin",

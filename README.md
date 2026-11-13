@@ -27,6 +27,7 @@ MEGA Cells が 256M で止めているところから、1G 以上の容量・ク
 | [Applied Mekanistics](https://github.com/ramidzkh/AppliedMekanistics) (任意 / 化学物質セル用) | 1.4 以上 | 1.6 以上 |
 | [AppliedFlux](https://www.curseforge.com/minecraft/mc-mods/applied-flux) (任意 / FE セル用) | 1.20-1.3.7 以上 | 1.21-2.1.6 以上 |
 | [AE2 Things](https://www.curseforge.com/minecraft/mc-mods/ae2-things-forge) (任意 / DISK 用) | 1.2.1 以上 | 1.4.2-beta 以上 |
+| [AE2 MEGA Things](https://www.curseforge.com/minecraft/mc-mods/ae2-mega-things) (任意 / 液体・化学物質 DISK 用) | 1.0.8 以上 | 2.0.4 以上 |
 | [AE2 Crafting Optimizer](https://github.com/syarukasu/ae2-crafting-optimizer) (任意 / BigInteger量会計・厳密計算連携用) | 1.5.12 以上 | 1.5.12 以上 (**1.5.18 以上を推奨**) |
 | [Astral Mekanism & Energistics](https://www.curseforge.com/minecraft/mc-mods/astral-mekanism) (任意 / ME インターフェイスへの自動搬出をまとめる連携用) | 1.8 以上 | — |
 
@@ -59,6 +60,9 @@ AE2 のバージョン範囲は実際に検証した範囲 (1.20.1 は `[15.4.10
   `/insaneae cells recover <uuid>` で作り直せます。
 - **ME DISK ドライブ** (AE2 Things 導入時) — アイテム用の 1G 〜 8E。型数の上限が無い代わりに
   アイテム 1 個 = 1 バイトです。中身は AE2 Things の保存データに入ります。
+- **ME 液体 / 化学物質 DISK ドライブ** (AE2 MEGA Things 導入時、化学物質は Applied Mekanistics も必要) —
+  1G 〜 16P。AE2 MEGA Things と同じく 1000 mB = 1 バイトです。合計を mB の long で数えるため、
+  16P だけ容量が約 8.19P バイトで止まります。
 - **クラフトストレージ** — 1G 〜 8E。AE2 のバイト表示が 32bit で溢れる問題を Mixin で回避しています。
   同じCPUに複数の4E以上を接続した合計は、longへ丸める前にBigIntegerで再計算します。
   AE2互換のlong getterはLong.MAX_VALUEへ飽和しますが、連携Modは

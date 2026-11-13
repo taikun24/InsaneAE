@@ -29,6 +29,8 @@ public final class TieredNames {
     public static final String PORTABLE_FE_CELL = "item.insaneae.portable_fe_cell";
     public static final String ENERGY_COMPONENT = "item.insaneae.energy_component";
     public static final String DISK_DRIVE = "item.insaneae.disk_drive";
+    public static final String FLUID_DISK_DRIVE = "item.insaneae.fluid_disk_drive";
+    public static final String CHEMICAL_DISK_DRIVE = "item.insaneae.chemical_disk_drive";
 
     private TieredNames() {
     }

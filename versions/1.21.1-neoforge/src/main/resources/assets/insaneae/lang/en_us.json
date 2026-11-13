@@ -9,6 +9,8 @@
   "item.insaneae.portable_chemical_cell": "%s Portable Chemical Cell",
   "item.insaneae.chemical_storage_cell": "%s ME Chemical Storage Cell",
   "item.insaneae.disk_drive": "%s ME DISK Drive",
+  "item.insaneae.fluid_disk_drive": "%s ME Fluid DISK Drive",
+  "item.insaneae.chemical_disk_drive": "%s ME Chemical DISK Drive",
   "item.insaneae.fe_storage_cell": "%s ME FE Storage Cell",
   "item.insaneae.portable_fe_cell": "%s Portable FE Cell",
   "item.insaneae.energy_component": "%s ME Energy Storage Component",

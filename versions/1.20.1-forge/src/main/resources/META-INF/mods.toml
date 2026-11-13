@@ -102,6 +102,14 @@ mandatory = false
 versionRange = "[1.2.1,)"
 ordering = "AFTER"
 side = "BOTH"
+# AE2 MEGA Things - 任意。導入されている場合のみ InsaneAE 階層の液体・化学物質 DISK を追加する。
+# DISK は MEGA Things のクラスを継承しているので、確認済みの版以降に絞る。
+[[dependencies."${mod_id}"]]
+modId = "ae2_mega_things"
+mandatory = false
+versionRange = "[1.0.8,)"
+ordering = "AFTER"
+side = "BOTH"
 # AE2 Crafting Optimizer - 任意。導入時は公開BigInteger APIを通常クラフトCPUの
 # 正確な容量とQuantum CPUの完成品待ち台帳へ接続する。未導入時はlong容量と内蔵台帳へ戻る。
 [[dependencies."${mod_id}"]]

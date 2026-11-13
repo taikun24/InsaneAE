@@ -37,5 +37,9 @@ final class AE2ThingsChecks {
 
         StorageCell reopened = StorageCells.getCellInventory(disk, null);
         helper.check(reopened.getAvailableStacks().get(cobble) == amount, "開き直すと中身が違う");
+
+        // AE2 Things は 1 回の取り出しを int で打ち切る (issue #20)
+        long extracted = reopened.extract(cobble, amount, Actionable.MODULATE, IActionSource.empty());
+        helper.check(extracted == amount, "int を超える量を 1 回で取り出せない: " + extracted);
     }
 }

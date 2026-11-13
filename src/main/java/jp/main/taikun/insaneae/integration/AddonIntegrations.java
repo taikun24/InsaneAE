@@ -6,6 +6,8 @@ import jp.main.taikun.insaneae.integration.ae2things.AE2ThingsIntegration;
 import jp.main.taikun.insaneae.integration.appflux.AppFluxIntegration;
 import jp.main.taikun.insaneae.integration.appmek.AppMekIntegration;
 import jp.main.taikun.insaneae.integration.extendedae.ExtendedAeIntegration;
+import jp.main.taikun.insaneae.integration.megathings.MegaThingsChemicalIntegration;
+import jp.main.taikun.insaneae.integration.megathings.MegaThingsIntegration;
 import net.neoforged.fml.ModList;
 import org.slf4j.Logger;
 
@@ -40,6 +42,10 @@ public final class AddonIntegrations {
                     () -> new AppFluxIntegration()),
             new Known(AE2ThingsIntegration.MODID, "DISK drives",
                     () -> new AE2ThingsIntegration()),
+            new Known(MegaThingsIntegration.MODID, "fluid DISK drives",
+                    () -> new MegaThingsIntegration()),
+            new Known(MegaThingsIntegration.MODID, "chemical DISK drives (with appmek)",
+                    () -> new MegaThingsChemicalIntegration()),
             new Known(ExtendedAeIntegration.MODID, "acceleration cards on ExtendedAE machines",
                     () -> new ExtendedAeIntegration()),
             new Known(AdvancedAeIntegration.MODID, "acceleration cards on AdvancedAE machines",
@@ -64,8 +70,11 @@ public final class AddonIntegrations {
             if (!ModList.get().isLoaded(known.modId())) {
                 continue;
             }
-            LOGGER.info("InsaneAE: {} detected, enabling {}.", known.modId(), known.feature());
             AddonIntegration integration = known.factory().get();
+            if (!integration.requiredMods().stream().allMatch(ModList.get()::isLoaded)) {
+                continue;
+            }
+            LOGGER.info("InsaneAE: {} detected, enabling {}.", known.modId(), known.feature());
             integration.registerContent();
             found.add(integration);
         }

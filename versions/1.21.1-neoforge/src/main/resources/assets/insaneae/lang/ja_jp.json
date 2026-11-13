@@ -9,6 +9,8 @@
   "item.insaneae.portable_chemical_cell": "%s ポータブル化学物質セル",
   "item.insaneae.chemical_storage_cell": "%s ME化学物質ストレージセル",
   "item.insaneae.disk_drive": "%s ME DISKドライブ",
+  "item.insaneae.fluid_disk_drive": "%s ME液体DISKドライブ",
+  "item.insaneae.chemical_disk_drive": "%s ME化学物質DISKドライブ",
   "item.insaneae.fe_storage_cell": "%s ME FEストレージセル",
   "item.insaneae.portable_fe_cell": "%s ポータブルFEセル",
   "item.insaneae.energy_component": "%s MEエネルギーストレージコンポーネント",

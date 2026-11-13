@@ -196,6 +196,7 @@ jobs:
                    { slug: "applied-mekanistics",    type: "optionalDependency" },
                    { slug: "applied-flux",           type: "optionalDependency" },
                    { slug: "ae2-things-forge",       type: "optionalDependency" },
+                   { slug: "ae2-mega-things",        type: "optionalDependency" },
                    { slug: "ae2-crafting-optimizer", type: "optionalDependency" }
                  ]
                }

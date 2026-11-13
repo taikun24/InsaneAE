@@ -11,7 +11,7 @@ InsaneAE removes the limits of AE2: storage and crafting storage up to 8E, co-pr
 16-thread ceiling, cables with more than 32 channels, and a CPU that assembles crafts in bulk.
 
 Requires MEGA Cells. Chemical cells need Applied Mekanistics, FE cells need AppliedFlux and DISK drives
-need AE2 Things.
+need AE2 Things (fluid and chemical DISK drives also need AE2 MEGA Things).
 
 ## Pages
 
