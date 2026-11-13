@@ -23,8 +23,9 @@ if ! grep -qE 'required tests (passed|failed)' "$log"; then
   exit 1
 fi
 
-grep -oE 'LogTestReporter\]: [a-z0-9_.]+ failed!' "$log" \
-  | sed -E 's/.*\]: //; s/ failed!$//' | sort -u > actual-failures.txt
+# 位置付きで落ちたテストは "<名前> failed at x, y, z! <理由>" の形になるので、両方拾う。
+grep -oE 'LogTestReporter\]: [a-z0-9_.]+ failed( at|!)' "$log" \
+  | sed -E 's/.*\]: //; s/ failed( at|!)$//' | sort -u > actual-failures.txt
 # 行頭コメント・行末コメント・空行を落としてテスト名だけにする。
 sed -E 's/#.*//; s/[[:space:]]+//g' "$known" | grep -vE '^$' | sort -u > expected-failures.txt
 
