@@ -95,7 +95,7 @@ public class ModBlockStateProvider extends BlockStateProvider {
         // チャージャーは向きを持つ。facing × 6、spin × 4
         orientedBlock(ModBlocks.IMPROVED_CHARGER.get(), handwritten("improved_charger"));
         // 人形は水平4方向。手書きモデルは正面が北
-        horizontalBlock(ModBlocks.GAMERTAIKUN_DOLL.get(), handwritten("gamertaikun_doll"));
+        horizontalBlock(ModBlocks.CREATOR_DOLL.get(), handwritten("creator_doll"));
 
         // 超特大インターフェイスはただのキューブ
         simpleBlock(ModBlocks.INSANE_INTERFACE.get(), models().cubeAll("insane_interface",

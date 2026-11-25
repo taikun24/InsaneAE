@@ -42,7 +42,7 @@ public class ModCreativeTabs {
                 ModParts.allInsaneCables().forEach(output::accept);
                 output.accept(ModBlocks.INSANE_INTERFACE.get());
                 output.accept(ModParts.INSANE_INTERFACE.get());
-                output.accept(ModBlocks.GAMERTAIKUN_DOLL.get());
+                output.accept(ModBlocks.CREATOR_DOLL.get());
                 // AE2のEnergyCellBlock#addToMainCreativeTabは「空」と「満充電」の2個を出す
                 //? if >=1.21 {
                 ModBlocks.allEnergyCells().forEach(cell -> cell.addToMainCreativeTab(params, output));

@@ -119,13 +119,13 @@ public class ModBlocks {
     *///?}
             BLOCKS.register("insane_pattern_provider", InsanePatternProviderBlock::new);
 
-    /** 作者 (gamertaikun) の人形。飾りで、機能は無い。 */
+    /** 制作者の人形。飾りで、機能は無い。 */
     //? if >=1.21 {
-    public static final DeferredHolder<Block, PlayerDollBlock> GAMERTAIKUN_DOLL =
+    public static final DeferredHolder<Block, PlayerDollBlock> CREATOR_DOLL =
     //?} else {
-    /*public static final RegistryObject<PlayerDollBlock> GAMERTAIKUN_DOLL =
+    /*public static final RegistryObject<PlayerDollBlock> CREATOR_DOLL =
     *///?}
-            BLOCKS.register("gamertaikun_doll", PlayerDollBlock::new);
+            BLOCKS.register("creator_doll", PlayerDollBlock::new);
 
     static {
         // 表示名は階層ごとのlangキーではなく、「書式キー + 階層ラベル」で作る。TieredNamesを参照
@@ -190,8 +190,8 @@ public class ModBlocks {
                 () -> new InsaneInterfaceBlockItem(INSANE_INTERFACE.get(), new Item.Properties()));
         BLOCK_ITEMS.register("insane_pattern_provider",
                 () -> new BlockItem(INSANE_PATTERN_PROVIDER.get(), new Item.Properties()));
-        BLOCK_ITEMS.register("gamertaikun_doll",
-                () -> new BlockItem(GAMERTAIKUN_DOLL.get(), new Item.Properties()));
+        BLOCK_ITEMS.register("creator_doll",
+                () -> new BlockItem(CREATOR_DOLL.get(), new Item.Properties()));
     }
 
     /** ストレージ + アクセラレータの全ブロック。BlockEntityTypeやドロップ生成用。 */

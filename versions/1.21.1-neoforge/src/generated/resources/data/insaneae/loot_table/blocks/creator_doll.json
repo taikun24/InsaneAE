@@ -11,11 +11,11 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "insaneae:gamertaikun_doll"
+          "name": "insaneae:creator_doll"
         }
       ],
       "rolls": 1.0
     }
   ],
-  "random_sequence": "insaneae:blocks/gamertaikun_doll"
+  "random_sequence": "insaneae:blocks/creator_doll"
 }

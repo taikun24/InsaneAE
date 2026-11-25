@@ -5,8 +5,8 @@
 		64
 	],
 	"textures": {
-		"skin": "insaneae:block/gamertaikun_doll",
-		"particle": "insaneae:block/gamertaikun_doll"
+		"skin": "insaneae:block/creator_doll",
+		"particle": "insaneae:block/creator_doll"
 	},
 	"display": {
 		"gui": {

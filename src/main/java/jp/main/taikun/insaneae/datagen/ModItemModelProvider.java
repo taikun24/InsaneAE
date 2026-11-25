@@ -220,8 +220,8 @@ public class ModItemModelProvider extends ItemModelProvider {
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/insane_interface")));
         getBuilder("insane_pattern_provider").parent(new ModelFile.UncheckedModelFile(
                 ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/insane_pattern_provider")));
-        getBuilder("gamertaikun_doll").parent(new ModelFile.UncheckedModelFile(
-                ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/gamertaikun_doll")));
+        getBuilder("creator_doll").parent(new ModelFile.UncheckedModelFile(
+                ResourceLocation.fromNamespaceAndPath(InsaneAE.MODID, "block/creator_doll")));
 
         // ケーブル版のプレートの手持ちモデル。AE2の部品アイテムの形をそのまま継承し、
         // 正面のテクスチャだけこちらのものに差し替える
