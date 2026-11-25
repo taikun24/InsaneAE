@@ -25,7 +25,7 @@ item_ids:
 
 <ItemImage id="quantum_acceleration_card" scale="2" />
 
-<ItemLink id="quantum_acceleration_card" /> は、1 枚につきクラフト速度を 256 倍にします。7 枚装着することで long 型の上限（1 tick あたり約 9.2E クラフト）に到達します。
+<ItemLink id="quantum_acceleration_card" /> は、1 枚につきクラフト速度を 256 倍にします。7 枚で上限の 1 tick あたり約 9.2E クラフトに達します。
 
 <ItemImage id="task_fusion_card" scale="2" />
 

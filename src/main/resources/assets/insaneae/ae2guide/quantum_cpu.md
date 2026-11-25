@@ -27,7 +27,7 @@ Processing patterns are not accepted; put them in the <ItemLink id="insane_patte
 <ItemImage id="quantum_acceleration_card" scale="2" />
 
 <ItemLink id="quantum_acceleration_card" /> multiplies the crafting speed by 256 per card. With 7 cards it reaches
-the long limit (about 9.2E crafts per tick).
+the maximum, about 9.2E crafts per tick.
 
 <ItemImage id="task_fusion_card" scale="2" />
 

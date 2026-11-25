@@ -112,9 +112,9 @@ Item and fluid cells from 1G to 8E, plus portable cells at the same tiers. With 
 installed there are chemical cells, and with AppliedFlux FE cells (1G to 16T). Components follow the
 MEGA Cells pattern: four of the tier below.
 
-The contents of a cell are stored in the world, keyed by a UUID, and the item only keeps the UUID and a
-summary. A lost cell can be rebuilt with `/insaneae cells list` and `/insaneae cells recover <uuid>`
-(the UUID shows in the advanced tooltip, F3+H).
+The contents of a cell are saved with the world, not in the item. A lost cell can be
+rebuilt with `/insaneae cells list` and `/insaneae cells recover <uuid>`
+(the cell's UUID shows in the advanced tooltip, F3+H).
 
 <RecipeFor id="cell_component_1g" />
 <RecipeFor id="item_storage_cell_1g" />
@@ -126,9 +126,10 @@ but each item takes one byte.
 
 With AE2 MEGA Things installed there are also fluid DISK drives from 1G to 16P, and chemical DISK drives
 when Applied Mekanistics is installed too. 1,000 mB takes one byte, as in AE2 MEGA Things. The 16P drive
-holds about 8.19P bytes, because the total is counted in mB and has to fit in a long.
+holds about 8.19P bytes.
 
 ## Creative Cells
 
 <ItemLink id="creative_cell" /> supplies the configured items endlessly, 9,223,372,036,854,775,807 of each.
-<ItemLink id="ultra_creative_cell" /> also reports an exact BigInteger amount to AE2 Crafting Optimizer.
+<ItemLink id="ultra_creative_cell" /> works the same, and with AE2 Crafting Optimizer installed it can also supply
+crafts that need more than that.

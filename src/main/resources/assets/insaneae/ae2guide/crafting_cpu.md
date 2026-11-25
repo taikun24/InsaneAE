@@ -52,7 +52,7 @@ item_ids:
 </Row>
 
 Crafting storage from 1G to 8E, continuing MEGA Cells' 256M. Each tier holds 4 times the one below.
-A single 8E block reaches the long limit, so a CPU can hold one 8E or two 4E blocks at most.
+A single 8E block reaches the most a crafting CPU can hold, so a CPU can hold one 8E or two 4E blocks at most.
 
 <RecipeFor id="1g_crafting_storage" />
 
@@ -64,10 +64,10 @@ A single 8E block reaches the long limit, so a CPU can hold one 8E or two 4E blo
 </Row>
 
 Co-processing units from 16× to 2G×. AE2's 16-thread ceiling is removed, so one block can run that
-many crafts in parallel. 2G× is the int limit and the last tier.
+many crafts in parallel. 2G× is the last tier.
 
 ## BigInteger Crafting CPU
 
 <ItemLink id="big_integer_cpu" /> is crafting storage with a theoretical-maximum capacity. It joins a normal AE2
-crafting CPU. With AE2 Crafting Optimizer installed, its capacity is the exact ceiling ACO can handle;
-without it, the long limit. It has no survival recipe.
+crafting CPU. With AE2 Crafting Optimizer installed, its capacity is the most ACO can handle;
+without it, the same as one 8E block. It has no survival recipe.

@@ -111,7 +111,7 @@ item_ids:
 1G から 8E までのアイテム・液体セルおよび同等のポータブルセルが用意されています。Applied Mekanistics が導入されている場合は化学物質セル、
 AppliedFlux が導入されている場合は FE セル（1G〜16T）も追加されます。コンポーネントは MEGA Cells と同様に、1 つ下の段階のパーツ 4 個で作成します。
 
-セルのデータはワールド側の UUID ごとに保存され、アイテム自体には UUID と概要のみが保持されます。セルを紛失した場合は、
+セルの中身はアイテムではなくワールドに保存されます。セルを紛失した場合は、
 `/insaneae cells list` で UUID を検索し、`/insaneae cells recover <uuid>` で復元することが可能です（UUID は F3 + H の詳細表示で確認できます）。
 
 <RecipeFor id="cell_component_1g" />
@@ -121,9 +121,9 @@ AppliedFlux が導入されている場合は FE セル（1G〜16T）も追加�
 
 AE2 Things が導入されている場合は、アイテム用の ME DISK（1G〜8E）が追加されます。格納できる種類数の制限はありませんが、アイテム 1 個につき 1 バイトを消費します。
 
-AE2 MEGA Things も導入されている場合は、液体用の ME DISK（1G〜16P）が追加されます。Applied Mekanistics も入っていれば化学物質用も追加されます。AE2 MEGA Things と同じく 1000 mB が 1 バイトです。中身の合計を mB の long で数えるので、16P だけは容量が約 8.19P バイトで止まります。
+AE2 MEGA Things も導入されている場合は、液体用の ME DISK（1G〜16P）が追加されます。Applied Mekanistics も入っていれば化学物質用も追加されます。AE2 MEGA Things と同じく 1000 mB が 1 バイトです。16P だけは容量が約 8.19P バイトになります。
 
 ## クリエイティブセル
 
 <ItemLink id="creative_cell" /> は、設定した中身を 1 種類につき 922 京個という無限の数量で供給します。
-<ItemLink id="ultra_creative_cell" /> はさらに、AE2 Crafting Optimizer に対して正確な BigInteger の数量を伝達します。
+<ItemLink id="ultra_creative_cell" /> も同じですが、AE2 Crafting Optimizer が導入されていれば、これを超える量を使うクラフトにも材料を出せます。
