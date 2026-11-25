@@ -10,6 +10,11 @@
       "type": "minecraft:directory",
       "source": "part/cable/compressed",
       "prefix": "part/cable/compressed/"
+    },
+    {
+      "type": "minecraft:directory",
+      "source": "part/cable/insane",
+      "prefix": "part/cable/insane/"
     }
   ]
 }

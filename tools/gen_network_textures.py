@@ -29,7 +29,8 @@
     <色>.png           帯 (17 色)。ファイル名は AEColor の enum 名で、fluix だけ transparent
     core_<色>.png      芯 (17 色)
     channels_*.png     使用チャンネルの目盛り (10 枚)。tools/textures/<版>/cable_channels_*.png
-                       を写す。圧縮だけは帯と同じく枠を明るくする
+                       を写す。圧縮は帯と同じく枠を明るくし、
+                       無制限は型紙の溝の中だけに切り抜く
 
 帯と目盛りは揃えて描くこと。溝と目盛りの位置が食い違うと、アイテムの絵に穴が空く。
 
@@ -203,6 +204,23 @@ def lighten_frame(image: Image.Image) -> Image.Image:
     return out
 
 
+def clip_to_grooves(overlay: Image.Image, band: Image.Image) -> Image.Image:
+    """目盛りを帯の溝 (透明な画素) の中だけに残す。
+
+    目盛りは帯の上に重なるので、溝の幅を型紙で変えても、目盛りが元の幅のままだと
+    帯が隠れて見た目が変わらない。目盛りは帯の整数倍の大きさで描かれている。
+    """
+    scale = overlay.width // band.width
+    out = overlay.copy()
+    src = band.load()
+    dst = out.load()
+    for y in range(out.height):
+        for x in range(out.width):
+            if src[x // scale, y // scale][3] > 0:
+                dst[x, y] = (0, 0, 0, 0)
+    return out
+
+
 def save(image: Image.Image, *parts: str) -> None:
     path = os.path.join(OUT, *parts)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -237,7 +255,7 @@ def main() -> None:
         overlay = load_template(dirs, "cable_%s.png" % name)
         save(overlay, "part", "cable", "hyper", name + ".png")
         save(lighten_frame(overlay), "part", "cable", "compressed", name + ".png")
-        save(overlay, "part", "cable", "insane", name + ".png")
+        save(clip_to_grooves(overlay, band), "part", "cable", "insane", name + ".png")
 
 if __name__ == "__main__":
     main()
