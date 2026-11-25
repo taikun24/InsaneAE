@@ -1,30 +1,35 @@
 #!/usr/bin/env python3
-"""超次元 / 圧縮 / 無制限の ME ケーブルのテクスチャを、種類ごとの灰色の下敷きから作る。
+"""超次元 / 圧縮 / 無制限の ME ケーブルのテクスチャを tools/textures の下敷きから作る。
 
     pip install pillow
     python tools/gen_network_textures.py
 
 流れは tools/textures → src/main/resources の一方向だけ。
 
-ケーブルは 3 種類あり、それぞれに帯と芯の下敷きを 1 組ずつ持つ。
+超次元と圧縮は、版ごとの色付きの下敷き (AE2 の高密度スマートケーブルの絵) から作る。
 
-    cable_hyper_band_template.png       超次元 ME ケーブルの帯
-    cable_hyper_core_template.png       その芯
-    cable_compressed_band_template.png  圧縮 ME 高密度スマートケーブルの帯
-    cable_compressed_core_template.png  その芯
-    cable_insane_band_template.png      超次元 ME ケーブル (無制限) の帯
-    cable_insane_core_template.png      その芯
+    tools/textures/<版>/cable_<色>.png        帯 17 色
+    tools/textures/<版>/cable_core_<色>.png   芯 17 色
 
-下敷きは灰色で描く。透明な画素は溝で、目盛りが乗る場所を空けておく。
-色は下の PALETTE が決める。下敷きの明るさを、色ごとの 5 段の明るさの対応に写す。
-色の名前 (AEColor) と PALETTE の対応は変えないこと。
+超次元は下敷きをそのまま写し、圧縮は枠だけを明るくする (lighten_frame)。
+灰色の型紙から色を付け直さないのは、AE2 の絵が色ごとに塗り分けを変えているため。
+1.20.1 は色ごとに 6〜11 色を使い分けていて、フルーix (transparent) は灰色と紫を混ぜている。
+型紙 1 枚と色の対応表ではこれを再現できず、元の色味が失われる。
+
+無制限は灰色の型紙から作る。超次元と見分けが付くよう、形を描き分けるため。
+
+    tools/textures/cable_insane_band_template.png   帯
+    tools/textures/cable_insane_core_template.png   芯
+
+型紙の透明な画素は溝で、目盛りが乗る場所を空けておく。
+色は下の PALETTE が決める。型紙の明るさを、色ごとの 5 段の明るさの対応に写す。
 
 出力 (src/main/resources/assets/insaneae/textures/part/cable/<種類>/):
 
-    <色>.png           帯 (17 色)
+    <色>.png           帯 (17 色)。ファイル名は AEColor の enum 名で、fluix だけ transparent
     core_<色>.png      芯 (17 色)
-    channels_*.png     使用チャンネルの目盛り (10 枚)。色にも種類にも依らず、
-                       tools/textures/<版>/cable_channels_*.png をそのまま写す
+    channels_*.png     使用チャンネルの目盛り (10 枚)。tools/textures/<版>/cable_channels_*.png
+                       を写す。圧縮だけは帯と同じく枠を明るくする
 
 帯と目盛りは揃えて描くこと。溝と目盛りの位置が食い違うと、アイテムの絵に穴が空く。
 
@@ -33,19 +38,28 @@
 差し替え (insaneae の client Mixin) が同じ絵に向ける。目盛りは 0〜4 本の 5 段階 ×
 奇数/偶数の 2 枚で 10 枚あり、10 枚そろっていないとワールドの目盛りが欠ける。
 
+圧縮は枠だけを明るくする。色を動かすと、色名 (アイテム名) と実物がずれるため。
+色の付いた芯には触らないので、17 色の名前はそのまま正しい。
+アイテムの絵に出るのは帯のごく一部で、そこは枠が大半を占めるので、枠の明るさで見分けが付く。
+
 色は色相を回さない。色名がアイテム名になっているので、色相を回すと名前と実物がずれる
 (「白色の…」が緑になる)。
 """
 
 from __future__ import annotations
 
+import colorsys
 import os
 import sys
 
 from PIL import Image
 
-# ケーブルの種類。下敷きのファイル名と出力先のフォルダ名を兼ねる
-CABLE_KINDS = ("hyper", "compressed", "insane")
+# 圧縮ケーブルの枠をどれだけ明るくするか。HLSの明度に足す量
+FRAME_LIGHTEN = 0.22
+
+# 「枠」と見なす画素の条件、彩度と明度の上限。色の付いた芯を巻き込まないための線引き
+FRAME_MAX_SATURATION = 0.25
+FRAME_MAX_LIGHTNESS = 0.35
 
 # 色。ファイル名は AEColor の enum 名そのままで、fluix だけ transparent
 CABLE_COLORS = (
@@ -58,7 +72,7 @@ CABLE_COLORS = (
 CABLE_OVERLAYS = tuple("channels_%02d" % n for n in (0, 1, 2, 3, 4, 10, 11, 12, 13, 14))
 
 # 色ごとの明るさの対応。下敷きの明るさの範囲を 0〜1 にしたとき、0、1/4、1/2、3/4、1 の
-# 位置に置く RGB。(帯, 芯) の順。AE2 の色の見本 (1.21.1 版) から取った値
+# 位置に置く RGB。(帯, 芯) の順。AE2 の色の見本 (1.21.1 版) から取った値で、無制限だけが使う
 PALETTE = {
     "white": (
         [(180, 180, 180), (197, 197, 197), (214, 214, 214), (232, 232, 232), (249, 249, 249)],
@@ -169,6 +183,26 @@ def colorize(template: Image.Image, stops: list[tuple[int, int, int]]) -> Image.
     return out
 
 
+def lighten_frame(image: Image.Image) -> Image.Image:
+    """暗くて彩度の低い画素 (金属の枠) だけを明るくする。色の付いた芯は素通し。"""
+    out = Image.new("RGBA", image.size)
+    src = image.load()
+    dst = out.load()
+    for y in range(image.size[1]):
+        for x in range(image.size[0]):
+            r, g, b, a = src[x, y]
+            if a == 0:
+                dst[x, y] = (0, 0, 0, 0)
+                continue
+            h, l, s = colorsys.rgb_to_hls(r / 255.0, g / 255.0, b / 255.0)
+            if s > FRAME_MAX_SATURATION or l > FRAME_MAX_LIGHTNESS:
+                dst[x, y] = (r, g, b, a)
+                continue
+            r2, g2, b2 = colorsys.hls_to_rgb(h, min(1.0, l + FRAME_LIGHTEN), s)
+            dst[x, y] = (round(r2 * 255), round(g2 * 255), round(b2 * 255), a)
+    return out
+
+
 def save(image: Image.Image, *parts: str) -> None:
     path = os.path.join(OUT, *parts)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -186,16 +220,24 @@ def main() -> None:
 
     dirs = [args.templates] if args.templates else TEMPLATE_DIRS
 
-    for kind in CABLE_KINDS:
-        band = load_template(dirs, "cable_%s_band_template.png" % kind)
-        core = load_template(dirs, "cable_%s_core_template.png" % kind)
-        for color in CABLE_COLORS:
-            band_stops, core_stops = PALETTE[color]
-            save(colorize(band, band_stops), "part", "cable", kind, color + ".png")
-            save(colorize(core, core_stops), "part", "cable", kind, "core_" + color + ".png")
-        for name in CABLE_OVERLAYS:
-            save(load_template(dirs, "cable_%s.png" % name), "part", "cable", kind, name + ".png")
+    for color in CABLE_COLORS:
+        for prefix in ("", "core_"):
+            source = load_template(dirs, "cable_%s%s.png" % (prefix, color))
+            save(source, "part", "cable", "hyper", prefix + color + ".png")
+            save(lighten_frame(source), "part", "cable", "compressed", prefix + color + ".png")
 
+    band = load_template(dirs, "cable_insane_band_template.png")
+    core = load_template(dirs, "cable_insane_core_template.png")
+    for color in CABLE_COLORS:
+        band_stops, core_stops = PALETTE[color]
+        save(colorize(band, band_stops), "part", "cable", "insane", color + ".png")
+        save(colorize(core, core_stops), "part", "cable", "insane", "core_" + color + ".png")
+
+    for name in CABLE_OVERLAYS:
+        overlay = load_template(dirs, "cable_%s.png" % name)
+        save(overlay, "part", "cable", "hyper", name + ".png")
+        save(lighten_frame(overlay), "part", "cable", "compressed", name + ".png")
+        save(overlay, "part", "cable", "insane", name + ".png")
 
 if __name__ == "__main__":
     main()
