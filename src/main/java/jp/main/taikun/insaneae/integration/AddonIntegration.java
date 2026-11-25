@@ -1,5 +1,6 @@
 package jp.main.taikun.insaneae.integration;
 
+import appeng.api.stacks.AEKey;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -45,6 +46,14 @@ public interface AddonIntegration {
 
     /** Mod構築時。アイテムを登録するならここで {@code DeferredRegister} に足す。 */
     default void registerContent() {
+    }
+
+    /**
+     * 種類を問わないセル (超次元MEセル) にも入れさせない中身。相手Modの専用セルにしか入らないもの、
+     * たとえばMekanismの放射性の化学物質。
+     */
+    default boolean rejectsInStorage(AEKey key) {
+        return false;
     }
 
     /** 追加した素材、たとえばコンポーネント。クリエイティブタブでセルより前に並ぶ。 */

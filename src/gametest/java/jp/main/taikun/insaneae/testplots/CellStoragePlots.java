@@ -10,6 +10,7 @@ import appeng.api.storage.cells.StorageCell;
 import appeng.server.testplots.TestPlot;
 import appeng.server.testworld.PlotBuilder;
 import appeng.server.testworld.PlotTestHelper;
+import jp.main.taikun.insaneae.cell.InsaneMeCellData;
 import jp.main.taikun.insaneae.cell.storage.CellContentStore;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.integration.ae2things.AE2ThingsIntegration;
@@ -20,6 +21,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.fml.ModList;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.UUID;
 //? if >=1.21 {
@@ -160,6 +162,66 @@ public final class CellStoragePlots {
             long empty = inventory(helper, outer)
                     .insert(AEItemKey.of(newCell()), 1, Actionable.SIMULATE, IActionSource.empty());
             helper.check(empty == 1, "空のセルが別のセルに入らない");
+        }));
+    }
+
+    /**
+     * 超次元MEセルも中身はワールド側に置き、アイテムにはUUIDだけを残す。
+     * longを超える量も保存データには正確に残り、AE2へはlongの天井までしか見せない。
+     */
+    @TestPlot("insaneae_insane_cell_uuid_storage")
+    public static void insaneCellUuidStorage(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.test(helper -> helper.succeedIf(() -> {
+            ItemStack cell = new ItemStack(ModCells.INSANE_ME_CELL.get());
+            insert(helper, cell, COBBLE, Long.MAX_VALUE);
+            insert(helper, cell, COBBLE, Long.MAX_VALUE);
+
+            UUID id = InsaneMeCellData.id(cell);
+            helper.check(id != null, "中身を入れた超次元MEセルに UUID が付かない");
+            CellContentStore.BigEntry entry = store(helper).getBig(id);
+            BigInteger twice = BigInteger.valueOf(Long.MAX_VALUE).shiftLeft(1);
+            helper.check(entry != null && twice.equals(entry.amounts().get(COBBLE)),
+                    "保存データの量が違う: " + entry);
+
+            StorageCell reopened = inventory(helper, cell);
+            helper.check(reopened.getAvailableStacks().get(COBBLE) == Long.MAX_VALUE,
+                    "AE2 へ見せる量が long の天井で止まらない");
+            reopened.extract(COBBLE, Long.MAX_VALUE, Actionable.MODULATE, IActionSource.empty());
+            helper.check(id.equals(InsaneMeCellData.id(cell)), "まだ中身があるのに UUID が外れた");
+            reopened.extract(COBBLE, Long.MAX_VALUE, Actionable.MODULATE, IActionSource.empty());
+            helper.check(InsaneMeCellData.id(cell) == null, "空にしても UUID が残る");
+            helper.check(store(helper).getBig(id) == null, "空にしても保存データが残る");
+            //? if >=1.21 {
+            helper.check(ItemStack.isSameItemSameComponents(cell, new ItemStack(ModCells.INSANE_ME_CELL.get())),
+                    "空のセルが新品と一致しない");
+            //?} else {
+            /*helper.check(ItemStack.isSameItemSameTags(cell, new ItemStack(ModCells.INSANE_ME_CELL.get())),
+                    "空のセルが新品と一致しない: " + cell.getTag());
+            *///?}
+        }));
+    }
+
+    /** 中身の入ったセルは、超次元MEセルにも入らない。空のセルは入る。 */
+    @TestPlot("insaneae_insane_cell_no_nesting")
+    public static void insaneCellNoNesting(PlotBuilder plot) {
+        plot.creativeEnergyCell("0 -1 0");
+        plot.test(helper -> helper.succeedIf(() -> {
+            ItemStack outer = new ItemStack(ModCells.INSANE_ME_CELL.get());
+
+            ItemStack filledInsane = new ItemStack(ModCells.INSANE_ME_CELL.get());
+            insert(helper, filledInsane, COBBLE, 1);
+            ItemStack filledBasic = newCell();
+            insert(helper, filledBasic, COBBLE, 1);
+
+            for (ItemStack inner : List.of(filledInsane, filledBasic)) {
+                long inserted = inventory(helper, outer)
+                        .insert(AEItemKey.of(inner), 1, Actionable.MODULATE, IActionSource.empty());
+                helper.check(inserted == 0, "中身入りのセルが超次元MEセルに入った: " + inner);
+            }
+            long empty = inventory(helper, outer).insert(AEItemKey.of(new ItemStack(ModCells.INSANE_ME_CELL.get())),
+                    1, Actionable.SIMULATE, IActionSource.empty());
+            helper.check(empty == 1, "空のセルが超次元MEセルに入らない");
         }));
     }
 

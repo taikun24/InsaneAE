@@ -23,6 +23,7 @@ import jp.main.taikun.insaneae.registries.ModCells;
 import jp.main.taikun.insaneae.registries.ModItems;
 import jp.main.taikun.insaneae.registries.ModParts;
 import jp.main.taikun.insaneae.registries.ModUpgrades;
+import jp.main.taikun.insaneae.cell.EmptyCellShapedRecipe;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.recipes.*;
 import net.minecraft.resources.ResourceLocation;
@@ -47,9 +48,17 @@ import net.minecraft.core.HolderLookup;
 import net.neoforged.neoforge.common.conditions.ModLoadedCondition;
 import net.neoforged.neoforge.common.crafting.DifferenceIngredient;
 import java.util.concurrent.CompletableFuture;
+import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.ShapedRecipe;
+import net.neoforged.neoforge.common.conditions.ICondition;
+import org.jetbrains.annotations.Nullable;
 //?}
 //? if <1.21 {
-/*import net.minecraftforge.common.crafting.ConditionalRecipe;
+/*import com.google.gson.JsonObject;
+import jp.main.taikun.insaneae.registries.ModRecipes;
+import net.minecraftforge.common.crafting.ConditionalRecipe;
 import net.minecraftforge.common.crafting.DifferenceIngredient;
 import net.minecraftforge.common.crafting.conditions.ModLoadedCondition;
 import net.neoforged.neoforge.registries.ForgeRegistries;
@@ -149,9 +158,8 @@ public class ModRecipeProvider extends RecipeProvider {
             }
         }
 
-        // 超次元MEセル: 最上段のアイテムセルに、最上段のコンポーネントと集積プロセッサを組む
         InsaneCraftingUnitType top = tiers[tiers.length - 1];
-        shaped(consumer, ModCells.INSANE_ME_CELL.get(), ModCells.ITEM_CELLS.get(top).get(),
+        shaped(emptyCells(consumer), ModCells.INSANE_ME_CELL.get(), ModCells.ITEM_CELLS.get(top).get(),
                 new String[]{"ABA", "BCB", "ABA"},
                 Map.of('A', ACCUMULATION_PROCESSOR,
                         'B', ModItems.CELL_COMPONENTS.get(top).get(),
@@ -524,6 +532,53 @@ public class ModRecipeProvider extends RecipeProvider {
         }
         builder.unlockedBy("has_component", has(unlockedBy)).save(consumer);
     }
+
+    /** 定形レシピを、材料のセルが空のときだけ成り立つ {@link EmptyCellShapedRecipe} にして出す。 */
+    //? if >=1.21 {
+    static RecipeOutput emptyCells(RecipeOutput output) {
+        return new RecipeOutput() {
+            @Override
+            public Advancement.Builder advancement() {
+                return output.advancement();
+            }
+
+            @Override
+            public void accept(ResourceLocation id, Recipe<?> recipe, @Nullable AdvancementHolder advancement,
+                               ICondition... conditions) {
+                output.accept(id, new EmptyCellShapedRecipe((ShapedRecipe) recipe), advancement, conditions);
+            }
+        };
+    }
+    //?} else {
+    /*static Consumer<FinishedRecipe> emptyCells(Consumer<FinishedRecipe> consumer) {
+        return recipe -> consumer.accept(new FinishedRecipe() {
+            @Override
+            public void serializeRecipeData(JsonObject json) {
+                recipe.serializeRecipeData(json);
+            }
+
+            @Override
+            public ResourceLocation getId() {
+                return recipe.getId();
+            }
+
+            @Override
+            public net.minecraft.world.item.crafting.RecipeSerializer<?> getType() {
+                return ModRecipes.EMPTY_CELL_SHAPED.get();
+            }
+
+            @Override
+            public JsonObject serializeAdvancement() {
+                return recipe.serializeAdvancement();
+            }
+
+            @Override
+            public ResourceLocation getAdvancementId() {
+                return recipe.getAdvancementId();
+            }
+        });
+    }
+    *///?}
 
     /**
      * セルの分解レシピ。空のセルを右クリックすると、ここで指定したアイテムに戻る。

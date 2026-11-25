@@ -97,7 +97,7 @@ public final class AppMekCells {
     }
 
     /** 放射性の化学物質かどうか。appmekの通常セルと同じ判定。 */
-    private static boolean isRadioactive(AEKey key) {
+    static boolean isRadioactive(AEKey key) {
         return key instanceof MekanismKey mekanismKey
                 && !ChemicalAttributeValidator.DEFAULT.process(mekanismKey.getStack());
     }

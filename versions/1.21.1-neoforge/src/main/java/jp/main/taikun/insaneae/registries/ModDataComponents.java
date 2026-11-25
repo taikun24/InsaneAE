@@ -1,7 +1,6 @@
 package jp.main.taikun.insaneae.registries;
 
 import jp.main.taikun.insaneae.InsaneAE;
-import jp.main.taikun.insaneae.cell.InsaneMeCellData;
 import jp.main.taikun.insaneae.cell.storage.CellSummary;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.component.DataComponentType;
@@ -10,7 +9,6 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
-import java.util.List;
 import java.util.UUID;
 
 public final class ModDataComponents {
@@ -32,16 +30,6 @@ public final class ModDataComponents {
             COMPONENTS.register("cell_summary", () -> DataComponentType.<CellSummary>builder()
                     .persistent(CellSummary.CODEC)
                     .networkSynchronized(CellSummary.STREAM_CODEC)
-                    .build());
-
-    /**
-     * 超次元MEセルの中身 (種類と BigInteger の量)。アイテムの側に持つので、
-     * 中身が無い間は付かない。
-     */
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<List<InsaneMeCellData.Entry>>> INSANE_CELL_CONTENTS =
-            COMPONENTS.register("insane_cell_contents", () -> DataComponentType.<List<InsaneMeCellData.Entry>>builder()
-                    .persistent(InsaneMeCellData.CODEC)
-                    .networkSynchronized(InsaneMeCellData.STREAM_CODEC)
                     .build());
 
     private ModDataComponents() {

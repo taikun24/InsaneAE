@@ -1,5 +1,6 @@
 package jp.main.taikun.insaneae.integration.appmek;
 
+import appeng.api.stacks.AEKey;
 import appeng.core.localization.GuiText;
 import jp.main.taikun.insaneae.crafting.InsaneCraftingUnitType;
 import jp.main.taikun.insaneae.datagen.ModRecipeProvider;
@@ -30,6 +31,11 @@ import java.util.function.Consumer;
 public final class AppMekIntegration implements AddonIntegration {
 
     public static final String MODID = "appmek";
+
+    @Override
+    public boolean rejectsInStorage(AEKey key) {
+        return AppMekCells.isRadioactive(key);
+    }
 
     @Override
     public String modId() {

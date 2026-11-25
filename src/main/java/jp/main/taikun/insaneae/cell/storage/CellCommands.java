@@ -8,18 +8,21 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.UuidArgument;
+import jp.main.taikun.insaneae.cell.InsaneMeCellData;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 //? if >=1.21 {
 import jp.main.taikun.insaneae.registries.ModDataComponents;
@@ -60,38 +63,46 @@ public final class CellCommands {
             source.sendFailure(Component.translatable("commands.insaneae.cells.unavailable"));
             return 0;
         }
-        List<Map.Entry<UUID, CellContentStore.Entry>> entries = store.entries().entrySet().stream()
-                .sorted(Comparator.comparing(entry -> entry.getKey().toString()))
-                .toList();
+        List<Row> entries = rows(store);
         int pages = Math.max(1, (entries.size() + PAGE_SIZE - 1) / PAGE_SIZE);
         int current = Math.min(page, pages);
         source.sendSuccess(() -> Component.translatable("commands.insaneae.cells.list.header",
                 entries.size(), current, pages), false);
-        for (var entry : entries.subList((current - 1) * PAGE_SIZE,
+        for (Row row : entries.subList((current - 1) * PAGE_SIZE,
                 Math.min(entries.size(), current * PAGE_SIZE))) {
-            String id = entry.getKey().toString();
-            CellContentStore.Entry cell = entry.getValue();
-            //? if >=1.21 {
-            long count = CellSummary.of(cell.stacks()).count();
-            //?} else {
-            /*long count = cell.count();
-            *///?}
+            String id = row.id().toString();
             Component line = Component.literal(id)
                     .withStyle(style -> style.withColor(ChatFormatting.AQUA)
                             .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
                                     "/insaneae cells recover " + id))
                             .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                                     Component.translatable("commands.insaneae.cells.list.click"))))
-                    .append(Component.literal(" " + cell.item()).withStyle(ChatFormatting.GRAY))
+                    .append(Component.literal(" " + row.item()).withStyle(ChatFormatting.GRAY))
                     .append(Component.translatable("commands.insaneae.cells.list.contents",
-                            //? if >=1.21 {
-                            cell.stacks().size(), count).withStyle(ChatFormatting.WHITE));
-                            //?} else {
-                            /*cell.types(), count).withStyle(ChatFormatting.WHITE));
-                            *///?}
+                            row.types(), row.count()).withStyle(ChatFormatting.WHITE));
             source.sendSuccess(() -> line, false);
         }
         return entries.size();
+    }
+
+    /** 一覧の1行。超次元MEセルの量はlongに収まらないので、数は文字列で持つ。 */
+    private record Row(UUID id, ResourceLocation item, int types, String count) {
+    }
+
+    private static List<Row> rows(CellContentStore store) {
+        List<Row> rows = new ArrayList<>();
+        store.entries().forEach((id, cell) -> {
+            //? if >=1.21 {
+            rows.add(new Row(id, cell.item(), cell.stacks().size(),
+                    Long.toString(CellSummary.of(cell.stacks()).count())));
+            //?} else {
+            /*rows.add(new Row(id, cell.item(), cell.types(), Long.toString(cell.count())));
+            *///?}
+        });
+        store.bigEntries().forEach((id, cell) -> rows.add(new Row(id, cell.item(), cell.amounts().size(),
+                cell.amounts().values().stream().reduce(BigInteger.ZERO, BigInteger::add).toString())));
+        rows.sort(Comparator.comparing(row -> row.id().toString()));
+        return rows;
     }
 
     private static int recover(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -100,6 +111,9 @@ public final class CellCommands {
         UUID id = UuidArgument.getUuid(context, "uuid");
         CellContentStore store = CellContentStore.get();
         CellContentStore.Entry entry = store != null ? store.get(id) : null;
+        if (entry == null && store != null && store.getBig(id) != null) {
+            return recoverBig(source, player, id, store.getBig(id));
+        }
         if (entry == null) {
             source.sendFailure(Component.translatable("commands.insaneae.cells.not_found", id.toString()));
             return 0;
@@ -119,6 +133,24 @@ public final class CellCommands {
         stack.getOrCreateTag().put(CellNbt.SUMMARY, CellNbt.summary(entry));
         stack.getOrCreateTag().putLong(CellNbt.ITEM_COUNT, entry.count());
         *///?}
+        if (!player.getInventory().add(stack)) {
+            player.drop(stack, false);
+        }
+        source.sendSuccess(() -> Component.translatable("commands.insaneae.cells.recovered", id.toString()), true);
+        return 1;
+    }
+
+    /** 超次元MEセルはUUIDだけで中身が引けるので、要約は付けない。 */
+    private static int recoverBig(CommandSourceStack source, ServerPlayer player, UUID id,
+                                  CellContentStore.BigEntry entry) {
+        Item item = BuiltInRegistries.ITEM.get(entry.item());
+        if (item == Items.AIR) {
+            source.sendFailure(Component.translatable("commands.insaneae.cells.unknown_item",
+                    entry.item().toString()));
+            return 0;
+        }
+        ItemStack stack = new ItemStack(item);
+        InsaneMeCellData.setId(stack, id);
         if (!player.getInventory().add(stack)) {
             player.drop(stack, false);
         }

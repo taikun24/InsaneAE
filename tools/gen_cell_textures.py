@@ -19,6 +19,9 @@ gen_crafting_textures.py 側だけを書き換えて両方流し直すこと。
 加えて 1G〜16T だけ energy_component_<tier>.png (AppliedFlux 連携の FE セル用の
 エネルギーストレージコンポーネント。形は通常のコンポーネントと同じで、枠が階層色・線が赤)。
 
+超次元 ME セルの絵 (insane_me_cell.png とアニメーション定義の .png.mcmeta) は手描きなので、
+下敷きの置き場所 (tools/textures/<version>/) にあるものをそのまま写す。
+
 見た目は AE2 / MEGA Cells の流儀に合わせてある。**筐体 (ハウジング)・LED・画面は
 階層に依らないので MEGA / AE2 のテクスチャをレイヤで重ね、ここで生成するのは
 階層で色が変わる部分だけ** ({@code ModItemModelProvider} がレイヤを組む)。
@@ -55,6 +58,7 @@ from __future__ import annotations
 import argparse
 import colorsys
 import os
+import shutil
 import sys
 
 from PIL import Image
@@ -393,6 +397,21 @@ class Templates:
         return frame
 
 
+# 手描きのまま写す絵。色を付けないので下敷きではなく完成品として置いてある
+HAND_DRAWN = ("insane_me_cell.png", "insane_me_cell.png.mcmeta")
+
+
+def copy_hand_drawn(dirs: str | list[str]) -> None:
+    dirs = [dirs] if isinstance(dirs, str) else dirs
+    for name in HAND_DRAWN:
+        source = next((os.path.join(d, name) for d in dirs if os.path.isfile(os.path.join(d, name))), None)
+        if source is None:
+            raise SystemExit(f"手描きの絵が無い: {name}  探した場所: {dirs}")
+        path = os.path.join(OUT_DIR, name)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        shutil.copyfile(source, path)
+
+
 def write(relative: str, image: Image.Image) -> None:
     path = os.path.join(OUT_DIR, relative)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -479,6 +498,7 @@ def main() -> None:
               f"  pattern={pattern_index(tier)}{mark}")
     for tier in ENERGY_TIERS:
         write(f"energy_component_{tier}.png", templates.energy_component(tier, tier_color(tier)))
+    copy_hand_drawn(args.templates)
     print(f"\n{len(CELL_TIERS) * 3 + len(ENERGY_TIERS)} 枚 -> {OUT_DIR}")
 
 

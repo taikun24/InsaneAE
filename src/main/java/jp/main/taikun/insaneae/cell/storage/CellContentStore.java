@@ -1,5 +1,6 @@
 package jp.main.taikun.insaneae.cell.storage;
 
+import appeng.api.stacks.AEKey;
 import jp.main.taikun.insaneae.InsaneAE;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -14,6 +15,7 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.jetbrains.annotations.Nullable;
 
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
@@ -27,8 +29,7 @@ import org.slf4j.Logger;
 import java.util.List;
 //?}
 //? if <1.21 {
-/*import appeng.api.stacks.AEKey;
-import it.unimi.dsi.fastutil.objects.Object2LongMap;
+/*import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import jp.main.taikun.insaneae.util.SaturatingMath;
 *///?}
 
@@ -51,6 +52,10 @@ public final class CellContentStore extends SavedData {
     private static final String CELLS = "cells";
     private static final String ID = "id";
     private static final String ITEM = "item";
+    private static final String BIG_CELLS = "big_cells";
+    private static final String CONTENTS = "contents";
+    private static final String KEY = "key";
+    private static final String AMOUNT = "amount";
     //? if >=1.21 {
     private static final String STACKS = "stacks";
 
@@ -96,7 +101,17 @@ public final class CellContentStore extends SavedData {
         }
     }
 
+    /**
+     * 超次元MEセルの中身。量がlongに収まらないので {@link #cells} とは別に持つ。
+     *
+     * <p>表はセルの在庫が直接書き換える。保存のたびに写しを作り直さずに済むよう、
+     * 書き出しはワールドの保存時だけにしている。</p>
+     */
+    public record BigEntry(ResourceLocation item, Map<AEKey, BigInteger> amounts) {
+    }
+
     private final Map<UUID, Entry> cells = new ConcurrentHashMap<>();
+    private final Map<UUID, BigEntry> bigCells = new ConcurrentHashMap<>();
 
     private CellContentStore() {
     }
@@ -189,6 +204,29 @@ public final class CellContentStore extends SavedData {
         }
     }
 
+    @Nullable
+    public BigEntry getBig(UUID id) {
+        return bigCells.get(id);
+    }
+
+    public Map<UUID, BigEntry> bigEntries() {
+        return Collections.unmodifiableMap(bigCells);
+    }
+
+    /** 空の中身を作る。同じUUIDが既にあればそれを返す。 */
+    public BigEntry createBig(UUID id, Item item) {
+        BigEntry entry = bigCells.computeIfAbsent(id,
+                key -> new BigEntry(BuiltInRegistries.ITEM.getKey(item), new ConcurrentHashMap<>()));
+        setDirty();
+        return entry;
+    }
+
+    public void removeBig(UUID id) {
+        if (bigCells.remove(id) != null) {
+            setDirty();
+        }
+    }
+
     @Override
     //? if >=1.21 {
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
@@ -212,6 +250,33 @@ public final class CellContentStore extends SavedData {
             list.add(cell);
         });
         tag.put(CELLS, list);
+
+        ListTag bigList = new ListTag();
+        bigCells.forEach((id, entry) -> {
+            CompoundTag cell = new CompoundTag();
+            cell.putUUID(ID, id);
+            cell.putString(ITEM, entry.item().toString());
+            ListTag contents = new ListTag();
+            entry.amounts().forEach((key, amount) -> {
+                CompoundTag content = new CompoundTag();
+                //? if >=1.21 {
+                var encoded = AEKey.CODEC.encodeStart(ops, key)
+                        .resultOrPartial(error -> LOGGER.error("InsaneAE: failed to save {} in cell {}: {}",
+                                key, id, error));
+                if (encoded.isEmpty()) {
+                    return;
+                }
+                content.put(KEY, encoded.get());
+                //?} else {
+                /*content.put(KEY, key.toTagGeneric());
+                *///?}
+                content.putString(AMOUNT, amount.toString());
+                contents.add(content);
+            });
+            cell.put(CONTENTS, contents);
+            bigList.add(cell);
+        });
+        tag.put(BIG_CELLS, bigList);
         return tag;
     }
 
@@ -246,7 +311,49 @@ public final class CellContentStore extends SavedData {
                     cell.getLongArray(CellNbt.AMOUNTS)));
             *///?}
         }
+
+        ListTag bigList = tag.getList(BIG_CELLS, Tag.TAG_COMPOUND);
+        for (int index = 0; index < bigList.size(); index++) {
+            CompoundTag cell = bigList.getCompound(index);
+            if (!cell.hasUUID(ID)) {
+                continue;
+            }
+            UUID id = cell.getUUID(ID);
+            ResourceLocation item = ResourceLocation.tryParse(cell.getString(ITEM));
+            Map<AEKey, BigInteger> amounts = new ConcurrentHashMap<>();
+            ListTag contents = cell.getList(CONTENTS, Tag.TAG_COMPOUND);
+            // 読めない項目、たとえば外したModのキーは、その項目だけを捨てる。1つのためにセル全体を失わないように
+            for (int entryIndex = 0; entryIndex < contents.size(); entryIndex++) {
+                CompoundTag content = contents.getCompound(entryIndex);
+                if (!content.contains(KEY)) {
+                    continue;
+                }
+                //? if >=1.21 {
+                AEKey key = AEKey.CODEC.parse(ops, content.get(KEY))
+                        .resultOrPartial(error -> LOGGER.warn("InsaneAE: dropped an unreadable key in cell {}: {}",
+                                id, error))
+                        .orElse(null);
+                //?} else {
+                /*AEKey key = AEKey.fromTagGeneric(content.getCompound(KEY));
+                *///?}
+                BigInteger amount = parseAmount(content.getString(AMOUNT));
+                if (key != null && amount != null) {
+                    amounts.put(key, amount);
+                }
+            }
+            store.bigCells.put(id, new BigEntry(item != null ? item : BuiltInRegistries.ITEM.getDefaultKey(), amounts));
+        }
         return store;
+    }
+
+    @Nullable
+    private static BigInteger parseAmount(String text) {
+        try {
+            BigInteger amount = new BigInteger(text);
+            return amount.signum() > 0 ? amount : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     /** 描画スレッドの判定。クライアント専用クラスに触るので、distの確認の後でだけ呼ぶ。 */

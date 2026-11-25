@@ -18,6 +18,7 @@ import jp.main.taikun.insaneae.integration.AddonIntegrations;
 import jp.main.taikun.insaneae.registries.ModBlockEntities;
 import jp.main.taikun.insaneae.registries.ModBlocks;
 import jp.main.taikun.insaneae.registries.ModCells;
+import jp.main.taikun.insaneae.registries.ModRecipes;
 import jp.main.taikun.insaneae.registries.ModCreativeTabs;
 import jp.main.taikun.insaneae.registries.ModItems;
 import jp.main.taikun.insaneae.registries.ModMenus;
@@ -82,6 +83,7 @@ public class InsaneAE {
         // 入っているものだけ有効にする。セルはModCellsの登録に相乗りするので、その前に
         AddonIntegrations.init();
         ModCells.register(bus);
+        ModRecipes.register(bus);
         ModUpgrades.register(bus);
         ModBlockEntities.register(bus);
         ModMenus.register(bus);
